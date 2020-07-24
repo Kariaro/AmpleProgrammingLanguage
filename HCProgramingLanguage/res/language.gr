@@ -1,0 +1,84 @@
+# This is a grammar file used by the compiler to read the hc code syntax.
+# {"."} is a regex match.
+# [...] is a optional match that can be repeated.
+# (...) is a optional match.
+# "..." is a string that must match.
+# abcd  is a type that must match.
+
+# IDENTIFIER
+IDENTIFIER: {"[a-zA-Z_][a-zA-Z0-9_]*"}
+;
+STRINGLITERAL: {"\".*\""}
+;
+NUMBERLITERAL: {"0x[a-zA-Z0-9]+"}
+			 | {"[0-9]+"}
+;
+
+# Modifiers
+modi: "export"
+;
+
+# Function definition
+func: [modi] type IDENTIFIER "(" (type IDENTIFIER) ["," type IDENTIFIER] ")" stat
+;
+
+# Statement
+stat: "{" [stat] "}"
+	| "if" "(" expr ")" stat
+	| "while" "(" expr ")" stat
+	| type IDENTIFIER ("=" expr) ["," IDENTIFIER ("=" expr)] ";"
+	| "return" expr ";"
+	| expr ";"
+	| ";"
+;
+
+# I have no clue if this will be enough to make the compiler able to
+# use custom types.
+type: "void" ["*"]
+	| "int" ["*"]
+	| "char" ["*"]
+	| "bool" ["*"]
+	| "string" ["*"]
+	| "uint_8" ["*"]
+	| "uint_16" ["*"]
+	| "uint_32" ["*"]
+	| "uint_64" ["*"]
+	| IDENTIFIER ["*"]
+;
+
+expr: IDENTIFIER
+	| NUMBERLITERAL
+
+	| "(" type ")" expr
+	| "(" expr ")"
+	| expr "[" expr "]"
+	| expr "(" expr ["," expr] ")"
+
+# Binary operators
+	| expr "=" expr
+	| expr "+" expr
+	| expr "-" expr
+	
+	| expr "+=" expr
+	| expr "-=" expr
+	
+	| expr "||" expr
+	| expr "&&" expr
+	| expr "==" expr
+	| expr "!=" expr
+#   | expr "," expr
+
+# Unary operators
+	| "~" expr
+	| "&" expr
+	| "*" expr
+	| "-" expr
+	| "!" expr
+	| "++" expr
+	| "--" expr
+	| expr "++"
+	| expr "--"
+
+# Ternary operators
+	| expr "?" expr ":" expr
+;
