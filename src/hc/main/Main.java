@@ -4,12 +4,14 @@ import java.io.*;
 import java.util.Locale;
 import java.util.logging.LogManager;
 
-import hc.grammar.Grammar;
+import hardcoded.parser.Grammar;
 import hc.parser.Syntaxer;
 import hc.token.Symbol;
 import hc.token.Tokenizer;
 
 //https://www.cs.ru.ac.za/compilers/pdfvers.pdf
+//http://www.orcca.on.ca/~watt/home/courses/2007-08/cs447a/notes/LR1%20Parsing%20Tables%20Example.pdf
+
 public class Main {
 	static {
 		try {
