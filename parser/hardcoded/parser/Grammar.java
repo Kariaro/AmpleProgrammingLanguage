@@ -1,4 +1,4 @@
-package hc.grammar;
+package hardcoded.parser;
 
 import java.io.*;
 import java.util.*;
