@@ -51,12 +51,12 @@ Checking if the following string works in our grammar we can use a LR parser.
 // E is an EXPRESSION
 
 if ( 32 > 31 ) do { print 33 ; }
-|  | N  |  N | |  | |      N | |
-|  | '- E -' | |  | |      E | |
-|   '-- E --'  |  |  '---- S'  |
-|       |      |   '------ S -'
-|       '-----.|           |
- '------------ S ---------'      
+|  | N  |  N | |  | |     N  | |
+|  | '- E -' | |  | |     E  | |
+|  '--- E ---' |  | '---- S -' |
+|       |      |  '------ S ---'
+|       '-----.|          |
+'------------- S ---------'      
 ```
 
 And there we have generated a parse tree for this input and can validate that because

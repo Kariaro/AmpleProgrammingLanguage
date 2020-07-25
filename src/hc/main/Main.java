@@ -4,7 +4,8 @@ import java.io.*;
 import java.util.Locale;
 import java.util.logging.LogManager;
 
-import hardcoded.parser.Grammar;
+import hardcoded.grammar.Grammar;
+import hardcoded.grammar.GrammarFactory;
 import hc.parser.Syntaxer;
 import hc.token.Symbol;
 import hc.token.Tokenizer;
@@ -65,7 +66,7 @@ public class Main {
 		}
 		
 		try {
-			Grammar grammar = new Grammar("res/language.gr");
+			Grammar grammar = GrammarFactory.load("res/language.gr");
 			
 			System.out.println("============================================================================");
 			

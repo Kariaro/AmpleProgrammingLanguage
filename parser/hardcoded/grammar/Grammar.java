@@ -1,158 +1,65 @@
-package hardcoded.parser;
+package hardcoded.grammar;
 
-import java.io.*;
 import java.util.*;
 import java.util.regex.Pattern;
 
 import hc.token.Symbol;
-import hc.token.Tokenizer;
 
-// https://en.wikipedia.org/wiki/LR_parser
+//https://en.wikipedia.org/wiki/LR_parser
+//  * This class is not a  (<a href="https://en.wikipedia.org/wiki/Context-sensitive_grammar">CSG</a>) context sensitive grammar on the other hand is a grammar that can
+//  * change how it derives a production rule given the information it has already
+//  * parsed.<br>
+
+/**
+ * This class is used to parse grammar files that follows the same rules that
+ * a <a href="https://en.wikipedia.org/wiki/Context-free_grammar">(CFG) context free grammar</a> uses.<br>
+ * 
+ * A CFG is a unambiguous grammar meaning that there is only one way to derive
+ * a production rule from a given state.<br><br>
+ * 
+ * This parser allows grammars that follow this syntax.
+ *<pre># Syntax
+ *#    Comments must be placed on the start of a line.
+ *#    Multiple whitespaces are allowed between and infront of rules. 
+ *#
+ *#    Each statment starts with a name followed by a colon, then
+ *#    followed by the first production rule.
+ *#
+ *#    For each new production rule you must add a new line with
+ *#    a '|' followed by the pattern.
+ *#
+ *#    A statement must be closed by a semicolon.
+ *
+ *# Matching Types
+ *#    A optional single match value is written ( PRODUCTION RULES )
+ *#    A optional repeated match value is written [ PRODUCTION RULES ]
+ *#    A regex match is written {"REGEX"} and only works on single tokens
+ *NUMBER: {"[0-9]+"}
+ *;
+ *
+ *STAT: "(" EXPR [ "," EXPR ] ")"
+ *    | "[" EXPR ( "," EXPR ) "]"
+ *;
+ *
+ *EXPR: NUMBER
+ *;</pre>
+ *
+ * We will test the grammar above with the following strings.
+ *
+ *<pre>Accepted: "(1, 20, 39)"
+ *Accepted: "[3, 43]"
+ *Rejected: "[1, 2, 43]"</pre>
+ *
+ * The last string got rejected because the roundbrackets only allow for at most one
+ * match.
+ * 
+ * @author HardCoded
+ */
 public class Grammar {
-	private static boolean debug = false;
-	private final Map<String, Type> types;
+	protected final Map<String, Type> types;
 	
-	public Grammar(String path) throws IOException {
+	public Grammar() {
 		types = new HashMap<>();
-		
-		BufferedReader reader = new BufferedReader(new FileReader(new File(path)));
-		int ruleIndex = 1;
-		
-		
-		Type type = null;
-		String line;
-		while((line = reader.readLine()) != null) {
-			line = line.trim();
-			
-			// Remove comments and empty lines
-			if(line.startsWith("#") || line.isEmpty()) continue;
-			
-			String first = null;
-			{
-				String[] split = line.split("[ \t]+");
-				first = split[0];
-				
-				// Remove the first token from the line and
-				// set the first to the first token.
-				line = line.substring(first.length()).trim();
-			}
-			
-			if(first.endsWith(":")) { // Type start
-				type = new Type(first.substring(0, first.length() - 1));
-				
-				if(debug) System.out.println("New Type: '" + type + "'");
-				
-				// Make this into a add pattern
-				if(!line.isEmpty()) first = "|";
-			}
-			
-			// Add new pattern
-			if(first.equals("|")) {
-				type.matches.add(createMatch(ruleIndex++, line));
-			}
-			
-			if(first.equals(";")) {
-				if(debug) {
-					for(Match m : type.matches) {
-						System.out.println("    - " + m);
-					}
-					System.out.println("End Type: '" + type + "'");
-					System.out.println();
-				}
-				
-				types.put(type.name, type);
-				type = null;
-			}
-			
-		}
-		reader.close();
-	}
-	
-
-	protected MatchList createMatch(int ruleId, String line) {
-		Symbol start = Tokenizer.generateSymbolChain(line.getBytes());
-		
-		MatchList list = new MatchList(ruleId, line);
-		Symbol symbol = start;
-		
-		while(symbol != null) {
-			String value = symbol.toString();
-			
-			if(value.equals("{")) {
-				Symbol pattern = symbol.next();
-				if(!pattern.next().equals("}")) return null;
-				list.add(new MatchRegex(pattern));
-				symbol = pattern.next(2);
-				continue;
-			}
-			
-			if(value.equals("[") || value.equals("(")) {
-				MatchBracket match = createMatchBracket(symbol);
-				
-				list.add(match);
-				symbol = symbol.next(match.symbol.remaining() + 3);
-				continue;
-			}
-			
-			if(value.startsWith("\"")) {
-				// Must be a string
-				list.add(new MatchString(symbol));
-			} else {
-				// Must be a type
-				list.add(new MatchType(symbol));
-			}
-			
-			symbol = symbol.next();
-		}
-		
-		return list;
-	}
-	
-	protected MatchBracket createMatchBracket(Symbol start) {
-		boolean repeat = start.equals("[");
-		MatchBracket bracket = new MatchBracket(start, repeat);
-		start = start.next();
-		
-		Symbol symbol = start;
-		int count = -1;
-		while(symbol != null) {
-			String value = symbol.toString();
-			count++;
-			
-			if(value.equals("{")) {
-				Symbol pattern = symbol.next();
-				if(!pattern.next().equals("}")) return null;
-				bracket.add(new MatchRegex(pattern));
-				symbol = pattern.next(2);
-				continue;
-			}
-			
-			if(value.equals("[") || value.equals("(")) {
-				MatchBracket match = createMatchBracket(symbol);
-				
-				bracket.add(match);
-				symbol = symbol.next(match.symbol.remaining() + 3);
-				count += match.symbol.remaining() + 2;
-				continue;
-			}
-			
-			if(repeat && value.equals("]") || !repeat && value.equals(")")) {
-				bracket.symbol = start.clone(count - 1);
-				break;
-			}
-			
-			if(value.startsWith("\"")) {
-				// Must be a string
-				bracket.add(new MatchString(symbol));
-			} else {
-				// Must be a type
-				bracket.add(new MatchType(symbol));
-			}
-			
-			symbol = symbol.next();
-		}
-		
-		return bracket;
 	}
 	
 	public boolean test(Symbol symbol) {
@@ -183,8 +90,6 @@ public class Grammar {
 	}
 	
 	public boolean test(Type type, Symbol symbol) {
-		debug = true;
-		
 		System.out.println(symbol.toString(" ", 100));
 		System.out.println();
 		
@@ -230,10 +135,10 @@ public class Grammar {
 	
 	// TODO: Precedence
 	class Type {
-		private final String name;
-		private final List<MatchList> matches;
+		protected final String name;
+		protected final List<MatchList> matches;
 		
-		Type(String name) {
+		public Type(String name) {
 			this.matches = new ArrayList<>();
 			this.name = name;
 		}
@@ -356,9 +261,9 @@ public class Grammar {
 	}
 	
 	class MatchBracket extends Match {
-		private List<Match> matches;
-		private boolean repeat;
-		private Symbol symbol;
+		protected List<Match> matches;
+		protected boolean repeat;
+		protected Symbol symbol;
 		
 		public MatchBracket(Symbol symbol) {
 			this(symbol, false);
