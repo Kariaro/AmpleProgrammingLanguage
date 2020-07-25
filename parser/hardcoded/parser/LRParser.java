@@ -52,8 +52,9 @@ public class LRParser {
 	 *
 	 *FOLLOW(S) = { $, }
 	 *FOLLOW(E) = { $, +, ), n }
-	 *FOLLOW(T) = { $, +, ), }
-	 *</pre>
+	 *FOLLOW(T) = { $, +, ), }</pre>
+	 *
+	 *Sources: <a href="https://en.wikipedia.org/wiki/Canonical_LR_parser#FIRST_and_FOLLOW_sets">Wikipedia Canonical LR parser (FIRST and FOLLOW sets)</a>
 	 */
 	public void generateTable() {
 		
