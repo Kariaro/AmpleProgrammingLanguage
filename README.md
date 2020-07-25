@@ -32,7 +32,7 @@ An example of a grammar could be
 NUMBER: regex '[0-9]+'
 
 statement: '{' statement '}'
-		 | 'if' expression 'do' statement
+         | 'if' expression 'do' statement
          | 'print' expression ';'
 
 expression: NUMBER '>' NUMBER
