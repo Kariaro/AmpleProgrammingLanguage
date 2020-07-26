@@ -199,6 +199,9 @@ public class Grammar {
 	
 	public Grammar expand() {
 		Grammar grammar = new Grammar();
+		// TODO: Optimize the grammar so that it does not contain any more bracket matches..
+		//       this should not be done while loading the grammar but when creating the LRParser
+		//       with the LRParserGenerator.
 		
 		return grammar;
 	}
