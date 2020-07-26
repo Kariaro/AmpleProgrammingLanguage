@@ -4,23 +4,21 @@
 # (...) is a optional match.
 # "..." is a string that must match.
 # abcd  is a type that must match.
+#
+# If a statement is proceded by the word TOKEN then
+# it's interpreted as a token rule.
 
 # IDENTIFIER
-IDENTIFIER: {"[a-zA-Z_][a-zA-Z0-9_]*"}
-;
-STRINGLITERAL: {"\".*\""}
-;
-NUMBERLITERAL: {"0x[a-zA-Z0-9]+"}
-			 | {"[0-9]+"}
-;
+TOKEN IDENTIFIER: {"[a-zA-Z_][a-zA-Z0-9_]*"}
+TOKEN STRINGLITERAL: {"\".*\""}
+TOKEN NUMBERLITERAL: {"[0-9]+"}
+                   | {"0x[a-zA-Z0-9]+"}
 
 # Modifiers
 modi: "export"
-;
 
 # Function definition
 func: [modi] type IDENTIFIER "(" (type IDENTIFIER) ["," type IDENTIFIER] ")" stat
-;
 
 # Statement
 stat: "{" [stat] "}"
@@ -30,7 +28,6 @@ stat: "{" [stat] "}"
 	| "return" expr ";"
 	| expr ";"
 	| ";"
-;
 
 # I have no clue if this will be enough to make the compiler able to
 # use custom types.
@@ -44,7 +41,6 @@ type: "void" ["*"]
 	| "uint_32" ["*"]
 	| "uint_64" ["*"]
 	| IDENTIFIER ["*"]
-;
 
 expr: IDENTIFIER
 	| NUMBERLITERAL
@@ -81,4 +77,3 @@ expr: IDENTIFIER
 
 # Ternary operators
 	| expr "?" expr ":" expr
-;

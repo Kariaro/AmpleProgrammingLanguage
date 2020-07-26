@@ -1,7 +1,6 @@
 package hardcoded.grammar;
 
 import java.io.*;
-import java.util.*;
 
 import hc.token.Symbol;
 import hc.token.Tokenizer;
@@ -13,38 +12,45 @@ import hardcoded.grammar.Grammar.*;
 //  * parsed.<br>
 
 /**
- * This class is used to read grammar files that follows the same rules that
- * a <a href="https://en.wikipedia.org/wiki/Context-free_grammar">(CFG) context free grammar</a> uses.<br>
+ * This class is used to read grammar files that follows the same rules AS
+ * a <a href="https://en.wikipedia.org/wiki/Context-free_grammar">(CFG) context free grammar</a> does.<br>
  * 
- * A CFG is a unambiguous grammar meaning that there is only one way to derive
- * a production rule from a given state.<br><br>
+ * A context free grammar is an unambiguous grammar, meaning that there is only
+ * one way of deriving a production rule from a given input string.<br><br>
  * 
  * This parser allows grammars that follow this syntax.
  *<pre># Syntax
  *#    Comments must be placed on the start of a line.
  *#    Multiple whitespaces are allowed between and infront of rules. 
  *#
- *#    Each statment starts with a name followed by a colon, then
- *#    followed by the first production rule.
+ *#    Each new item starts with its name followed by a colon and then
+ *#    the rules.
  *#
- *#    For each new production rule you must add a new line with
- *#    a '|' followed by the pattern.
+ *#    If the word TOKEN is placed before a item it becomes a
+ *#    single token matching rule and will only accept regex.
  *#
- *#    A statement must be closed by a semicolon.
+ *#    For each new rule you add you must add a new line with
+ *#    a or character followed by the new rule set.
+ *#
+ *#    String rules can use either double or single quotes.
  *
  *# Matching Types
- *#    A optional single match value is written ( PRODUCTION RULES )
- *#    A optional repeated match value is written [ PRODUCTION RULES ]
+ *#    A optional single match value is written ( RULES )
+ *#    A optional repeated match value is written [ RULES ]
  *#    A regex match is written {"REGEX"} and only works on single tokens
- *NUMBER: {"[0-9]+"}
- *;
+ *#      Be aware that a regex matching could make a grammar ambiguous
+ *#      depending on what you are matching. This will result with the
+ *#      generator refusing to create a LR(k) parser for that grammar.
+ *#      
+ *#      The regex match operation should only be used when defining a
+ *#      new token and not inside statements.
  *
- *STAT: "(" EXPR [ "," EXPR ] ")"
- *    | "[" EXPR ( "," EXPR ) "]"
- *;
+ *TOKEN NUMBER: {"[0-9]+"}
  *
- *EXPR: NUMBER
- *;</pre>
+ *STAT: '(' EXPR [ ',' EXPR ] ')'
+ *    | '[' EXPR ( ',' EXPR ) ']'
+ *
+ *EXPR: NUMBER</pre>
  *
  * We will test the grammar above with the following strings.
  *
@@ -99,21 +105,22 @@ public final class GrammarFactory {
 	 * @param reader the reader that contains the data.
 	 * @return A parsed grammar.
 	 * @throws IOException
+	 * @throws DuplicateItemException
 	 */
 	public static Grammar load(Reader reader) throws IOException {
 		Grammar grammar = new Grammar();
-		Map<String, Grammar.Type> types = grammar.types;
 		
 		BufferedReader bufferedReader = new BufferedReader(reader);
 		int ruleIndex = 1;
 		
-		Type type = null;
+		Item type = null;
 		String line;
 		while((line = bufferedReader.readLine()) != null) {
 			line = line.trim();
 			
 			// Remove comments and empty lines
 			if(line.startsWith("#") || line.isEmpty()) continue;
+			
 			
 			String first = null;
 			{
@@ -125,10 +132,27 @@ public final class GrammarFactory {
 				line = line.substring(first.length()).trim();
 			}
 			
-			if(first.endsWith(":")) { // Type start
-				type = grammar.new Type(first.substring(0, first.length() - 1));
+			boolean isToken = false;
+			if(first.equals("TOKEN")) {
+				// System.out.println("was token: " + line);
 				
-//				if(debug) System.out.println("New Type: '" + type + "'");
+				String[] split = line.split("[ \t]+");
+				first = split[0];
+				
+				line = line.substring(first.length()).trim();
+				isToken = true;
+			}
+			
+			if(first.endsWith(":")) { // Item start
+				if(type != null) grammar.addItem(type);
+				
+				first = first.substring(0, first.length() - 1);
+				
+				if(isToken) {
+					type = grammar.new ItemToken(first);
+				} else {
+					type = grammar.new Item(first);
+				}
 				
 				// Make this into a add pattern
 				if(!line.isEmpty()) first = "|";
@@ -136,31 +160,27 @@ public final class GrammarFactory {
 			
 			// Add new pattern
 			if(first.equals("|")) {
-				type.matches.add(createMatch(ruleIndex++, grammar, line));
-			}
-			
-			if(first.equals(";")) {
-//				if(debug) {
-//					for(Match m : type.matches) {
-//						System.out.println("    - " + m);
-//					}
-//					System.out.println("End Type: '" + type + "'");
-//					System.out.println();
-//				}
-				
-				types.put(type.name, type);
-				type = null;
+				if(type instanceof ItemToken) {
+					type.matches.add(createRuleList(0, grammar, line));
+				} else {
+					type.matches.add(createRuleList(ruleIndex++, grammar, line));
+				}
 			}
 		}
+		
+		if(type != null) {
+			grammar.addItem(type);
+		}
+		
 		bufferedReader.close();
 		
 		return grammar;
 	}
 	
-	private static MatchList createMatch(int ruleId, Grammar grammar, String line) {
+	private static RuleList createRuleList(int ruleId, Grammar grammar, String line) {
 		Symbol start = Tokenizer.generateSymbolChain(line.getBytes());
 		
-		MatchList list = grammar.new MatchList(ruleId, line);
+		RuleList list = grammar.new RuleList(ruleId, line);
 		Symbol symbol = start;
 		
 		while(symbol != null) {
@@ -175,19 +195,19 @@ public final class GrammarFactory {
 			}
 			
 			if(value.equals("[") || value.equals("(")) {
-				MatchBracket match = createMatchBracket(grammar, symbol);
+				BracketRule match = createBracketRule(grammar, symbol);
 				
 				list.add(match);
 				symbol = symbol.next(match.symbol.remaining() + 3);
 				continue;
 			}
 			
-			if(value.startsWith("\"")) {
+			if(value.startsWith("\"") || value.startsWith("\'")) {
 				// Must be a string
-				list.add(grammar.new MatchString(symbol));
+				list.add(grammar.new StringRule(symbol));
 			} else {
 				// Must be a type
-				list.add(grammar.new MatchType(symbol));
+				list.add(grammar.new ItemRule(symbol));
 			}
 			
 			symbol = symbol.next();
@@ -196,9 +216,9 @@ public final class GrammarFactory {
 		return list;
 	}
 	
-	private static MatchBracket createMatchBracket(Grammar grammar, Symbol start) {
+	private static BracketRule createBracketRule(Grammar grammar, Symbol start) {
 		boolean repeat = start.equals("[");
-		MatchBracket bracket = grammar.new MatchBracket(start, repeat);
+		BracketRule bracket = grammar.new BracketRule(start, repeat);
 		start = start.next();
 		
 		Symbol symbol = start;
@@ -216,7 +236,7 @@ public final class GrammarFactory {
 			}
 			
 			if(value.equals("[") || value.equals("(")) {
-				MatchBracket match = createMatchBracket(grammar, symbol);
+				BracketRule match = createBracketRule(grammar, symbol);
 				
 				bracket.add(match);
 				symbol = symbol.next(match.symbol.remaining() + 3);
@@ -229,12 +249,12 @@ public final class GrammarFactory {
 				break;
 			}
 			
-			if(value.startsWith("\"")) {
+			if(value.startsWith("\"") || value.startsWith("\'")) {
 				// Must be a string
-				bracket.add(grammar.new MatchString(symbol));
+				bracket.add(grammar.new StringRule(symbol));
 			} else {
 				// Must be a type
-				bracket.add(grammar.new MatchType(symbol));
+				bracket.add(grammar.new ItemRule(symbol));
 			}
 			
 			symbol = symbol.next();

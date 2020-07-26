@@ -6,6 +6,7 @@ import java.util.logging.LogManager;
 
 import hardcoded.grammar.Grammar;
 import hardcoded.grammar.GrammarFactory;
+import hardcoded.parser.LRParserGenerator;
 import hc.parser.Syntaxer;
 import hc.token.Symbol;
 import hc.token.Tokenizer;
@@ -66,7 +67,22 @@ public class Main {
 		}
 		
 		try {
+			Grammar grammar = GrammarFactory.load("res/test_wiki.gr");
+			grammar = GrammarFactory.load("res/language.gr");
+			
+			LRParserGenerator generator = new LRParserGenerator();
+			
+			generator.FIRST(grammar);
+			
+		} catch(Exception e) {
+			e.printStackTrace();
+		} finally {
+			if(true) return;
+		}
+		
+		try {
 			Grammar grammar = GrammarFactory.load("res/language.gr");
+			
 			
 			System.out.println("============================================================================");
 			
@@ -74,7 +90,7 @@ public class Main {
 			test = "export int** test() {}";
 			test = "(a += 0x323123)";
 			//grammar.test(symbol);
-			grammar.test(grammar.getType("expr"), Tokenizer.generateSymbolChain(test.getBytes()));
+			// grammar.test(grammar.getType("expr"), Tokenizer.generateSymbolChain(test.getBytes()));
 		} catch(Exception e) {
 			e.printStackTrace();
 		} finally {

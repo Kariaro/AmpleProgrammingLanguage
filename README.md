@@ -29,7 +29,7 @@ that the set of production rules you specify are unambiguous for parsing.
 
 An example of a grammar could be
 ```
-NUMBER: regex '[0-9]+'
+TOKEN NUMBER: regex '[0-9]+'
 
 statement: '{' statement '}'
          | 'if' expression 'do' statement

@@ -1,0 +1,11 @@
+# https://en.wikipedia.org/wiki/Canonical_LR_parser#FIRST_and_FOLLOW_sets
+
+TOKEN n: {"[0-9]+"}
+S: E
+
+E: T
+ | '(' E ')'
+
+T: n
+ | '+' T
+ | T '+' n
