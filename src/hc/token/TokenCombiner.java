@@ -72,10 +72,12 @@ class TokenCombiner {
 				}
 				
 				case SINGLEQUOTE: {
-					if(token.toSimpleString().equals("\'")) {
-						tokens.add(new TokenGroup(start, count + 1, type).convertToToken());
-						type = TOKEN;
-						break;
+					if(!token.prev.toSimpleString().equals("\\")) {
+						if(token.toSimpleString().equals("\'")) {
+							tokens.add(new TokenGroup(start, count + 1, type).convertToToken());
+							type = TOKEN;
+							break;
+						}
 					}
 					
 					count++;
