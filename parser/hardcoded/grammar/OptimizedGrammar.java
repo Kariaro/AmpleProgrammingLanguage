@@ -1,8 +1,7 @@
 package hardcoded.grammar;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import hc.errors.grammar.GrammarException;
 
@@ -20,9 +19,9 @@ import hc.errors.grammar.GrammarException;
  *S: . a $
  * | . $</pre> 
  * 
- * The idea is to take a grammar filled with brackets and to
- * change it such that  it does not contain any more bracket
- * capture groups.
+ * The idea is to take a grammar that uses complicated bracket
+ * captures and change it so that it does the same thing but
+ * without any bracket groups.
  * 
  * @author HardCoded
  */
@@ -102,7 +101,79 @@ public class OptimizedGrammar extends Grammar {
 		return rule;
 	}
 	
+	/**
+	 * Compares the content of a and b and compares if a
+	 * could replace b.
+	 * 
+	 * @param a the item to check for equality
+	 * @param b the item that you comapre with
+	 * @return true if a is equivalent to b
+	 */
+	private boolean contentEquals(Item a, Item b) {
+		if(a.matches.size() != b.matches.size()) return false;
+		
+		Set<String> searched = new HashSet<String>();
+		searched.add(b.name);
+		
+		return contentEquals(a, b, searched);
+	}
 	
+	/**
+	 * Searched contains the items that has already been compared
+	 */
+	private boolean contentEquals(Item a, Item b, Set<String> searched) {
+		if(a.matches.size() != b.matches.size()) return false;
+		
+		for(int i = 0; i < a.matches.size(); i++) {
+			RuleList a_set = a.matches.get(i);
+			RuleList b_set = b.matches.get(i);
+			if(a_set.size() != b_set.size()) return false;
+			
+			for(int j = 0; j < a_set.size(); j++) {
+				Rule a_rule = a_set.rules.get(j);
+				Rule b_rule = b_set.rules.get(j);
+				if(a_rule.getClass() != b_rule.getClass()) return false;
+				
+				if(b_rule instanceof BracketRule) {
+					throw new UnsupportedOperationException("Trying to compare two items that contain BracketRules." +
+															"There should not be any bracketRules in these items");
+				}
+				
+				if(b_rule instanceof StringRule) {
+					StringRule a_r = (StringRule)a_rule;
+					StringRule b_r = (StringRule)b_rule;
+					if(!a_r.value.equals(b_r.value)) return false;
+				} else if(b_rule instanceof SpecialRule) {
+					SpecialRule a_r = (SpecialRule)a_rule;
+					SpecialRule b_r = (SpecialRule)b_rule;
+					if(a_r.type != b_r.type) return false;
+				} else if(b_rule instanceof RegexRule) {
+					RegexRule a_r = (RegexRule)a_rule;
+					RegexRule b_r = (RegexRule)b_rule;
+					if(!a_r.pattern.pattern().equals(b_r.pattern.pattern())) return false;
+					
+					// This capture group should not be allowed in normal items....
+				} else if(b_rule instanceof ItemRule) {
+					ItemRule a_ir = (ItemRule)a_rule;
+					ItemRule b_ir = (ItemRule)b_rule;
+					
+					// System.out.println(" -> " + a_ir + "/" + b_ir);
+					if(a_ir.name.equals(b_ir.name)) {
+						continue; // If the item is matching then it should work. 
+					}
+					
+					if(!searched.contains(b_ir.name)) {
+						searched.add(b_ir.name);
+						
+						// There should never be any token reduction so this should never work.
+						return contentEquals(getItem(a_ir.name), getItem(b_ir.name));
+					}
+				}
+			}
+		}
+		
+		return true;
+	}
 	
 	
 	/**
@@ -124,23 +195,104 @@ public class OptimizedGrammar extends Grammar {
 		
 		do {
 			System.out.println("Items -> " + result);
-			result = reduce(result);
+			result = reduceBrackets(result);
 		} while(!result.isEmpty());
 		
 		long subRules2 = this.items.values().parallelStream().flatMap((i) -> i.matches.stream()).count();
 		long totRules2 = this.items.values().parallelStream().count();
 		
 		
-		System.out.println("Done with reduction: ");
-		System.out.println("    : " + subRules + "/" + subRules2);
-		System.out.println("    : " + totRules + "/" + totRules2);
+		System.out.println("Done with reduction:");
+		System.out.println("    rules   : " + totRules + "/" + totRules2);
+		System.out.println("    elements: " + subRules + "/" + subRules2);
 		
-		// TODO: If multiple RuleLists contains the exact same operators then it should
+		// DONE: If multiple RuleLists contains the exact same operators then it should
 		//       be optimized to only one ruleList.. This should only happen for rules
 		//       inside the same item. This should be applied after the bracket reduction
 		//       has been made.
 		
+		System.out.println();
+		System.out.println("Reduce groups:");
+		
+		{
+			result = new ArrayList<>(this.items.values());
+			for(int i = 0; i < result.size(); i++) {
+				Item item = result.get(i);
+				
+				List<String> names = reduceGroups(item);
+				replaceItemsAndRemove(item, names);
+				// System.out.println();
+				
+				result = new ArrayList<>(this.items.values());
+			}
+		}
+		System.out.println();
+		System.out.println("=================================================================");
+		items.values().forEach(i -> {
+			System.out.println("Item: " + i);
+			for(RuleList set : i.matches) {
+				System.out.println("    | " + set);
+			}
+			System.out.println();
+		});
+		
+		System.out.println();
+		
+		long subRules3 = this.items.values().parallelStream().flatMap((i) -> i.matches.stream()).count();
+		long totRules3 = this.items.values().parallelStream().count();
+		
+		
+		System.out.println("Done with reduction:");
+		System.out.println("    rules   : " + totRules + "/" + totRules3);
+		System.out.println("    elements: " + subRules + "/" + subRules3);
+		
 	}
+	
+//	private List<Item> getControlItems(String name) {
+//		return items.values().stream().filter(i -> i.name.startsWith("#")).collect(Collectors.toList());
+//	}
+	
+	private List<String> reduceGroups(Item a) {
+		return items.values().parallelStream().filter(b -> (a != b && contentEquals(a, b))).map(i -> i.name).collect(Collectors.toList());
+	}
+	
+	private void replaceItemsAndRemove(Item replace, List<String> items) {
+		this.items.values().forEach(i -> {
+			for(RuleList set : i.matches) {
+				for(Rule rule : set.rules) {
+					if(rule instanceof ItemRule) {
+						ItemRule ir = (ItemRule)rule;
+						
+						for(String name : items) {
+							if(ir.name.equals(name)) {
+								ir.name = replace.name;
+							}
+						}
+					}
+				}
+			}
+		});
+		
+		for(String name : items) this.items.remove(name);
+	}
+	
+//	private void renameItem(Item item, String name) {
+//		this.items.values().forEach(i -> {
+//			for(RuleList set : i.matches) {
+//				for(Rule rule : set.rules) {
+//					if(rule instanceof ItemRule) {
+//						ItemRule ir = (ItemRule)rule;
+//						
+//						if(ir.name.equals(item.name)) {
+//							ir.name = name;
+//						}
+//					}
+//				}
+//			}
+//		});
+//		
+//		item.name = name;
+//	}
 	
 	/**
 	 * Simplifies all brackets found inside the list.
@@ -148,7 +300,7 @@ public class OptimizedGrammar extends Grammar {
 	 * @param items
 	 * @return all the items that has changed during the reduction.
 	 */
-	private List<Item> reduce(List<Item> items) {
+	private List<Item> reduceBrackets(List<Item> items) {
 		List<Item> changed = new ArrayList<>();
 		
 		items.forEach((i) -> {
@@ -163,25 +315,25 @@ public class OptimizedGrammar extends Grammar {
 				
 				if(!changed.contains(i)) changed.add(i);
 				
-				System.out.println("    | " + set);
+				// System.out.println("    | " + set);
 				if(bracket.repeat) {
 					Item created = reduceSquare(i, set);
 					this.items.put(created.name, created);
 					
-					for(RuleList l : created.matches) System.out.println("    + -> " + l);
+					// for(RuleList l : created.matches) System.out.println("    + -> " + l);
 					
 					changed.add(created);
 				} else {
 					List<RuleList> rules = reduceRound(set);
 					
-					for(RuleList l : rules) System.out.println("    + -> " + l);
+					// for(RuleList l : rules) System.out.println("    + -> " + l);
 					
 					i.matches.set(index    , rules.get(0));
 					i.matches.add(index + 1, rules.get(1));
 					index++;
 				}
 				
-				System.out.println();
+				// System.out.println();
 			}
 			
 		});
@@ -213,7 +365,6 @@ public class OptimizedGrammar extends Grammar {
 				break;
 			}
 		}
-		// This is just going to change the current ruleset and nothing else.
 		
 		list.add(a);
 		list.add(b);
@@ -226,10 +377,8 @@ public class OptimizedGrammar extends Grammar {
 	 * Reduce the square capture group.
 	 */
 	private Item reduceSquare(Item parent, RuleList set) {
-		// This is going to add a new instance to the items list..
-		squareIndex++;
+		String name = "#" + parent.name + (++squareIndex);
 		
-		String name = "#" + parent.name + squareIndex;
 		//   S > . [ a ] $
 		// Becomes
 		//   S  > . S0 $
@@ -256,6 +405,7 @@ public class OptimizedGrammar extends Grammar {
 			}
 		}
 		
+		// throw new BracketExpectedException(); ??????
 		return null;
 	}
 }
