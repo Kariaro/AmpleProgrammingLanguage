@@ -5,11 +5,21 @@ import hc.token.Symbol;
 public abstract class Rule {
 	protected int ruleId;
 	
-	public Rule() { this(0); }
-	public Rule(int ruleId) { this.ruleId = ruleId; }
+	protected Rule() {
+		
+	}
 	
-	public String getRuleString() { return "Rule" + ruleId; }
-	public int getRuleId() { return ruleId; }
+	protected Rule(int ruleId) {
+		this.ruleId = ruleId;
+	}
+	
+	public String getRuleString() {
+		return "Rule" + ruleId;
+	}
+	
+	public int getRuleId() {
+		return ruleId;
+	}
 	
 	@Override
 	public boolean equals(Object obj) {
