@@ -3,7 +3,7 @@ package hardcoded.grammar;
 import hc.token.Symbol;
 
 public abstract class Rule {
-	protected final int ruleId;
+	protected int ruleId;
 	
 	public Rule() { this(0); }
 	public Rule(int ruleId) { this.ruleId = ruleId; }
@@ -18,6 +18,13 @@ public abstract class Rule {
 		}
 		
 		return this == obj;
+	}
+	
+	/** Represent this hash with a unique hash that can only be
+	 *
+	 */
+	public String hash() {
+		return null;
 	}
 	
 	/**

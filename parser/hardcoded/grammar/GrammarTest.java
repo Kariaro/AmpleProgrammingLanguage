@@ -93,13 +93,20 @@ public class GrammarTest {
 	 *             > b
 	 *          
 	 *          
-	 *          
-	 *          
 	 *       3) S > a (b)
 	 *          
 	 *         -Becomes-
 	 *          
 	 *          S > a b
 	 *            > a
+	 *            
+	 *       4) [a]
+	 *         
+	 *        -Becomes-
+	 *         
+	 *         S > S0
+	 *         S0 > a S0
+	 *            > a
+	 *            > {EMPTY}
 	 */
 }

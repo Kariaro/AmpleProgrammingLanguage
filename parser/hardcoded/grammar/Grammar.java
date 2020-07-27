@@ -4,7 +4,8 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import hc.errors.DuplicateItemException;
+import hc.errors.grammar.DuplicateItemException;
+import hc.errors.grammar.UndefinedMatchType;
 import hc.token.Symbol;
 
 /**
@@ -17,11 +18,8 @@ import hc.token.Symbol;
  * @author HardCoded
  */
 public class Grammar {
-	private final Map<String, ItemToken> tokens;
-	private final Map<String, Item> items;
-	
-	// TODO: ItemRule and TokenRule should be destinguishable.
-	//       Currently they do not show up correctly.......
+	protected final Map<String, ItemToken> tokens;
+	protected final Map<String, Item> items;
 	
 	public Grammar() {
 		tokens = new LinkedHashMap<>();
@@ -93,14 +91,18 @@ public class Grammar {
 	}
 	
 	public class RuleList extends Rule {
-		private final List<Rule> rules;
-		private final String line;
+		protected final List<Rule> rules;
+		protected String line;
 		
 		public RuleList(int ruleId, String line) {
 			super(ruleId);
 			
 			rules = new ArrayList<>();
 			this.line = line;
+		}
+		
+		public RuleList() {
+			rules = new ArrayList<>();
 		}
 		
 		public void add(Rule rule) {
@@ -144,6 +146,10 @@ public class Grammar {
 			this.repeat = repeat;
 		}
 		
+		public BracketRule() {
+			matches = new ArrayList<>();
+		}
+		
 		public void add(Rule match) {
 			matches.add(match);
 		}
@@ -160,23 +166,34 @@ public class Grammar {
 	}
 	
 	public class ItemRule extends Rule {
-		private String name;
+		protected String name;
 		public ItemRule(Symbol symbol) {
-			this.name = symbol.toString();
+			this(symbol.toString());
+		}
+		
+		public ItemRule(String name) {
+			this.name = name;
 		}
 		
 		public String getName() {
 			return name;
 		}
 		
-		public String toString() { return "i:" + name; }
+		public String toString() {
+			if(tokens.containsKey(name)) return "token:" + name;
+			return "i:" + name;
+		}
 	}
 	
 	public class StringRule extends Rule {
-		private String value;
+		protected String value;
 		public StringRule(Symbol symbol) {
 			value = symbol.toString();
 			value = value.substring(1, value.length() - 1);
+		}
+		
+		public StringRule(String value) {
+			this.value = value;
 		}
 		
 		public String toString() {
@@ -184,11 +201,15 @@ public class Grammar {
 		}
 	}
 	
-	public class MatchRegex extends Rule {
-		private Pattern pattern;
-		public MatchRegex(Symbol symbol) {
+	public class RegexRule extends Rule {
+		protected Pattern pattern;
+		public RegexRule(Symbol symbol) {
 			String regex = symbol.toString();
 			regex = regex.substring(1, regex.length() - 1);
+			pattern = Pattern.compile(regex);
+		}
+		
+		public RegexRule(String regex) {
 			pattern = Pattern.compile(regex);
 		}
 		
@@ -197,12 +218,41 @@ public class Grammar {
 		}
 	}
 	
-	public Grammar expand() {
-		Grammar grammar = new Grammar();
-		// TODO: Optimize the grammar so that it does not contain any more bracket matches..
-		//       this should not be done while loading the grammar but when creating the LRParser
-		//       with the LRParserGenerator.
+	protected static final int SPECIAL_EOF = 1;
+	protected static final int SPECIAL_EMPTY = 2;
+	public class SpecialRule extends Rule {
+		protected int type;
+		public SpecialRule(Symbol symbol) {
+			switch(symbol.toString()) {
+				case "EOF": {
+					type = SPECIAL_EOF;
+					break;
+				}
+				case "EMPTY": {
+					type = SPECIAL_EMPTY;
+					break;
+				}
+				default: {
+					throw new UndefinedMatchType("The match type {" + symbol + "} does not exist.");
+				}
+			}
+		}
 		
-		return grammar;
+		public SpecialRule(int type) {
+			this.type = type;
+		}
+		
+		public String toString() {
+			switch(type) {
+				case SPECIAL_EOF: return "{EOF}";
+				case SPECIAL_EMPTY: return "{EMPTY}";
+			}
+			return null;
+		}
+	}
+	
+	public Grammar expand() {
+		// First create a new instance of a grammar
+		return new OptimizedGrammar(this);
 	}
 }
