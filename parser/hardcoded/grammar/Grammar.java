@@ -65,7 +65,7 @@ public class Grammar {
 	}
 	
 	public class Item {
-		protected final String name;
+		protected String name;
 		protected final List<RuleList> matches;
 		
 		public Item(String name) {
