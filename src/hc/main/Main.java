@@ -69,10 +69,10 @@ public class Main {
 		try {
 			Grammar grammar = GrammarFactory.load("res/test_wiki.gr");
 			grammar = GrammarFactory.load("res/language.gr");
+			grammar.expand();
 			
-			LRParserGenerator generator = new LRParserGenerator();
-			
-			generator.FIRST(grammar);
+			//LRParserGenerator generator = new LRParserGenerator();
+			//generator.FIRST(grammar);
 			
 		} catch(Exception e) {
 			e.printStackTrace();
@@ -82,7 +82,6 @@ public class Main {
 		
 		try {
 			Grammar grammar = GrammarFactory.load("res/language.gr");
-			
 			
 			System.out.println("============================================================================");
 			

@@ -2,6 +2,7 @@ package hardcoded.grammar;
 
 import java.io.*;
 
+import hc.errors.grammar.GrammarSyntaxException;
 import hc.token.Symbol;
 import hc.token.Tokenizer;
 import hardcoded.grammar.Grammar.*;
@@ -21,6 +22,7 @@ import hardcoded.grammar.Grammar.*;
  * This parser allows grammars that follow this syntax.
  *<pre># Syntax
  *#    Comments must be placed on the start of a line.
+ *#    Hashtags are not allowed in item or token names.
  *#    Multiple whitespaces are allowed between and infront of rules. 
  *#
  *#    Each new item starts with its name followed by a colon and then
@@ -44,6 +46,11 @@ import hardcoded.grammar.Grammar.*;
  *#      
  *#      The regex match operation should only be used when defining a
  *#      new token and not inside statements.
+ *#    A empty match is written {EMPTY} and is a null capturing group
+ *#    meaning that it can be skipped and still work.
+ *#      If this is put in the middle of a set of rules it will remove
+ *#      all rules after it.
+ *#    To match the end of a file you use {EOF}.
  *
  *TOKEN NUMBER: {"[0-9]+"}
  *
@@ -148,6 +155,10 @@ public final class GrammarFactory {
 				
 				first = first.substring(0, first.length() - 1);
 				
+				if(first.contains("#")) {
+					throw new GrammarSyntaxException("Hashtags cannot be used inside item or token names. \"" + first + "\"");
+				}
+				
 				if(isToken) {
 					type = grammar.new ItemToken(first);
 				} else {
@@ -189,7 +200,11 @@ public final class GrammarFactory {
 			if(value.equals("{")) {
 				Symbol pattern = symbol.next();
 				if(!pattern.next().equals("}")) return null;
-				list.add(grammar.new MatchRegex(pattern));
+				if(pattern.toString().startsWith("\"")) {
+					list.add(grammar.new RegexRule(pattern));
+				} else {
+					list.add(grammar.new SpecialRule(pattern));
+				}
 				symbol = pattern.next(2);
 				continue;
 			}
@@ -230,7 +245,7 @@ public final class GrammarFactory {
 			if(value.equals("{")) {
 				Symbol pattern = symbol.next();
 				if(!pattern.next().equals("}")) return null;
-				bracket.add(grammar.new MatchRegex(pattern));
+				bracket.add(grammar.new RegexRule(pattern));
 				symbol = pattern.next(2);
 				continue;
 			}
