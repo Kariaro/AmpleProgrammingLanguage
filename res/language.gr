@@ -17,14 +17,23 @@ TOKEN NUMBERLITERAL: {"[0-9]+"}
 # Modifiers
 modi: "export"
 
+# Inside each file this should be the pattern
+library: "#import" STRINGLITERAL library
+       | func library
+	   | "struct" IDENTIFIER "{" "}" ";" library
+	   | "enum" IDENTIFIER "{" (IDENTIFIER ("=" NUMBERLITERAL) ["," IDENTIFIER ("=" NUMBERLITERAL)]) "}" ";" library
+	   | "class" IDENTIFIER "{" "}" library
+	   | {EOF}
+	   
+
 # Function definition
-func: [modi] type IDENTIFIER "(" (type IDENTIFIER) ["," type IDENTIFIER] ")" stat
+func: [modi] type IDENTIFIER "(" (type IDENTIFIER ["," type IDENTIFIER]) ")" "{" stat "}"
 
 # Statement
 stat: "{" [stat] "}"
 	| "if" "(" expr ")" stat
 	| "while" "(" expr ")" stat
-	| type IDENTIFIER ("=" expr) ["," IDENTIFIER ("=" expr)] ";"
+	| type IDENTIFIER ("=" expr) ["," IDENTIFIER ("=" expr)] ";" ( stat )
 	| "return" expr ";"
 	| expr ";"
 	| ";"
