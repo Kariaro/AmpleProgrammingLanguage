@@ -28,37 +28,24 @@ import hc.errors.grammar.GrammarException;
 public class OptimizedGrammar extends Grammar {
 	
 	public OptimizedGrammar(Grammar grammar) {
-		// System.out.println("Tokens");
 		grammar.tokens.values().forEach((t) -> {
-			// System.out.println("Token: token:" + t);
-			
 			ItemToken token = new ItemToken(t.name);
-			
-			for(RuleList rule : t.matches) {
-				// System.out.println("     | " + rule);
-				token.matches.add(cloneRuleList(rule));
-			}
-			
+			for(RuleList rule : t.matches) token.matches.add(cloneRuleList(rule));
 			tokens.put(t.name, token);
 		});
 		
-		// System.out.println();
-		// System.out.println("Items");
 		grammar.items.values().forEach((i) -> {
-			// System.out.println("Item: i:" + i);
-			
-			ItemToken token = new ItemToken(i.name);
-			
-			for(RuleList rule : i.matches) {
-				// System.out.println("    | " + rule);
-				token.matches.add(cloneRuleList(rule));
-			}
-			
+			Item token = new Item(i.name);
+			for(RuleList rule : i.matches) token.matches.add(cloneRuleList(rule));
 			items.put(i.name, token);
 		});
-		// System.out.println();
 		
 		optimize();
+		
+		int ruleId = 0;
+		for(Item item : items.values()) {
+			for(Rule rule : item.matches) rule.ruleId = (++ruleId);
+		}
 	}
 	
 	private RuleList cloneRuleList(RuleList set) {
@@ -184,49 +171,37 @@ public class OptimizedGrammar extends Grammar {
 		return rule.isPresent() ? (BracketRule)rule.get():null;
 	}
 	
+	/**
+	 * Optimizes all items inside the grammar.
+	 */
 	private void optimize() {
 		List<Item> result = new ArrayList<>(this.items.values());
-		long subRules = this.items.values().parallelStream().flatMap((i) -> i.matches.stream()).count();
-		long totRules = this.items.values().parallelStream().count();
+		long subRules = items.values().parallelStream().flatMap((i) -> i.matches.stream()).count();
+		long totRules = items.values().parallelStream().count();
 		
 		// DONE: Optimize this so that it does not contain any more bracket matches.
 		//       This should not be done while loading the grammar but when creating the
 		//       LRParser with the LRParserGenerator.
 		
 		do {
-			System.out.println("Items -> " + result);
 			result = reduceBrackets(result);
 		} while(!result.isEmpty());
-		
-		long subRules2 = this.items.values().parallelStream().flatMap((i) -> i.matches.stream()).count();
-		long totRules2 = this.items.values().parallelStream().count();
-		
-		
-		System.out.println("Done with reduction:");
-		System.out.println("    rules   : " + totRules + "/" + totRules2);
-		System.out.println("    elements: " + subRules + "/" + subRules2);
 		
 		// DONE: If multiple RuleLists contains the exact same operators then it should
 		//       be optimized to only one ruleList.. This should only happen for rules
 		//       inside the same item. This should be applied after the bracket reduction
 		//       has been made.
 		
-		System.out.println();
-		System.out.println("Reduce groups:");
-		
-		{
+		result = new ArrayList<>(this.items.values());
+		for(int i = 0; i < result.size(); i++) {
+			Item item = result.get(i);
+			
+			List<String> names = reduceGroups(item);
+			replaceItemsAndRemove(item, names);
+			
 			result = new ArrayList<>(this.items.values());
-			for(int i = 0; i < result.size(); i++) {
-				Item item = result.get(i);
-				
-				List<String> names = reduceGroups(item);
-				replaceItemsAndRemove(item, names);
-				// System.out.println();
-				
-				result = new ArrayList<>(this.items.values());
-			}
 		}
-		System.out.println();
+		
 		System.out.println("=================================================================");
 		items.values().forEach(i -> {
 			System.out.println("Item: " + i);
@@ -236,21 +211,10 @@ public class OptimizedGrammar extends Grammar {
 			System.out.println();
 		});
 		
-		System.out.println();
-		
-		long subRules3 = this.items.values().parallelStream().flatMap((i) -> i.matches.stream()).count();
-		long totRules3 = this.items.values().parallelStream().count();
-		
-		
 		System.out.println("Done with reduction:");
-		System.out.println("    rules   : " + totRules + "/" + totRules3);
-		System.out.println("    elements: " + subRules + "/" + subRules3);
-		
+		System.out.printf("    rules   : %4d / %4d\n", totRules, items.values().parallelStream().count());
+		System.out.printf("    elements: %4d / %4d\n", subRules, items.values().parallelStream().flatMap((i) -> i.matches.stream()).count());
 	}
-	
-//	private List<Item> getControlItems(String name) {
-//		return items.values().stream().filter(i -> i.name.startsWith("#")).collect(Collectors.toList());
-//	}
 	
 	private List<String> reduceGroups(Item a) {
 		return items.values().parallelStream().filter(b -> (a != b && contentEquals(a, b))).map(i -> i.name).collect(Collectors.toList());
@@ -276,24 +240,6 @@ public class OptimizedGrammar extends Grammar {
 		for(String name : items) this.items.remove(name);
 	}
 	
-//	private void renameItem(Item item, String name) {
-//		this.items.values().forEach(i -> {
-//			for(RuleList set : i.matches) {
-//				for(Rule rule : set.rules) {
-//					if(rule instanceof ItemRule) {
-//						ItemRule ir = (ItemRule)rule;
-//						
-//						if(ir.name.equals(item.name)) {
-//							ir.name = name;
-//						}
-//					}
-//				}
-//			}
-//		});
-//		
-//		item.name = name;
-//	}
-	
 	/**
 	 * Simplifies all brackets found inside the list.
 	 * 
@@ -308,32 +254,20 @@ public class OptimizedGrammar extends Grammar {
 				RuleList set = i.matches.get(index);
 				
 				BracketRule bracket = firstBracket(set);
-				if(bracket == null) {
-					//System.out.println("    | " + set);
-					continue;
-				}
+				if(bracket == null) continue;
 				
 				if(!changed.contains(i)) changed.add(i);
 				
-				// System.out.println("    | " + set);
 				if(bracket.repeat) {
 					Item created = reduceSquare(i, set);
 					this.items.put(created.name, created);
-					
-					// for(RuleList l : created.matches) System.out.println("    + -> " + l);
-					
 					changed.add(created);
 				} else {
 					List<RuleList> rules = reduceRound(set);
-					
-					// for(RuleList l : rules) System.out.println("    + -> " + l);
-					
 					i.matches.set(index    , rules.get(0));
 					i.matches.add(index + 1, rules.get(1));
 					index++;
 				}
-				
-				// System.out.println();
 			}
 			
 		});
@@ -371,13 +305,12 @@ public class OptimizedGrammar extends Grammar {
 		return list;
 	}
 	
-	private int squareIndex = 0;
-	
 	/**
 	 * Reduce the square capture group.
 	 */
 	private Item reduceSquare(Item parent, RuleList set) {
-		String name = "#" + parent.name + (++squareIndex);
+		long count = items.values().parallelStream().filter(i -> i.name.startsWith("#" + parent.name + " ")).count();
+		String name = "#" + parent.name + " " + (count + 1);
 		
 		//   S > . [ a ] $
 		// Becomes
