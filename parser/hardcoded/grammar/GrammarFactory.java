@@ -23,10 +23,13 @@ import hardcoded.grammar.Grammar.*;
  *<pre># Syntax
  *#    Comments must be placed on the start of a line.
  *#    Hashtags are not allowed in item or token names.
- *#    Multiple whitespaces are allowed between and infront of rules. 
+ *#    Multiple whitespaces are allowed between and infront of rules.
  *#
  *#    Each new item starts with its name followed by a colon and then
  *#    the rules.
+ *#
+ *#    You can define any item to become the starting item by writing
+ *#    'START <itemName>' at any position in the file.
  *#
  *#    If the word TOKEN is placed before a item it becomes a
  *#    single token matching rule and will only accept regex.
@@ -140,14 +143,22 @@ public final class GrammarFactory {
 			}
 			
 			boolean isToken = false;
-			if(first.equals("TOKEN")) {
-				// System.out.println("was token: " + line);
-				
-				String[] split = line.split("[ \t]+");
-				first = split[0];
-				
-				line = line.substring(first.length()).trim();
-				isToken = true;
+			if(!first.endsWith(":")) {
+				switch(first) {
+					case "START": {
+						grammar.startItem = line;
+						continue; // Read next line
+					}
+					case "TOKEN": {
+						isToken = true;
+						
+						String[] split = line.split("[ \t]+");
+						first = split[0];
+						line = line.substring(first.length()).trim();
+						
+						break;
+					}
+				}
 			}
 			
 			if(first.endsWith(":")) { // Item start
@@ -181,6 +192,10 @@ public final class GrammarFactory {
 		
 		if(type != null) {
 			grammar.addItem(type);
+		}
+		
+		if(grammar.startItem != null && !grammar.containsItem(grammar.startItem)) {
+			throw new GrammarSyntaxException("That start item does not exist '" + grammar.startItem + "'");
 		}
 		
 		bufferedReader.close();

@@ -69,6 +69,7 @@ public class Main {
 		try {
 			Grammar grammar = GrammarFactory.load("res/test_wiki.gr");
 			grammar = GrammarFactory.load("res/language.gr");
+			grammar = GrammarFactory.load("res/test_wiki_2.gr");
 			grammar = grammar.expand();
 			
 			System.out.println();
@@ -79,22 +80,6 @@ public class Main {
 			//LRParserGenerator generator = new LRParserGenerator();
 			//generator.FIRST(grammar);
 			
-		} catch(Exception e) {
-			e.printStackTrace();
-		} finally {
-			if(true) return;
-		}
-		
-		try {
-			Grammar grammar = GrammarFactory.load("res/language.gr");
-			
-			System.out.println("============================================================================");
-			
-			String test = "export int** test() { int i = 0; i++; (i + 4343)[32] = 32; }";
-			test = "export int** test() {}";
-			test = "(a += 0x323123)";
-			//grammar.test(symbol);
-			// grammar.test(grammar.getType("expr"), Tokenizer.generateSymbolChain(test.getBytes()));
 		} catch(Exception e) {
 			e.printStackTrace();
 		} finally {
