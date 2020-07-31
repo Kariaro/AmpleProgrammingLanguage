@@ -1,0 +1,11 @@
+# https://www.cs.bgu.ac.il/~romanm/wcc06/LR%20Parsing.pdf
+
+TOKEN i: {"[0-9]+"}
+TOKEN $: {EOF}
+START Z
+
+Z: E $
+E: T
+ | E "+" T
+T: i
+ | "(" E ")"

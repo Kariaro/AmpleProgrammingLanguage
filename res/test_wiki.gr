@@ -39,6 +39,7 @@ TOKEN a: "a"
 TOKEN b: "b"
 # TOKEN c: "c"
 # TOKEN d: "d"
+START S
 
 S: A A
 # | E E

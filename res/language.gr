@@ -14,6 +14,8 @@ TOKEN STRINGLITERAL: {"\".*\""}
 TOKEN NUMBERLITERAL: {"[0-9]+"}
                    | {"0x[a-zA-Z0-9]+"}
 
+START program
+
 # Modifiers
 modi: "export"
 
@@ -21,20 +23,20 @@ modi: "export"
 # test: [[[[[[[[[[[[[[[ modi ]]]]]]]]]]]]]]]
 # test: [[[[[[[[[[[[ type ] modi ] type ] modi ] modi ] modi ] modi ] modi ] modi ] modi ] modi ]]
 
-S: program
-
 # This is the overall program start set
 # This should be proceded with a START token to identify
 # that this is the start set.
 program: library [library]
        | {EOF}
 
+Test
+
 # Inside each file this should be the pattern
 # TODO: The import statement should be handeled by the compiler and not by the
 #       interpreter.
 library: "#import" STRINGLITERAL
 #      | func
-       | [modi] type IDENTIFIER "(" (type IDENTIFIER ["," type IDENTIFIER]) ")" "{" stat "}"
+       | [modi] type IDENTIFIER "(" (type IDENTIFIER ["," type IDENTIFIER]) ")" "{" /*stat*/ "}"
 	   | "struct" IDENTIFIER "{" "}" ";"
 	   | "enum" IDENTIFIER "{" (IDENTIFIER ("=" NUMBERLITERAL) ["," IDENTIFIER ("=" NUMBERLITERAL)]) "}" ";"
 	   | "class" IDENTIFIER "{" "}"
