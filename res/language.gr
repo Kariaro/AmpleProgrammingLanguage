@@ -17,17 +17,30 @@ TOKEN NUMBERLITERAL: {"[0-9]+"}
 # Modifiers
 modi: "export"
 
+# Size Test
+# test: [[[[[[[[[[[[[[[ modi ]]]]]]]]]]]]]]]
+# test: [[[[[[[[[[[[ type ] modi ] type ] modi ] modi ] modi ] modi ] modi ] modi ] modi ] modi ]]
+
+S: program
+
+# This is the overall program start set
+# This should be proceded with a START token to identify
+# that this is the start set.
+program: library [library]
+       | {EOF}
+
 # Inside each file this should be the pattern
-library: "#import" STRINGLITERAL library
-       | func library
-	   | "struct" IDENTIFIER "{" "}" ";" library
-	   | "enum" IDENTIFIER "{" (IDENTIFIER ("=" NUMBERLITERAL) ["," IDENTIFIER ("=" NUMBERLITERAL)]) "}" ";" library
-	   | "class" IDENTIFIER "{" "}" library
-	   | {EOF}
-	   
+# TODO: The import statement should be handeled by the compiler and not by the
+#       interpreter.
+library: "#import" STRINGLITERAL
+#      | func
+       | [modi] type IDENTIFIER "(" (type IDENTIFIER ["," type IDENTIFIER]) ")" "{" stat "}"
+	   | "struct" IDENTIFIER "{" "}" ";"
+	   | "enum" IDENTIFIER "{" (IDENTIFIER ("=" NUMBERLITERAL) ["," IDENTIFIER ("=" NUMBERLITERAL)]) "}" ";"
+	   | "class" IDENTIFIER "{" "}"
 
 # Function definition
-func: [modi] type IDENTIFIER "(" (type IDENTIFIER ["," type IDENTIFIER]) ")" "{" stat "}"
+# func: [modi] type IDENTIFIER "(" (type IDENTIFIER ["," type IDENTIFIER]) ")" "{" stat "}"
 
 # Statement
 stat: "{" [stat] "}"

@@ -160,9 +160,9 @@ public final class GrammarFactory {
 				}
 				
 				if(isToken) {
-					type = grammar.new ItemToken(first);
+					type = new ItemToken(first);
 				} else {
-					type = grammar.new Item(first);
+					type = new Item(first);
 				}
 				
 				// Make this into a add pattern

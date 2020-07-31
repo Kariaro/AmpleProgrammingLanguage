@@ -64,9 +64,9 @@ public class Grammar {
 		return null;
 	}
 	
-	public class Item {
+	public static class Item {
 		protected String name;
-		protected final List<RuleList> matches;
+		public final List<RuleList> matches;
 		
 		public Item(String name) {
 			this.matches = new ArrayList<>();
@@ -86,8 +86,48 @@ public class Grammar {
 		}
 	}
 	
-	public class ItemToken extends Item {
+	public static class ItemToken extends Item {
 		public ItemToken(String name) { super(name); }
+	}
+	
+	public abstract class Rule {
+		protected int ruleId;
+		
+		protected Rule() {
+			
+		}
+		
+		protected Rule(int ruleId) {
+			this.ruleId = ruleId;
+		}
+		
+		public String getRuleString() {
+			return "Rule" + ruleId;
+		}
+		
+		public int getRuleId() {
+			return ruleId;
+		}
+		
+		public String value() {
+			return null;
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			if(obj instanceof Rule) {
+				return toString().equals(obj.toString());
+			}
+			
+			return this == obj;
+		}
+		
+		/** Represent this hash with a unique hash that can only be
+		 *
+		 */
+		public String hash() {
+			return null;
+		}
 	}
 	
 	public class RuleList extends Rule {
@@ -111,6 +151,14 @@ public class Grammar {
 		
 		public int size() {
 			return rules.size();
+		}
+		
+		public Rule get(int index) {
+			return rules.get(index);
+		}
+		
+		public boolean isEmpty() {
+			return rules.isEmpty();
 		}
 		
 		public List<Rule> getRules() {
@@ -179,6 +227,10 @@ public class Grammar {
 			return name;
 		}
 		
+		public String value() {
+			return name;
+		}
+		
 		public String toString() {
 			if(tokens.containsKey(name)) return "token:" + name;
 			return "i:" + name;
@@ -196,6 +248,10 @@ public class Grammar {
 			this.value = value;
 		}
 		
+		public String value() {
+			return value;
+		}
+		
 		public String toString() {
 			return "s:\"" + value + "\"";
 		}
@@ -211,6 +267,10 @@ public class Grammar {
 		
 		public RegexRule(String regex) {
 			pattern = Pattern.compile(regex);
+		}
+		
+		public String value() {
+			return pattern.pattern();
 		}
 		
 		public String toString() {
@@ -242,6 +302,10 @@ public class Grammar {
 			this.type = type;
 		}
 		
+		public String value() {
+			return toString();
+		}
+		
 		public String toString() {
 			switch(type) {
 				case SPECIAL_EOF: return "{EOF}";
@@ -252,7 +316,6 @@ public class Grammar {
 	}
 	
 	public Grammar expand() {
-		// First create a new instance of a grammar
 		return new OptimizedGrammar(this);
 	}
 }

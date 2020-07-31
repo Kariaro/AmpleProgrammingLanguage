@@ -13,12 +13,13 @@ import hc.errors.grammar.GrammarException;
  * 
  *<pre># Square reduction S: . [ a ] $
  *S: . S0 $
+ * | . $
  *S0: a S0
- *  | {EMPTY}</pre>
+ *  | a</pre>
  *<pre># Round reduction S: . ( a ) $
  *S: . a $
  * | . $</pre> 
- * 
+ *
  * The idea is to take a grammar that uses complicated bracket
  * captures and change it so that it does the same thing but
  * without any bracket groups.
@@ -26,6 +27,7 @@ import hc.errors.grammar.GrammarException;
  * @author HardCoded
  */
 public class OptimizedGrammar extends Grammar {
+	// TODO: Start using the rule.value() function instead of cheaty .toString()....
 	
 	public OptimizedGrammar(Grammar grammar) {
 		grammar.tokens.values().forEach((t) -> {
@@ -122,8 +124,9 @@ public class OptimizedGrammar extends Grammar {
 				if(a_rule.getClass() != b_rule.getClass()) return false;
 				
 				if(b_rule instanceof BracketRule) {
-					throw new UnsupportedOperationException("Trying to compare two items that contain BracketRules." +
-															"There should not be any bracketRules in these items");
+//					throw new UnsupportedOperationException("Trying to compare two items that contain BracketRules. " +
+//															"There should not be any bracketRules in these items");
+					return false; // BracketRules should not be comapred... or?
 				}
 				
 				if(b_rule instanceof StringRule) {
@@ -144,7 +147,6 @@ public class OptimizedGrammar extends Grammar {
 					ItemRule a_ir = (ItemRule)a_rule;
 					ItemRule b_ir = (ItemRule)b_rule;
 					
-					// System.out.println(" -> " + a_ir + "/" + b_ir);
 					if(a_ir.name.equals(b_ir.name)) {
 						continue; // If the item is matching then it should work. 
 					}
@@ -162,26 +164,28 @@ public class OptimizedGrammar extends Grammar {
 		return true;
 	}
 	
-	
-	/**
-	 * All ruleLists that contain brackets should be optimized away..
-	 */
-	private BracketRule firstBracket(RuleList list) {
-		Optional<Rule> rule = list.rules.stream().filter(x -> x instanceof BracketRule).findFirst();
-		return rule.isPresent() ? (BracketRule)rule.get():null;
-	}
-	
 	/**
 	 * Optimizes all items inside the grammar.
 	 */
 	private void optimize() {
 		List<Item> result = new ArrayList<>(this.items.values());
 		long subRules = items.values().parallelStream().flatMap((i) -> i.matches.stream()).count();
-		long totRules = items.values().parallelStream().count();
+		long totRules = items.size();
 		
 		// DONE: Optimize this so that it does not contain any more bracket matches.
 		//       This should not be done while loading the grammar but when creating the
 		//       LRParser with the LRParserGenerator.
+		
+		// TODO: Do group reduction each time we reduce brackets because otherwise
+		//       iterrated brackets [[[[[]]]]] could consume alot more memory than
+		//       needed.
+		
+		// TODO: Throw exceptions when there is a empty matching set for now..
+		//       A empty match set would be a set where you only match a capture
+		//       group.
+		
+		// TODO: Add a UNIQUE keyword to stop the optimizer from removing a core
+		//       item that contains the same rules as another core item..
 		
 		do {
 			result = reduceBrackets(result);
@@ -192,35 +196,36 @@ public class OptimizedGrammar extends Grammar {
 		//       inside the same item. This should be applied after the bracket reduction
 		//       has been made.
 		
+//		System.out.println("Done with reduction:");
+//		System.out.printf("    rules   : %4d / %4d\n", totRules, items.size());
+//		System.out.printf("    elements: %4d / %4d\n", subRules, items.values().parallelStream().flatMap((i) -> i.matches.stream()).count());
+		
+//		System.out.println("=================================================================");
+//		items.values().forEach(i -> {
+//			System.out.println("Item: " + i);
+//			for(RuleList set : i.matches) {
+//				System.out.println("    | " + set);
+//			}
+//			System.out.println();
+//		});
+		
 		result = new ArrayList<>(this.items.values());
 		for(int i = 0; i < result.size(); i++) {
 			Item item = result.get(i);
 			
-			List<String> names = reduceGroups(item);
-			replaceItemsAndRemove(item, names);
-			
+			replaceItemsAndRemove(item, items.values().parallelStream().filter(b -> (item != b && contentEquals(item, b))).map(x -> x.name).collect(Collectors.toList()));
 			result = new ArrayList<>(this.items.values());
 		}
 		
-		System.out.println("=================================================================");
-		items.values().forEach(i -> {
-			System.out.println("Item: " + i);
-			for(RuleList set : i.matches) {
-				System.out.println("    | " + set);
-			}
-			System.out.println();
-		});
 		
 		System.out.println("Done with reduction:");
-		System.out.printf("    rules   : %4d / %4d\n", totRules, items.values().parallelStream().count());
+		System.out.printf("    rules   : %4d / %4d\n", totRules, items.size());
 		System.out.printf("    elements: %4d / %4d\n", subRules, items.values().parallelStream().flatMap((i) -> i.matches.stream()).count());
 	}
 	
-	private List<String> reduceGroups(Item a) {
-		return items.values().parallelStream().filter(b -> (a != b && contentEquals(a, b))).map(i -> i.name).collect(Collectors.toList());
-	}
-	
-	private void replaceItemsAndRemove(Item replace, List<String> items) {
+	private void replaceItemsAndRemove(Item replacement, List<String> items) {
+		if(items.isEmpty()) return;
+		
 		this.items.values().forEach(i -> {
 			for(RuleList set : i.matches) {
 				for(Rule rule : set.rules) {
@@ -229,7 +234,7 @@ public class OptimizedGrammar extends Grammar {
 						
 						for(String name : items) {
 							if(ir.name.equals(name)) {
-								ir.name = replace.name;
+								ir.name = replacement.name;
 							}
 						}
 					}
@@ -238,6 +243,13 @@ public class OptimizedGrammar extends Grammar {
 		});
 		
 		for(String name : items) this.items.remove(name);
+	}
+	
+	/**
+	 * All ruleLists that contain brackets should be optimized away..
+	 */
+	private BracketRule firstBracket(RuleList list) {
+		return (BracketRule)list.rules.stream().filter(x -> x instanceof BracketRule).findFirst().orElse(null);
 	}
 	
 	/**
@@ -259,9 +271,10 @@ public class OptimizedGrammar extends Grammar {
 				if(!changed.contains(i)) changed.add(i);
 				
 				if(bracket.repeat) {
-					Item created = reduceSquare(i, set);
-					this.items.put(created.name, created);
-					changed.add(created);
+					List<RuleList> rules = reduceSquare(i, changed, set);
+					i.matches.set(index    , rules.get(0));
+					i.matches.add(index + 1, rules.get(1));
+					index++;
 				} else {
 					List<RuleList> rules = reduceRound(set);
 					i.matches.set(index    , rules.get(0));
@@ -308,15 +321,32 @@ public class OptimizedGrammar extends Grammar {
 	/**
 	 * Reduce the square capture group.
 	 */
-	private Item reduceSquare(Item parent, RuleList set) {
-		long count = items.values().parallelStream().filter(i -> i.name.startsWith("#" + parent.name + " ")).count();
-		String name = "#" + parent.name + " " + (count + 1);
+	private List<RuleList> reduceSquare(Item parent, List<Item> changed, RuleList set) {
+		String name;
+		if(parent.name.startsWith("#")) {
+			name = parent.name.substring(1);
+			name = name.substring(0, name.indexOf(' '));
+			name = "#" + name + " ";
+		} else {
+			name = "#" + parent.name + " ";
+		}
+		
+		final String matchingName = name;
+		long count = items.values().parallelStream().filter(i -> i.name.startsWith(matchingName)).count();
+		name = name + (count + 1);
+		
+		List<RuleList> list = new ArrayList<>();
+		RuleList aa = set;
+		RuleList bb = cloneRuleList(set);
+		list.add(aa);
+		list.add(bb);
 		
 		//   S > . [ a ] $
 		// Becomes
 		//   S  > . S0 $
+		//      > . $
 		//   S0 > a S0
-		//      > {EMPTY}
+		//      > a
 		
 		for(int i = 0; i < set.size(); i++) {
 			Rule rule = set.rules.get(i);
@@ -328,17 +358,22 @@ public class OptimizedGrammar extends Grammar {
 				a.add(new ItemRule(name));
 				
 				RuleList b = new RuleList();
-				b.add(new SpecialRule(SPECIAL_EMPTY));
+				b.rules.addAll(((BracketRule)rule).matches);
+				
+				aa.rules.set(i, new ItemRule(name));
+				bb.rules.remove(i);
 				
 				Item item = new Item(name);
 				item.matches.add(a);
 				item.matches.add(b);
-				
-				return item;
+
+				this.items.put(name, item);
+				changed.add(item);
+				return list;
 			}
 		}
 		
 		// throw new BracketExpectedException(); ??????
-		return null;
+		return list;
 	}
 }
