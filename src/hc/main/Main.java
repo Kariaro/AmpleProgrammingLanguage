@@ -6,7 +6,7 @@ import java.util.logging.LogManager;
 
 import hardcoded.grammar.Grammar;
 import hardcoded.grammar.GrammarFactory;
-import hardcoded.parser.LRParserGenerator;
+import hardcoded.parser.LR0_ParserGenerator;
 import hc.parser.Syntaxer;
 import hc.token.Symbol;
 import hc.token.Tokenizer;
@@ -69,7 +69,12 @@ public class Main {
 		try {
 			Grammar grammar = GrammarFactory.load("res/test_wiki.gr");
 			grammar = GrammarFactory.load("res/language.gr");
-			grammar.expand();
+			grammar = grammar.expand();
+			
+			System.out.println();
+			
+			LR0_ParserGenerator gen = new LR0_ParserGenerator();
+			gen.parse(grammar);
 			
 			//LRParserGenerator generator = new LRParserGenerator();
 			//generator.FIRST(grammar);

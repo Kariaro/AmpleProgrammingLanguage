@@ -1,7 +1,7 @@
 package hardcoded.grammar;
 
-public class GrammarTest {
-	/* TODO: There is some problems with the grammar class.
+final class GrammarTasks {
+	/* DONE: There is some problems with the grammar class.
 	 *       roundbrackets are optional and should be expanded
 	 *       into multiple rules....
 	 *       
@@ -35,7 +35,7 @@ public class GrammarTest {
 	 *       that you cannot nest brackets..
 	 */
 	
-	/* TODO: The square bracket allows for ambiguity when written
+	/* DONE: The square bracket allows for ambiguity when written
 	 *       in certain ways. This will break the LR(k) parser
 	 *       generator.
 	 *       
@@ -70,7 +70,7 @@ public class GrammarTest {
 	 *       in the later form...
 	 */
 	
-	/* TODO: Optimizations these rules should be added as a new OptimizationRule().
+	/* DONE: Optimizations these rules should be added as a new OptimizationRule().
 	 *       This is so that if two rules uses the same syntax we can use the same
 	 *       optimization for both of them without changing the way things are parsed.
 	 *       
@@ -109,4 +109,11 @@ public class GrammarTest {
 	 *            > a
 	 *            > {EMPTY}
 	 */
+	
+	/* TODO: Compute the closure of all sets for every grammar that is parsed to the LRParserGenerator. */
+	/* TODO: Remove duplicate rules that is put inside the same item. OPTIMIZER */
+	/* TODO: Include information about how tokenization should happen..
+	 *       This could make it possible to create custom comment structures.
+	 */
+	
 }

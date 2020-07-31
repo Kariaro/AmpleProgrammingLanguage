@@ -1,12 +1,9 @@
 package hardcoded.parser;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import hardcoded.grammar.Grammar;
 import hardcoded.grammar.Grammar.*;
-import hardcoded.grammar.Rule;
 
 /**
  * Sources:<br>
@@ -19,6 +16,23 @@ import hardcoded.grammar.Rule;
  * @author HardCoded
  */
 public class LRParserGenerator {
+	// NOTE: An augmented grammar is a grammar with a START set that is used to accept an input string.
+	// https://www.cs.bgu.ac.il/~romanm/wcc06/LR%20Parsing.pdf
+	/*
+	 * i + i $
+	 * Stack
+	 * S0
+	 * S0 i S5
+	 * S0 T S6
+	 * S0 E S1
+	 * S0 E S1 + S3
+	 * S0 E S1 + S3 i S5
+	 * S0 E S1 + S3 T S4
+	 * S0 E S1
+	 * S0 E S1 $ S2
+	 * S0 Z
+	 */
+	
 	public LRParserGenerator() {
 		
 	}
@@ -51,9 +65,9 @@ public class LRParserGenerator {
 		Set<Item> items = grammar.getItems();
 		
 		System.out.println("Items: " + items);
-		items.forEach((t) -> {
-			System.out.println("Item: i:" + t);
-			for(RuleList set : t.getRules()) {
+		items.forEach((i) -> {
+			System.out.println("Item: i:" + i);
+			for(RuleList set : i.getRules()) {
 				System.out.println("    | " + set.getRuleString() + " > " + set);
 				
 			}
@@ -62,103 +76,95 @@ public class LRParserGenerator {
 		System.out.println("==================================");
 		System.out.println("==================================");
 		System.out.println("==================================");
-		System.out.println();
-		System.out.println();
-		
-		items.forEach(a -> {
+		items.forEach(a  -> {
+			//if(!a.getName().equals("func")) return;
+			
 			System.out.println("Item: i:" + a);
 			
-			// NOTE: Special cases
-			//   If a item "A" has a rule that only contains another item "B" then
-			//   tream "A" as if it was also the item "B".
+			//System.out.println();
+			//System.out.println("==================================");
 			
-			getBeforeItem(a, grammar);
-			System.out.println("==================================");
+			Set<String> sameset = new LinkedHashSet<>();
+			Set<String> matches = new LinkedHashSet<>();
 			
-			/*
-			for(Item b : grammar.getItems()) {
-				// Compare a && b
+			for(Item b : items) {
+				// System.out.println("  Item: b:" + a);
+				boolean isSame = false;
 				
 				for(RuleList set : b.getRules()) {
-					System.out.println("    | " + set.getRuleString() + " > " + set);
+					// System.out.println("    | " + set.getRuleString() + " > " + set);
 					
-					List<Rule> rules = set.getRules();
-					if(rules.size() == 1) {
-						Rule rule = rules.get(0);
-						
-						if(rule instanceof ItemRule) {
-							ItemRule ir = (ItemRule)rule;
-							// Check that we have not already searched this rule.
-							
-						}
-					}
-					for(int j = 1; j < set.size(); j++)  {
-						Rule rule = rules.get(j);
+					if(!set.isEmpty() && !isSame) {
+						Rule rule = set.get(0);
 						
 						if(rule instanceof ItemRule) {
 							ItemRule ir = (ItemRule)rule;
 							
 							if(ir.getName().equals(a.getName())) {
-								// TODO: If the rule before this item is not a string rule
-								//       then search for the terminal value of that rule......
-								
-								System.out.println("      | Before   > " + rules.get(j - 1));
-								System.out.println("      | ItemRule > " + rule);
-								System.out.println();
+								System.out.println("  'i:" + a + "' is the same as 'i:" + b + "'");
+								sameset.add(b.getName());
+								isSame = true;
 							}
 						}
 					}
 					
+					for(int i = 1; i < set.size(); i++) {
+						Rule last = set.get(i - 1);
+						Rule rule = set.get(i);
+						
+						String lastValue = last.toString();
+						if(matches.contains(lastValue)) continue;
+						
+						if(rule instanceof ItemRule) {
+							ItemRule ir = (ItemRule)rule;
+							
+							if(ir.getName().equals(a.getName())) {
+								System.out.println("  before 'i:" + a + "' " + last);
+								matches.add(lastValue);
+								// System.out.println("    " + matches);
+							}
+						}
+					}
 				}
 			}
 			
-//			for(RuleList set : a.getRules()) {
+			System.out.println("SameSet: " + sameset);
+			System.out.println("FIRST  : " + matches);
+			System.out.println();
+			
+		});
+		
+//		items.forEach(a -> {
+//			System.out.println("Item: i:" + a);
+//			
+//			// NOTE: Special cases
+//			//   If a item "A" has a rule that only contains another item "B" then
+//			//   tream "A" as if it was also the item "B".
+//			
+//			getBeforeItem(a, grammar);
+//			System.out.println("==================================");
+//		});
+//		/*
+//		types.forEach((t) -> {
+//			System.out.println("Item: t:" + t);
+//			for(RuleList set : t.getRules()) {
 //				System.out.println("    | " + set.getRuleString() + " > " + set);
 //				
-//				List<Rule> rules = set.getRules();
-//				for(int j = 1; j < set.size(); j++)  {
-//					Rule rule = rules.get(j);
-//					
-//					if(rule instanceof ItemRule) {
-//						System.out.println("      | Before   > " + rules.get(j - 1));
-//						System.out.println("      | ItemRule > " + rule);
-//					}
-//				}
-//				
-//				System.out.println();
 //			}
-			
-			// Rules...
-//			for(RuleList set : i.getRules()) {
-//				System.out.println("    | " + set.getRuleString() + " > " + set);
+//			System.out.println();
+//		});
+//		*/
+//		
+//		Set<ItemToken> tokens = grammar.getTokens();
+//		
+//		System.out.println(tokens);
+//		tokens.forEach((t) -> {
+//			System.out.println("Token: t:" + t);
+//			for(Rule match : t.getRules()) {
+//				System.out.println("     | " + match);
 //			}
-			System.out.println();
-			
-			// Find all nonterminals a where "a i" is a valid syntax
-			
-			*/
-		});
-		/*
-		types.forEach((t) -> {
-			System.out.println("Item: t:" + t);
-			for(RuleList set : t.getRules()) {
-				System.out.println("    | " + set.getRuleString() + " > " + set);
-				
-			}
-			System.out.println();
-		});
-		*/
-		
-		Set<ItemToken> tokens = grammar.getTokens();
-		
-		System.out.println(tokens);
-		tokens.forEach((t) -> {
-			System.out.println("Token: t:" + t);
-			for(Rule match : t.getRules()) {
-				System.out.println("     | " + match);
-			}
-			System.out.println();
-		});
+//			System.out.println();
+//		});
 		
 		return null;
 	}
@@ -176,9 +182,8 @@ public class LRParserGenerator {
 				boolean once = false;
 				// System.out.println("      | " + set.getRuleString() + " > " + set);
 				
-				List<Rule> rules = set.getRules();
 				for(int j = 1; j < set.size(); j++) {
-					Rule rule = rules.get(j);
+					Rule rule = set.get(j);
 					
 					if(rule instanceof ItemRule) {
 						ItemRule ir = (ItemRule)rule;
@@ -189,7 +194,7 @@ public class LRParserGenerator {
 								once = true;
 							}
 							
-							Rule before = rules.get(j - 1);
+							Rule before = set.get(j - 1);
 							
 							System.out.println("        | Before > " + before);
 							System.out.println("        | Rule   > " + ir);
@@ -224,9 +229,8 @@ public class LRParserGenerator {
 			for(RuleList set : b.getRules()) {
 				System.out.println("      | " + set.getRuleString() + " > " + set);
 				
-				List<Rule> rules = set.getRules();
-				if(!rules.isEmpty()) {
-					Rule rule = rules.get(0);
+				if(!set.isEmpty()) {
+					Rule rule = set.get(0);
 					
 					if(rule instanceof ItemRule) {
 						ItemRule ir = (ItemRule)rule;
