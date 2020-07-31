@@ -20,6 +20,7 @@ import hc.token.Symbol;
 public class Grammar {
 	protected final Map<String, ItemToken> tokens;
 	protected final Map<String, Item> items;
+	protected String startItem;
 	
 	public Grammar() {
 		tokens = new LinkedHashMap<>();
@@ -62,6 +63,19 @@ public class Grammar {
 		}
 		
 		return null;
+	}
+	
+	// TODO: For this to make any sense this should be an augmented grammar instead of
+	//       being just a grammar.
+	
+	/**
+	 * If there was a item in the language that used the START
+	 * keyword. Then this will return that item.
+	 * 
+	 * @return The name of the item that this grammar starts with.
+	 */
+	public String getStartItem() {
+		return startItem;
 	}
 	
 	public static class Item {

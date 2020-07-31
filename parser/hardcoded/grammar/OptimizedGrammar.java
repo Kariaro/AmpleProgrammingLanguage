@@ -30,6 +30,9 @@ public class OptimizedGrammar extends Grammar {
 	// TODO: Start using the rule.value() function instead of cheaty .toString()....
 	
 	public OptimizedGrammar(Grammar grammar) {
+		// TODO: Make sure that the optimizations does not remove the start item...
+		startItem = grammar.startItem;
+		
 		grammar.tokens.values().forEach((t) -> {
 			ItemToken token = new ItemToken(t.name);
 			for(RuleList rule : t.matches) token.matches.add(cloneRuleList(rule));
@@ -62,13 +65,13 @@ public class OptimizedGrammar extends Grammar {
 		for(Rule rule : set) {
 			Rule clone = null;
 			if(rule instanceof RegexRule) {
-				clone = new RegexRule(((RegexRule)rule).pattern.pattern());
+				clone = new RegexRule(rule.value()); // ((RegexRule)rule).pattern.pattern());
 			} else if(rule instanceof StringRule) {
-				clone = new StringRule(((StringRule)rule).value);
+				clone = new StringRule(rule.value()); // ((StringRule)rule).value);
 			} else if(rule instanceof BracketRule) {
 				clone = cloneBracket((BracketRule)rule);
 			} else if(rule instanceof ItemRule) {
-				clone = new ItemRule(((ItemRule)rule).name);
+				clone = new ItemRule(rule.value()); // ((ItemRule)rule).name);
 			} else if(rule instanceof SpecialRule) {
 				clone = new SpecialRule(((SpecialRule)rule).type);
 			}
