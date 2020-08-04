@@ -33,10 +33,15 @@ public abstract class Visualization {
 	}
 	
 	/**
-	 * Show this visualization the specified arguments.
-	 * @param args
+	 * Shows the visualization with the specified arguments.
+	 * @param parameters
 	 */
-	public abstract void show(Object... args);
+	public abstract void show(Object... parameters);
+	
+	/**
+	 * Hides the visualization.
+	 */
+	public abstract void hide();
 	
 	public final JComponent getComponent() {
 		return frame.getRootPane();

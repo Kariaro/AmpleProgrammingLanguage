@@ -2,11 +2,14 @@ package hc.main;
 
 import java.io.*;
 import java.util.Locale;
+import java.util.Scanner;
 import java.util.logging.LogManager;
 
 import hardcoded.grammar.Grammar;
 import hardcoded.grammar.GrammarFactory;
+import hardcoded.parser.LR0_Parser;
 import hardcoded.parser.LR0_ParserGenerator;
+import hardcoded.tree.AbstractSyntaxTree;
 import hc.parser.Syntaxer;
 import hc.token.Symbol;
 import hc.token.Tokenizer;
@@ -68,18 +71,39 @@ public class Main {
 		
 		try {
 			Grammar grammar = GrammarFactory.load("res/test_wiki.gr");
-			grammar = GrammarFactory.load("res/language.gr");
-			grammar = GrammarFactory.load("res/test_wiki_2.gr");
+			//grammar = GrammarFactory.load("res/language.gr");
+			//grammar = GrammarFactory.load("res/test_wiki_2.gr");
+			grammar = GrammarFactory.load("res/language_2.gr");
 			grammar = grammar.expand();
 			
-			System.out.println();
+			// System.out.println();
 			
-			LR0_ParserGenerator gen = new LR0_ParserGenerator();
-			gen.parse(grammar);
+			LR0_ParserGenerator generator = new LR0_ParserGenerator();
+			LR0_Parser parser = generator.generateParser(grammar);
 			
-			//LRParserGenerator generator = new LRParserGenerator();
-			//generator.FIRST(grammar);
+			// a a a a b a b
 			
+			// TODO: Get capture groups working correctly in the parser.
+			
+			Scanner input = new Scanner(System.in);
+			while(true) {
+				String line = input.nextLine();
+				// System.out.println("String input: '" + line + "'");
+				
+				if(line.isEmpty()) break;
+				
+				Symbol symbol = Tokenizer.generateSymbolChain(line.getBytes());
+				AbstractSyntaxTree ast = parser.parse(symbol);
+				
+				System.out.println("SyntaxTree: " + ast);
+				
+				//break;
+				System.out.println();
+				System.out.println();
+				System.out.println();
+			}
+			
+			input.close();
 		} catch(Exception e) {
 			e.printStackTrace();
 		} finally {

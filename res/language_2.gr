@@ -1,0 +1,26 @@
+# To make this language easy everything is made into an array..
+# at compile time we change out all values into array types...
+
+
+# IDENTIFIER
+TOKEN IDENTIFIER: {"[a-zA-Z_][a-zA-Z0-9_]*"}
+TOKEN STRINGLITERAL: {"\".*\""}
+TOKEN NUMBERLITERAL: {"[0-9]+"}
+                   | {"0x[a-zA-Z0-9]+"}
+
+START program
+
+type: "void" [ "*" ]
+    | "uint_8"
+	| "uint_16"
+	| "uint_32"
+	| "uint_64" [ "*" ]
+
+args: type IDENTIFIER
+# [ "," args ]
+
+program: type IDENTIFIER "(" args ")" "{" "}"
+
+#function HELLO(uint_8 TEST) {}
+#void HELLO(uint_8 TEST) {}
+#void* HELLO(uint_8 TEST) {}
