@@ -37,13 +37,10 @@
 # https://www.javatpoint.com/canonical-collection-of-lr-0-items
 TOKEN a: "a"
 TOKEN b: "b"
-# TOKEN c: "c"
-# TOKEN d: "d"
-START S
 
+START Z
+
+Z: S
 S: A A
-# | E E
 A: a A
  | b
-# E: c E
-#  | d

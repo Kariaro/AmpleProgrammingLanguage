@@ -221,9 +221,9 @@ public class OptimizedGrammar extends Grammar {
 		}
 		
 		
-		System.out.println("Done with reduction:");
-		System.out.printf("    rules   : %4d / %4d\n", totRules, items.size());
-		System.out.printf("    elements: %4d / %4d\n", subRules, items.values().parallelStream().flatMap((i) -> i.matches.stream()).count());
+//		System.out.println("Done with reduction:");
+//		System.out.printf("    rules   : %4d / %4d\n", totRules, items.size());
+//		System.out.printf("    elements: %4d / %4d\n", subRules, items.values().parallelStream().flatMap((i) -> i.matches.stream()).count());
 	}
 	
 	private void replaceItemsAndRemove(Item replacement, List<String> items) {

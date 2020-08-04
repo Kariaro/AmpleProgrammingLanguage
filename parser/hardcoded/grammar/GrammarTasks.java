@@ -110,7 +110,7 @@ final class GrammarTasks {
 	 *            > {EMPTY}
 	 */
 	
-	/* TODO: Compute the closure of all sets for every grammar that is parsed to the LRParserGenerator. */
+	/* DONE: Compute the closure of all sets for every grammar that is parsed to the LRParserGenerator. */
 	/* TODO: Remove duplicate rules that is put inside the same item. OPTIMIZER */
 	/* TODO: Include information about how tokenization should happen..
 	 *       This could make it possible to create custom comment structures.

@@ -8,6 +8,7 @@ import hardcoded.grammar.Grammar.*;
 import hardcoded.grammar.OptimizedGrammar;
 import hardcoded.visualization.DFAVisualization;
 import hc.errors.grammar.GrammarException;
+import hc.token.Symbol;
 
 /**
  * This class is more of a proof of concept.
@@ -27,16 +28,12 @@ public class LR0_ParserGenerator {
 	private List<IState> globalStates = new ArrayList<>();
 	
 	// https://en.wikipedia.org/wiki/Finite-state_machine
-	public Object parse(Grammar grammar) {
+	public LR0_Parser generateParser(Grammar grammar) {
 		if(!(grammar instanceof OptimizedGrammar)) {
 			throw new GrammarException("This grammar is not optimized");
 		}
 		
 		this.grammar = grammar;
-		
-		//ITable table = new ITable();
-		//table.types = getSymbolSet();
-		// System.out.println(getSymbolSet());
 		
 		String startGroupName = grammar.getStartItem();
 		if(startGroupName == null) {
@@ -45,29 +42,170 @@ public class LR0_ParserGenerator {
 		}
 		
 		IState i0 = createNNEntrySet(startGroupName);
-		System.out.println();
-		System.out.println();
+//		System.out.println();
+//		System.out.println();
 		
 		globalStates.add(i0);
 		computeClosure(i0);
 		
-		System.out.println("States -> " + globalStates.size());
-		for(IState state : globalStates) {
-			prettyPrint(state);
-			System.out.println("====================================");
-		}
+//		System.out.println("States -> " + globalStates.size());
+//		for(IState state : globalStates) {
+//			prettyPrint(state);
+//			System.out.println("====================================");
+//		}
 		
 		for(int i = 0; i < globalStates.size(); i++) {
 			globalStates.get(i).name = "I" + Integer.toString(i);
+			globalStates.get(i).id = i;
 			globalStates.get(i).accept();
 		}
 		
-		new DFAVisualization().show(globalStates);
+		// new DFAVisualization().show(globalStates);
 		
-		return null;
+		// TODO: Sort such that all terminals are on the left and non-terminals are on the right.
+		List<IRule> set = globalStates.stream().map(x -> x.action).filter(x -> x != null).distinct().collect(Collectors.toList());
+//		System.out.println("Unique: " + set);
+		
+		return new LR0_Parser(new ITable(set, globalStates));
+	}
+	
+	public class ITable {
+		public List<IRule> set;
+		public List<IRow> rows;
+		private IAction entry;
+		
+		private ITable(List<IRule> set, List<IState> states) {
+			this.set = set;
+			entry = new IAction(null, 0, 0);
+			rows = new ArrayList<>();
+			
+			for(int i = 0; i < states.size(); i++) {
+				rows.add(new IRow(set, states.get(i)));
+			}
+		}
+		
+		@Override
+		public String toString() {
+			StringBuilder sb = new StringBuilder();
+			sb.append("ITable: ").append(rows.size()).append(" ").append(rows.size() == 1 ? "entry\n":"entries\n");
+			
+			sb.append("state: ");
+			for(int i = 0; i < set.size(); i++) {
+				sb.append(String.format("%7s ", set.get(i)));
+			}
+			
+			if(set.size() > 0) sb.deleteCharAt(sb.length() - 1);
+			
+			sb.append("\n");
+			
+			for(int i = 0; i < rows.size(); i++) {
+				sb.append(String.format("%5d: %s\n", i, rows.get(i)));
+			}
+			
+			if(rows.size() > 0) sb.deleteCharAt(sb.length() - 1);
+			return sb.toString();
+		}
+		
+		public IRow getRow(int state) {
+			return rows.get(state);
+		}
+
+		public IAction start() {
+			return entry;
+		}
+	}
+	
+	public class IRow {
+		private final IAction[] actions;
+		
+		public IRow(List<IRule> set, IState states) {
+			actions = new IAction[set.size()];
+			
+			if(states.next.isEmpty()) {
+				// This is a reduction set..
+				// System.out.println("Found reduction set -> " + states);
+				// System.out.println("    :  " + states.id);
+				// System.out.println();
+				
+				IAction action = new IAction(states, 1, states.id);
+				
+				for(int i = 0; i < actions.length; i++) {
+					actions[i] = action;
+				}
+			} else {
+				for(IState state : states.next) {
+					int index = set.indexOf(state.action);
+					
+					if(index == -1) continue;
+					actions[index] = new IAction(state);
+				}
+			}
+		}
+		
+		public IAction[] actions() {
+			return actions;
+		}
+		
+		public String toString() {
+			StringBuilder sb = new StringBuilder();
+			for(IAction action : actions) sb.append(String.format("%7s ", (action == null ? "":action)));
+			if(actions.length > 0) sb.deleteCharAt(sb.length() - 1);
+			return sb.toString();
+		}
+	}
+	
+	public class IAction {
+		/**
+		 * 0: Shift<br>
+		 * 1: Reduce<br>
+		 * 2: Goto
+		 */
+		public int type;
+		public int index;
+		public IRule rule;
+		public IState state;
+		
+		private IAction(IState state, int type, int index) {
+			this.state = state;
+			this.index = index;
+			this.type = type;
+		}
+		
+		public IAction(int type, int index) {
+			this.index = index;
+			this.type = type;
+		}
+		
+		private IAction(IState state) {
+			this.state = state;
+			rule = state.action;
+			index = globalStates.indexOf(state);
+			
+			// TODO: If jumping to an empty row it should be reduce instead of goto!
+			
+			if(rule.isItemType()) {
+				if(rule.isItemToken()) {
+					type = 0;
+				} else {
+					type = 0;
+				}
+			}
+		}
+		
+		@Override
+		public String toString() {
+			if(type == 0) return "S" + index;
+			if(type == 1) return "r" + index;
+			// if(type == 2) return "G" + index;
+			
+			return index + "";
+		}
 	}
 	
 	private void computeClosure(IState state) {
+		// TODO: If there is a chain with only only terminals left, find the start
+		//       of the chain and reduce it to only one state.
+		
 		IState current = state.clone();
 		
 		List<IState> nextSet = new ArrayList<>();
@@ -137,8 +275,23 @@ public class LR0_ParserGenerator {
 					String name = next.value;
 					
 					if(!result.hasItem(name)) {
-						// TODO: If this item has a leading non-terminal item then it should also be added
+						// DONE: If this item has a leading non-terminal item then it should also be added
 						//       to this list..
+						result.list.add(getGrammarItem(name));
+					}
+				}
+			}
+		}
+		
+		for(int i = 0; i < result.list.size(); i++) {
+			IItem item = result.list.get(i);
+			
+			for(IRuleList set : item.list) {
+				IRule next = set.cursor();
+				if(next != null && next.isItemType() && !next.isItemToken()) {
+					String name = next.value;
+					
+					if(!result.hasItem(name)) {
 						result.list.add(getGrammarItem(name));
 					}
 				}
@@ -243,6 +396,9 @@ public class LR0_ParserGenerator {
 		// What states this state connects to.
 		private final List<IRuleList> allRules;
 		
+		// Used to create the ITable
+		private int id;
+		
 		// What rule is used to connect to this state.
 		private IRule action;
 		
@@ -258,6 +414,8 @@ public class LR0_ParserGenerator {
 		}
 		
 		private IState accept() {
+			// TODO: Sort all the items such that the sets inside the rules list is combined iwth the rules inside the list to create
+			//       a more even pattern..
 			allRules.clear();
 			allRules.addAll(rules);
 			allRules.addAll(list.stream().flatMap(x -> x.list.stream()).collect(Collectors.toList()));
@@ -298,6 +456,10 @@ public class LR0_ParserGenerator {
 		
 		public IRule action() {
 			return action;
+		}
+		
+		public List<IRuleList> getRules() {
+			return Collections.unmodifiableList(rules);
 		}
 		
 		public int size() {
@@ -447,8 +609,8 @@ public class LR0_ParserGenerator {
 	
 	public enum IType { ITEM, STRING, REGEX, SPECIAL, INVALID }
 	public class IRule {
-		protected IType type = IType.INVALID;
-		protected String value = null;
+		private IType type = IType.INVALID;
+		private String value = null;
 		
 		private IRule(Rule rule) {
 			value = rule.value();
@@ -459,12 +621,43 @@ public class LR0_ParserGenerator {
 			else throw new GrammarException("Invalid group type -> " + rule.getClass());
 		}
 		
+		public boolean match(String string) {
+			if(type == IType.ITEM) {
+				
+				IItem item = getGrammarItem(value);
+				
+				if(item.token) {
+					for(IRuleList set : item.list) {
+						if(set.rules.get(0).match(string)) return true;
+					}
+					
+					return false;
+				} else {
+					// Can't do anything here
+				}
+			}
+			
+			if(type == IType.REGEX) {
+				System.out.println(value);
+				return string.matches(value);
+			}
+			
+			if(type == IType.STRING) {
+				return value.equals(string);
+			}
+			
+			return false;
+		}
+
 		public boolean isItemType() { return type == IType.ITEM; }
 		public boolean isItemToken() { return grammar.getItem(value) instanceof ItemToken; }
+		
+		public Item asItem() { return grammar.getItem(value); }
 		
 		public IType type() { return type; }
 		public String value() { return value; }
 		
+		public int hashCode() { return value.hashCode() * (type.ordinal() + 1); }
 		public boolean equals(Object obj) {
 			if(!(obj instanceof IRule)) return false;
 			IRule rule = (IRule)obj;
