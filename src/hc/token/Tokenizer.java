@@ -3,61 +3,15 @@ package hc.token;
 import java.util.ArrayList;
 import java.util.List;
 
+// FIXME: Create a tokenizer language that can be used to read a set of characters and create the token chain...
 public class Tokenizer {
 	private Tokenizer() {}
-	
-//	private char[] chars;
-//	private int index;
-//	
-//	public Token createTokenChain(byte[] bytes) {
-//		chars = new char[bytes.length];
-//		index = 0;
-//		
-//		for(int i = 0; i < bytes.length; i++) {
-//			chars[i] = (char)Byte.toUnsignedInt(bytes[i]);
-//		}
-//		
-//		Token start = new Token();
-//		Token prev = start;
-//		
-//		Token token;
-//		while((token = next()) != null) {
-//			prev.next = token;
-//			token.prev = prev;
-//			prev = token;
-//		}
-//		
-//		return start;
-//	}
 	
 	private static final boolean isDelimiter(char c) {
 		return !(Character.isAlphabetic(c)
 			   | Character.isDigit(c)
 			   | c == '_');
 	}
-	
-//	protected Token next() {
-//		if(index >= chars.length) return null;
-//		
-//		String buffer = "";
-//		char c = chars[index++];
-//		buffer += c;
-//		if(!isDelimiter(c)) {
-//			while(index < chars.length) {
-//				c = chars[index++];
-//				if(isDelimiter(c)) {
-//					index--;
-//					break;
-//				}
-//				buffer += c;
-//			}
-//		}
-//		
-//		Token token = new Token();
-//		token.value = buffer;
-//		
-//		return token;
-//	}
 	
 	protected static final Token createTokenChain(byte[] bytes) {
 		char[] chars = new char[bytes.length];
@@ -89,8 +43,6 @@ public class Tokenizer {
 					buffer += c;
 				}
 			}
-			
-			// System.out.println("Token: '" + token + "' line=" + lineIndex + ", col=" + (startIndex - linePos) + ", index=" + index);
 			
 			Token next = new Token();
 			next.column = (startIndex - linePos);

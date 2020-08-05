@@ -15,6 +15,9 @@ import hc.token.Symbol;
  * specific pattern. This pattern can take many shapes and many grammars can
  * be used to parse coding language. One such language is java.<br><br>
  * 
+ * If a start item was defined inside the grammar this will become an
+ * AugmentedGrammar.<br><br>
+ * 
  * @author HardCoded
  */
 public class Grammar {
@@ -65,9 +68,6 @@ public class Grammar {
 		return null;
 	}
 	
-	// TODO: For this to make any sense this should be an augmented grammar instead of
-	//       being just a grammar.
-	
 	/**
 	 * If there was a item in the language that used the START
 	 * keyword. Then this will return that item.
@@ -107,16 +107,10 @@ public class Grammar {
 	public abstract class Rule {
 		protected int ruleId;
 		
-		protected Rule() {
-			
-		}
+		protected Rule() {}
 		
 		protected Rule(int ruleId) {
 			this.ruleId = ruleId;
-		}
-		
-		public String getRuleString() {
-			return "Rule" + ruleId;
 		}
 		
 		public int getRuleId() {
@@ -130,17 +124,11 @@ public class Grammar {
 		@Override
 		public boolean equals(Object obj) {
 			if(obj instanceof Rule) {
+				// TODO: This feels a bit cheaty
 				return toString().equals(obj.toString());
 			}
 			
 			return this == obj;
-		}
-		
-		/** Represent this hash with a unique hash that can only be
-		 *
-		 */
-		public String hash() {
-			return null;
 		}
 	}
 	
@@ -237,6 +225,7 @@ public class Grammar {
 			this.name = name;
 		}
 		
+		@Deprecated
 		public String getName() {
 			return name;
 		}

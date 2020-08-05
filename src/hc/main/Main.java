@@ -7,8 +7,8 @@ import java.util.logging.LogManager;
 
 import hardcoded.grammar.Grammar;
 import hardcoded.grammar.GrammarFactory;
-import hardcoded.parser.LR0_Parser;
-import hardcoded.parser.LR0_ParserGenerator;
+import hardcoded.parser.GLRParser;
+import hardcoded.parser.GLRParserGenerator;
 import hardcoded.tree.AbstractSyntaxTree;
 import hc.parser.Syntaxer;
 import hc.token.Symbol;
@@ -17,6 +17,7 @@ import hc.token.Tokenizer;
 //https://www.cs.ru.ac.za/compilers/pdfvers.pdf
 //http://www.orcca.on.ca/~watt/home/courses/2007-08/cs447a/notes/LR1%20Parsing%20Tables%20Example.pdf
 
+// TODO: Remove parser syntax classes because they are not usefull anymore..
 public class Main {
 	static {
 		try {
@@ -64,10 +65,33 @@ public class Main {
 	}
 	
 	public static void main(String[] args) {
-		if(args.length > 0) {
-			new Syntaxer();
-			return;
-		}
+//		if(true) {
+//			hardcoded.lexer.Tokenizer tk = TokenizerFactory.create()
+//				.setLinefeedCharacter("\n")
+//				
+//				.addDelimiterGroup("multiline_comment", "/*", null, "*/")
+//				.addDelimiterGroup("singleline_comment", "//", null, "\n")
+//					.discardGroups("multiline_comment", "singleline_comment")
+//				
+//				.addDelimiterGroup("build", "%", null, "\n")
+//				
+//				.addDelimiterGroup("string_literal", "\"", "\\", "\"")
+//				.addDelimiterGroup("char_literal", "\'", "\\", "\'")
+//				
+//				.addRegexGroup("identifier", "[a-zA-Z][a-zA-Z0-9_]")
+//				
+//				// TODO: These cannot be put directly after a identifier and needs a delimiter
+//				.addRegexGroup("decimal_literal", "0.[0-9]+")
+//				.addRegexGroup("integer_literal", "0x[0-9a-fA-F]+", "[0-9]+")
+//				.defaultGroup("token")
+//				.build();
+//			
+//			File file = new File("res/test.hc");
+//			byte[] bytes = readFileBytes(file);
+//			tk.parse(new String(bytes));
+//			
+//			return;
+//		}
 		
 		try {
 			Grammar grammar = GrammarFactory.load("res/test_wiki.gr");
@@ -76,14 +100,13 @@ public class Main {
 			grammar = GrammarFactory.load("res/language_2.gr");
 			grammar = grammar.expand();
 			
-			// System.out.println();
+			//LR0_ParserGenerator generator = new LR0_ParserGenerator();
+			//LR0_Parser parser = generator.generateParser(grammar);
+			//GLRParser glpars = parser.testingHACK();
 			
-			LR0_ParserGenerator generator = new LR0_ParserGenerator();
-			LR0_Parser parser = generator.generateParser(grammar);
-			
+			GLRParserGenerator generator = new GLRParserGenerator();
+			GLRParser parser = generator.generateParser(grammar);
 			// a a a a b a b
-			
-			// TODO: Get capture groups working correctly in the parser.
 			
 			Scanner input = new Scanner(System.in);
 			while(true) {
@@ -101,6 +124,8 @@ public class Main {
 				System.out.println();
 				System.out.println();
 				System.out.println();
+				
+				break;
 			}
 			
 			input.close();
