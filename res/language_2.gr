@@ -10,17 +10,24 @@ TOKEN NUMBERLITERAL: {"[0-9]+"}
 
 START program
 
-type: "void" [ "*" ]
+type: "void"
     | "uint_8"
 	| "uint_16"
 	| "uint_32"
 	| "uint_64" [ "*" ]
 
-args: type IDENTIFIER
-# [ "," args ]
+args: ( type IDENTIFIER [ "," type IDENTIFIER ] )
 
-program: type IDENTIFIER "(" args ")" "{" "}"
+program: type IDENTIFIER "(" args ")" "{" ( body ) "}"
+
+body: "{" body "}"
+    | expr "+" expr ";"
+
+expr: NUMBERLITERAL
 
 #function HELLO(uint_8 TEST) {}
 #void HELLO(uint_8 TEST) {}
 #void* HELLO(uint_8 TEST) {}
+
+#void HELLO(uint_8 TEST) { { 0x32 + 0x56 ; } }
+#uint_64**** TEST() {}

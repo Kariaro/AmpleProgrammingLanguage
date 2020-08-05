@@ -1,7 +1,6 @@
 package hardcoded.parser;
 
 import java.util.LinkedList;
-import java.util.List;
 
 import hardcoded.grammar.Grammar.*;
 import hardcoded.parser.LR0_ParserGenerator.*;
@@ -18,8 +17,14 @@ public class LR0_Parser {
 		System.out.println("");
 	}
 	
+	@Deprecated
+	public GLRParser testingHACK() {
+		// return new GLRParser(table);
+		throw new UnsupportedOperationException("Imlementation fault");
+	}
+	
 	public AbstractSyntaxTree parse(Symbol symbol) {
-		System.out.println("Text: '" + symbol.toString(",", Integer.MAX_VALUE) + "'");
+		System.out.println("Text: '" + symbol.toString(" ", Integer.MAX_VALUE) + "'");
 		
 		LinkedList<StateSymbol> reductionStack = new LinkedList<>();
 		reductionStack.push(new StateSymbol(table.start()));
@@ -82,6 +87,8 @@ public class LR0_Parser {
 			// throw new ParserException("Error at token: '" + symbol + "' (line=" + symbol.getLineIndex() + ", column=" + symbol.getColumnIndex() + ")");
 		}
 		
+		// TODO: Check if the end of the stack is the correct type...
+		
 		System.out.println();
 		System.out.println("Break");
 		return null;
@@ -94,15 +101,6 @@ public class LR0_Parser {
 		}
 		return false;
 	}
-	
-//	private String getTypePrint(int type) {
-//		switch(type) {
-//			case 0: return "Shift";
-//			case 1: return "Reduce";
-//		}
-//		
-//		return "INVALID TYPE!";
-//	}
 	
 	private IAction next(IRow row, StateSymbol symbol) {
 		if(symbol.symbol == null) return null; // grrr

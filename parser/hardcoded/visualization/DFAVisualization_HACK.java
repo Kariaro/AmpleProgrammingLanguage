@@ -9,8 +9,8 @@ import java.util.List;
 
 import javax.swing.JPanel;
 
-import hardcoded.parser.LR0_ParserGenerator.IRuleList;
-import hardcoded.parser.LR0_ParserGenerator.IState;
+import hardcoded.parser.GLRParserGenerator.IRuleList;
+import hardcoded.parser.GLRParserGenerator.IState;
 
 /**
  * Deterministic finite automaton visualization
@@ -18,10 +18,10 @@ import hardcoded.parser.LR0_ParserGenerator.IState;
  * 
  * @author HardCoded
  */
-public final class DFAVisualization extends Visualization {
+public final class DFAVisualization_HACK extends Visualization {
 	private DFAPanel panel;
 	
-	public DFAVisualization() {
+	public DFAVisualization_HACK() {
 		super("DFA - Visualization", 2);
 		panel = new DFAPanel();
 		panel.setOpaque(true);

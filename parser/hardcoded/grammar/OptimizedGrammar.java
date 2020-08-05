@@ -27,8 +27,6 @@ import hc.errors.grammar.GrammarException;
  * @author HardCoded
  */
 public class OptimizedGrammar extends Grammar {
-	// TODO: Start using the rule.value() function instead of cheaty .toString()....
-	
 	public OptimizedGrammar(Grammar grammar) {
 		// TODO: Make sure that the optimizations does not remove the start item...
 		startItem = grammar.startItem;
@@ -65,13 +63,13 @@ public class OptimizedGrammar extends Grammar {
 		for(Rule rule : set) {
 			Rule clone = null;
 			if(rule instanceof RegexRule) {
-				clone = new RegexRule(rule.value()); // ((RegexRule)rule).pattern.pattern());
+				clone = new RegexRule(rule.value());
 			} else if(rule instanceof StringRule) {
-				clone = new StringRule(rule.value()); // ((StringRule)rule).value);
+				clone = new StringRule(rule.value());
 			} else if(rule instanceof BracketRule) {
 				clone = cloneBracket((BracketRule)rule);
 			} else if(rule instanceof ItemRule) {
-				clone = new ItemRule(rule.value()); // ((ItemRule)rule).name);
+				clone = new ItemRule(rule.value());
 			} else if(rule instanceof SpecialRule) {
 				clone = new SpecialRule(((SpecialRule)rule).type);
 			}
@@ -172,8 +170,8 @@ public class OptimizedGrammar extends Grammar {
 	 */
 	private void optimize() {
 		List<Item> result = new ArrayList<>(this.items.values());
-		long subRules = items.values().parallelStream().flatMap((i) -> i.matches.stream()).count();
-		long totRules = items.size();
+		// long subRules = items.values().parallelStream().flatMap((i) -> i.matches.stream()).count();
+		// long totRules = items.size();
 		
 		// DONE: Optimize this so that it does not contain any more bracket matches.
 		//       This should not be done while loading the grammar but when creating the

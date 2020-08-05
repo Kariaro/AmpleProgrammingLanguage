@@ -1,24 +1,25 @@
 package hardcoded.parser;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import hardcoded.grammar.Grammar;
 import hardcoded.grammar.Grammar.*;
 import hardcoded.grammar.OptimizedGrammar;
-import hardcoded.visualization.DFAVisualization;
+import hardcoded.visualization.DFAVisualization_HACK;
 import hc.errors.grammar.GrammarException;
 
 /**
- * This class will create a LR0_Parser for a specified grammar.<br>
+ * This class will create a GLRParser for a specified grammar.<br>
  * 
  * https://en.wikipedia.org/wiki/Finite-state_machine
  * 
  * @author HardCoded
  */
-public class LR0_ParserGenerator {
+public class GLRParserGenerator {
 	
-	public LR0_ParserGenerator() {
+	public GLRParserGenerator() {
 		
 	}
 	
@@ -28,7 +29,7 @@ public class LR0_ParserGenerator {
 	// This list will contain all global states..
 	private List<IState> globalStates = new ArrayList<>();
 	
-	public LR0_Parser generateParser(Grammar grammar) {
+	public GLRParser generateParser(Grammar grammar) {
 		if(!(grammar instanceof OptimizedGrammar)) {
 			throw new GrammarException("This grammar is not optimized");
 		}
@@ -53,15 +54,16 @@ public class LR0_ParserGenerator {
 			// prettyPrint(globalStates.get(i));
 		}
 		
-		new DFAVisualization().show(globalStates);
+		new DFAVisualization_HACK().show(globalStates);
 		
 		// NOTE: This could be a nice addition.. Only for visual stuff though.
 		//       Sort the set list so that all terminals are on the left and all non-terminals are on the right inside this list.
 		List<IRule> set = globalStates.stream().map(x -> x.action).filter(x -> x != null).distinct().collect(Collectors.toList());
 		
-		return new LR0_Parser(new ITable(set, globalStates));
+		return new GLRParser(new ITable(set, globalStates));
 	}
 	
+	// TODO: Some rows should not be included because they are just empty
 	public class ITable {
 		public List<IRule> set;
 		public List<IRow> rows;
@@ -73,7 +75,7 @@ public class LR0_ParserGenerator {
 			rows = new ArrayList<>();
 			
 			for(int i = 0; i < states.size(); i++) {
-				rows.add(new IRow(set, states.get(i)));
+				rows.add(new IRow(ITable.this, states.get(i)));
 			}
 		}
 		
@@ -85,9 +87,9 @@ public class LR0_ParserGenerator {
 			sb.append("state: ");
 			for(int i = 0; i < set.size(); i++) {
 				String string = set.get(i).toString();
-				if(string.length() > 7) string = string.substring(0, 7);
+				if(string.length() > 10) string = string.substring(0, 10);
 				
-				sb.append(String.format("%7s ", string));
+				sb.append(String.format("%10s, ", string));
 			}
 			
 			if(set.size() > 0) sb.deleteCharAt(sb.length() - 1);
@@ -111,50 +113,84 @@ public class LR0_ParserGenerator {
 		}
 	}
 	
+	private AtomicInteger atom = new AtomicInteger();
+	
 	public class IRow {
-		private final IAction[] actions;
+		private final IAction[][] actions;
+		private final ITable owner;
 		
-		public IRow(List<IRule> set, IState states) {
-			actions = new IAction[set.size()];
-			
-//			System.out.println("Create Row: " + states);
-//			for(IState state : states.next) {
-//				System.out.println("    : " + state);
-//			}
+		public IRow(ITable parent, IState states) {
+			owner = parent;
+			actions = new IAction[owner.set.size()][];
 			
 			if(states.next.isEmpty()) {
-				IAction action = new IAction(states, 1, states.id);
+				// TODO: This row should be removed
+				return;
+			}
+			
+			for(IState state : states.next) {
+				int index = owner.set.indexOf(state.action);
 				
-				for(int i = 0; i < actions.length; i++) {
-					actions[i] = action;
-				}
-			} else {
-				for(IState state : states.next) {
-					int index = set.indexOf(state.action);
+				if(index == -1) continue;
+				System.out.println(state.rules);
+				
+				List<IAction> acts = new ArrayList<>();
+				
+				IRule shiftRule = null;
+				List<IRuleList> reduceRules = null;
+				
+				// Reduce rules*
+				for(IRuleList rl : state.rules) {
+					boolean reduce = (rl.index >= rl.size());
 					
-					if(index == -1) continue;
-					actions[index] = new IAction(state);
+					if(reduce) {
+						if(reduceRules == null) reduceRules = new ArrayList<>();
+						reduceRules.add(rl);
+						
+						IAction act = new IAction(1, globalStates.indexOf(state));
+						act.rl = rl;
+						acts.add(act);
+					} else if(shiftRule == null) {
+						shiftRule = rl.cursor(-1);
+						
+						// This will only be added once...
+						IAction act = new IAction(0, globalStates.indexOf(state));
+						acts.add(act);
+					}
+					
+					System.out.println("    : " + "" + "reduce=" + reduce);
 				}
+				
+				System.out.println(" ---: sr='" + shiftRule + "', rr='" + reduceRules + "'");
+				
+				actions[index] = acts.toArray(new IAction[0]);
+				// actions.set(INDEX, element) = new IAction(state);
 			}
 		}
 		
-		public IAction[] actions() {
+		public IAction[][] actions() {
 			return actions;
 		}
 		
 		public String toString() {
 			StringBuilder sb = new StringBuilder();
-			for(IAction action : actions) sb.append(String.format("%7s ", (action == null ? "":action)));
-			if(actions.length > 0) sb.deleteCharAt(sb.length() - 1);
-			if(actions[0] != null && actions[0].type == 1) {
-				sb.append(" ").append(actions[0].state.rules);
-				IState state = actions[0].state;
+			for(IAction[] action : actions) {
+				StringBuilder sc = new StringBuilder();
+				String str;
+				if(action == null || action.length == 0) {
+					str = "";
+				} else {
+					for(IAction a : action) sc.append(a).append("|");
+					if(action.length > 0) sc.deleteCharAt(sc.length() - 1);
+					
+					str = sc.toString();
+					if(str.length() > 10) str = str.substring(0, 10);
+				}
 				
-				System.out.println("State: " + state.name + "/" + state);
-				System.out.println("     : " + state.id);
-				System.out.println("     : " + state.action);
-				System.out.println("     : " + state.allRules);
+				sb.append(String.format("%10s, ", str));
 			}
+			if(actions.length > 0) sb.deleteCharAt(sb.length() - 1);
+			
 			return sb.toString();
 		}
 	}
@@ -168,6 +204,7 @@ public class LR0_ParserGenerator {
 		public int index;
 		public IRule rule;
 		public IState state;
+		public IRuleList rl; // TODO: New implementation
 		
 		private IAction(IState state, int type, int index) {
 			this.state = state;
@@ -180,17 +217,25 @@ public class LR0_ParserGenerator {
 			this.type = type;
 		}
 		
-		private IAction(IState state) {
-			this.state = state;
-			rule = state.action;
-			index = globalStates.indexOf(state);
-		}
+//		private IAction(IState state) {
+//			this.state = state;
+//			rule = state.action;
+//			index = globalStates.indexOf(state);
+//		}
 		
 		@Override
 		public String toString() {
 			if(type == 0) return "S" + index;
 			if(type == 1) return "r" + index;
 			return "?ERR?" + index;
+		}
+
+		public boolean isShift() {
+			return type == 0;
+		}
+		
+		public boolean isReduce() {
+			return type == 1;
 		}
 	}
 	
@@ -349,38 +394,6 @@ public class LR0_ParserGenerator {
 		}
 		
 		return state.accept();
-	}
-	
-	private void prettyPrint(IState state) {
-		System.out.println("state -> " + state);
-		
-		if(state == null) {
-			System.out.println();
-			return;
-		}
-		
-		for(IRuleList set : state.rules) {
-			if(set.index == set.size()) {
-				System.out.println("      R [" + set.itemName + " -> " + set + "]");
-			} else if(set.cursor() != null) {
-				System.out.println("      S [" + set.itemName + " -> " + set + "]");
-			}
-		}
-		
-		for(int i = 0; i < state.list.size(); i++) {
-			IItem item = state.list.get(i);
-			System.out.println("  Item: " + item);
-			for(IRuleList set : item.list) {
-				if(set.index == set.size()) {
-					System.out.println("      R [" + item + " -> " + set + "]");
-					if(state.list.size() == 1) System.out.println("[Close] This state is complete");
-				} else if(set.cursor() != null) {
-					System.out.println("      S [" + item + " -> " + set + "]");
-				}
-			}
-		}
-		
-		System.out.println();
 	}
 	
 	private IItem getGrammarItem(String name) {
