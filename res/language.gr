@@ -34,7 +34,7 @@ Test
 # Inside each file this should be the pattern
 # TODO: The import statement should be handeled by the compiler and not by the
 #       interpreter.
-library: "#import" STRINGLITERAL
+library: "%" "import" STRINGLITERAL
 #      | func
        | [modi] type IDENTIFIER "(" (type IDENTIFIER ["," type IDENTIFIER]) ")" "{" /*stat*/ "}"
 	   | "struct" IDENTIFIER "{" "}" ";"

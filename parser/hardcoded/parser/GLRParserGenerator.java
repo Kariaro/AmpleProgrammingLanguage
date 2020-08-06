@@ -1,7 +1,6 @@
 package hardcoded.parser;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import hardcoded.grammar.Grammar;
@@ -54,7 +53,7 @@ public class GLRParserGenerator {
 			// prettyPrint(globalStates.get(i));
 		}
 		
-		new DFAVisualization_HACK().show(globalStates);
+		// new DFAVisualization_HACK().show(globalStates);
 		
 		// NOTE: This could be a nice addition.. Only for visual stuff though.
 		//       Sort the set list so that all terminals are on the left and all non-terminals are on the right inside this list.
@@ -68,11 +67,13 @@ public class GLRParserGenerator {
 		public List<IRule> set;
 		public List<IRow> rows;
 		private IAction entry;
+		private String acceptItem;
 		
 		private ITable(List<IRule> set, List<IState> states) {
 			this.set = set;
 			entry = new IAction(null, 0, 0);
 			rows = new ArrayList<>();
+			acceptItem = grammar.getStartItem();
 			
 			for(int i = 0; i < states.size(); i++) {
 				rows.add(new IRow(ITable.this, states.get(i)));
@@ -111,9 +112,11 @@ public class GLRParserGenerator {
 		public IAction start() {
 			return entry;
 		}
+		
+		public String acceptItem() {
+			return acceptItem;
+		}
 	}
-	
-	private AtomicInteger atom = new AtomicInteger();
 	
 	public class IRow {
 		private final IAction[][] actions;
@@ -132,7 +135,7 @@ public class GLRParserGenerator {
 				int index = owner.set.indexOf(state.action);
 				
 				if(index == -1) continue;
-				System.out.println(state.rules);
+				// System.out.println(state.rules);
 				
 				List<IAction> acts = new ArrayList<>();
 				
@@ -158,18 +161,25 @@ public class GLRParserGenerator {
 						acts.add(act);
 					}
 					
-					System.out.println("    : " + "" + "reduce=" + reduce);
+					// System.out.println("    : " + "" + "reduce=" + reduce);
 				}
 				
-				System.out.println(" ---: sr='" + shiftRule + "', rr='" + reduceRules + "'");
+				// System.out.println(" ---: sr='" + shiftRule + "', rr='" + reduceRules + "'");
 				
 				actions[index] = acts.toArray(new IAction[0]);
-				// actions.set(INDEX, element) = new IAction(state);
 			}
 		}
 		
 		public IAction[][] actions() {
 			return actions;
+		}
+		
+		public IAction[] get(int index) {
+			return actions[index];
+		}
+		
+		public int size() {
+			return actions.length;
 		}
 		
 		public String toString() {
@@ -216,12 +226,6 @@ public class GLRParserGenerator {
 			this.index = index;
 			this.type = type;
 		}
-		
-//		private IAction(IState state) {
-//			this.state = state;
-//			rule = state.action;
-//			index = globalStates.indexOf(state);
-//		}
 		
 		@Override
 		public String toString() {
@@ -355,22 +359,25 @@ public class GLRParserGenerator {
 		// TODO: Optimize this function..
 		
 		IState state = new IState("I0");
-		Item start = new Item(startGroupName + "'"); {
-			RuleList fin = grammar.new RuleList();
-			fin.add(grammar.new ItemRule(startGroupName));
-			start.matches.add(fin);
-		}
 		
 		Set<String> searched = new HashSet<>();
 		List<Item> search = new ArrayList<>();
-		search.add(start);
+		
+		{
+			Item i = grammar.getItem(startGroupName);
+			
+			if(i == null)
+				throw new GrammarException("Failed to create entry set. Item '" + startGroupName + "' does not exist!");
+			
+			search.add(i);
+			searched.add(startGroupName);
+		}
+		
 		while(!search.isEmpty()) {
 			Item item = search.get(0);
 			search.remove(0);
 			
-			if(item != start) {
-				state.addAll(item);
-			}
+			state.addAll(item);
 			
 			for(RuleList set : item.getRules()) {
 				if(set.isEmpty()) continue;
@@ -530,7 +537,7 @@ public class GLRParserGenerator {
 		public IItem(Item item) {
 			if(item instanceof ItemToken) token = true;
 			name = item.getName();
-			list = item.matches.stream()
+			list = item.getRules().stream()
 				.map(x -> new IRuleList(name, x))
 				.collect(Collectors.toList());
 		}

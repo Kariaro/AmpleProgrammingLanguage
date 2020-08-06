@@ -310,22 +310,23 @@ public class LR0_ParserGenerator {
 		// TODO: Optimize this function..
 		
 		IState state = new IState("I0");
-		Item start = new Item(startGroupName + "'"); {
-			RuleList fin = grammar.new RuleList();
-			fin.add(grammar.new ItemRule(startGroupName));
-			start.matches.add(fin);
-		}
-		
 		Set<String> searched = new HashSet<>();
 		List<Item> search = new ArrayList<>();
-		search.add(start);
+		
+		{
+			Item i = grammar.getItem(startGroupName);
+			
+			if(i == null)
+				throw new GrammarException("Failed to create entry set. Item '" + startGroupName + "' does not exist!");
+			
+			search.add(i);
+			searched.add(startGroupName);
+		}
+		
 		while(!search.isEmpty()) {
 			Item item = search.get(0);
 			search.remove(0);
-			
-			if(item != start) {
-				state.addAll(item);
-			}
+			state.addAll(item);
 			
 			for(RuleList set : item.getRules()) {
 				if(set.isEmpty()) continue;
@@ -517,7 +518,7 @@ public class LR0_ParserGenerator {
 		public IItem(Item item) {
 			if(item instanceof ItemToken) token = true;
 			name = item.getName();
-			list = item.matches.stream()
+			list = item.getRules().stream()
 				.map(x -> new IRuleList(name, x))
 				.collect(Collectors.toList());
 		}

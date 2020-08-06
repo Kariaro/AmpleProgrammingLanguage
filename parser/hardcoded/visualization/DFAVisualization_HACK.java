@@ -19,6 +19,10 @@ import hardcoded.parser.GLRParserGenerator.IState;
  * @author HardCoded
  */
 public final class DFAVisualization_HACK extends Visualization {
+	// TODO: Add a cordinate bar and a search bar..
+	// TODO: Add more sorting options.
+	// TODO: Make this graph usable by other people that want to see how to make graphs maybe :D
+	
 	private DFAPanel panel;
 	
 	public DFAVisualization_HACK() {
@@ -517,8 +521,8 @@ public final class DFAVisualization_HACK extends Visualization {
 		}
 		
 		public boolean hasMouse(double mx, double my) {
-			return (mx >= x && mx <= (x + width))
-				&& (my >= y && my <= (y + height));
+			return (mx + 15 >= x && mx - 15 <= (x + width))
+				&& (my + 10 >= y && my - 10 <= (y + height));
 		}
 	}
 }
