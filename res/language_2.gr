@@ -10,15 +10,17 @@ TOKEN NUMBERLITERAL: {"[0-9]+"}
 
 START program
 
+# This should be a dynamic type...
 type: "void"
     | "uint_8"
 	| "uint_16"
 	| "uint_32"
 	| "uint_64" [ "*" ]
 
+
 args: ( type IDENTIFIER [ "," type IDENTIFIER ] )
 
-program: type IDENTIFIER "(" args ")" "{" ( body ) "}"
+program: type IDENTIFIER "(" ( args ) ")" "{" ( body ) "}"
 
 body: "{" body "}"
     | expr "+" expr ";"

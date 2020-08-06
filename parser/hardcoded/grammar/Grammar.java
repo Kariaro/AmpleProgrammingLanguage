@@ -2,7 +2,6 @@ package hardcoded.grammar;
 
 import java.util.*;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import hc.errors.grammar.DuplicateItemException;
 import hc.errors.grammar.UndefinedMatchType;
@@ -25,7 +24,9 @@ public class Grammar {
 	protected final Map<String, Item> items;
 	protected String startItem;
 	
-	public Grammar() {
+	// FIXME: Make it so that if this was implemented somewhere you could modify all the syntax.
+	
+	protected Grammar() {
 		tokens = new LinkedHashMap<>();
 		items = new LinkedHashMap<>();
 	}
@@ -42,12 +43,8 @@ public class Grammar {
 		}
 	}
 	
-	protected boolean containsItem(String name) {
+	public boolean containsItem(String name) {
 		return items.containsKey(name) || tokens.containsKey(name);
-	}
-	
-	public Set<RuleList> getAllRules() {
-		return new LinkedHashSet<RuleList>(items.values().stream().flatMap(i -> i.matches.stream()).collect(Collectors.toList()));
 	}
 	
 	public Set<Item> getItems() {
@@ -78,11 +75,20 @@ public class Grammar {
 		return startItem;
 	}
 	
+	/**
+	 * Set what item should be considered the start of this grammar.
+	 * 
+	 * @param startItem
+	 */
+	public void setStartItem(String startItem) {
+		this.startItem = startItem;
+	}
+	
 	public static class Item {
 		protected String name;
-		public final List<RuleList> matches;
+		protected final List<RuleList> matches;
 		
-		public Item(String name) {
+		protected Item(String name) {
 			this.matches = new ArrayList<>();
 			this.name = name;
 		}
@@ -101,17 +107,15 @@ public class Grammar {
 	}
 	
 	public static class ItemToken extends Item {
-		public ItemToken(String name) { super(name); }
+		public ItemToken(String name) {
+			super(name);
+		}
 	}
 	
 	public abstract class Rule {
 		protected int ruleId;
 		
 		protected Rule() {}
-		
-		protected Rule(int ruleId) {
-			this.ruleId = ruleId;
-		}
 		
 		public int getRuleId() {
 			return ruleId;
@@ -134,20 +138,16 @@ public class Grammar {
 	
 	public class RuleList extends Rule {
 		protected final List<Rule> rules;
-		protected String line;
 		
-		public RuleList(int ruleId, String line) {
-			super(ruleId);
-			
-			rules = new ArrayList<>();
-			this.line = line;
-		}
-		
-		public RuleList() {
+		protected RuleList() {
 			rules = new ArrayList<>();
 		}
 		
-		public void add(Rule rule) {
+		protected RuleList(int ruleId) {
+			rules = new ArrayList<>();
+		}
+		
+		protected void add(Rule rule) {
 			rules.add(rule);
 		}
 		
@@ -168,8 +168,7 @@ public class Grammar {
 		}
 		
 		public String toString() {
-			String string = line;
-			string = rules.toString();
+			String string = rules.toString();
 			return string.substring(1, string.length() - 1);
 		}
 	}
@@ -186,21 +185,21 @@ public class Grammar {
 		protected boolean repeat;
 		protected Symbol symbol;
 		
-		public BracketRule(Symbol symbol) {
+		protected BracketRule(Symbol symbol) {
 			this(symbol, false);
 		}
 		
-		public BracketRule(Symbol symbol, boolean repeat) {
+		protected BracketRule(Symbol symbol, boolean repeat) {
 			matches = new ArrayList<>();
 			this.symbol = symbol;
 			this.repeat = repeat;
 		}
 		
-		public BracketRule() {
+		protected BracketRule() {
 			matches = new ArrayList<>();
 		}
 		
-		public void add(Rule match) {
+		protected void add(Rule match) {
 			matches.add(match);
 		}
 		
@@ -217,17 +216,13 @@ public class Grammar {
 	
 	public class ItemRule extends Rule {
 		protected String name;
-		public ItemRule(Symbol symbol) {
+		
+		protected ItemRule(Symbol symbol) {
 			this(symbol.toString());
 		}
 		
-		public ItemRule(String name) {
+		protected ItemRule(String name) {
 			this.name = name;
-		}
-		
-		@Deprecated
-		public String getName() {
-			return name;
 		}
 		
 		public String value() {
@@ -242,12 +237,13 @@ public class Grammar {
 	
 	public class StringRule extends Rule {
 		protected String value;
-		public StringRule(Symbol symbol) {
+		
+		protected StringRule(Symbol symbol) {
 			value = symbol.toString();
 			value = value.substring(1, value.length() - 1);
 		}
 		
-		public StringRule(String value) {
+		protected StringRule(String value) {
 			this.value = value;
 		}
 		
@@ -262,13 +258,13 @@ public class Grammar {
 	
 	public class RegexRule extends Rule {
 		protected Pattern pattern;
-		public RegexRule(Symbol symbol) {
+		protected RegexRule(Symbol symbol) {
 			String regex = symbol.toString();
 			regex = regex.substring(1, regex.length() - 1);
 			pattern = Pattern.compile(regex);
 		}
 		
-		public RegexRule(String regex) {
+		protected RegexRule(String regex) {
 			pattern = Pattern.compile(regex);
 		}
 		
@@ -285,7 +281,7 @@ public class Grammar {
 	protected static final int SPECIAL_EMPTY = 2;
 	public class SpecialRule extends Rule {
 		protected int type;
-		public SpecialRule(Symbol symbol) {
+		protected SpecialRule(Symbol symbol) {
 			switch(symbol.toString()) {
 				case "EOF": {
 					type = SPECIAL_EOF;
@@ -301,7 +297,7 @@ public class Grammar {
 			}
 		}
 		
-		public SpecialRule(int type) {
+		protected SpecialRule(int type) {
 			this.type = type;
 		}
 		

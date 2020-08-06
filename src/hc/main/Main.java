@@ -7,6 +7,7 @@ import java.util.logging.LogManager;
 
 import hardcoded.grammar.Grammar;
 import hardcoded.grammar.GrammarFactory;
+import hardcoded.grammar.GrammarType;
 import hardcoded.parser.GLRParser;
 import hardcoded.parser.GLRParserGenerator;
 import hardcoded.tree.AbstractSyntaxTree;
@@ -94,10 +95,10 @@ public class Main {
 //		}
 		
 		try {
-			Grammar grammar = GrammarFactory.load("res/test_wiki.gr");
-			//grammar = GrammarFactory.load("res/language.gr");
-			//grammar = GrammarFactory.load("res/test_wiki_2.gr");
-			grammar = GrammarFactory.load("res/language_2.gr");
+			Grammar grammar = GrammarFactory.load(GrammarType.HCGR, "res/test_wiki.gr");
+			//grammar = GrammarFactory.load(GrammarType.HCGR, "res/language.gr");
+			//grammar = GrammarFactory.load(GrammarType.HCGR, "res/test_wiki_2.gr");
+			grammar = GrammarFactory.load(GrammarType.HCGR, "res/language_2.gr");
 			grammar = grammar.expand();
 			
 			//LR0_ParserGenerator generator = new LR0_ParserGenerator();
@@ -108,27 +109,29 @@ public class Main {
 			GLRParser parser = generator.generateParser(grammar);
 			// a a a a b a b
 			
-			Scanner input = new Scanner(System.in);
-			while(true) {
-				String line = input.nextLine();
-				// System.out.println("String input: '" + line + "'");
-				
-				if(line.isEmpty()) break;
-				
-				Symbol symbol = Tokenizer.generateSymbolChain(line.getBytes());
-				AbstractSyntaxTree ast = parser.parse(symbol);
-				
-				System.out.println("SyntaxTree: " + ast);
-				
-				//break;
-				System.out.println();
-				System.out.println();
-				System.out.println();
-				
-				break;
+			try(Scanner input = new Scanner(System.in)) {
+				while(true) {
+					String line;
+					// line = input.nextLine();
+					line = "uint_64* A(){}";
+					// line = "void TEST(uin, , , ) {}";
+					// line = "uint_64******* TESTING_FUNCTION (uint_64 ABCD, uint_64*** CDEB, uint_64*************** WHY_) { { { { { { 132323232 + 0x32 ; } } } } } }";
+					if(line == null || line.isEmpty()) break;
+					
+					Symbol symbol = Tokenizer.generateSymbolChain(line.getBytes());
+					AbstractSyntaxTree ast = parser.parse(symbol);
+					
+					System.out.println("SyntaxTree: " + ast);
+					
+					System.out.println();
+					System.out.println();
+					System.out.println();
+					break;
+				}
+			} catch(Exception e) {
+				e.printStackTrace();
 			}
 			
-			input.close();
 		} catch(Exception e) {
 			e.printStackTrace();
 		} finally {

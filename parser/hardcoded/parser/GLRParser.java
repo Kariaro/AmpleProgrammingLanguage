@@ -7,6 +7,7 @@ import hardcoded.parser.GLRParserGenerator.*;
 import hardcoded.tree.AbstractSyntaxTree;
 import hc.errors.grammar.ParserException;
 import hc.token.Symbol;
+import static hardcoded.utils.StringUtils.*;
 
 /**
  * https://en.wikipedia.org/wiki/GLR_parser
@@ -24,30 +25,91 @@ public class GLRParser {
 	}
 	
 	private class LastState {
-		private int stateIndex;
-		private Symbol symbol;
 		private LinkedList<StateSymbol> reductionStack;
-		private int index = 0;
-		private IAction[] actions;
 		
-		public LastState(int stateIndex, Symbol symbol, LinkedList<StateSymbol> reductionStack, int index) {
-			this.stateIndex = stateIndex;
-			this.symbol = symbol;
-			this.reductionStack = new LinkedList<>(reductionStack);
+		public LastState() {
+			this.reductionStack = new LinkedList<>();
 		}
 		
 		public LastState(LastState ls) {
-			this(ls.stateIndex, ls.symbol, ls.reductionStack, ls.index);
+			this.reductionStack = new LinkedList<>(ls.reductionStack);
 		}
-
+		
 		@Override
 		public String toString() {
-			StringBuilder sb = new StringBuilder();
-			sb.append("(").append(stateIndex).append(" ").append(symbol);
-			if(!reductionStack.isEmpty()) sb.append(" ").append(reductionStack);
-			if(index > 0) sb.append(" ").append(index);
-			return sb.append(")").toString();
+			return '(' + listToString(", ", reductionStack) + ')';
 		}
+	}
+	
+	private class StateSymbol {
+		private IAction[] actions;
+		private int index;
+		private String item;
+		private Symbol input;
+		
+		public StateSymbol(IAction... actions) {
+			this.actions = actions;
+		}
+		
+		public StateSymbol() {
+			
+		}
+		
+		
+		public String value() {
+			if(item != null) return item;
+			return input == null ? null:input.toString();
+		}
+		
+		public IAction getAction() {
+			if(actions == null) return null;
+			return actions[index];
+		}
+		
+		public int rowIndex() {
+			if(actions == null) return -1;
+			return getAction().index;
+		}
+		
+		@Override
+		public String toString() {
+			if(item == null) {
+				if(input == null || input.toString() == null) return getAction() + "";
+				return getAction() + "/" + input;
+			}
+			
+			return getAction() + "/" + item;
+		}
+	}
+	
+	private boolean checkMatch(IRule rule, StateSymbol state) {
+		if(rule == null) return false;
+		
+		if(rule.isItemToken()) return match(rule, state.input);
+		
+		// This checks if the value are equal nad that the state is the same type as the rule.
+		return rule.value().equals(state.value()) && rule.isItemType() != (state.item == null);
+	}
+	
+	private IAction[] getState(IRow row, StateSymbol state) {
+		for(int i = 0; i < row.size(); i++) {
+			IAction[] actions = row.get(i);
+			if(actions == null) continue;
+			
+			IRule rule = table.set.get(i);
+			// System.out.println("(" + rule + ") --- (" + state.value() + "), " + state.toString());
+			
+			if(checkMatch(rule, state)) {
+				return actions;
+			}
+		}
+		
+		return null;
+	}
+	
+	private boolean canDoReduction(IRuleList rule, List<StateSymbol> reduction) {
+		// TODO: Implement this method...
+		return true;
 	}
 	
 	// TODO: Fix operator precedence
@@ -56,240 +118,153 @@ public class GLRParser {
 		
 		LinkedList<LastState> stateStack = new LinkedList<>();
 		
-		LastState ls = new LastState(0, symbol, new LinkedList<>(), 0);
-		ls.reductionStack.push(new StateSymbol(table.start()));
+		LastState ls = new LastState();
+		{
+			StateSymbol state = new StateSymbol(table.start());
+			state.input = symbol.prev();
+			
+			ls.reductionStack.push(state);
+		}
 		stateStack.add(new LastState(ls));
 		
-		int max = 10;
+		int max = 500;
 		while(max-- > 0) {
+			// TODO: Fix crashes from printing the action with invalid index...
+			
 			System.out.println();
-			System.out.println("Stack: " + ls.reductionStack + ", " + ls.stateIndex + ", " + stateStack);
+			System.out.println("Stack: " + ls.reductionStack);
+			for(int i = Math.max(0, stateStack.size() - 10); i < stateStack.size(); i++) System.out.println("--" + stateStack.get(i));
 			
-			IRow row = table.getRow(ls.stateIndex);
+			// The first action is always a shift action...
 			StateSymbol state = ls.reductionStack.getLast();
-			// ls.actions = getIAction(row, ls.reductionStack.getLast());
+			System.out.println("  State: " + state);
 			
-			/*
-			if(ls.actions == null) {
-				// TODO: Here we have three different cases
-				//   Case 1: The action is at the end of the stream and is fully done.
-				//   Case 2: We should have reduced the last group but we shifted it instead..
-				//   Case 3: Some other error.
-				
-				System.out.println("Actions error grrr.... symbol=" + ls.symbol);
-				System.out.println("  Serrr: " + ls.symbol + ", We need to go backwards...");
-				System.out.println();
-				
-				// The symbol was not a valid token.
-				// This means that the last pushed state was wrong..
-				// We fix this by removing the last state and entering the one before the invalid push.
-				// If there is no state before our push we know that the input text has invalid syntax.
-				
-				// LastState info = stateStack.removeLast();
-				// stateStack.removeLast();
-				
-				// TODO: Sometimes this gets stuck in a loop because it cannot recover from a state...
-				LastState last = stateStack.getLast();
-				last.index++;
-				
-				// TODO: Go back one more level if index is greater than the size of the actions array.
-				ls = new LastState(last);
-				ls.index = last.index;
-				
-				// Everything that appears inside the visited set should be skiped when looking for the
-				// next action.
-				
-				
-				// TODO: What do we do here?
-				continue;
-			}
-			
+			// NOTE: Reductions grabs from the reductionStack
+			// NOTE: Shifts grabs from the inputStack
 			{
-				StringBuilder sb = new StringBuilder();
-				for(IAction a : ls.actions) sb.append(a).append("|");
-				if(ls.actions.length > 0) sb.deleteCharAt(sb.length() - 1);
+				IAction current = state.getAction();
 				
-				System.out.println("  String: " + sb.toString());
-			}
-			
-			if(ls.index >= ls.actions.length) {
-				// TODO: We need to remove this state and go back one more....
-				stateStack.removeLast();
+				// Check if we have reached the end of the stream
+				if(current == null) {
+					// To know that we have finished the stream we need to have two items in the reductionStack
+					// First we need the default state S0 and the START item that we specified in the grammar.
+					if(ls.reductionStack.size() == 2) {
+						String value = state.value();
+						
+						if(table.acceptItem().equals(value)) {
+							System.out.println("-- PARSED THE INPUT SUCCESSFULLY --");
+							break;
+						}
+					}
+				}
 				
-				break;
-			}
-			
-			IAction action = ls.actions[ls.index];
-			if(action == null) {
-				// TODO: What do we do here?
-				System.out.println("WEIRD: Action was null?!?");
-				break;
-			}
-			*/
-			
-			IAction action = state.action;
-			
-			if(action.isShift()) {
-				System.out.println("  Shift: " + ls.symbol + ", " + action);
-				ls.actions = getIAction(row, ls.symbol);
-				
-				if(ls.actions == null) {
-					System.out.println("WEIRD: ls.actions  was null?!?");
+				if(current.isShift()) {
+					StateSymbol nextState = new StateSymbol();
+					nextState.input = state.input.next();
 					
-					LastState last = stateStack.getLast();
-					last.index++;
-					ls = new LastState(last);
-					ls.index = last.index;
+					System.out.println("  ShiftState : state='" + current + "', input='" + nextState.input + "', i=" + state.index);
 					
-					state = ls.reductionStack.getLast();
+					IRow row = table.getRow(current.index);
+					IAction[] actions = getState(row, nextState);
+					if(actions == null || actions.length == 0) {
+						System.out.println("    \"This shift is not valid for the input '" + nextState.input + "'\"");
+						System.out.println("    \"Going back into search tree\"");
+						
+						LastState last = stateStack.getLast();
+						last.reductionStack.getLast().index++;
+						ls = new LastState(last);
+						
+						continue;
+					}
 					
+					System.out.println("    Actions: " + arrayToString(", ", actions));
+					System.out.println("    Index  : " + state.index);
+					
+					if(state.index >= actions.length) {
+						System.out.println("    \"State index was outside bounds of actions array\"");
+					}
+
+					IAction action = actions[state.index];
+					System.out.println("    Action : " + action);
+					
+					// TODO: If this action is a shift we should give the next state the next input value...
+					
+					
+					nextState.actions = actions;
+					nextState.index = state.index;
+					
+					if(action.isShift()) {
+						// TODO: Check for null values!!!
+						nextState.input = state.input.next();
+					} else {
+						
+					}
+					
+					ls.reductionStack.add(nextState);
+					stateStack.add(new LastState(ls));
 					continue;
 				}
 				
-				// TODO: We could reuse the variable action.
-				IAction act = ls.actions[ls.index];
-				if(act == null) {
-					// TODO: What do we do here?
-					System.out.println("WEIRD: Action was null?!?");
-					break;
+				if(current.isReduce()) {
+					System.out.println("  ReduceState : state='" + current + "', i=" + state.index + ", stack=" + ls.reductionStack);
+					System.out.println("    IRuleList: [" + current.rl.itemName + " -> " + current.rl + "]");
+					
+					// TODO: Check if the rule matches the end of the stream and then compute the next state
+					// FIXME: Lets assume that the rule does match
+					
+					IRuleList rule = current.rl;
+					
+					if(!canDoReduction(rule, ls.reductionStack)) {
+						// TODO: What do we do here?
+						System.out.println("    \"The reduction rule did not match the current reductionStack\"");
+						System.out.println("    \"Going back in the search tree\"");
+						break;
+					}
+					
+					for(int i = 0; i < rule.size(); i++) ls.reductionStack.pollLast();
+					StateSymbol nextState = new StateSymbol();
+					nextState.item = current.rl.itemName;
+					nextState.input = state.input;
+					
+					state = ls.reductionStack.getLast();
+					
+					System.out.println("    State    : " + state);
+					
+					IRow row = table.getRow(state.rowIndex());
+					IAction[] actions = getState(row, nextState);
+					
+					if(actions != null) {
+						System.out.println("    Actions: " + arrayToString(", ", actions));
+						System.out.println("    Index  : " + state.index);
+						
+						nextState.actions = actions;
+					}
+					
+					System.out.println("    Next     : " + nextState);
+					
+					ls.reductionStack.add(nextState);
+					stateStack.add(new LastState(ls));
+					continue;
 				}
-				
-				ls.reductionStack.add(new StateSymbol(act, ls.symbol));
-				ls.stateIndex = act.index;
-				stateStack.add(new LastState(ls));
-				ls.symbol = ls.symbol.next();
-			} else if(action.isReduce()) {
-				// ls.reductionStack.add(new StateSymbol(action, ls.symbol));
-				ls.symbol = ls.symbol.next();
-				
-				System.out.println("  Reduce: " + ls.reductionStack + ", " + action);
-				
-				// TODO: There should still only be one rule in this list
-				// TODO: More error checks for lengths and sizes.....
-				
-				System.out.println("    IRuleList: " + action.rl);
-				System.out.println("    SSymbol  : " + state);
-				
-				// TODO: Check for this rule to be defined and to be non zero sized.
-				
-				IRuleList rule = action.rl;
-				int length = rule.size();
-				
-				for(int i = 0; i < length; i++) ls.reductionStack.pollLast();
-				state = ls.reductionStack.getLast();
-				
-				StateSymbol next = new StateSymbol(action, rule.itemName);
-				ls.reductionStack.add(next);
-				ls.stateIndex = state.action.index;
-				stateStack.add(new LastState(ls));
-				ls.stateIndex = action.index;
 			}
 			
+			
+			
+			System.out.println();
+			System.out.println("Stack: " + ls.reductionStack);
+			
+			
+			if(true) break;
 			// throw new ParserException("Error at token: '" + symbol + "' (line=" + symbol.getLineIndex() + ", column=" + symbol.getColumnIndex() + ")");
 		}
 		
 		// TODO: Check if the end of the stack is the correct type...
-
-		System.out.println("ENDST: " + ls.reductionStack + ", " + ls.stateIndex + ", " + stateStack);
+		System.out.println();
+		System.out.println();
+		System.out.println("ENDST: " + ls.reductionStack + ", " + stateStack);
 		
 		System.out.println();
 		System.out.println("Break");
-		return null;
-	}
-	
-	private int getMatchColumn(StateSymbol state) {
-		int index = 0;
-		// TODO: If it's a token type then we need to check for equality....... (maybe)
-		
-		for(IRule rule : table.set) {
-			//System.out.println("(" + rule + ")/(" + state.value() + ") == " + index);
-			
-			if(rule.value().equals(state.value())
-			&& state.isSymbol() != rule.isItemType()) return index;
-			
-			index++;
-		}
-		
-		return -1;
-	}
-	
-	private IAction[] getIAction(IRow row, StateSymbol state) {
-		int col = getMatchColumn(state);
-		
-		if(col < 0) return null;
-		return row.actions()[col];
-	}
-	
-	private int getMatchColumn(Symbol symbol) {
-		if(symbol == null) return -1;
-		
-		int index = 0;
-		for(IRule rule : table.set) {
-			if(!rule.isItemType() && rule.value().equals(symbol.toString())) return index;
-			index++;
-		}
-		
-		return -1;
-	}
-	
-	private IAction[] getIAction(IRow row, Symbol symbol) {
-		if(symbol == null) return null; // TODO: What do we do here?
-		int col = getMatchColumn(symbol);
-		
-		if(col < 0) return null;
-		return row.actions()[col];
-	}
-	
-	private int indexOf(IRow row, IAction action) {
-		IAction[] actions = row.actions()[0];
-		for(int i = 0; i < actions.length; i++) {
-			if(actions[i] == action) return i;
-		}
-		
-		return -1;
-	}
-	
-	private int rowSize(IRow row) {
-		int size = 0;
-		for(IAction action : row.actions()[0]) {
-			if(action != null) size++;
-		}
-		
-		return size;
-	}
-	
-	private IAction next(IRow row, StateSymbol symbol) {
-		if(symbol.symbol == null) return null; // grrr
-		
-		if(!symbol.isSymbol()) {
-			for(IAction[] action : row.actions()) {
-				if(action == null) continue;
-				
-				IRule rule = action[0].rule;
-				if(rule == null) continue; // ???
-				
-				if(rule.isItemType()) {
-					if(rule.value().equals(symbol.symbol.itemName)) {
-						return action[0];
-					}
-				}
-			}
-		} else {
-			return next(row, symbol.symbol.symbol);
-		}
-		
-		return null;
-	}
-	
-	private IAction next(IRow row, Symbol symbol) {
-		for(IAction[] action : row.actions()) {
-			if(action == null) continue;
-			
-			//IRule rule = action.state.action();
-			
-			//if(match(rule, symbol)) return action;
-		}
-		
 		return null;
 	}
 	
@@ -341,66 +316,5 @@ public class GLRParser {
 		}
 		
 		return false;
-	}
-	
-	private class StateSymbol {
-		// TODO: Use a IAction[] and index to store potential next actions.....
-		private IAction action;
-		private SymType symbol;
-		
-		
-		public StateSymbol(IAction action, Symbol symbol) {
-			this.symbol = new SymType(symbol);
-			this.action = action;
-		}
-		
-		public StateSymbol(IAction action, String string) {
-			this.symbol = new SymType(string);
-			this.action = action;
-		}
-		
-		public StateSymbol(IAction action) {
-			this.action = action;
-		}
-		
-		public boolean isSymbol() {
-			if(symbol != null) return symbol.isSymbol;
-			return false;
-		}
-		
-		public String value() {
-			if(symbol == null) return null;
-			if(symbol.isSymbol) return symbol.symbol == null ? null : symbol.symbol.toString();
-			return symbol.itemName;
-		}
-		
-		@Override
-		public String toString() {
-			if(symbol == null) return action.toString();
-			return symbol.toString() + "/" + action;
-		}
-	}
-	
-	private class SymType {
-		private boolean isSymbol;
-		private Symbol symbol;
-		private String itemName;
-		
-		public SymType(Symbol symbol) {
-			this.symbol = symbol;
-			isSymbol = true;
-		}
-		
-		public SymType(String itemName) {
-			this.itemName = itemName;
-		}
-		
-		public String toString() {
-			if(isSymbol) {
-				return symbol == null ? null:symbol.toString();
-			} else {
-				return itemName;
-			}
-		}
 	}
 }

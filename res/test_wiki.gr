@@ -1,3 +1,6 @@
+# This file was used to check that the program understands how to create the DFA
+# trees correctly
+
 # https://en.wikipedia.org/wiki/Canonical_LR_parser#FIRST_and_FOLLOW_sets
 
 # TOKEN n: {"[0-9]+"}
