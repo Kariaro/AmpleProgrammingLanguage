@@ -6,8 +6,16 @@ import hardcoded.grammar.Grammar.*;
 import hardcoded.parser.LR0_ParserGenerator.*;
 import hardcoded.tree.AbstractSyntaxTree;
 import hc.errors.grammar.ParserException;
-import hc.token.Symbol;
+import hc.token.Token;
 
+/**
+ * A simple test to check if LR 0 was possible
+ * This is not the implementation that will be used..
+ * 
+ * @author HardCoded
+ *
+ */
+@Deprecated
 public class LR0_Parser {
 	private final ITable table;
 	protected LR0_Parser(ITable table) {
@@ -23,7 +31,7 @@ public class LR0_Parser {
 		throw new UnsupportedOperationException("Imlementation fault");
 	}
 	
-	public AbstractSyntaxTree parse(Symbol symbol) {
+	public AbstractSyntaxTree parse(Token symbol) {
 		System.out.println("Text: '" + symbol.toString(" ", Integer.MAX_VALUE) + "'");
 		
 		LinkedList<StateSymbol> reductionStack = new LinkedList<>();
@@ -125,7 +133,7 @@ public class LR0_Parser {
 		return null;
 	}
 	
-	private IAction next(IRow row, Symbol symbol) {
+	private IAction next(IRow row, Token symbol) {
 		for(IAction action : row.actions()) {
 			if(action == null) continue;
 			
@@ -138,7 +146,7 @@ public class LR0_Parser {
 		return null;
 	}
 	
-	private boolean match(IRule rule, Symbol symbol) {
+	private boolean match(IRule rule, Token symbol) {
 		if(symbol == null) return false; // TODO: This should only return true if we are expecting the {EOF} rule
 		
 		switch(rule.type()) {
@@ -167,7 +175,7 @@ public class LR0_Parser {
 	}
 	
 	// TODO: This is a cheaty method.. This should be replaced...
-	private boolean _match(RuleList set, Symbol symbol) {
+	private boolean _match(RuleList set, Token symbol) {
 		if(symbol == null) return false; // TODO: This should only return true if we are expecting the {EOF} rule
 		
 		for(Rule rule : set.getRules()) {
@@ -192,7 +200,7 @@ public class LR0_Parser {
 		private IAction action;
 		private SymType symbol;
 		
-		public StateSymbol(IAction action, Symbol symbol) {
+		public StateSymbol(IAction action, Token symbol) {
 			this.symbol = new SymType(symbol);
 			this.action = action;
 		}
@@ -220,10 +228,10 @@ public class LR0_Parser {
 	
 	private class SymType {
 		private boolean isSymbol;
-		private Symbol symbol;
+		private Token symbol;
 		private String itemName;
 		
-		public SymType(Symbol symbol) {
+		public SymType(Token symbol) {
 			this.symbol = symbol;
 			isSymbol = true;
 		}

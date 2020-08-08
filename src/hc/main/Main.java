@@ -10,9 +10,9 @@ import hardcoded.grammar.GrammarFactory;
 import hardcoded.grammar.GrammarType;
 import hardcoded.parser.GLRParser;
 import hardcoded.parser.GLRParserGenerator;
-import hardcoded.tree.AbstractSyntaxTree;
-import hc.parser.Syntaxer;
-import hc.token.Symbol;
+import hardcoded.tree.ParseTree;
+import hardcoded.visualization.PTVisualization;
+import hc.token.Token;
 import hc.token.Tokenizer;
 
 //https://www.cs.ru.ac.za/compilers/pdfvers.pdf
@@ -101,27 +101,40 @@ public class Main {
 			grammar = GrammarFactory.load(GrammarType.HCGR, "res/language_2.gr");
 			grammar = grammar.expand();
 			
-			//LR0_ParserGenerator generator = new LR0_ParserGenerator();
-			//LR0_Parser parser = generator.generateParser(grammar);
-			//GLRParser glpars = parser.testingHACK();
-			
 			GLRParserGenerator generator = new GLRParserGenerator();
 			GLRParser parser = generator.generateParser(grammar);
-			// a a a a b a b
+			
+			
+			{
+				byte[] bytes = readFileBytes(new File("res/test.hc"));
+				//bytes = "export int main() {} int test2() {}".getBytes();
+				Token token = Tokenizer.generateTokenChain(bytes);
+				ParseTree parseTree = parser.parse(token);
+				
+				System.out.println("ParseTree: " + parseTree);
+				
+				PTVisualization ptv = new PTVisualization();
+				ptv.show(parseTree);
+				
+				if(true) return;
+			}
 			
 			try(Scanner input = new Scanner(System.in)) {
 				while(true) {
 					String line;
-					// line = input.nextLine();
-					line = "uint_64* A(){}";
-					// line = "void TEST(uin, , , ) {}";
-					// line = "uint_64******* TESTING_FUNCTION (uint_64 ABCD, uint_64*** CDEB, uint_64*************** WHY_) { { { { { { 132323232 + 0x32 ; } } } } } }";
+					//line = input.nextLine();
+					//line = "uint_64* A(){}";
+					line = "void TEST(uin, , , ) {}";
+					line = "uint_64******* TESTING_FUNCTION (uint_64 ABCD, uint_64*** CDEB, uint_64*************** WHY_) { { { { { { 132323232 + 0x32F ; } } } } } }";
 					if(line == null || line.isEmpty()) break;
 					
-					Symbol symbol = Tokenizer.generateSymbolChain(line.getBytes());
-					AbstractSyntaxTree ast = parser.parse(symbol);
+					Token token = Tokenizer.generateTokenChain(line.getBytes());
+					ParseTree parseTree = parser.parse(token);
 					
-					System.out.println("SyntaxTree: " + ast);
+					System.out.println("ParseTree: " + parseTree);
+					
+					PTVisualization ptv = new PTVisualization();
+					ptv.show(parseTree);
 					
 					System.out.println();
 					System.out.println();
@@ -137,39 +150,5 @@ public class Main {
 		} finally {
 			if(true) return;
 		}
-		
-		System.out.println("============================================================================");
-		
-		File file = new File("res/test.gr.hc");
-		byte[] bytes = readFileBytes(file);
-		
-		// Token token = Tokeniser.generateTokenChain(bytes);
-		Symbol symbol = Tokenizer.generateSymbolChain(bytes);
-		
-		Syntaxer syntaxer = new Syntaxer();
-		syntaxer.generate(symbol);
-		
-		
-		/*
-		System.out.println("============================================================================");
-		
-		do {
-			token = token.next();
-			
-			TokenType type = token.getType();
-			
-			if(type.isComment() || type.isWhitespace()) {
-				//continue;
-			}
-			
-			System.out.println("token: " + token.getValue() + ":" + type);
-//			if(type.isBracket() && (token instanceof TokenGroup)) {
-//				TokenGroup group = token.toGroup();
-//				
-//				List<Token> tokens = group.getValue();
-//				System.out.println("    : " + tokens);
-//			}
-		} while(token.hasNext());
-		*/
 	}
 }

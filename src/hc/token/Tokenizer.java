@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 // FIXME: Create a tokenizer language that can be used to read a set of characters and create the token chain...
+// TODO: Clean all classes used to create this token chain
 public class Tokenizer {
 	private Tokenizer() {}
 	
@@ -13,7 +14,7 @@ public class Tokenizer {
 			   | c == '_');
 	}
 	
-	protected static final Token createTokenChain(byte[] bytes) {
+	protected static final EarlyToken createTokenChain(byte[] bytes) {
 		char[] chars = new char[bytes.length];
 		int index = 0;
 		
@@ -21,8 +22,8 @@ public class Tokenizer {
 			chars[i] = (char)Byte.toUnsignedInt(bytes[i]);
 		}
 		
-		Token start = new Token();
-		Token token = start;
+		EarlyToken start = new EarlyToken();
+		EarlyToken token = start;
 		
 		int lineIndex = 1;
 		int linePos = 0;
@@ -44,7 +45,7 @@ public class Tokenizer {
 				}
 			}
 			
-			Token next = new Token();
+			EarlyToken next = new EarlyToken();
 			next.column = (startIndex - linePos);
 			next.line = lineIndex;
 			next.value = buffer;
@@ -63,38 +64,38 @@ public class Tokenizer {
 		return start;
 	}
 	
-	protected static Token combineTokens(Token token) {
+	protected static EarlyToken combineTokens(EarlyToken token) {
 		return new TokenCombiner().combineTokens(token);
 	}
 	
-	protected static Token cleanTokens(Token token) {
+	protected static EarlyToken cleanTokens(EarlyToken token) {
 		return new TokenCleaner().cleanTokens(token);
 	}
 	
-	public static Token generateTokenChain(byte[] bytes) {
-		Token token = createTokenChain(bytes);
+	protected static EarlyToken generateEarlyTokenChain(byte[] bytes) {
+		EarlyToken token = createTokenChain(bytes);
 		token = combineTokens(token);
 		return cleanTokens(token);
 	}
 	
-	public static Symbol generateSymbolChain(byte[] bytes) {
-		Token token = generateTokenChain(bytes);
+	public static Token generateTokenChain(byte[] bytes) {
+		EarlyToken earlyToken = generateEarlyTokenChain(bytes);
 		
-		List<Symbol> list = new ArrayList<>();
-		while(token != null) {
-			Symbol symbol = new Symbol(token.value);
-			symbol.column = token.column;
-			symbol.line = token.line;
-			list.add(symbol);
-			token = token.next();
+		List<Token> list = new ArrayList<>();
+		while(earlyToken != null) {
+			Token token = new Token(earlyToken.value);
+			token.column = earlyToken.column;
+			token.line = earlyToken.line;
+			list.add(token);
+			earlyToken = earlyToken.next();
 		}
 		
-		Symbol entry = list.get(0);
-		Symbol symbol = entry;
-		for(Symbol s : list) {
-			symbol.next = s;
-			s.prev = symbol;
-			symbol = s;
+		Token entry = list.get(0);
+		Token token = entry;
+		for(Token t : list) {
+			token.next = t;
+			t.prev = token;
+			token = t;
 		}
 		
 		return entry.next;

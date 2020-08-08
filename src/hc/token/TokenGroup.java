@@ -3,18 +3,18 @@ package hc.token;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TokenGroup extends Token {
-	protected List<Token> group;
+class TokenGroup extends EarlyToken {
+	protected List<EarlyToken> group;
 	
 	public TokenGroup() {
 		group = new ArrayList<>();
 	}
 	
-	public TokenGroup(Token start, int count) {
+	public TokenGroup(EarlyToken start, int count) {
 		this(start, count, null);
 	}
 	
-	public TokenGroup(Token start, int count, TokenType type) {
+	public TokenGroup(EarlyToken start, int count, TokenType type) {
 		group = new ArrayList<>();
 		column = start.column;
 		line = start.line;
@@ -28,24 +28,24 @@ public class TokenGroup extends Token {
 	
 	public String getStringValue() {
 		StringBuilder sb = new StringBuilder();
-		for(Token token : group) sb.append(token.getValue());
+		for(EarlyToken token : group) sb.append(token.getValue());
 		return sb.toString();
 	}
 	
 	/**
 	 * This will only clone this token and remove all connected tokens.
 	 */
-	public Token clone() {
+	public EarlyToken clone() {
 		TokenGroup token = new TokenGroup();
-		for(Token t : group) token.group.add(t.clone());
+		for(EarlyToken t : group) token.group.add(t.clone());
 		return token;
 	}
 	
 	/**
 	 * Convert this group into one token
 	 */
-	public Token convertToToken() {
-		Token token = new Token();
+	public EarlyToken convertToToken() {
+		EarlyToken token = new EarlyToken();
 		token.setType(getType());
 		token.value = toString();
 		token.column = column;
@@ -53,13 +53,13 @@ public class TokenGroup extends Token {
 		return token;
 	}
 	
-	public List<Token> getValue() {
+	public List<EarlyToken> getValue() {
 		return group;
 	}
 	
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		for(Token token : group) sb.append(token.getValue());
+		for(EarlyToken token : group) sb.append(token.getValue());
 		return sb.toString();
 	}
 }

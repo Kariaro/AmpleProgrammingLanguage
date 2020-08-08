@@ -1,152 +1,186 @@
 package hc.token;
 
-class Token {
-	private TokenType type = TokenType.TOKEN;
-	protected String value;
+public class Token {
+	protected final String value;
 	protected Token prev;
 	protected Token next;
 	
-	// Debug information
-	protected int column;
 	protected int line;
+	protected int column;
 	
-	public Token() {
-		
-	}
-	
-	public Object getValue() {
-		return value;
-	}
-	
-	public String getStringValue() {
-		return value;
+	protected Token(String value) {
+		this.value = value;
 	}
 	
 	/**
-	 * Get the previous token.
+	 * Get the line that this token was read on.
 	 */
-	public Token previous() { return prev; }
+	public int getLineIndex() {
+		return line;
+	}
 	
 	/**
-	 * Get the next token.
+	 * Get the column index of this token.
 	 */
-	public Token next() { return next; }
+	public int getColumnIndex() {
+		return column;
+	}
 	
 	/**
-	 * Get the nth token.
+	 * Returns the next token.
 	 */
-	public Token next(int skip) {
+	public Token next() {
+		return next;
+	}
+	
+	/**
+	 * Returns the previous token.
+	 */
+	public Token prev() {
+		return prev;
+	}
+	
+	/**
+	 * Returns the nth-next token.
+	 * @param count a value of one will give the same result as calling {@link #next()}
+	 * @return returns the nth-next token or null if the count was greater than the length of the chain
+	 */
+	public Token next(int count) {
 		Token token = this;
-		for(int i = 0; i < skip; i++) token = token.next;
+		for(int i = 0; i < count; i++) {
+			token = token.next;
+			if(token == null) return null;
+		}
 		return token;
 	}
 	
 	/**
-	 * Check if the next token exists.
+	 * Returns the nth-previous token.
+	 * @param count a value of one will give the same result as calling {@link #prev()}
+	 * @return returns the nth-previous token or null if the count was greater than the length of the chain
 	 */
-	public boolean hasNext() { return next != null; }
-	
-	/**
-	 * Check if there is atleast {@literal count} remaining tokens.
-	 * @param count
-	 */
-	public boolean hasNext(int count) {
-		if(next == null) return count == 0;
-		Token token = next;
-		for(int i = 0; i < count - 1; i++) {
-			if(!token.hasNext()) return false;
-			token = token.next;
+	public Token prev(int count) {
+		Token token = this.prev;
+		for(int i = 0; i < count; i++) {
+			token = token.prev;
+			if(token == null) return null;
 		}
-		return true;
-	}
-	
-	public TokenType getType() {
-		return type;
-	}
-	
-	public final Token setType(TokenType type) {
-		if(type == null) type = TokenType.TOKEN;
-		this.type = type;
-		return this;
+		return token;
 	}
 	
 	/**
-	 * Get the tokens index relative to this token.
-	 * @return -1 if the token was not found
+	 * Returns the relative index of the given token.
+	 * @return returns -1 if the token was not found in the chain
 	 */
 	public int indexOf(Token token) {
-		if(this == token) return 0;
-		
+		if(token == null) return -1;
+		if(token == this) return 0;
 		Token t = this;
+		
 		int index = 0;
-		while(t.hasNext()) {
-			t = t.next();
+		while(t.next != null) {
+			t = t.next;
 			index++;
-			if(t == token) return index;
-		} while(t.hasNext());
+			if(token == t) return index;
+		}
 		
 		return -1;
 	}
 	
 	/**
-	 * Try convert this token to a tokengroup.
+	 * Returns the remaining number of tokens in the chain.
 	 */
-	public TokenGroup toGroup() throws ClassCastException {
-		return (TokenGroup)this;
+	public int remaining() {
+		Token token = this;
+		int index = 0;
+		while(token.next != null) {
+			token = token.next;
+			index++;
+		}
+		return index;
 	}
 	
 	/**
-	 * This will only clone this token and remove all connected tokens.
+	 * Checks if the string is equal to the value held by this token.
+	 */
+	public boolean equals(Object object) {
+		if(object instanceof String) {
+			return ((String)object).equals(value);
+		}
+		return this == object;
+	}
+	
+	/**
+	 * Clone this token. This will not copy the next and previous values.
 	 */
 	public Token clone() {
-		Token token = new Token();
-		token.value = value;
-		token.line = line;
-		token.column = column;
-		return token;
+		return new Token(value);
 	}
 	
-	public int remainingTokens() {
-		if(next == null) return 0;
+	/**
+	 * Clone this token and count tokens after this one.
+	 * @param count  a value of one will give the same result as calling {@link #clone()}
+	 * @return a cloned chain of count tokens
+	 */
+	public Token clone(int count) {
+		Token start = clone();
+		Token token = start;
 		Token t = this;
-		int size = 0;
-		while(t.hasNext()) {
-			t = t.next();
-			size++;
-		} while(t.hasNext());
-		return size + 1;
+		for(int i = 0; i < count; i++) {
+			t = t.next;
+			if(t == null) return start;
+			
+			Token next = t.clone();
+			next.prev = token;
+			token.next = next;
+			token = next;
+		}
+		
+		return start;
 	}
 	
+	/**
+	 * Returns the value that this token holds.
+	 */
 	public String toString() {
 		return value;
 	}
 	
 	/**
-	 * Combines a chain of tokens together and returns their combined value.
-	 * @param count the amount of tokens to concatenate
+	 * Returns the values of the next count amount of tokens concatinated together.
+	 * @param count a value of one will give the same result as calling {@link #toString()}
+	 * @return returns a string of the concatinated tokens.
 	 */
 	public String toString(int count) {
 		StringBuilder sb = new StringBuilder();
 		Token token = this;
 		for(int i = 0; i < count; i++) {
-			if(token == null) break;
-			
-			sb.append(token.getStringValue());
+			sb.append(token.value);
 			token = token.next;
+			if(token == null) break;
 		}
-		
 		return sb.toString();
 	}
 	
-	public String toSimpleString() {
-		String value = this.toString();
-		if(type.isQuoted()) return value;
-		return value == null ? null:value.toString().replaceAll("[ \t\n\r]+", " ");
-	}
-	
-	public String toSimpleString(int count) {		
-		String value = this.toString(count);
-		if(type.isQuoted()) return value;
-		return value.replaceAll("[ \t\n\r]+", " ");
+	/**
+	 * Returns the values of the next count amount of tokens concatinated together.
+	 * @param separator the string that will separate the concatinated tokens.
+	 * @param count a value of one will give the same result as calling {@link #toString()}
+	 * @return returns a string of the concatinated tokens.
+	 */
+	public String toString(CharSequence separator, int count) {
+		StringBuilder sb = new StringBuilder();
+		Token token = this;
+		for(int i = 0; i < count; i++) {
+			sb.append(token.value).append(separator);
+			token = token.next;
+			if(token == null) break;
+		}
+		
+		if(sb.length() > separator.length()) {
+			sb.delete(sb.length() - separator.length(), sb.length());
+		}
+		
+		return sb.toString();
 	}
 }

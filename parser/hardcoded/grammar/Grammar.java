@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 
 import hc.errors.grammar.DuplicateItemException;
 import hc.errors.grammar.UndefinedMatchType;
-import hc.token.Symbol;
+import hc.token.Token;
 
 /**
  * This is a grammar file that contains statements and production rules.<br>
@@ -24,7 +24,8 @@ public class Grammar {
 	protected final Map<String, Item> items;
 	protected String startItem;
 	
-	// FIXME: Make it so that if this was implemented somewhere you could modify all the syntax.
+	// TODO: Make it so that if this was implemented somewhere you could modify all the syntax.
+	// TODO: Maybe make like a CustomGrammar gramamr or something where you can modify everything.
 	
 	protected Grammar() {
 		tokens = new LinkedHashMap<>();
@@ -183,15 +184,15 @@ public class Grammar {
 	public class BracketRule extends Rule {
 		protected List<Rule> matches;
 		protected boolean repeat;
-		protected Symbol symbol;
+		protected Token token;
 		
-		protected BracketRule(Symbol symbol) {
-			this(symbol, false);
+		protected BracketRule(Token token) {
+			this(token, false);
 		}
 		
-		protected BracketRule(Symbol symbol, boolean repeat) {
-			matches = new ArrayList<>();
-			this.symbol = symbol;
+		protected BracketRule(Token token, boolean repeat) {
+			this.matches = new ArrayList<>();
+			this.token = token;
 			this.repeat = repeat;
 		}
 		
@@ -217,8 +218,8 @@ public class Grammar {
 	public class ItemRule extends Rule {
 		protected String name;
 		
-		protected ItemRule(Symbol symbol) {
-			this(symbol.toString());
+		protected ItemRule(Token token) {
+			name = token.toString();
 		}
 		
 		protected ItemRule(String name) {
@@ -238,8 +239,8 @@ public class Grammar {
 	public class StringRule extends Rule {
 		protected String value;
 		
-		protected StringRule(Symbol symbol) {
-			value = symbol.toString();
+		protected StringRule(Token token) {
+			value = token.toString();
 			value = value.substring(1, value.length() - 1);
 		}
 		
@@ -258,8 +259,9 @@ public class Grammar {
 	
 	public class RegexRule extends Rule {
 		protected Pattern pattern;
-		protected RegexRule(Symbol symbol) {
-			String regex = symbol.toString();
+		
+		protected RegexRule(Token token) {
+			String regex = token.toString();
 			regex = regex.substring(1, regex.length() - 1);
 			pattern = Pattern.compile(regex);
 		}
@@ -281,8 +283,8 @@ public class Grammar {
 	protected static final int SPECIAL_EMPTY = 2;
 	public class SpecialRule extends Rule {
 		protected int type;
-		protected SpecialRule(Symbol symbol) {
-			switch(symbol.toString()) {
+		protected SpecialRule(Token token) {
+			switch(token.toString()) {
 				case "EOF": {
 					type = SPECIAL_EOF;
 					break;
@@ -292,7 +294,7 @@ public class Grammar {
 					break;
 				}
 				default: {
-					throw new UndefinedMatchType("The match type {" + symbol + "} does not exist.");
+					throw new UndefinedMatchType("The match type {" + token + "} does not exist.");
 				}
 			}
 		}

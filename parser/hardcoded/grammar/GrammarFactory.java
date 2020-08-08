@@ -45,7 +45,7 @@ public final class GrammarFactory {
 	}
 	
 	/**
-	 * Parse a grammar from the content of this string.
+	 * Parse a grammar from the content of a string.
 	 * 
 	 * @param grammarType the type of the grammar.
 	 * @param content the string containing the grammar data.

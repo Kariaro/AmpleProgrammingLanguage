@@ -243,9 +243,23 @@ public class GLRParserGenerator {
 		}
 	}
 	
+	private void computeClosure(IState state) {
+		LinkedList<List<IState>> states = new LinkedList<>();
+		states.add(computeClosure2(state));
+		
+		while(!states.isEmpty()) {
+			List<IState> next = states.poll();
+			
+			for(IState s : next) {
+				System.out.println(s);
+				states.add(computeClosure2(s));
+			}
+		}
+	}
+	
 	// TODO: If there is a chain with only only terminals left, find the start
 	//       of the chain and reduce it to only one state.
-	private void computeClosure(IState state) {
+	private List<IState> computeClosure2(IState state) {
 		IState current = state.clone();
 		
 		List<IState> nextSet = new ArrayList<>();
@@ -265,16 +279,18 @@ public class GLRParserGenerator {
 			if(index < 0) {
 				globalStates.add(next);
 				state.name = "I" + globalStates.size();
-				
 				state.next.add(next);
-				computeClosure(next);
+				
+				// computeClosure(next);
+				nextSet.add(next);
 			} else {
 				IState found = globalStates.get(index);
 				state.next.add(found);
 			}
 			
-			nextSet.add(next);
 		}
+		
+		return nextSet;
 	}
 	
 	/**
@@ -405,6 +421,8 @@ public class GLRParserGenerator {
 	
 	private IItem getGrammarItem(String name) {
 		Item item = grammar.getItem(name);
+		if(item == null) throw new GrammarException("The item '" + name + "' does not exist in the grammar");
+		
 		IItem result = new IItem(name);
 		
 		for(RuleList set : item.getRules()) {

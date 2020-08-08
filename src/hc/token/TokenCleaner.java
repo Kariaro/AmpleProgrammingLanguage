@@ -5,13 +5,13 @@ class TokenCleaner {
 		
 	}
 	
-	protected Token cleanCommentsAndSpaces(Token tree) {
+	protected EarlyToken cleanCommentsAndSpaces(EarlyToken tree) {
 		while(tree.hasNext() && tree.getType().isDebug()) tree = tree.next();
-		if(tree.getType().isDebug()) return new Token();
+		if(tree.getType().isDebug()) return new EarlyToken();
 		
-		Token tokenStart = tree;
+		EarlyToken tokenStart = tree;
 		do {
-			Token token = tree.next();
+			EarlyToken token = tree.next();
 			
 			if(token.getType().isDebug()) {
 				// Remove this token from the chain
@@ -29,7 +29,7 @@ class TokenCleaner {
 		return tokenStart;
 	}
 	
-	public Token cleanTokens(Token tree) {
+	public EarlyToken cleanTokens(EarlyToken tree) {
 		tree = cleanCommentsAndSpaces(tree);
 		return tree;
 	}
