@@ -11,6 +11,8 @@ public class TokenizerBuilder {
 	private Map<String, List<Pattern>> groups = new LinkedHashMap<>();
 	private Map<String, List<Pattern>> escapes = new HashMap<>();
 	
+	// TODO: Set linefeed to this...
+	
 	/**
 	 * This will set the standard line feed to this string.<br>
 	 * This will convert all <code>(\r\n|\r|\n)</code> into the specified linefeed.

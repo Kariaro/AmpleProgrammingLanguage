@@ -11,8 +11,7 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 /**
- * This class will only work if it is
- * inside the same jar as the calling
+ * This class will only work if it is inside the same jar as the calling
  * class is.
  * 
  * @author HardCoded

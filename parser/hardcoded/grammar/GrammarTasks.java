@@ -9,8 +9,7 @@ final class GrammarTasks {
 	 *       entry set to be defined.
 	 */
 	
-	/* TODO: Nesting brackets inside brackets should not be
-	 *       allowed.
+	/* REMOVE BAD IDEA: Nesting brackets inside brackets should not be allowed.
 	 *       
 	 *       There is a problem where if you were to simplify
 	 *       a roundbracket inside a squarebracket you would

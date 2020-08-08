@@ -16,6 +16,7 @@ import hc.errors.grammar.GrammarException;
  * 
  * @author HardCoded
  */
+@Deprecated
 public class LR0_ParserGenerator {
 	
 	public LR0_ParserGenerator() {

@@ -3,7 +3,7 @@ package hardcoded.grammar;
 import java.io.*;
 
 import hc.errors.grammar.GrammarSyntaxException;
-import hc.token.Symbol;
+import hc.token.Token;
 import hc.token.Tokenizer;
 import hardcoded.grammar.Grammar.*;
 
@@ -158,90 +158,90 @@ public final class HCGRGrammarReader implements GrammarReaderImpl {
 	}
 	
 	private RuleList createRuleList(int ruleId, Grammar grammar, String line) {
-		Symbol start = Tokenizer.generateSymbolChain(line.getBytes());
+		Token start = Tokenizer.generateTokenChain(line.getBytes());
 		
 		RuleList list = grammar.new RuleList(ruleId);
-		Symbol symbol = start;
+		Token token = start;
 		
-		while(symbol != null) {
-			String value = symbol.toString();
+		while(token != null) {
+			String value = token.toString();
 			
 			if(value.equals("{")) {
-				Symbol pattern = symbol.next();
+				Token pattern = token.next();
 				if(!pattern.next().equals("}")) return null;
 				if(pattern.toString().startsWith("\"")) {
 					list.add(grammar.new RegexRule(pattern));
 				} else {
 					list.add(grammar.new SpecialRule(pattern));
 				}
-				symbol = pattern.next(2);
+				token = pattern.next(2);
 				continue;
 			}
 			
 			if(value.equals("[") || value.equals("(")) {
-				BracketRule match = createBracketRule(grammar, symbol);
+				BracketRule match = createBracketRule(grammar, token);
 				
 				list.add(match);
-				symbol = symbol.next(match.symbol.remaining() + 3);
+				token = token.next(match.token.remaining() + 3);
 				continue;
 			}
 			
 			if(value.startsWith("\"") || value.startsWith("\'")) {
 				// Must be a string
-				list.add(grammar.new StringRule(symbol));
+				list.add(grammar.new StringRule(token));
 			} else {
 				// Must be a type
-				list.add(grammar.new ItemRule(symbol));
+				list.add(grammar.new ItemRule(token));
 			}
 			
-			symbol = symbol.next();
+			token = token.next();
 		}
 		
 		return list;
 	}
 	
-	private BracketRule createBracketRule(Grammar grammar, Symbol start) {
+	private BracketRule createBracketRule(Grammar grammar, Token start) {
 		boolean repeat = start.equals("[");
 		BracketRule bracket = grammar.new BracketRule(start, repeat);
 		start = start.next();
 		
-		Symbol symbol = start;
+		Token token = start;
 		int count = -1;
-		while(symbol != null) {
-			String value = symbol.toString();
+		while(token != null) {
+			String value = token.toString();
 			count++;
 			
 			if(value.equals("{")) {
-				Symbol pattern = symbol.next();
+				Token pattern = token.next();
 				if(!pattern.next().equals("}")) return null;
 				bracket.add(grammar.new RegexRule(pattern));
-				symbol = pattern.next(2);
+				token = pattern.next(2);
 				continue;
 			}
 			
 			if(value.equals("[") || value.equals("(")) {
-				BracketRule match = createBracketRule(grammar, symbol);
+				BracketRule match = createBracketRule(grammar, token);
 				
 				bracket.add(match);
-				symbol = symbol.next(match.symbol.remaining() + 3);
-				count += match.symbol.remaining() + 2;
+				token = token.next(match.token.remaining() + 3);
+				count += match.token.remaining() + 2;
 				continue;
 			}
 			
 			if(repeat && value.equals("]") || !repeat && value.equals(")")) {
-				bracket.symbol = start.clone(count - 1);
+				bracket.token = start.clone(count - 1);
 				break;
 			}
 			
 			if(value.startsWith("\"") || value.startsWith("\'")) {
 				// Must be a string
-				bracket.add(grammar.new StringRule(symbol));
+				bracket.add(grammar.new StringRule(token));
 			} else {
 				// Must be a type
-				bracket.add(grammar.new ItemRule(symbol));
+				bracket.add(grammar.new ItemRule(token));
 			}
 			
-			symbol = symbol.next();
+			token = token.next();
 		}
 		
 		return bracket;

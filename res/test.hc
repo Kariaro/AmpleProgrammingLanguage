@@ -15,34 +15,7 @@
 
 // An include statement will be used to link multiple
 // files together into one file.
-%include "testing.hc";
-
-// My language will also have a variety of object types.
-
-// Struct...
-struct Data {
-	DWORD dwField_0x0;
-	DWORD dwField_0x4;
-};
-
-// Enums...
-// An enum is just an integer with fields.
-// The compiler should reduce it to just
-// ints when being compiled. enum <=> int.
-enum Fields {
-	DAY,
-	NIGHT
-};
-
-// Classes...
-class Object {
-	// Instantiation
-	Object() {}
-	
-	// And methods
-	void doStuff() {}
-};
-
+// %include "testing.hc";
 
 /* My language will allow for functions to
  * be created outside classes and to allow
@@ -55,16 +28,28 @@ class Object {
  * can be used to call the function from another
  * process.
  */
-export void main(int* input, int a, int b, int c) {
-	test();
-	print(c);
+export void main(int input, int a, int b, int c) {
+	if(a > b) {
+		while(1 > 0) {
+			break;
+		}
+	}
 	
 	if(input > 3) {
-		print("This is a \" \" \"static message!");
+		// print("This is a \" \" \"static message!");
 	} else {
-		print("Inside else statement!");
+		// print("Inside else statement!");
+	}
+	// test();
+	// print(c);
+}
+
+void testing() {
+	if(awesome > 10000) {
+		// This is sick
 	}
 }
+
 
 /* Inside the functions there will be alot of different
  * ways you can code.
@@ -124,22 +109,22 @@ void test() {
 }
 
 void print(char* string) {
-	char* buffer = &(0xb8000);
+	// char* buffer = &(0xb8000);
 	
-	while(string[0] > 0) {
-		buffer[0] = string[0];
-		string++;
-		buffer++;
-	}
+	// while(string[0] > 0) {
+		// buffer[0] = string[0];
+		// string++;
+		// buffer++;
+	// }
 	
-	for
-	do
-	case
-	switch
-	goto
+	// for
+	// do
+	// case
+	// switch
+	// goto
 	
-	asm(
-		"mov ah, 0",
-		""
-	);
+	// asm(
+		// "mov ah, 0",
+		// ""
+	// );
 }

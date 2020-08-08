@@ -10,14 +10,14 @@ class TokenCombiner {
 		
 	}
 	
-	protected boolean isWhitespace(Token token) {
+	protected boolean isWhitespace(EarlyToken token) {
 		String value = token.value;
 		
 		if(value == null) return true;
 		return value.length() == 1 && Character.isWhitespace(value.charAt(0));
 	}
 	
-	protected boolean isEOL(Token token) { // End of line
+	protected boolean isEOL(EarlyToken token) { // End of line
 		if(!token.hasNext()) return true;
 		String value = token.value;
 		
@@ -27,7 +27,7 @@ class TokenCombiner {
 		return c == '\r' || c == '\n';
 	}
 	
-	protected boolean isEscaped(Token token) {
+	protected boolean isEscaped(EarlyToken token) {
 		if(!token.hasNext()) return false;
 		String value = token.value;
 		
@@ -35,7 +35,7 @@ class TokenCombiner {
 		char c = value.charAt(0);
 		if(c != '\\') return false;
 		
-		Token next = token.next();
+		EarlyToken next = token.next();
 		c = next.value.charAt(0);
 		
 		if(c == '"'
@@ -47,15 +47,15 @@ class TokenCombiner {
 		return false;
 	}
 	
-	public Token combineTokens(Token tree) {
-		List<Token> tokens = new ArrayList<>();
+	public EarlyToken combineTokens(EarlyToken tree) {
+		List<EarlyToken> tokens = new ArrayList<>();
 		
-		Token start = null;
+		EarlyToken start = null;
 		TokenType type = TOKEN;
 		
 		int count = 0;
 		while(tree.hasNext()) {
-			Token token = tree.next();
+			EarlyToken token = tree.next();
 			
 			switch(type) {
 				case DOUBLEQUOTE: {
@@ -154,9 +154,9 @@ class TokenCombiner {
 			tree = token;
 		}
 		
-		Token token = new Token();
+		EarlyToken token = new EarlyToken();
 		start = token;
-		for(Token t : tokens) {
+		for(EarlyToken t : tokens) {
 			token.next = t;
 			t.prev = token;
 			token = t;
@@ -166,7 +166,7 @@ class TokenCombiner {
 		return start;
 	}
 	
-	protected boolean isSpace(Token token) {
+	protected boolean isSpace(EarlyToken token) {
 		String value = token.value;
 		
 		if(value == null || value.length() != 1) return false;
@@ -174,13 +174,13 @@ class TokenCombiner {
 		return c == ' ' || c == '\t';
 	}
 	
-	protected Token compactSpaces(Token tree) {
-		Token treeStart = tree;
-		Token start = null;
+	protected EarlyToken compactSpaces(EarlyToken tree) {
+		EarlyToken treeStart = tree;
+		EarlyToken start = null;
 		
 		int spaces = 0;
 		while(tree.hasNext()) {
-			Token token = tree.next();
+			EarlyToken token = tree.next();
 			
 			if(isSpace(token)) {
 				if(spaces == 0) start = token;
