@@ -43,7 +43,7 @@ public class GLRParser {
 		
 		@Override
 		public String toString() {
-			return '(' + listToString(", ", reductionStack) + ')';
+			return '(' + join(", ", reductionStack) + ')';
 		}
 	}
 	
@@ -182,8 +182,9 @@ public class GLRParser {
 				System.out.println("  ShiftState : state='" + current + "', input='" + nextState.input + "', i=" + state.index);
 				
 				IRow row = table.getRow(current.index);
+				// TODO: Sometimes there are more ways to understand one token..
 				IAction[] actions = getState(row, nextState);
-				if(actions == null || actions.length == 0) {
+				if(actions == null || actions.length == 0 || state.index >= actions.length) {
 					System.out.println("    \"A shift is not valid for the input '" + nextState.input + "'\"");
 					System.out.println("    \"Going back into search tree\"");
 					
@@ -219,7 +220,7 @@ public class GLRParser {
 					continue;
 				}
 				
-				System.out.println("    Actions: " + arrayToString(", ", actions));
+				System.out.println("    Actions: " + join(", ", actions));
 				System.out.println("    Index  : " + state.index);
 				
 				if(state.index >= actions.length) {
@@ -302,7 +303,7 @@ public class GLRParser {
 				IAction[] actions = getState(row, nextState);
 				
 				if(actions != null) {
-					System.out.println("    Actions: " + arrayToString(", ", actions));
+					System.out.println("    Actions: " + join(", ", actions));
 					System.out.println("    Index  : " + state.index);
 					// Expected 34!
 					nextState.actions = actions;

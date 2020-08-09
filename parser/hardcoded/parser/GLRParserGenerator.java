@@ -76,7 +76,7 @@ public class GLRParserGenerator {
 			acceptItem = grammar.getStartItem();
 			
 			for(int i = 0; i < states.size(); i++) {
-				rows.add(new IRow(ITable.this, states.get(i)));
+				rows.add(new IRow(this, states.get(i)));
 			}
 		}
 		
@@ -126,10 +126,7 @@ public class GLRParserGenerator {
 			owner = parent;
 			actions = new IAction[owner.set.size()][];
 			
-			if(states.next.isEmpty()) {
-				// TODO: This row should be removed
-				return;
-			}
+			if(states.next.isEmpty()) return;
 			
 			for(IState state : states.next) {
 				int index = owner.set.indexOf(state.action);
@@ -139,6 +136,7 @@ public class GLRParserGenerator {
 				
 				List<IAction> acts = new ArrayList<>();
 				
+				IAction shiftAction = null;
 				IRule shiftRule = null;
 				List<IRuleList> reduceRules = null;
 				
@@ -157,14 +155,14 @@ public class GLRParserGenerator {
 						shiftRule = rl.cursor(-1);
 						
 						// This will only be added once...
-						IAction act = new IAction(0, globalStates.indexOf(state));
-						acts.add(act);
+						shiftAction = new IAction(0, globalStates.indexOf(state));
+						//acts.add(act);
 					}
-					
-					// System.out.println("    : " + "" + "reduce=" + reduce);
 				}
 				
-				// System.out.println(" ---: sr='" + shiftRule + "', rr='" + reduceRules + "'");
+				if(shiftAction != null) {
+					acts.add(0, shiftAction);
+				}
 				
 				actions[index] = acts.toArray(new IAction[0]);
 			}

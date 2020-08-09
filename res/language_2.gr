@@ -1,4 +1,6 @@
 # IDENTIFIER
+# TODO: Fix a more powerfull lexer!!!
+
 TOKEN IDENTIFIER: {"[a-zA-Z_][a-zA-Z0-9_]*"}
 TOKEN STRINGLITERAL: {"\".*\""}
 TOKEN NUMBERLITERAL: {"[0-9]+"}
@@ -21,12 +23,12 @@ type: 'void'
 program: [ function ]
 
 # Conditions
-condition: expression '<' expression
-		 | expression '>' expression
-		 | expression '=' '=' expression
-		 | expression '!' '=' expression
-		 | expression '>' '=' expression
-		 | expression '<' '=' expression
+condition: expr '<' expr
+		 | expr '>' expr
+		 | expr '=' '=' expr
+		 | expr '!' '=' expr
+		 | expr '>' '=' expr
+		 | expr '<' '=' expr
 
 # 
 
@@ -41,14 +43,27 @@ statement: '{' [ statement ] '}'
 		 | 'while' '(' condition ')' '{' [ statement ] '}'
 		 | 'continue' ';'
 		 | 'break' ';'
-		 | 'return' ( expression ) ';'
+#		 | expr ';'
+		 | 'return' ( expr ) ';'
 		 | ';'
 
-call_expression: IDENTIFIER '(' ')' ';'
+call_expression: IDENTIFIER '(' ( call_argument ) ')'
 
-expression: NUMBERLITERAL
-		  | STRINGLITERAL
-		  | IDENTIFIER
-		  | '(' expression ')'
-		  | call_expression
+call_argument: call_argument ',' expr
+			 | expr
+
+# TODO: Add operator precedence and associativity
+operator: '+'
+		| '-'
+		| '*'
+		| '/'
+		| '>' '>'
+		| '<' '<'
+
+expr: NUMBERLITERAL
+	| STRINGLITERAL
+	| IDENTIFIER
+	| '(' expr ')'
+#	| call_expression
+#	| expr operator expr
 	
