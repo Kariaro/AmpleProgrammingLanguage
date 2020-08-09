@@ -56,35 +56,36 @@ void testing() {
  */
 void test() {
 	// Variable declaration
-	int a = 0;
+	// int a = 0;
 	
 	// Pointer declaration
-	int* c = &b;
+	// int* c = &b;
 	
 	// Array declaration
-	int array[32];
+	// int array[32];
 	
 	// Array writing
-	array[0] = 3;
+	// array[0] = 3;
 	
 	// Switch statements
-	switch(a) {
-		case 0: break;
-		case 1:
-		default: break;
-	}
+	// switch(a) {
+	// 	case 0: break;
+	// 	case 1:
+	// 	default: break;
+	// }
 	
 	// Lables, branches and goto statements
-	Label: {
+	// Label:
+	{
 		// While loops
-		while(a++ < 2) {
-			goto Label
-		}
+		// while(a++ < 2) {
+			// goto Label
+		// }
 		
 		// For loops
-		for(a = 0; a < 5; a++) {
+		// for(a = 0; a < 5; a++) {
 			// ...
-		}
+		// }
 		
 		// Comparisons
 		if(a == 5) {
@@ -93,19 +94,19 @@ void test() {
 	}
 	
 	// Casting of datatypes
-	char d = (char)a;
+	// char d = (char)a;
 	
 	// Declaration of objects
-	Object obj = new Object();
+	// Object obj = new Object();
 	
 	// Declaration of structs
-	Data data;
+	// Data data;
 	
 	// Declaration of enums
-	Fields field;
+	// Fields field;
 	
 	// Return statements
-	return;
+	// return;
 }
 
 void print(char* string) {

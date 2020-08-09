@@ -106,6 +106,7 @@ public class TokenizerBuilder {
 	
 	
 	public Tokenizer build() {
-		return new Tokenizer(groups);
+		return null;
+		//return new Tokenizer(groups);
 	}
 }
