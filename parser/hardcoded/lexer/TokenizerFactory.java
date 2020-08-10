@@ -2,7 +2,6 @@ package hardcoded.lexer;
 
 import java.io.*;
 import java.util.*;
-import java.util.regex.Pattern;
 
 import hardcoded.lexer.Tokenizer.SymbolGroup;
 import hardcoded.utils.StringUtils;
@@ -35,9 +34,14 @@ public class TokenizerFactory {
 		
 		try {
 			Tokenizer lexer = factory.parse(bytes);
-			
 			lexer.dump();
 			
+			System.out.println("=======================================================");
+			
+			byte[] lang = readFileBytes(new File("res/lexer/hc_specify.hc"));
+			lexer.parse(lang);
+			
+			System.out.println("=======================================================");
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
@@ -76,24 +80,9 @@ public class TokenizerFactory {
 		return parseLexer(string.toCharArray());
 	}
 	
-	private static final boolean isDelimiter(char c) {
-		return !Character.isJavaIdentifierPart(c);
-	}
-	
 	private static final boolean isEscapable(char c) {
 		return c == 'x' || c == 'u' || c == 'r' || c == 'n' || c == 't' || c == 'b' || c == '\\' || c == '\'' || c == '\"';
 	}
-	
-	private static final boolean isWhitespace(char c) {
-		return Character.isWhitespace(c);
-	}
-	
-//	private static final boolean containsWhitespace(String string) {
-//		for(int i = 0; i < string.length(); i++) {
-//			if(Character.isWhitespace(string.charAt(i))) return true;
-//		}
-//		return false;
-//	}
 	
 	private static final String escape(char c) {
 		return StringUtils.escapeString(Character.toString(c));
@@ -108,13 +97,14 @@ public class TokenizerFactory {
 	 * @throws LexicalException
 	 */
 	private Tokenizer parseLexer(char[] chars) {
-		List<Object> delimiter = new ArrayList<Object>();
+		List<String> delimiter = new ArrayList<String>();
 		
 		boolean hasLine = true;
 		boolean hasRegex = false;
 		boolean hasDiscard = false;
 		boolean hasDelimiter = false;
 		boolean hasDelimiterStart = false;
+		boolean hasDelimiterComma = false;
 		
 		String regexString = null;
 		
@@ -125,9 +115,9 @@ public class TokenizerFactory {
 		for(int i = 0; i < chars.length; i++) {
 			char c = chars[i];
 			
-			if(isWhitespace(c)) {
+			if(Character.isWhitespace(c)) {
 				if(c == '\n') {
-					hasLine = true;
+					hasLine = !hasDelimiter;
 					lineIndex++;
 				}
 				
@@ -136,14 +126,14 @@ public class TokenizerFactory {
 			
 			if(hasDelimiter) {
 				if(!hasDelimiterStart) {
-					if(c != '(') throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Illegal marco start character '" + escape(c) + "' expected '(' \"" + getLine(chars, i) + "\"");
+					if(c != '(') throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Illegal delimiter start character '" + escape(c) + "' expected '(' \"" + getLine(chars, i) + "\"");
 					hasDelimiterStart = true;
+					hasDelimiterComma = true;
 					continue;
 				} else if(c == ')') {
 					hasDelimiterStart = false;
+					hasDelimiterComma = false;
 					hasDelimiter = false;
-					
-					if(delimiter.size() != 3) throw new LexicalException("(line:" + lineIndex + ") Invalid delimiter size. Expected 3 arguments. \"" + getLine(chars, i) + "\"");
 					
 					group.addDelimiter(
 						delimiter.get(0),
@@ -163,66 +153,68 @@ public class TokenizerFactory {
 					if(regexString != null) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Too many strings inside regex bracket. \"" + getLine(chars, i) + "\"");
 					regexString = string;
 				} else if(hasDelimiter) {
+					if(!hasDelimiterComma) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Delimiter items needs to be comma separated. \"" + getLine(chars, i) + "\"");
+					hasDelimiterComma = false;
+					
 					delimiter.add(string);
 				} else {
 					group.addString(string);
 				}
 				
 				i += string.length() + 1;
-			} else if(c == '[') {
-				if(hasRegex) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Only strings are allowed inside regex brackets. \"" + getLine(chars, i) + "\"");
-				hasRegex = true;
-				regexString = null;
-			} else if(c == ']') {
-				if(!hasRegex) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Invalid character '" + escape(c) + "' \"" + getLine(chars, i) + "\"");
-				if(regexString == null) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Empty regex bracket. \"" + getLine(chars, i) + "\"");
-				hasRegex = false;
+			} else if(c == '[' || c == ']') {
+				if(hasDelimiter) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Only strings are allowed inside delimiters. \"" + getLine(chars, i) + "\"");
 				
-				if(hasDelimiter) {
-					delimiter.add(Pattern.compile(regexString));
-				} else {
+				if(c == ']') {
+					if(!hasRegex) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Invalid character '" + escape(c) + "' \"" + getLine(chars, i) + "\"");
+					if(regexString == null) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Empty regex bracket. \"" + getLine(chars, i) + "\"");
+					
 					group.addRegex(regexString);
+				} else if(hasRegex) {
+					throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Only strings are allowed inside regex brackets. \"" + getLine(chars, i) + "\"");
 				}
+				
+				hasRegex = (c == '['); 
+				regexString = null;
 			} else if(c == '%') {
 				String string = getSpecialLiteral(chars, lineIndex, i);
 				i += string.length();
 				
-				switch(string) {
-					case "DISCARD": {
-						if(!hasLine) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Invalid placement of the discard keyword. \"" + getLine(chars, i) + "\"");
-						if(hasDiscard) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Multiple instances of the discard keyword. \"" + getLine(chars, i) + "\"");
-						hasDiscard = true;
-						continue;
-					}
-					case "DELIMITER": {
-						if(hasDelimiter) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") You cannot nest the delimiter keyword. \"" + getLine(chars, i) + "\"");
-						hasDelimiter = true;
-						break;
-					}
-					case "NONE": {
-						if(!hasDelimiter) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") The none keyword only works inside a delimiter. \"" + getLine(chars, i) + "\"");
-						delimiter.add(null);
-						break;
-					}
-					default: throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Invalid special keyword '" + string + "' \"" + getLine(chars, i) + "\"");
+				if(string.equals("DELIMITER")) {
+					if(hasDelimiter) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") You cannot nest the delimiter keyword. \"" + getLine(chars, i) + "\"");
+					hasDelimiter = true;
+				} else if(string.equals("DISCARD")) {
+					if(!hasLine) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Invalid placement of the discard keyword. \"" + getLine(chars, i) + "\"");
+					if(hasDiscard) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Multiple instances of the discard keyword. \"" + getLine(chars, i) + "\"");
+					hasDiscard = true;
+					continue;
+				} else {
+					throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Invalid special keyword '" + string + "' \"" + getLine(chars, i) + "\"");
 				}
-			} else if(hasDelimiter) {
-				if(c != ',') throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Invalid character '" + escape(c) + "' \"" + getLine(chars, i) + "\"");
-			} else if(hasLine) {
-				String string = getItemName(chars, lineIndex, i);
-				
-				String name = string.trim();
-				if(lexer.contains(name)) throw new LexicalException("(line:" + lineIndex + ") Duplicate definitions. \"" + getLine(chars, i) + "\"");
-				
-				group = lexer.addGroup(name).setDiscard(hasDiscard);
-				
-				hasDiscard = false;
-				lineIndex += StringUtils.countInstances(string, '\n');
-				i += string.length();
-			} else throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Invalid character '" + escape(c) + "' \"" + getLine(chars, i) + "\"");
+			} else {
+				if(hasLine) {
+					String string = getItemName(chars, lineIndex, i);
+					
+					String name = string.trim();
+					if(lexer.contains(name)) throw new LexicalException("(line:" + lineIndex + ") Duplicate definitions. \"" + getLine(chars, i) + "\"");
+					group = lexer.addGroup(name).setDiscard(hasDiscard);
+					
+					hasDiscard = false;
+					lineIndex += StringUtils.countInstances(string, '\n');
+					i += string.length();
+				} else {
+					if(hasDelimiter && c == ',') {
+						if(hasDelimiterComma) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Empty delimiter element. \"" + getLine(chars, i) + "\"");
+						hasDelimiterComma = true;
+						
+						if(delimiter.size() > 2) throw new LexicalException("(line:" + lineIndex + ") Invalid delimiter size. Expected 3 arguments. \"" + getLine(chars, i) + "\"");
+					} else {
+						throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Invalid character '" + escape(c) + "' \"" + getLine(chars, i) + "\"");
+					}
+				}
+			}
 			
 			if(hasDiscard) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Invalid placement of the discard keyword. \"" + getLine(chars, i) + "\"");
-			
 			hasLine = false;
 		}
 		
@@ -252,17 +244,13 @@ public class TokenizerFactory {
 				i++;
 			} else if(c == quoteType) {
 				quoteType = 0;
-				break;
+				return literal.toString();
 			} else {
 				literal.append(c);
 			}
 		}
 		
-		if(quoteType != 0) {
-			throw new UnclosedQuoteException("(line:" + lineIndex + ") Quote was not closed properly. \"" + getLine(chars, index) + "\"");
-		}
-		
-		return literal.toString();
+		throw new UnclosedQuoteException("(line:" + lineIndex + ") Quote was not closed properly. \"" + getLine(chars, index) + "\"");
 	}
 	
 	private String getItemName(char[] chars, int lineIndex, int index) {
@@ -277,10 +265,10 @@ public class TokenizerFactory {
 			}
 			
 			itemName.append(c);
-			if(readName && isDelimiter(c)) readName = false;
+			if(readName && !Character.isJavaIdentifierPart(c)) readName = false;
 			
 			if(!readName) {
-				if(!isWhitespace(c)) {
+				if(!Character.isWhitespace(c)) {
 					if(c != ':') {
 						throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Expected a semicolon but got '" + c + "' \"" + getLine(chars, i) + "\"");
 					}
@@ -304,7 +292,7 @@ public class TokenizerFactory {
 		for(int i = index + 1; i < chars.length; i++) {
 			char c = chars[i];
 			
-			if(isDelimiter(c)) break;
+			if(!Character.isJavaIdentifierPart(c)) break;
 			literal.append(c);
 		}
 		
