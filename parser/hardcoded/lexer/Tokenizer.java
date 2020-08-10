@@ -58,6 +58,7 @@ public class Tokenizer {
 					System.out.println("'");
 				}
 				
+				// Test if push is correct
 				if(!sym.shouldDiscard()) {
 					System.out.println("[" + sym.symbolName() + "] '" + sym.value + "'");
 				}
