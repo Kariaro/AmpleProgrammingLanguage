@@ -7,6 +7,7 @@ This will not be a library but a nice way for other coders to understand how a c
 may be built using moderna day code.
 
 
+
 # Compiler compiler
 
 ## Parser
@@ -21,10 +22,39 @@ A compiler compiler is a generator that generates a compiler for a specified gra
 
 
 
+## Lexer
+
+All code for the lexers can be found in the directory *parser/hardcoded/lexer*.
+There you can see my implementation of a Lexer.
+
+
+Lexical analysis is when you take a input string and divide it into multiple tokens. Each token can be represented by a group.
+
+```
+Input: "sometext 'inside a string' /* multiline comment */ 0xDEADBEEF 1234567"
+
+Output:
+[WORD] sometext
+[SPACE]
+[LITERAL] 'inside a string'
+[SPACE]
+[COMMENT] /* multiline comment */
+[SPACE]
+[INTEGER] 0xDEADBEEF
+[SPACE]
+[INTEGER] 1234567
+```
+
+Here you see that we have a couple of different groups <code>WORD, LITERAL, COMMENT, INTEGER and SPACE</code>. These groups are defined in a lexer file using either a regex match or a string match to capture each token.
+... TODO ...
+
+
+
+
 ## Grammar
 
 A grammar is a way of expressing how a language should be built. It builds on the same
-principles as language but in a more unambiguous way. Most context-free-grammars requires
+principles as language but in a unambiguous way. Most context-free-grammars requires
 that the set of production rules you specify are unambiguous for parsing.
 
 An example of a grammar could be
@@ -62,3 +92,13 @@ if ( 32 > 31 ) do { print 33 ; }
 And there we have generated a parse tree for this input and can validate that because
 all tokens were simplified into one statement that everything follows the grammar and
 therefor this is a valid string with our grammar.
+
+
+
+
+## Visualization
+
+There are some visualizations that are available inside the path *hardcoded/visualization*.
+These classes help with displaying the networks created by the tokenzier and parser.
+... TODO ...
+
