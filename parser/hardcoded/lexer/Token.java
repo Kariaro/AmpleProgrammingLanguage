@@ -1,15 +1,28 @@
-package hc.token;
+package hardcoded.lexer;
 
+/**
+ * 
+ * @author HardCoded
+ */
 public class Token {
 	protected final String value;
+	protected String group;
 	protected Token prev;
 	protected Token next;
 	
 	protected int line;
 	protected int column;
 	
-	protected Token(String value) {
+	protected Token(String value, String group) {
 		this.value = value;
+		this.group = group;
+	}
+	
+	/**
+	 * Get the group that this token belongs to.
+	 */
+	public String getGroup() {
+		return group;
 	}
 	
 	/**
@@ -112,16 +125,21 @@ public class Token {
 	
 	/**
 	 * Clone this token. This will not copy the next and previous values.
+	 * @deprecated This function could be removed in the future.
 	 */
+	@Deprecated
 	public Token clone() {
-		return new Token(value);
+		return new Token(value, group);
 	}
 	
 	/**
 	 * Clone this token and count tokens after this one.
 	 * @param count  a value of one will give the same result as calling {@link #clone()}
 	 * @return a cloned chain of count tokens
+	 * 
+	 * @deprecated This function could be removed in the future.
 	 */
+	@Deprecated
 	public Token clone(int count) {
 		Token start = clone();
 		Token token = start;

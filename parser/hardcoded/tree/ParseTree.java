@@ -40,7 +40,6 @@ public class ParseTree {
 	@Deprecated
 	public void group() {
 		for(int i = 0; i < nodes.size(); i++) {
-			// System.out.println(i + ": " + nodes);
 			Node node = nodes.get(i);
 			if(node.isControl()) {
 				nodes.remove(i);
@@ -72,7 +71,6 @@ public class ParseTree {
 		@Deprecated
 		public void group() {
 			for(int i = 0; i < nodes.size(); i++) {
-				// System.out.println(this + "(" + i + "): " + nodes);
 				Node node = nodes.get(i);
 				if(node.isControl()) {
 					nodes.remove(i);

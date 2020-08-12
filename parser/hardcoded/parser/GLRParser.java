@@ -6,11 +6,11 @@ import java.util.LinkedList;
 import java.util.List;
 
 import hardcoded.grammar.Grammar.*;
+import hardcoded.lexer.Token;
 import hardcoded.parser.GLRParserGenerator.*;
 import hardcoded.tree.ParseTree;
 import hardcoded.tree.ParseTree.Node;
 import hc.errors.grammar.ParserException;
-import hc.token.Token;
 
 /**
  * https://en.wikipedia.org/wiki/GLR_parser
@@ -148,11 +148,11 @@ public class GLRParser {
 		}
 		stateStack.add(new LastState(ls));
 		
-		int max = 100000;
+		int max = 1000000;
 		while(max-- > 0) {
 			System.out.println();
 			System.out.println("Stack: " + ls.reductionStack + ", size=" + stateStack.size());
-			for(int i = Math.max(0, stateStack.size() - 10); i < stateStack.size(); i++) System.out.println("--" + stateStack.get(i));
+			// for(int i = Math.max(0, stateStack.size() - 10); i < stateStack.size(); i++) System.out.println("--" + stateStack.get(i));
 			
 			
 			// The first action is always a shift action...

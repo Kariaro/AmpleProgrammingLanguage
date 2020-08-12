@@ -1,57 +1,289 @@
 package hardcoded.lexer;
 
 import java.io.*;
-import java.util.*;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import hardcoded.lexer.Tokenizer.SymbolGroup;
-import hardcoded.utils.StringUtils;
-import hc.errors.lexer.EscapedCharacterException;
 import hc.errors.lexer.LexicalException;
-import hc.errors.lexer.UnclosedQuoteException;
 
 public class TokenizerFactory {
-	private static byte[] readFileBytes(File file) {
-		ByteArrayOutputStream bs = new ByteArrayOutputStream();
-		
-		try(DataInputStream stream = new DataInputStream(new FileInputStream(file))) {
-			byte[] buffer = new byte[65536];
-			int readBytes = 0;
+	private static final Tokenizer DEFAULT;
+	private static final Tokenizer READER;
+	static {
+		{
+			Tokenizer lexer = new Tokenizer();
+			READER = lexer.unmodifiableTokenizer();
 			
-			while((readBytes = stream.read(buffer)) != -1) {
-				bs.write(buffer, 0, readBytes);
-			}
-		} catch(IOException e) {
-			e.printStackTrace();
+			lexer.addGroup("WHITESPACE", true).addRegexes("[ \t\r\n]", "#[^\r\n]*");
+			lexer.addGroup("SPECIAL").addStrings("%DISCARD", "%DELIMITER");
+			lexer.addGroup("DELIMITER").addStrings("[", "]", "(", ")", ",", ":");
+			lexer.addGroup("ITEMNAME").addRegex("[a-zA-Z0-9_]+([ \t\r\n]*)(?=:)");
+			lexer.addGroup("LITERAL").addRegexes(
+				"\'[^\'\\\\]*(?:\\\\.[^\'\\\\]*)*\'",
+				"\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\""
+			);
 		}
 		
-		return bs.toByteArray();
+		{
+			Tokenizer lexer = new Tokenizer();
+			DEFAULT = lexer.unmodifiableTokenizer();
+			lexer.addGroup("COMMENT", true).addRegexes("\\/\\*.*?\\*\\/", "//[^\r\n]*");
+			lexer.addGroup("SPACE", true).addRegex("[ \t\r\n]");
+			lexer.addGroup("WORD").addRegex("[a-zA-Z0-9_]+");
+			lexer.addGroup("LITERAL").addRegexes(
+				"\'[^\'\\\\]*(?:\\\\.[^\'\\\\]*)*\'",
+				"\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\""
+			);
+			lexer.addGroup("TOKEN").addRegex(".");
+			lexer.setDefaultGroup("TOKEN");
+		}
 	}
 	
+	public static Tokenizer getDefaultLexer() {
+		return DEFAULT;
+	}
+	
+//	private static byte[] readFileBytes(File file) {
+//		ByteArrayOutputStream bs = new ByteArrayOutputStream();
+//		
+//		try(DataInputStream stream = new DataInputStream(new FileInputStream(file))) {
+//			byte[] buffer = new byte[65536];
+//			int readBytes = 0;
+//			
+//			while((readBytes = stream.read(buffer)) != -1) {
+//				bs.write(buffer, 0, readBytes);
+//			}
+//		} catch(IOException e) {
+//			e.printStackTrace();
+//		}
+//		
+//		return bs.toByteArray();
+//	}
+	
 	public static void main(String[] args) {
-		byte[] bytes = readFileBytes(new File("res/lexer/hc.lex"));
+		// byte[] bytes = readFileBytes(new File("res/lexer/hc.lex"));
+		// bytes = readFileBytes(new File("res/lexer/hclexer.lex"));
 		
-		TokenizerFactory factory = new TokenizerFactory();
 		
 		try {
-			Tokenizer lexer = factory.parse(bytes);
+			Tokenizer lexer = TokenizerFactory.loadFromFile("res/lexer/hc.lex");
+			System.out.println("=======================================================");
 			lexer.dump();
-			
 			System.out.println("=======================================================");
 			
-			byte[] lang = readFileBytes(new File("res/lexer/hc_specify.hc"));
-			lexer.parse(lang);
 			
-			System.out.println("=======================================================");
+			// System.out.println("=======================================================");
+			
+			// byte[] lang = readFileBytes(new File("res/lexer/hc_specify.hc"));
+			// lang = readFileBytes(new File("res/lexer/hc.lex"));
+			// for(TSym sym : lexer.parse(lang)) System.out.printf("[%s] %s\n", sym.group(), sym.value());
+			
+			// System.out.println("=======================================================");
+			
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
 	}
 	
-	public TokenizerFactory() {
+	private TokenizerFactory() {
 		
 	}
 	
-	public Tokenizer parse(byte[] bytes) {
+	/**
+	 * Creates a new instance of a tokenizer.
+	 * @return The tokenizer.
+	 */
+	public static Tokenizer createNew() {
+		return new Tokenizer();
+	}
+	
+	/**
+	 * Create a tokenizer from the content of a file.
+	 * 
+	 * @param filePath the path to the lexer file.
+	 * @return A parsed lexer.
+	 * @throws IOException
+	 */
+	public static Tokenizer loadFromFile(String filePath) throws IOException {
+		return load(new FileInputStream(filePath));
+	}
+	
+	/**
+	 * Create a tokenizer from the content of a file.
+	 * 
+	 * @param file the lexer file.
+	 * @return A parsed lexer.
+	 * @throws IOException
+	 */
+	public static Tokenizer loadFromFile(File file) throws IOException {
+		return load(new FileInputStream(file));
+	}
+	
+	/**
+	 * Create a tokenizer from the content of a string.
+	 * This uses the ISO_8859_1 charset to decode the string.
+	 * 
+	 * @param content the string containing the lexer data.
+	 * @return The parsed lexer.
+	 * @throws NullPointerException if the content string was null.
+	 */
+	public static Tokenizer loadFromString(String content) {
+		return loadFromString(content, StandardCharsets.ISO_8859_1);
+	}
+	
+	/**
+	 * Create a tokenizer from the content of a string using the specified charset.
+	 * 
+	 * @param content the string containing the lexer data.
+	 * @param charset the charset that will be used to decode this string.
+	 * @return The parsed lexer.
+	 * @throws NullPointerException if the content string was null.
+	 */
+	public static Tokenizer loadFromString(String content, Charset charset) {
+		return parseLexer(content.getBytes(charset));
+	}
+	
+	/**
+	 * Parses the input from a inputStream and returns the parsed lexer.
+	 * 
+	 * @param stream the inputStream that contains the data.
+	 * @return A parsed lexer.
+	 * @throws IOException
+	 * @throws NullPointerException if the stream was null.
+	 */
+	public static Tokenizer load(InputStream stream) throws IOException {
+		if(stream == null) throw new NullPointerException("The inputStream cannot be null.");
+		
+		ByteArrayOutputStream bs = new ByteArrayOutputStream();
+		
+		byte[] buffer = new byte[65536];
+		int readBytes = 0;
+		
+		while((readBytes = stream.read(buffer)) != -1) {
+			bs.write(buffer, 0, readBytes);
+		}
+		
+		return parseLexer(bs.toByteArray());
+	}
+	
+	/**
+	 * 
+	 * @param bytes
+	 * @return
+	 * @throws LexicalException
+	 */
+	private static Tokenizer parseLexer(byte[] bytes) {
+		List<Symbol> list = READER.parse(bytes);
+		
+		Tokenizer lexer = new Tokenizer();
+		SymbolGroup symbolGroup = null;
+		
+		boolean hasDiscard = false;
+		for(int i = 0; i < list.size(); i++) {
+			Symbol sym = list.get(i);
+			
+			String group = sym.group();
+			String value = sym.value();
+			
+			if(group == null) {
+				throw new LexicalException("(line:" + sym.line() + " column:" + sym.column() + ") Invalid syntax '" + value + "'");
+			}
+			
+			if(hasDiscard && !group.equals("ITEMNAME")) {
+				throw new LexicalException("(line:" + sym.line() + " column:" + sym.column() + ") Invalid placement of the discard keyword.");
+			}
+			
+			if(group.equals("ITEMNAME")) {
+				symbolGroup = lexer.addGroup(value.trim());
+				if(symbolGroup == null) throw new LexicalException("(line:" + sym.line() + " column:" + sym.column() + ") Multiple definitions of with the same group name. '" + value.trim() + "'");
+				
+				symbolGroup.setDiscard(hasDiscard);
+				hasDiscard = false;
+				i++;
+			} else if(group.equals("SPECIAL")) {
+				if(value.equals("%DISCARD")) {
+					if(hasDiscard) {
+						throw new LexicalException("(line:" + sym.line() + " column:" + sym.column() + ") Multiple definitions of the discard keyword.");
+					}
+					
+					if(i + 1 > list.size()) {
+						throw new LexicalException("(line:" + sym.line() + " column:" + sym.column() + ") Invalid placement of the discard keyword.");
+					}
+					
+					hasDiscard = true;
+				} else if(value.equals("%DELIMITER")) {
+					if(i + 7 > list.size()) {
+						throw new LexicalException("(line:" + sym.line() + " column:" + sym.column() + ") Not enough arguments to create a delimiter.");
+					}
+					
+					if(!list.get(i + 1).equals("DELIMITER", "(")) {
+						throw new LexicalException("(line:" + sym.line() + " column:" + sym.column() + ") Invalid delimiter start character. '" + list.get(i + 1) + "'");
+					}
+					
+					if(!list.get(i + 7).equals("DELIMITER", ")")) {
+						throw new LexicalException("(line:" + sym.line() + " column:" + sym.column() + ") Invalid delimiter end character. '" + list.get(i + 7) + "'");
+					}
+					
+					String[] args = new String[3];
+					for(int j = 0; j < 3; j++) {
+						Symbol item = list.get(i + 2 + j * 2);
+						if(!item.groupEquals("LITERAL")) {
+							throw new LexicalException("(line:" + sym.line() + " column:" + sym.column() + ") Invalid delimiter item. Expected a literal, got '" + item + "'");
+						}
+						
+						args[j] = item.value().substring(1, item.value().length() - 1);
+						
+						if(j < 2) {
+							Symbol sep = list.get(i + 3 + j * 2);
+							
+							if(!sep.equals("DELIMITER", ",")) {
+								throw new LexicalException("(line:" + sym.line() + " column:" + sym.column() + ") Invalid delimiter separator. Expected a comma, got '" + sep + "'");
+							}
+						}
+					}
+					
+					symbolGroup.addDelimiter(args[0], args[1], args[2]);
+					i += 7;
+				}
+			} else if(sym.equals("DELIMITER", "[")) {
+				if(symbolGroup == null) {
+					throw new LexicalException("(line:" + sym.line() + " column:" + sym.column() + ") Invalid placement of a string literal.");
+				}
+				
+				if(i + 2 > list.size()) {
+					throw new LexicalException("(line:" + sym.line() + " column:" + sym.column() + ") Not enough arguments to create a regex bracket.");
+				}
+				
+				if(!list.get(i + 2).equals("DELIMITER", "]")) {
+					throw new LexicalException("(line:" + list.get(i + 2).line() + " column:" + list.get(i + 2).column() + ") Invalid regex close character. '" + list.get(i + 2) + "'");
+				}
+				
+				Symbol item = list.get(i + 1);
+				if(!item.groupEquals("LITERAL")) {
+					throw new LexicalException("(line:" + item.line() + " column:" + item.column() + ") The regex match can only contain string literals.");
+				}
+				
+				symbolGroup.addRegex(item.value().substring(1, item.value().length() - 1));
+				i += 2;
+			} else if(sym.groupEquals("LITERAL")) {
+				if(symbolGroup == null) {
+					throw new LexicalException("(line:" + sym.line() + " column:" + sym.column() + ") Invalid placement of a string literal.");
+				}
+				
+				symbolGroup.addString(value.substring(1, value.length() - 1));
+			} else {
+				throw new LexicalException("(line:" + sym.line() + " column:" + sym.column() + ") Invalid character '" + value + "'");
+			}
+		}
+		
+		return lexer;
+	}
+	
+	@SuppressWarnings("unused")
+	@Deprecated private static final void printContent(byte[] bytes) {
+		System.out.println("=======================================================");
 		StringBuilder sb = new StringBuilder(bytes.length + 2);
 		sb.append('\n').append(new String(bytes)).append('\n');
 		
@@ -66,264 +298,13 @@ public class TokenizerFactory {
 		// Remove the characters we added before
 		string = string.substring(1, string.length() - 1);
 		
+		String[] lines = string.split("\n");
+		int num = (int)(Math.log10(lines.length + 1)) + 1;
+		int index = 1;
+		for(String line : string.split("\n")) {
+			System.out.printf("%" + num + "d: %s\n", index++, line);
+		}
+		
 		System.out.println("=======================================================");
-		{
-			String[] lines = string.split("\n");
-			int num = (int)(Math.log10(lines.length + 1)) + 1;
-			int index = 1;
-			for(String line : string.split("\n")) {
-				System.out.printf("%" + num + "d: %s\n", index++, line);
-			}
-		}
-		System.out.println("=======================================================");
-		
-		return parseLexer(string.toCharArray());
-	}
-	
-	private static final boolean isEscapable(char c) {
-		return c == 'x' || c == 'u' || c == 'r' || c == 'n' || c == 't' || c == 'b' || c == '\\' || c == '\'' || c == '\"';
-	}
-	
-	private static final String escape(char c) {
-		return StringUtils.escapeString(Character.toString(c));
-	}
-	
-	/**
-	 * 
-	 * @param chars
-	 * @return
-	 * @throws EscapedCharacterException
-	 * @throws UnclosedQuoteException
-	 * @throws LexicalException
-	 */
-	private Tokenizer parseLexer(char[] chars) {
-		List<String> delimiter = new ArrayList<String>();
-		
-		boolean hasLine = true;
-		boolean hasRegex = false;
-		boolean hasDiscard = false;
-		boolean hasDelimiter = false;
-		boolean hasDelimiterStart = false;
-		boolean hasDelimiterComma = false;
-		
-		String regexString = null;
-		
-		Tokenizer lexer = new Tokenizer();
-		SymbolGroup group = null;
-		
-		int lineIndex = 1;
-		for(int i = 0; i < chars.length; i++) {
-			char c = chars[i];
-			
-			if(Character.isWhitespace(c)) {
-				if(c == '\n') {
-					hasLine = !hasDelimiter;
-					lineIndex++;
-				}
-				
-				continue;
-			}
-			
-			if(hasDelimiter) {
-				if(!hasDelimiterStart) {
-					if(c != '(') throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Illegal delimiter start character '" + escape(c) + "' expected '(' \"" + getLine(chars, i) + "\"");
-					hasDelimiterStart = true;
-					hasDelimiterComma = true;
-					continue;
-				} else if(c == ')') {
-					hasDelimiterStart = false;
-					hasDelimiterComma = false;
-					hasDelimiter = false;
-					
-					group.addDelimiter(
-						delimiter.get(0),
-						delimiter.get(1),
-						delimiter.get(2)
-					);
-					
-					delimiter.clear();
-					continue;
-				}
-			}
-			
-			if(c == '\'' || c == '\"') {
-				String string = getStringLiteral(chars, lineIndex, i);
-				
-				if(hasRegex) {
-					if(regexString != null) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Too many strings inside regex bracket. \"" + getLine(chars, i) + "\"");
-					regexString = string;
-				} else if(hasDelimiter) {
-					if(!hasDelimiterComma) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Delimiter items needs to be comma separated. \"" + getLine(chars, i) + "\"");
-					hasDelimiterComma = false;
-					
-					delimiter.add(string);
-				} else {
-					group.addString(string);
-				}
-				
-				i += string.length() + 1;
-			} else if(c == '[' || c == ']') {
-				if(hasDelimiter) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Only strings are allowed inside delimiters. \"" + getLine(chars, i) + "\"");
-				
-				if(c == ']') {
-					if(!hasRegex) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Invalid character '" + escape(c) + "' \"" + getLine(chars, i) + "\"");
-					if(regexString == null) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Empty regex bracket. \"" + getLine(chars, i) + "\"");
-					
-					group.addRegex(regexString);
-				} else if(hasRegex) {
-					throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Only strings are allowed inside regex brackets. \"" + getLine(chars, i) + "\"");
-				}
-				
-				hasRegex = (c == '['); 
-				regexString = null;
-			} else if(c == '%') {
-				String string = getSpecialLiteral(chars, lineIndex, i);
-				i += string.length();
-				
-				if(string.equals("DELIMITER")) {
-					if(hasDelimiter) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") You cannot nest the delimiter keyword. \"" + getLine(chars, i) + "\"");
-					hasDelimiter = true;
-				} else if(string.equals("DISCARD")) {
-					if(!hasLine) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Invalid placement of the discard keyword. \"" + getLine(chars, i) + "\"");
-					if(hasDiscard) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Multiple instances of the discard keyword. \"" + getLine(chars, i) + "\"");
-					hasDiscard = true;
-					continue;
-				} else {
-					throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Invalid special keyword '" + string + "' \"" + getLine(chars, i) + "\"");
-				}
-			} else {
-				if(hasLine) {
-					String string = getItemName(chars, lineIndex, i);
-					
-					String name = string.trim();
-					if(lexer.contains(name)) throw new LexicalException("(line:" + lineIndex + ") Duplicate definitions. \"" + getLine(chars, i) + "\"");
-					group = lexer.addGroup(name).setDiscard(hasDiscard);
-					
-					hasDiscard = false;
-					lineIndex += StringUtils.countInstances(string, '\n');
-					i += string.length();
-				} else {
-					if(hasDelimiter && c == ',') {
-						if(hasDelimiterComma) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Empty delimiter element. \"" + getLine(chars, i) + "\"");
-						hasDelimiterComma = true;
-						
-						if(delimiter.size() > 2) throw new LexicalException("(line:" + lineIndex + ") Invalid delimiter size. Expected 3 arguments. \"" + getLine(chars, i) + "\"");
-					} else {
-						throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Invalid character '" + escape(c) + "' \"" + getLine(chars, i) + "\"");
-					}
-				}
-			}
-			
-			if(hasDiscard) throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Invalid placement of the discard keyword. \"" + getLine(chars, i) + "\"");
-			hasLine = false;
-		}
-		
-		return lexer;
-	}
-	
-	private String getStringLiteral(char[] chars, int lineIndex, int index) {
-		StringBuilder literal = new StringBuilder();
-		char quoteType = chars[index];
-		
-		for(int i = index + 1; i < chars.length; i++) {
-			char c = chars[i];
-			
-			if(c == '\n') throw new UnclosedQuoteException("(line:" + lineIndex + ") Quote was not closed properly. \"" + getLine(chars, i) + "\"");
-			if(c == '\\') {
-				if(i + 1 >= chars.length) {
-					throw new UnclosedQuoteException("(line:" + lineIndex + ") Quote was not closed properly. \"" + getLine(chars, i) + "\"");
-				}
-				
-				char next = chars[i + 1];
-				
-				if(!isEscapable(next)) {
-					throw new EscapedCharacterException("(line:" + lineIndex + " column:" + getColumn(chars, i + 1) + ") The character '" + next + "' is not a valid escape character. \"" + getLine(chars, i) + "\"");
-				}
-				
-				literal.append('\\').append(next);
-				i++;
-			} else if(c == quoteType) {
-				quoteType = 0;
-				return literal.toString();
-			} else {
-				literal.append(c);
-			}
-		}
-		
-		throw new UnclosedQuoteException("(line:" + lineIndex + ") Quote was not closed properly. \"" + getLine(chars, index) + "\"");
-	}
-	
-	private String getItemName(char[] chars, int lineIndex, int index) {
-		StringBuilder itemName = new StringBuilder();
-		boolean readName = true;
-		
-		for(int i = index; i < chars.length; i++) {
-			char c = chars[i];
-			
-			if(c == '\n') {
-				lineIndex++;
-			}
-			
-			itemName.append(c);
-			if(readName && !Character.isJavaIdentifierPart(c)) readName = false;
-			
-			if(!readName) {
-				if(!Character.isWhitespace(c)) {
-					if(c != ':') {
-						throw new LexicalException("(line:" + lineIndex + " column:" + getColumn(chars, i) + ") Expected a semicolon but got '" + c + "' \"" + getLine(chars, i) + "\"");
-					}
-					
-					if(itemName.length() < 2) {
-						throw new LexicalException("(line:" + lineIndex + ") A itemName cannot be empty.");
-					}
-					
-					itemName.deleteCharAt(itemName.length() - 1);
-					return itemName.toString();
-				}
-			}
-		}
-		
-		throw new LexicalException("(line:" + lineIndex + ") ItemName was never closed properly.");
-	}
-	
-	private String getSpecialLiteral(char[] chars, int lineIndex, int index) {
-		StringBuilder literal = new StringBuilder();
-		
-		for(int i = index + 1; i < chars.length; i++) {
-			char c = chars[i];
-			
-			if(!Character.isJavaIdentifierPart(c)) break;
-			literal.append(c);
-		}
-		
-		return literal.toString();
-	}
-	
-	private int getColumn(char[] chars, int index) {
-		int start = index;
-		for(; start > 0; start--) {
-			if(chars[start - 1] == '\n') break;
-		}
-		
-		return index - start + 1;
-	}
-	
-	private String getLine(char[] chars, int index) {
-		for(; index > 0; index--) {
-			if(chars[index - 1] == '\n') break;
-		}
-		
-		StringBuilder line = new StringBuilder();
-		
-		for(; index < chars.length; index++) {
-			if(chars[index] == '\n') break;
-			line.append(chars[index]);
-		}
-		
-		return line.toString();
-	}
-	
-	public static TokenizerBuilder create() {
-		return new TokenizerBuilder();
 	}
 }

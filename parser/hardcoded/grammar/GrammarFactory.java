@@ -11,6 +11,8 @@ import java.util.*;
 public final class GrammarFactory {
 	private static final GrammarFactory factory = new GrammarFactory();
 	
+	// FIXME: Convert to using a InputStream instead of a Reader!
+	
 	private final Map<GrammarType, GrammarReaderImpl> grammars;
 	private GrammarFactory() {
 		Map<GrammarType, GrammarReaderImpl> map = new HashMap<>();

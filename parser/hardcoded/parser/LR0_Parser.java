@@ -3,10 +3,10 @@ package hardcoded.parser;
 import java.util.LinkedList;
 
 import hardcoded.grammar.Grammar.*;
+import hardcoded.lexer.Token;
 import hardcoded.parser.LR0_ParserGenerator.*;
 import hardcoded.tree.AbstractSyntaxTree;
 import hc.errors.grammar.ParserException;
-import hc.token.Token;
 
 /**
  * A simple test to check if LR 0 was possible

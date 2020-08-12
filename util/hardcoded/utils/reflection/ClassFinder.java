@@ -1,4 +1,4 @@
-package hc.reflection;
+package hardcoded.utils.reflection;
 
 import java.io.File;
 import java.io.IOException;
