@@ -3,9 +3,9 @@ package hardcoded.grammar;
 import java.util.*;
 import java.util.regex.Pattern;
 
+import hardcoded.lexer.Token;
 import hc.errors.grammar.DuplicateItemException;
 import hc.errors.grammar.UndefinedMatchType;
-import hc.token.Token;
 
 /**
  * This is a grammar file that contains statements and production rules.<br>

@@ -231,8 +231,8 @@ public final class DFAVisualization_HACK extends Visualization {
 			
 			// ----: Maybe implement Force-directed graph drawing
 			for(Element e : elements) {
-				e.x = (random.nextDouble() - 0.5) * 2000;
-				e.y = (random.nextDouble() - 0.5) * 2000;
+				e.x = (random.nextDouble() - 0.5) * 100;
+				e.y = (random.nextDouble() - 0.5) * 100;
 			}
 		}
 		

@@ -1,11 +1,13 @@
 package hardcoded.grammar;
 
 import java.io.*;
+import java.util.*;
 
-import hc.errors.grammar.GrammarSyntaxException;
-import hc.token.Token;
-import hc.token.Tokenizer;
 import hardcoded.grammar.Grammar.*;
+import hardcoded.lexer.Symbol;
+import hardcoded.lexer.Tokenizer;
+import hardcoded.lexer.TokenizerFactory;
+import hc.errors.grammar.GrammarException;
 
 /**
  * This class is used to read grammar files that follows the same rules AS
@@ -69,181 +71,179 @@ import hardcoded.grammar.Grammar.*;
  * @author HardCoded
  */
 public final class HCGRGrammarReader implements GrammarReaderImpl {
+	private static final hardcoded.lexer.Tokenizer READER;
+	static {
+		Tokenizer lexer = TokenizerFactory.createNew();
+		READER = lexer.unmodifiableTokenizer();
+		
+		lexer.addGroup("WHITESPACE", true).addRegexes("[ \t\r\n]", "#[^\r\n]*");
+		lexer.addGroup("KEYWORD").addStrings("TOKEN", "START");
+		lexer.addGroup("DELIMITER").addStrings("(", ")", "[", "]", "{", "}", ":", "|");
+		lexer.addGroup("ITEMNAME").addRegex("[a-zA-Z0-9_]+([ \t\r\n]*)(?=:)");
+		lexer.addGroup("NAME").addRegex("[a-zA-Z0-9_]+");
+		lexer.addGroup("LITERAL").addRegexes(
+			"\'[^\'\\\\]*(?:\\\\.[^\'\\\\]*)*\'",
+			"\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\""
+		);
+	}
 	
-	@Override
 	public Grammar load(Reader reader) throws IOException {
+		CharArrayWriter writer = new CharArrayWriter();
+		char[] buffer = new char[65536];
+		int readChars = 0;
+		while((readChars = reader.read(buffer)) != -1) {
+			writer.write(buffer, 0, readChars);
+		}
+		
 		Grammar grammar = new Grammar();
+		Item itemGroup = null;
+		RuleList set = null;
 		
-		BufferedReader bufferedReader = new BufferedReader(reader);
-		int ruleIndex = 1;
+		List<Symbol> list = READER.parse(writer.toString());
+		LinkedList<BracketRule> brackets = new LinkedList<>();
 		
-		Item type = null;
-		String line;
-		while((line = bufferedReader.readLine()) != null) {
-			line = line.trim();
+		for(int i = 0; i < list.size(); i++) {
+			Symbol sym = list.get(i);
 			
-			// Remove comments and empty lines
-			if(line.startsWith("#") || line.isEmpty()) continue;
+			String group = sym.group();
+			String value = sym.value();
 			
-			
-			String first = null;
-			{
-				String[] split = line.split("[ \t]+");
-				first = split[0];
-				
-				// Remove the first token from the line and
-				// set the first to the first token.
-				line = line.substring(first.length()).trim();
+			if(group == null) {
+				throw new GrammarException("(line:" + sym.line() + " column:" + sym.column() + ") Invalid syntax '" + value + "'");
 			}
 			
-			boolean isToken = false;
-			if(!first.endsWith(":")) {
-				switch(first) {
-					case "START": {
-						grammar.setStartItem(line);
-						continue; // Read next line
+			// Creating new itemGroups and specifying the start item.
+			if(group.equals("KEYWORD")) {
+				if(i + 1 > list.size()) {
+					throw new GrammarException("(line:" + sym.line() + " column:" + sym.column() + ") Invalid placement of the " + value.toLowerCase() + " keyword.");
+				}
+
+				Symbol item = list.get(i + 1);
+				if(value.equals("TOKEN")) {
+					if(!item.groupEquals("ITEMNAME")) {
+						throw new GrammarException("(line:" + item.line() + " column:" + item.column() + ") Invalid token argument. Expected a item name got '" + item + "'");
 					}
-					case "TOKEN": {
-						isToken = true;
-						
-						String[] split = line.split("[ \t]+");
-						first = split[0];
-						line = line.substring(first.length()).trim();
-						
-						break;
+					
+					String name = item.value().trim();
+					if(grammar.containsItem(name)) throw new GrammarException("(line:" + sym.line() + " column:" + sym.column() + ") Multiple definitions of the same item name. '" + name + "'");
+					if(set != null && set.isEmpty()) throw new GrammarException("(line:" + sym.line() + " column:" + sym.column() + ") Empty rules are not allowed.");
+					
+					itemGroup = new ItemToken(name);
+					grammar.addItem(itemGroup);
+					set = grammar.new RuleList();
+					itemGroup.matches.add(set);
+					
+					i += 2;
+				} else if(value.equals("START")) {
+					if(!item.groupEquals("NAME")) {
+						throw new GrammarException("(line:" + item.line() + " column:" + item.column() + ") Invalid start argument. Expected a item name got '" + item + "'");
 					}
+					
+					grammar.setStartItem(item.value());
+					i++;
 				}
+
+				continue;
+			} else if(group.equals("ITEMNAME")) {
+				if(grammar.containsItem(value.trim())) throw new GrammarException("(line:" + sym.line() + " column:" + sym.column() + ") Multiple definitions of the same item name. '" + value.trim() + "'");
+				if(set != null && set.isEmpty()) throw new GrammarException("(line:" + sym.line() + " column:" + sym.column() + ") Empty rules are not allowed.");
+				
+				itemGroup = new Item(value.trim());
+				grammar.addItem(itemGroup);
+				set = grammar.new RuleList();
+				itemGroup.matches.add(set);
+				
+				i++;
+				continue;
 			}
 			
-			if(first.endsWith(":")) { // Item start
-				if(type != null) grammar.addItem(type);
-				
-				first = first.substring(0, first.length() - 1);
-				
-				if(first.contains("#")) {
-					throw new GrammarSyntaxException("Hashtags cannot be used inside item or token names. \"" + first + "\"");
-				}
-				
-				if(isToken) {
-					type = new ItemToken(first);
-				} else {
-					type = new Item(first);
-				}
-				
-				// Make this into a add pattern
-				if(!line.isEmpty()) first = "|";
+			if(itemGroup == null) {
+				throw new GrammarException("(line:" + sym.line() + " column:" + sym.column() + ") Invalid placement of a regex bracket.");
 			}
 			
-			// Add new pattern
-			if(first.equals("|")) {
-				if(type instanceof ItemToken) {
-					type.matches.add(createRuleList(0, grammar, line));
+			if(sym.equals("DELIMITER", "|")) {
+				if(set.isEmpty()) throw new GrammarException("(line:" + sym.line() + " column:" + sym.column() + ") Empty rules are not allowed.");
+				set = grammar.new RuleList();
+				itemGroup.matches.add(set);
+				continue;
+			}
+			
+			if(sym.equals("DELIMITER", "{")) {
+				if(i + 2 > list.size()) {
+					throw new GrammarException("(line:" + sym.line() + " column:" + sym.column() + ") Not enough arguments to create a regex bracket.");
+				}
+				
+				if(!list.get(i + 2).equals("DELIMITER", "}")) {
+					throw new GrammarException("(line:" + list.get(i + 2).line() + " column:" + list.get(i + 2).column() + ") Invalid regex close character. '" + list.get(i + 2) + "'");
+				}
+				
+				Symbol item = list.get(i + 1);
+				if(!item.groupEquals("LITERAL")) {
+					throw new GrammarException("(line:" + item.line() + " column:" + item.column() + ") The regex match can only contain string literals.");
+				}
+				
+				RegexRule rule = grammar.new RegexRule(item.value().substring(1, item.value().length() - 1));
+				
+				if(brackets.isEmpty()) {
+					set.add(rule);
 				} else {
-					type.matches.add(createRuleList(ruleIndex++, grammar, line));
+					brackets.getLast().matches.add(rule);
+				}
+				
+				i += 2;
+			} else if(sym.groupEquals("LITERAL")) {
+				StringRule rule = grammar.new StringRule(value.substring(1, value.length() - 1));
+				
+				if(brackets.isEmpty()) {
+					set.add(rule);
+				} else {
+					brackets.getLast().matches.add(rule);
+				}
+			} else if(sym.groupEquals("NAME")) {
+				ItemRule rule = grammar.new ItemRule(value);
+				
+				if(brackets.isEmpty()) {
+					set.add(rule);
+				} else {
+					brackets.getLast().matches.add(rule);
+				}
+			} else {
+				boolean square_open = sym.equals("DELIMITER", "[");
+				boolean square_close = sym.equals("DELIMITER", "]");
+				
+				if(square_open || sym.equals("DELIMITER", "(")) {
+					BracketRule br = grammar.new BracketRule();
+					br.repeat = square_open;
+					
+					if(brackets.isEmpty()) {
+						set.add(br);
+						brackets.add(br);
+					} else {
+						brackets.getLast().matches.add(br);
+						brackets.add(br);
+					}
+				} else if(square_close || sym.equals("DELIMITER", ")")) {
+					BracketRule br = brackets.getLast();
+					
+					if(br.repeat != square_close) {
+						throw new GrammarException("(line:" + sym.line() + " column:" + sym.column() + ") Invalid bracket close character '" + value + "'");
+					}
+					
+					brackets.removeLast();
+				} else {
+					throw new GrammarException("(line:" + sym.line() + " column:" + sym.column() + ") Invalid character '" + value + "'");
 				}
 			}
 		}
 		
-		if(type != null) {
-			grammar.addItem(type);
+		if(!brackets.isEmpty()) {
+			throw new GrammarException("Bracket was not closed properly. > " + brackets);
 		}
 		
 		if(grammar.getStartItem() != null && !grammar.containsItem(grammar.getStartItem())) {
-			throw new GrammarSyntaxException("That start item does not exist '" + grammar.getStartItem() + "'");
+			throw new GrammarException("That start item does not exist '" + grammar.getStartItem() + "'");
 		}
-		
-		bufferedReader.close();
 		
 		return grammar;
-	}
-	
-	private RuleList createRuleList(int ruleId, Grammar grammar, String line) {
-		Token start = Tokenizer.generateTokenChain(line.getBytes());
-		
-		RuleList list = grammar.new RuleList(ruleId);
-		Token token = start;
-		
-		while(token != null) {
-			String value = token.toString();
-			
-			if(value.equals("{")) {
-				Token pattern = token.next();
-				if(!pattern.next().equals("}")) return null;
-				if(pattern.toString().startsWith("\"")) {
-					list.add(grammar.new RegexRule(pattern));
-				} else {
-					list.add(grammar.new SpecialRule(pattern));
-				}
-				token = pattern.next(2);
-				continue;
-			}
-			
-			if(value.equals("[") || value.equals("(")) {
-				BracketRule match = createBracketRule(grammar, token);
-				
-				list.add(match);
-				token = token.next(match.token.remaining() + 3);
-				continue;
-			}
-			
-			if(value.startsWith("\"") || value.startsWith("\'")) {
-				// Must be a string
-				list.add(grammar.new StringRule(token));
-			} else {
-				// Must be a type
-				list.add(grammar.new ItemRule(token));
-			}
-			
-			token = token.next();
-		}
-		
-		return list;
-	}
-	
-	private BracketRule createBracketRule(Grammar grammar, Token start) {
-		boolean repeat = start.equals("[");
-		BracketRule bracket = grammar.new BracketRule(start, repeat);
-		start = start.next();
-		
-		Token token = start;
-		int count = -1;
-		while(token != null) {
-			String value = token.toString();
-			count++;
-			
-			if(value.equals("{")) {
-				Token pattern = token.next();
-				if(!pattern.next().equals("}")) return null;
-				bracket.add(grammar.new RegexRule(pattern));
-				token = pattern.next(2);
-				continue;
-			}
-			
-			if(value.equals("[") || value.equals("(")) {
-				BracketRule match = createBracketRule(grammar, token);
-				
-				bracket.add(match);
-				token = token.next(match.token.remaining() + 3);
-				count += match.token.remaining() + 2;
-				continue;
-			}
-			
-			if(repeat && value.equals("]") || !repeat && value.equals(")")) {
-				bracket.token = start.clone(count - 1);
-				break;
-			}
-			
-			if(value.startsWith("\"") || value.startsWith("\'")) {
-				// Must be a string
-				bracket.add(grammar.new StringRule(token));
-			} else {
-				// Must be a type
-				bracket.add(grammar.new ItemRule(token));
-			}
-			
-			token = token.next();
-		}
-		
-		return bracket;
 	}
 }

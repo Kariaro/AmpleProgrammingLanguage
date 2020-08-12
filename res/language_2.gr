@@ -11,14 +11,16 @@ START program
 
 modifiers: 'export'
 
-type: 'void'
-	| 'char'
-	| 'bool'
-	| 'int'
-    | 'uint_8'
-	| 'uint_16'
-	| 'uint_32'
-	| 'uint_64'
+rawtype: 'void'
+	   | 'char'
+	   | 'bool'
+	   | 'int'
+       | 'uint_8'
+	   | 'uint_16'
+	   | 'uint_32'
+	   | 'uint_64'
+
+type: rawtype [ '*' ]
 
 program: [ function ]
 

@@ -1,10 +1,6 @@
 package hardcoded.lexer;
 
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.regex.Matcher;
-
-public class TokenizerString implements CharSequence {
+class TokenizerString implements CharSequence {
 	private byte[] bytes;
 	private int index;
 	
@@ -18,28 +14,6 @@ public class TokenizerString implements CharSequence {
 		this.bytes = bytes.clone();
 	}
 	
-	/**
-	 * Create a new TokenizerString that is used by the lexer.
-	 * The string will be converted to bytes using the <code>ISO_8859_1</code> charset.
-	 * 
-	 * @param string
-	 * @throws NullPointerException if the string was null
-	 */
-	public TokenizerString(String string) {
-		this(string, StandardCharsets.ISO_8859_1);
-	}
-	
-	/**
-	 * Create a new TokenizerString that is used by the lexer.
-	 * 
-	 * @param string
-	 * @param charset
-	 * @throws NullPointerException if the string was null
-	 */
-	public TokenizerString(String string, Charset charset) {
-		bytes = string.getBytes(charset);
-	}
-	
 	@Override
 	public char charAt(int index) {
 		return (char)Byte.toUnsignedInt(bytes[this.index + index]);
@@ -50,46 +24,27 @@ public class TokenizerString implements CharSequence {
 		return bytes.length - index;
 	}
 	
-	int index() {
-		return index;
-	}
+	private int lineIndex = 1;
+	private int columnIndex = 1;
 	
-	int indexOf(String string) {
-		return indexOf(0, string);
-	}
+	int getLine() { return lineIndex; }
+	int getColumn() { return columnIndex; }
 	
-	int indexOf(int fromIndex, String string) {
-		if(string == null || string.isEmpty()) return -1;
-		
-		int sl = string.length();
-		for(int i = fromIndex; i < length() - sl; i++) {
-			for(int j = 0; j < sl; j++) {
-				if(string.charAt(j) != charAt(i + j)) break;
-				if(j == sl - 1) return i;
+	void move(int index) {
+		if(index > 0) {
+			for(int i = 0; i < index; i++) {
+				char c = charAt(i);
+				
+				if(c == '\n') {
+					lineIndex++;
+					columnIndex = 1;
+				} else {
+					columnIndex++;
+				}
 			}
 		}
 		
-		return -1;
-	}
-	
-	void move(int index) {
 		this.index += index;
-	}
-	
-	// Returns the length of the match and -1 if no match
-	int matches(Tokenizer.Rule rule) {
-		if(rule.isString()) {
-			String string = rule.string();
-			if(string.length() >= length()) return -1;
-			for(int i = 0; i < string.length(); i++) if(string.charAt(i) != charAt(i)) return -1;
-			return string.length();
-		} else if(rule.isPattern()) {
-			Matcher matcher = rule.pattern().matcher(this);
-			if(!matcher.lookingAt()) return -1;
-			return matcher.end();
-		}
-		
-		return -1;
 	}
 	
 	@Override
