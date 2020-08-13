@@ -26,6 +26,7 @@ public class Grammar {
 	
 	// TODO: Make it so that if this was implemented somewhere you could modify all the syntax.
 	// TODO: Maybe make like a CustomGrammar gramamr or something where you can modify everything.
+	// TODO: Make the default grammar item types (String, Regex, Item, Special) mandatory or the only rules that are allowed inside the GLRParser.
 	
 	protected Grammar() {
 		tokens = new LinkedHashMap<>();
@@ -114,13 +115,7 @@ public class Grammar {
 	}
 	
 	public abstract class Rule {
-		protected int ruleId;
-		
 		protected Rule() {}
-		
-		public int getRuleId() {
-			return ruleId;
-		}
 		
 		public String value() {
 			return null;
@@ -139,12 +134,7 @@ public class Grammar {
 	
 	public class RuleList extends Rule {
 		protected final List<Rule> rules;
-		
 		protected RuleList() {
-			rules = new ArrayList<>();
-		}
-		
-		protected RuleList(int ruleId) {
 			rules = new ArrayList<>();
 		}
 		
@@ -152,7 +142,7 @@ public class Grammar {
 			rules.add(rule);
 		}
 		
-		public int size() {
+		protected int size() {
 			return rules.size();
 		}
 		
@@ -184,20 +174,9 @@ public class Grammar {
 	public class BracketRule extends Rule {
 		protected List<Rule> matches;
 		protected boolean repeat;
-		protected Token token;
-		
-		protected BracketRule(Token token) {
-			this(token, false);
-		}
-		
-		protected BracketRule(Token token, boolean repeat) {
-			this.matches = new ArrayList<>();
-			this.token = token;
-			this.repeat = repeat;
-		}
 		
 		protected BracketRule() {
-			matches = new ArrayList<>();
+			this.matches = new ArrayList<>();
 		}
 		
 		protected void add(Rule match) {
@@ -216,29 +195,27 @@ public class Grammar {
 	}
 	
 	public class ItemRule extends Rule {
-		protected String name;
-		
+		protected String itemName;
 		protected ItemRule(Token token) {
-			name = token.toString();
+			itemName = token.toString();
 		}
 		
 		protected ItemRule(String name) {
-			this.name = name;
+			this.itemName = name;
 		}
 		
 		public String value() {
-			return name;
+			return itemName;
 		}
 		
 		public String toString() {
-			if(tokens.containsKey(name)) return "token:" + name;
-			return "i:" + name;
+			if(tokens.containsKey(itemName)) return "token:" + itemName;
+			return "i:" + itemName;
 		}
 	}
 	
 	public class StringRule extends Rule {
 		protected String value;
-		
 		protected StringRule(Token token) {
 			value = token.toString();
 			value = value.substring(1, value.length() - 1);
@@ -259,7 +236,6 @@ public class Grammar {
 	
 	public class RegexRule extends Rule {
 		protected Pattern pattern;
-		
 		protected RegexRule(Token token) {
 			String regex = token.toString();
 			regex = regex.substring(1, regex.length() - 1);

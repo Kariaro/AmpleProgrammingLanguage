@@ -47,10 +47,10 @@ public class OptimizedGrammar extends Grammar {
 		
 		optimize();
 		
-		int ruleId = 0;
-		for(Item item : items.values()) {
-			for(Rule rule : item.matches) rule.ruleId = (++ruleId);
-		}
+//		int ruleId = 0;
+//		for(Item item : items.values()) {
+//			for(Rule rule : item.matches) rule.ruleId = (++ruleId);
+//		}
 	}
 	
 	private RuleList cloneRuleList(RuleList set) {
@@ -150,15 +150,15 @@ public class OptimizedGrammar extends Grammar {
 					ItemRule a_ir = (ItemRule)a_rule;
 					ItemRule b_ir = (ItemRule)b_rule;
 					
-					if(a_ir.name.equals(b_ir.name)) {
+					if(a_ir.itemName.equals(b_ir.itemName)) {
 						continue; // If the item is matching then it should work. 
 					}
 					
-					if(!searched.contains(b_ir.name)) {
-						searched.add(b_ir.name);
+					if(!searched.contains(b_ir.itemName)) {
+						searched.add(b_ir.itemName);
 						
 						// There should never be any token reduction so this should never work.
-						return contentEquals(getItem(a_ir.name), getItem(b_ir.name));
+						return contentEquals(getItem(a_ir.itemName), getItem(b_ir.itemName));
 					}
 				}
 			}
@@ -236,8 +236,8 @@ public class OptimizedGrammar extends Grammar {
 						ItemRule ir = (ItemRule)rule;
 						
 						for(String name : items) {
-							if(ir.name.equals(name)) {
-								ir.name = replacement.name;
+							if(ir.itemName.equals(name)) {
+								ir.itemName = replacement.name;
 							}
 						}
 					}
