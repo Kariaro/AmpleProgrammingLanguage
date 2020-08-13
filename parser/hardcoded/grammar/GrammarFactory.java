@@ -1,6 +1,9 @@
 package hardcoded.grammar;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.*;
 
 /**
@@ -11,69 +14,80 @@ import java.util.*;
 public final class GrammarFactory {
 	private static final GrammarFactory factory = new GrammarFactory();
 	
-	// FIXME: Convert to using a InputStream instead of a Reader!
-	
-	private final Map<GrammarType, GrammarReaderImpl> grammars;
+	private final Map<GrammarType, GrammarParserImpl> grammars;
 	private GrammarFactory() {
-		Map<GrammarType, GrammarReaderImpl> map = new HashMap<>();
-		map.put(GrammarType.BNF, new BNFGrammarReader());
-		map.put(GrammarType.HCGR, new HCGRGrammarReader());
+		Map<GrammarType, GrammarParserImpl> map = new HashMap<>();
+		map.put(GrammarType.BNF, new BNFGrammarParser());
+		map.put(GrammarType.HCGR, new HCGRGrammarParser());
 		
 		grammars = Collections.unmodifiableMap(map);
 	}
 	
 	/**
-	 * Parse a grammar from the content of this file.
-	 * 
-	 * @param grammarType the type of the grammar.
-	 * @param filePath the path to the grammar file.
-	 * @return A parsed grammar.
-	 * @throws IOException
-	 */
-	public static Grammar load(GrammarType grammarType, String filePath) throws IOException {
-		return load(grammarType, new FileReader(new File(filePath)));
-	}
-	
-	/**
-	 * Parse a grammar from the content of this file.
-	 * 
-	 * @param grammarType the type of the grammar.
-	 * @param file the path to the grammar file.
-	 * @return A parsed grammar.
-	 * @throws IOException
-	 */
-	public static Grammar load(GrammarType grammarType, File file) throws IOException {
-		return load(grammarType, new FileReader(file));
-	}
-	
-	/**
-	 * Parse a grammar from the content of a string.
+	 * Crate a grammar from the content of a string using the ISO_8859_1 charset.
 	 * 
 	 * @param grammarType the type of the grammar.
 	 * @param content the string containing the grammar data.
-	 * @return A parsed grammar.
+	 * @return The parsed grammar.
 	 * @throws IOException
 	 */
-	public static Grammar loadFromString(GrammarType grammarType, String content) throws IOException {
-		return load(grammarType, new StringReader(content));
+	public static Grammar loadFromString(GrammarType grammarType, String content) {
+		return factory.grammars.get(grammarType).loadFromString(content);
 	}
 	
 	/**
-	 * Parses the input from a reader and returns the parsed grammar.
+	 * Crate a grammar from the content of a string using the specified charset.
 	 * 
 	 * @param grammarType the type of the grammar.
-	 * @param reader the reader that contains the data.
-	 * @return A parsed grammar.
+	 * @param content the string containing the grammar data.
+	 * @param charset the charset used to decode the string.
+	 * @return The parsed grammar.
 	 * @throws IOException
 	 */
-	public static Grammar load(GrammarType grammarType, Reader reader) throws IOException {
-		return factory.grammars.get(grammarType).load(reader);
+	public static Grammar loadFromString(GrammarType grammarType, String content, Charset charset) {
+		return factory.grammars.get(grammarType).loadFromString(content, charset);
+	}
+	
+	/**
+	 * Crate a grammar from the content of a file.
+	 * 
+	 * @param grammarType the type of the grammar.
+	 * @param filePath the path to the grammar file.
+	 * @return The parsed grammar.
+	 * @throws IOException
+	 */
+	public static Grammar loadFromFile(GrammarType grammarType, String filePath) throws IOException {
+		return factory.grammars.get(grammarType).loadFromFile(filePath);
+	}
+	
+	/**
+	 * Crate a grammar from the content of a file.
+	 * 
+	 * @param grammarType the type of the grammar.
+	 * @param file the grammar file.
+	 * @return The parsed grammar.
+	 * @throws IOException
+	 */
+	public static Grammar loadFromFile(GrammarType grammarType, File file) throws IOException {
+		return factory.grammars.get(grammarType).loadFromFile(file);
+	}
+	
+	/**
+	 * Create a grammar from the input of a inputstream.
+	 * 
+	 * @param grammarType the type of the grammar.
+	 * @param stream a inputstream that contains grammar data.
+	 * @return The parsed grammar.
+	 * @throws IOException
+	 */
+	public static Grammar load(GrammarType grammarType, InputStream stream) throws IOException {
+		return factory.grammars.get(grammarType).load(stream);
 	}
 	
 	/**
 	 * Get all readers that has been initialized by this factory.
 	 */
-	public static Collection<GrammarReaderImpl> loadedReaders() {
-		return factory.grammars.values();
+	public static Collection<GrammarParserImpl> loadedReaders() {
+		return Collections.unmodifiableCollection(factory.grammars.values());
 	}
 }

@@ -151,7 +151,7 @@ public class Tokenizer {
 			hasNull = false;
 		}
 		
-		for(Symbol sym : list) System.out.printf("[%s] %s\n", sym.group(), sym.value());
+		// for(Symbol sym : list) System.out.printf("[%s] %s\n", sym.group(), sym.value());
 		
 		return list;
 	}

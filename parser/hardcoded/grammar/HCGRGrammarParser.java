@@ -1,6 +1,5 @@
 package hardcoded.grammar;
 
-import java.io.*;
 import java.util.*;
 
 import hardcoded.grammar.Grammar.*;
@@ -70,7 +69,7 @@ import hc.errors.grammar.GrammarException;
  * 
  * @author HardCoded
  */
-public final class HCGRGrammarReader implements GrammarReaderImpl {
+public final class HCGRGrammarParser implements GrammarParserImpl {
 	private static final hardcoded.lexer.Tokenizer READER;
 	static {
 		Tokenizer lexer = TokenizerFactory.createNew();
@@ -87,19 +86,12 @@ public final class HCGRGrammarReader implements GrammarReaderImpl {
 		);
 	}
 	
-	public Grammar load(Reader reader) throws IOException {
-		CharArrayWriter writer = new CharArrayWriter();
-		char[] buffer = new char[65536];
-		int readChars = 0;
-		while((readChars = reader.read(buffer)) != -1) {
-			writer.write(buffer, 0, readChars);
-		}
-		
+	public Grammar parseGrammar(byte[] bytes) {
 		Grammar grammar = new Grammar();
 		Item itemGroup = null;
 		RuleList set = null;
 		
-		List<Symbol> list = READER.parse(writer.toString());
+		List<Symbol> list = READER.parse(bytes);
 		LinkedList<BracketRule> brackets = new LinkedList<>();
 		
 		for(int i = 0; i < list.size(); i++) {

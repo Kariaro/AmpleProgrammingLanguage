@@ -12,6 +12,7 @@ import hardcoded.lexer.TokenizerOld;
 import hardcoded.parser.GLRParser;
 import hardcoded.parser.GLRParserGenerator;
 import hardcoded.tree.ParseTree;
+import hardcoded.utils.FileUtils;
 import hardcoded.visualization.PTVisualization;
 
 //https://www.cs.ru.ac.za/compilers/pdfvers.pdf
@@ -46,26 +47,9 @@ public class Main {
 		}
 	}
 	
-	private static byte[] readFileBytes(File file) {
-		ByteArrayOutputStream bs = new ByteArrayOutputStream();
-		
-		try(DataInputStream stream = new DataInputStream(new FileInputStream(file))) {
-			byte[] buffer = new byte[4096];
-			int readBytes = 0;
-			
-			while((readBytes = stream.read(buffer)) != -1) {
-				bs.write(buffer, 0, readBytes);
-			}
-		} catch(IOException e) {
-			e.printStackTrace();
-		}
-		
-		return bs.toByteArray();
-	}
-	
 	public static void main(String[] args) {
 //		{
-//			byte[] bytes = readFileBytes(new File("res/test.hc"));
+//			byte[] bytes = FileUtils.readFileBytes(new File("res/test.hc"));
 //			Token token = Tokenizer.generateTokenChain(bytes);
 //			
 //			while(token != null) {
@@ -78,18 +62,19 @@ public class Main {
 		
 		try {
 			Grammar grammar;
-			// grammar = GrammarFactory.load(GrammarType.HCGR, "res/test_wiki.gr");
+			//grammar = GrammarFactory.load(GrammarType.HCGR, "res/test_wiki.gr");
 			//grammar = GrammarFactory.load(GrammarType.HCGR, "res/language.gr");
 			//grammar = GrammarFactory.load(GrammarType.HCGR, "res/test_wiki_2.gr");
-			grammar = GrammarFactory.load(GrammarType.HCGR, "res/language_2.gr");
+			grammar = GrammarFactory.loadFromFile(GrammarType.HCGR, "res/language_2.gr");
 			grammar = grammar.expand();
 			
 			GLRParserGenerator generator = new GLRParserGenerator();
 			GLRParser parser = generator.generateParser(grammar);
 			
 			{
-				byte[] bytes = readFileBytes(new File("res/test.hc"));
+				byte[] bytes = FileUtils.readFileBytes(new File("res/test.hc"));
 				//bytes = "export int main() {} int test2() {}".getBytes();
+				
 				Token token = TokenizerOld.generateTokenChain(bytes);
 				ParseTree parseTree = parser.parse(token);
 				

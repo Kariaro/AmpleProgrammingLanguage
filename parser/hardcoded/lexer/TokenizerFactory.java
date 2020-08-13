@@ -6,7 +6,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import hardcoded.lexer.Tokenizer.SymbolGroup;
-import hc.errors.lexer.LexicalException;
 
 public class TokenizerFactory {
 	private static final Tokenizer DEFAULT;
@@ -107,7 +106,7 @@ public class TokenizerFactory {
 	 * @throws IOException
 	 */
 	public static Tokenizer loadFromFile(String filePath) throws IOException {
-		return load(new FileInputStream(filePath));
+		return loadFromFile(new File(filePath));
 	}
 	
 	/**
@@ -118,7 +117,13 @@ public class TokenizerFactory {
 	 * @throws IOException
 	 */
 	public static Tokenizer loadFromFile(File file) throws IOException {
-		return load(new FileInputStream(file));
+		FileInputStream stream = new FileInputStream(file);
+		
+		try {
+			return load(stream);
+		} finally {
+			stream.close();
+		}
 	}
 	
 	/**

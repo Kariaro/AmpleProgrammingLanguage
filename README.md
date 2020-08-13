@@ -58,6 +58,7 @@ principles as language but in a unambiguous way. Most context-free-grammars requ
 that the set of production rules you specify are unambiguous for parsing.
 
 An example of a grammar could be
+
 ```
 TOKEN NUMBER: regex '[0-9]+'
 
@@ -67,6 +68,7 @@ statement: '{' statement '}'
 
 expression: NUMBER '>' NUMBER
           | '(' expression ')'
+
 ```
 
 We also need to tell the grammar to process <code>NUMBER</code> as a token and not a
@@ -75,6 +77,7 @@ production rule. My way of solving this was to allow regex to be applied.
 Using this grammar we could create a simple string and check if it follows our grammar.
 
 Checking if the following string works in our grammar we can use a LR parser.
+
 ```
 // N is a NUMBER
 // S is a STATEMENT
