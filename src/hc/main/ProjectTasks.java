@@ -1,6 +1,6 @@
-package hardcoded.grammar;
+package hc.main;
 
-final class GrammarTasks {
+final class ProjectTasks {
 	/* TODO: The grammar is not checking for unused tokens.
 	 *       If a token T is not used by any other rule it
 	 *       should be optimized away.
@@ -14,4 +14,5 @@ final class GrammarTasks {
 	 *       This could make it possible to create custom comment structures.
 	 */
 	
+	/* TODO: Implement the new Tokenizer system into the GLRParser and make it work */
 }

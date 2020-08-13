@@ -76,7 +76,7 @@ public class Tokenizer {
 	public boolean isParseOnly() {
 		return this.getClass() != Tokenizer.class;
 	}
-
+	
 	void dump() {
 		for(String name : groups.keySet()) {
 			SymbolGroup group = groups.get(name);

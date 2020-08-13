@@ -95,7 +95,7 @@ public class Main {
 //					line = "uint_64******* TESTING_FUNCTION (uint_64 ABCD, uint_64*** CDEB, uint_64*************** WHY_) { { { { { { 132323232 + 0x32F ; } } } } } }";
 //					if(line == null || line.isEmpty()) break;
 //					
-//					Token token = Tokenizer.generateTokenChain(line.getBytes());
+//					Token token = TokenizerOld.generateTokenChain(line.getBytes());
 //					ParseTree parseTree = parser.parse(token);
 //					
 //					System.out.println("ParseTree: " + parseTree);
