@@ -1,4 +1,4 @@
-package hc.errors.lexer;
+package hardcoded.lexer;
 
 public class LexicalException extends RuntimeException {
 	private static final long serialVersionUID = 3119831781029246673L;

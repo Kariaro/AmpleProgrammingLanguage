@@ -23,13 +23,13 @@ public class GLRParser {
 	protected GLRParser(ITable table) {
 		this.table = table;
 		
-		System.out.println(table);
-		System.out.println("");
+		// System.out.println(table);
+		// System.out.println("");
 	}
 	
 	private class LastState {
 		private LinkedList<StateToken> reductionStack;
-		private ParseTree tree; // TODO: ?????????
+		private ParseTree tree;
 		
 		public LastState() {
 			this.reductionStack = new LinkedList<>();
@@ -182,7 +182,8 @@ public class GLRParser {
 				System.out.println("  ShiftState : state='" + current + "', input='" + nextState.input + "', i=" + state.index);
 				
 				IRow row = table.getRow(current.index);
-				// TODO: Sometimes there are more ways to understand one token..
+				
+				// TODO: Sometimes there are more ways to understand a token..
 				IAction[] actions = getState(row, nextState);
 				if(actions == null || actions.length == 0 || state.index >= actions.length) {
 					System.out.println("    \"A shift is not valid for the input '" + nextState.input + "'\"");

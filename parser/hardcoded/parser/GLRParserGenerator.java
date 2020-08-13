@@ -6,7 +6,6 @@ import java.util.stream.Collectors;
 import hardcoded.grammar.Grammar;
 import hardcoded.grammar.Grammar.*;
 import hardcoded.grammar.OptimizedGrammar;
-import hardcoded.visualization.DFAVisualization_HACK;
 import hc.errors.grammar.GrammarException;
 
 /**
@@ -46,14 +45,14 @@ public class GLRParserGenerator {
 		computeClosure(state);
 		
 		for(int i = 0; i < globalStates.size(); i++) {
-			globalStates.get(i).name = "I" + Integer.toString(i);
+			// globalStates.get(i).name = "I" + Integer.toString(i);
 			globalStates.get(i).id = i;
 			globalStates.get(i).accept();
 			
 			// prettyPrint(globalStates.get(i));
 		}
 		
-		// new DFAVisualization_HACK().show(globalStates);
+		// new hardcoded.visualization.DFAVisualization_HACK().show(globalStates);
 		
 		// NOTE: This could be a nice addition.. Only for visual stuff though.
 		//       Sort the set list so that all terminals are on the left and all non-terminals are on the right inside this list.
@@ -132,7 +131,6 @@ public class GLRParserGenerator {
 				int index = owner.set.indexOf(state.action);
 				
 				if(index == -1) continue;
-				// System.out.println(state.rules);
 				
 				List<IAction> acts = new ArrayList<>();
 				
@@ -204,6 +202,7 @@ public class GLRParserGenerator {
 	}
 	
 	public class IAction {
+		
 		/**
 		 * 0: Shift<br>
 		 * 1: Reduce
@@ -212,7 +211,7 @@ public class GLRParserGenerator {
 		public int index;
 		public IRule rule;
 		public IState state;
-		public IRuleList rl; // TODO: New implementation
+		public IRuleList rl;
 		
 		private IAction(IState state, int type, int index) {
 			this.state = state;
@@ -249,7 +248,6 @@ public class GLRParserGenerator {
 			List<IState> next = states.poll();
 			
 			for(IState s : next) {
-				System.out.println(s);
 				states.add(computeClosure2(s));
 			}
 		}
@@ -276,7 +274,6 @@ public class GLRParserGenerator {
 			int index = globalStates.indexOf(next);
 			if(index < 0) {
 				globalStates.add(next);
-				state.name = "I" + globalStates.size();
 				state.next.add(next);
 				
 				// computeClosure(next);
@@ -445,16 +442,11 @@ public class GLRParserGenerator {
 		// What rule is used to connect to this state.
 		private IRule action;
 		
-		// The name of this state.
-		// XXX: Change the name to be ("I" + this.id)
-		private String name;
-		
 		private IState(String name) {
 			this.allRules = new ArrayList<>();
 			this.rules = new ArrayList<>();
 			this.list = new ArrayList<>();
 			this.next = new ArrayList<>();
-			this.name = name;
 		}
 		
 		private IState accept() {
@@ -484,7 +476,7 @@ public class GLRParserGenerator {
 		}
 		
 		public IState clone() {
-			IState copy = new IState(name);
+			IState copy = new IState("I" + id);
 			copy.action = action;
 			copy.rules.addAll(rules.stream().map(x -> x.fullClone()).collect(Collectors.toList()));
 			copy.list.addAll(list.stream().map(x -> x.fullClone()).collect(Collectors.toList()));
@@ -531,7 +523,7 @@ public class GLRParserGenerator {
 		}
 		
 		public String getName() {
-			return name;
+			return "I" + id;
 		}
 		
 		public String toString() {
@@ -569,7 +561,9 @@ public class GLRParserGenerator {
 			return copy;
 		}
 		
-		public String getName() { return name; }
+		public String getName() {
+			return name;
+		}
 		
 		@Override
 		public boolean equals(Object obj) {

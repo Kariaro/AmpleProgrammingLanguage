@@ -27,6 +27,8 @@ import hc.errors.grammar.GrammarException;
  * @author HardCoded
  */
 public class OptimizedGrammar extends Grammar {
+	// TODO: This class should only be used for the HCGRGrammarParser
+	
 	public OptimizedGrammar(Grammar grammar) {
 		// TODO: Make sure that the optimizations does not remove the start item...
 		startItem = grammar.startItem;
