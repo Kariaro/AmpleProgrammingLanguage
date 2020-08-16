@@ -7,25 +7,29 @@ import java.util.List;
  * @author HardCoded
  */
 public class ParseTree {
-	public List<Node> nodes;
+	public List<PNode> nodes;
+	
+	// TODO: Keep last action and make it possible to back track....
 	
 	public ParseTree() {
 		nodes = new ArrayList<>();
 	}
 	
+	// 63487
+	// 63487
 	public ParseTree(ParseTree tree) {
-		nodes = new ArrayList<>();
-		for(Node node : tree.nodes) nodes.add(node.clone());
+		nodes = new ArrayList<>(tree.nodes);
+		// for(Node node : tree.nodes) nodes.add(node.clone());
 	}
 
-	public void add(Node node) {
+	public void add(PNode node) {
 		nodes.add(node);
 	}
 	
-	public void reduce(Node node, int count) {
+	public void reduce(PNode node, int count) {
 		int index = nodes.size() - count;
 		for(int i = 0; i < count; i++) {
-			Node last = nodes.get(index);
+			PNode last = nodes.get(index);
 			nodes.remove(index);
 			node.nodes.add(last);
 		}
@@ -40,8 +44,10 @@ public class ParseTree {
 	@Deprecated
 	public void group() {
 		for(int i = 0; i < nodes.size(); i++) {
-			Node node = nodes.get(i);
-			if(node.isControl()) {
+			PNode node = nodes.get(i);
+			
+			boolean test = node.value.startsWith("_") && node.nodes.size() == 1;
+			if(node.isControl() || test) {
 				nodes.remove(i);
 				nodes.addAll(i, node.nodes);
 				i--;
@@ -51,15 +57,15 @@ public class ParseTree {
 		}
 	}
 	
-	public static class Node {
-		public List<Node> nodes;
+	public static class PNode {
+		public List<PNode> nodes;
 		public String value;
 		
-		public Node() {
+		public PNode() {
 			nodes = new ArrayList<>();
 		}
 		
-		public Node(String value) {
+		public PNode(String value) {
 			this.nodes = new ArrayList<>();
 			this.value = value;
 		}
@@ -71,8 +77,10 @@ public class ParseTree {
 		@Deprecated
 		public void group() {
 			for(int i = 0; i < nodes.size(); i++) {
-				Node node = nodes.get(i);
-				if(node.isControl()) {
+				PNode node = nodes.get(i);
+				
+				boolean test = node.value.startsWith("_") && node.nodes.size() == 1;
+				if(node.isControl() || test) {
 					nodes.remove(i);
 					nodes.addAll(i, node.nodes);
 					i--;
@@ -82,9 +90,17 @@ public class ParseTree {
 			}
 		}
 		
-		public Node clone() {
-			Node clone = new Node(value);
-			for(Node node : nodes) clone.nodes.add(node.clone());
+		@Override
+		public boolean equals(Object obj) {
+			if(obj instanceof String) {
+				return ((String)obj).equals(value);
+			}
+			
+			return obj == value;
+		}
+		public PNode clone() {
+			PNode clone = new PNode(value);
+			for(PNode node : nodes) clone.nodes.add(node.clone());
 			return clone;
 		}
 		

@@ -34,7 +34,7 @@ public class OptimizedGrammar extends Grammar {
 		startItem = grammar.startItem;
 		
 		grammar.tokens.values().forEach((t) -> {
-			ItemToken token = new ItemToken(t.name);
+			ItemToken token = new ItemToken(t.name, t.isImported());
 			for(RuleList rule : t.matches) token.matches.add(cloneRuleList(rule));
 			tokens.put(t.name, token);
 		});

@@ -18,14 +18,14 @@ import hardcoded.parser.GLRParserGenerator.IState;
  * 
  * @author HardCoded
  */
-public final class DFAVisualization_HACK extends Visualization {
+public final class DFAVisualization extends Visualization {
 	// TODO: Add a cordinate bar and a search bar..
 	// TODO: Add more sorting options.
 	// TODO: Make this graph usable by other people that want to see how to make graphs maybe :D
 	
 	private DFAPanel panel;
 	
-	public DFAVisualization_HACK() {
+	public DFAVisualization() {
 		super("DFA - Visualization", 2);
 		panel = new DFAPanel();
 		panel.setOpaque(true);
@@ -163,13 +163,13 @@ public final class DFAVisualization_HACK extends Visualization {
 //		}).start();
 		
 		new Thread(() -> {
-			for(int i = 0; i < 1000; i++) {
+			for(int i = 0; i < 1000000; i++) {
 				apply_fdg();
 				panel.repaint();
 			}
 			
 			for(int i = 0; i < 1000; i++) {
-				barycentric_fdgl();
+				//barycentric_fdgl();
 				panel.repaint();
 			}
 		}).start();

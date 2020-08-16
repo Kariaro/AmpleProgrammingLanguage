@@ -112,6 +112,18 @@ public class TokenizerFactory {
 	/**
 	 * Create a tokenizer from the content of a file.
 	 * 
+	 * @param parent the path of the parent folder.
+	 * @param fileName the name of the lexer file.
+	 * @return A parsed lexer.
+	 * @throws IOException
+	 */
+	public static Tokenizer loadFromFile(File parent, String fileName) throws IOException {
+		return loadFromFile(new File(parent, fileName));
+	}
+	
+	/**
+	 * Create a tokenizer from the content of a file.
+	 * 
 	 * @param file the lexer file.
 	 * @return A parsed lexer.
 	 * @throws IOException

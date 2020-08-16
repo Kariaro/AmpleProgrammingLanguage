@@ -1,0 +1,17 @@
+# Order of operations
+
+TOKEN NUMBER: {"[0-9]+"}
+
+START expr
+
+
+expr: term
+    | term '+' expr
+    | term '-' expr
+
+term: factor
+    | term '*' factor
+	| term '/' factor
+
+factor: NUMBER
+	  | '(' expr ')'

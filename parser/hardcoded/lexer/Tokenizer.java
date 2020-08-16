@@ -246,6 +246,16 @@ public class Tokenizer {
 			return discard;
 		}
 		
+		protected SymbolGroup clone() {
+			SymbolGroup group = new SymbolGroup(name);
+			group.discard = discard;
+			rules.forEach((a) -> {
+				if(a.isPattern()) group.rules.add(new Rule(group, a.pattern));
+				else group.rules.add(new Rule(group, a.string));
+			});
+			return group;
+		}
+		
 		@Override
 		public String toString() {
 			StringBuilder sb = new StringBuilder();
@@ -260,6 +270,13 @@ public class Tokenizer {
 			
 			return sb.append("}").toString();
 		}
+	}
+	
+	public Tokenizer clone() {
+		Tokenizer lexer = new Tokenizer();
+		lexer.defaultGroup = defaultGroup;
+		groups.forEach((a, b) -> lexer.groups.put(a, b.clone()));
+		return lexer;
 	}
 	
 	// TODO: Convert all strings into regex patterns to make this class smaller? (Performance???)

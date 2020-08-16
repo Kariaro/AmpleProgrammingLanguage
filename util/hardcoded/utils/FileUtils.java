@@ -30,7 +30,7 @@ public final class FileUtils {
 		byte[] buffer = new byte[65536];
 		int readBytes = 0;
 		
-		while((readBytes = stream.read(buffer, 0, stream.available())) != -1) {
+		while((readBytes = stream.read(buffer, 0, Math.min(stream.available(), buffer.length))) != -1) {
 			bs.write(buffer, 0, readBytes);
 			if(stream.available() < 1) break;
 		}

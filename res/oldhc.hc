@@ -88,7 +88,7 @@ void test() {
 		// }
 		
 		// Comparisons
-		if(a == 5) {
+		if(a == 5 || b >= a) {
 			
 		}
 	}
