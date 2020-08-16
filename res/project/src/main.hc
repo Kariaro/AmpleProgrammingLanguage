@@ -41,8 +41,15 @@ export void main(int input, int a, int b, int c) {
 	int test = 32;
 	int* test2 = &test; // Unary get pointer address to value.
 	int test3[(204 ^ 229 * 119 ^ 75 ^ (5) - 163 + 69 + 10 * 30 * 191 | 145 * 139 + 183 * 165 * 248 * 6 & 183 * 243 ^ 11)];// + 32];
+	int i = 1 + 2 + 3 + 4 + 5;
 	
-	if(test3[3] == 0) {
+	int test4[(1 ? 15:32)];
+	
+	if((1 + 2) || 3 || 5 || 123232323) {
+		// Testing BiExprV2
+	}
+	
+	if(test3[3][2][1] == 0) {
 		// TEST
 	}
 	

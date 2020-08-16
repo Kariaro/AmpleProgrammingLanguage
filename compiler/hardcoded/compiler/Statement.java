@@ -1,7 +1,6 @@
 package hardcoded.compiler;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import hardcoded.utils.StringUtils;
@@ -101,6 +100,41 @@ public interface Statement extends Stable {
 		
 		public String listnm() { return "BODY"; }
 		public Object[] listme() { return list.toArray(); }
+	}
+	
+	public static class EmptyBracketStatement implements Statement {
+		public String toString() { return "{ }"; }
+	}
+	
+	public static class MultiVariableStatement implements Statement {
+		public List<Variable> define;
+		public Type type;
+		
+		public MultiVariableStatement() {
+			define = new ArrayList<>();
+		}
+		
+		public Variable create() {
+			Variable stat = new Variable();
+			stat.type = type;
+			define.add(stat);
+			return stat;
+		}
+		
+		@Override
+		public String toString() {
+			if(define.size() == 1) {
+				return type + " " + define.get(0).toString() + ";";
+			}
+			
+			StringBuilder sb = new StringBuilder();
+			sb.append(type).append(" ").append(StringUtils.join(", ", define)).append(";");
+			return sb.toString();
+		}
+		
+
+		public String listnm() { return "DEFINE"; }
+		public Object[] listme() { return define.toArray(); }
 	}
 	
 	public default String listnm() { return "Undefined(" + this.getClass() + ")"; }

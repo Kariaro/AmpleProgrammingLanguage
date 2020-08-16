@@ -25,5 +25,8 @@ public class Variable implements Stable {
 	}
 	
 	public String listnm() { return "="; }
-	public Object[] listme() { return new Object[] { name, value }; }
+	public Object[] listme() {
+		if(isArray) return new Object[] { name, arraySize };
+		return new Object[] { name, value };
+	}
 }
