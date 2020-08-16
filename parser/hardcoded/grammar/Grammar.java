@@ -109,8 +109,19 @@ public class Grammar {
 	}
 	
 	public static class ItemToken extends Item {
+		private boolean imported;
+		
 		public ItemToken(String name) {
+			this(name, false);
+		}
+		
+		public ItemToken(String name, boolean imported) {
 			super(name);
+			this.imported = imported;
+		}
+		
+		public boolean isImported() {
+			return imported;
 		}
 	}
 	

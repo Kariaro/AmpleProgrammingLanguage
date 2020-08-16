@@ -157,6 +157,16 @@ public class Token {
 		return start;
 	}
 	
+	public boolean groupEquals(String name) {
+		if(name == null) return group == null;
+		return name.equals(group);
+	}
+	
+	@Deprecated
+	public void setGroup(String name) {
+		this.group = name;
+	}
+	
 	/**
 	 * Returns the value that this token holds.
 	 */
@@ -170,14 +180,7 @@ public class Token {
 	 * @return returns a string of the concatinated tokens.
 	 */
 	public String toString(int count) {
-		StringBuilder sb = new StringBuilder();
-		Token token = this;
-		for(int i = 0; i < count; i++) {
-			sb.append(token.value);
-			token = token.next;
-			if(token == null) break;
-		}
-		return sb.toString();
+		return toString("", count);
 	}
 	
 	/**
@@ -189,7 +192,9 @@ public class Token {
 	public String toString(CharSequence separator, int count) {
 		StringBuilder sb = new StringBuilder();
 		Token token = this;
-		for(int i = 0; i < count; i++) {
+		
+		int max = Math.min(remaining(), count) + 1;
+		for(int i = 0; i < max; i++) {
 			sb.append(token.value).append(separator);
 			token = token.next;
 			if(token == null) break;

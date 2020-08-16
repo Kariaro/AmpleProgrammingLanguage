@@ -1,0 +1,120 @@
+# Testing operator precedence
+TOKEN type: {"(?s)[a-zA-Z_].*"}
+
+TOKEN INTEGER: {"(-)?0x[0-9a-fA-F]+"}
+			 | {"(-)?0b[0-1]+"}
+			 | {"(-)?[0-9]+"}
+			 | '0'
+
+START expr
+
+expr: _exp15
+_exp15: _exp14 | _exp15 ',' _exp14
+_exp14: _exp13
+	| _exp13 '=' _exp14
+	| _exp13 '+=' _exp14
+	| _exp13 '-=' _exp14
+	| _exp13 '*=' _exp14
+	| _exp13 '/=' _exp14
+	| _exp13 '%=' _exp14
+	| _exp13 '&=' _exp14
+	| _exp13 '|=' _exp14
+	| _exp13 '^=' _exp14
+	| _exp13 '>>=' _exp14
+	| _exp13 '<<=' _exp14
+
+_exp13: _exp12 | _exp13 '?' _exp13 ':' _exp12
+_exp12: _exp11 | _exp12 '||' _exp11
+_exp11: _exp10 | _exp11 '&&' _exp10
+_exp10: _exp9 | _exp10 '|' _exp9
+_exp9: _exp8 | _exp9 '^' _exp8
+_exp8: _exp7 | _exp8 '&' _exp7
+_exp7: _exp6 | _exp7 '==' _exp6 | _exp7 '!=' _exp6
+_exp6: _exp5 | _exp6 '<' _exp5 | _exp6 '<=' _exp5 | _exp6 '>' _exp5 | _exp6 '>=' _exp5
+_exp5: _exp4 | _exp5 '>>' _exp4 | _exp5 '<<' _exp4
+_exp4: _exp3 | _exp4 '+' _exp3 | _exp4 '-' _exp3
+_exp3: _exp2 | _exp3 '*' _exp2 | _exp3 '/' _exp2 | _exp3 '%' _exp2
+_exp2: _exp1
+	| '~' _exp1
+	| '&' _exp1
+	| '*' _exp1
+	| '!' _exp1
+	| '-' _exp1
+	| '?' _exp1
+	| '++' _exp1
+	| '--' _exp1
+	| _exp1 '++'
+	| _exp1 '--'
+	| '(' type ')' _exp2
+_exp1: _exp0
+	| _exp1 '[' expr ']'
+	| _exp1 '(' expr [',' expr] ')'
+_exp0: INTEGER
+	| '(' expr ')'
+
+
+
+
+
+# EXPR: INTEGER
+	# | EXPR ',' EXPR					%right_0
+	
+	# | EXPR '=' EXPR					%right_1
+	# | EXPR '+=' EXPR				%right_1
+	# | EXPR '-=' EXPR				%right_1
+	# | EXPR '*=' EXPR				%right_1
+	# | EXPR '/=' EXPR				%right_1
+	# | EXPR '%=' EXPR				%right_1
+	# | EXPR '&=' EXPR				%right_1
+	# | EXPR '|=' EXPR				%right_1
+	# | EXPR '^=' EXPR				%right_1
+	# | EXPR '>>=' EXPR				%right_1
+	# | EXPR '<<=' EXPR				%right_1
+	
+	# | EXPR '?' EXPR ':' EXPR		%left_2
+	
+	# | EXPR '||' EXPR				%left_3
+	
+	# | EXPR '&&' EXPR				%left_4
+	
+	# | EXPR '|' EXPR					%left_5
+	
+	# | EXPR '^' EXPR					%left_6
+	
+	# | EXPR '&' EXPR					%left_7
+	
+	# | EXPR '==' EXPR				%left_8
+	# | EXPR '!=' EXPR				%left_8
+	
+	# | EXPR '<' EXPR					%left_9
+	# | EXPR '<=' EXPR				%left_9
+	# | EXPR '>' EXPR					%left_9
+	# | EXPR '>=' EXPR				%left_9
+	
+	# | EXPR '>>' EXPR				%left_10
+	# | EXPR '<<' EXPR				%left_10
+	
+	# | EXPR '+' EXPR					%left_11
+	# | EXPR '-' EXPR					%left_11
+	
+	# | EXPR '*' EXPR					%left_12
+	# | EXPR '/' EXPR					%left_12
+	# | EXPR '%' EXPR					%left_12
+	
+	# | '~' EXPR						%right_13
+	# | '&' EXPR						%right_13
+	# | '*' EXPR						%right_13
+	# | '!' EXPR						%right_13
+	# | '-' EXPR						%right_13
+	# | '?' EXPR						%right_13
+	# | '++' EXPR						%right_13
+	# | '--' EXPR						%right_13
+	# | EXPR '++'						%left_13
+	# | EXPR '--'						%left_13
+	# | '(' type ')' EXPR				%right_13
+	
+	# | EXPR '[' EXPR ']'
+	# | EXPR '(' EXPR [',' EXPR] ')'	%left_14
+	
+	# | '(' EXPR ')'					%right_15
+

@@ -17,14 +17,15 @@ import hc.errors.grammar.ParserException;
  * 
  * @author HardCoded
  */
-public class GLRParser {
+// This is more of a backup file
+public class GLRParserOld {
 	private final ITable table;
 	
-	protected GLRParser(ITable table) {
+	protected GLRParserOld(ITable table) {
 		this.table = table;
 		
-		System.out.println(table);
-		System.out.println("");
+		// System.out.println(table);
+		// System.out.println("");
 	}
 	
 	private class LastState {
@@ -88,10 +89,6 @@ public class GLRParser {
 		
 		if(rule.isItemToken()) {
 			if(state.item != null) return rule.value().equals(state.value());
-			if(state.input != null && ((ItemToken)rule.asItem()).isImported()) {
-				return rule.value().equals(state.input.getGroup());
-			}
-			
 			return match(rule, state.input);
 		}
 		
@@ -105,10 +102,9 @@ public class GLRParser {
 			if(actions == null) continue;
 			
 			IRule rule = table.set.get(i);
-			// System.out.println("STATE -> (" + rule + ") --- (" + state.value() + "), " + state.toString());
+			// System.out.println("(" + rule + ") --- (" + state.value() + "), " + state.toString());
 			
 			if(checkMatch(rule, state)) {
-				// System.out.println("MATCH -> (" + rule + ") --- (" + state.value() + "), " + state.toString());
 				return actions;
 			}
 		}
@@ -116,8 +112,9 @@ public class GLRParser {
 		return null;
 	}
 	
+	// TODO: Check if this is correct
 	private boolean canDoReduction(IRuleList set, List<StateToken> reduction) {
-		if(reduction.size() < set.size()) return false;
+		if(reduction.size() < set.size()) return false; // TODO: Check..
 		
 		int start = reduction.size() - set.size();
 		for(int i = 0; i < set.size(); i++) {
@@ -127,43 +124,38 @@ public class GLRParser {
 			if(!checkMatch(rule, state)) {
 				return false;
 			}
+			
+			// System.out.println("--(" + i + "): " + state + " --- (" + rule + ")");
 		}
 		
 		return true;
 	}
 	
 	// TODO: Fix operator precedence
-	// NOTE: We could let the developer figure out how to make operator precedence work.
 	public ParseTree parse(Token token) {
-		// System.out.println("Tokens: '" + token.toString(" ", Integer.MAX_VALUE) + "'");
+		System.out.println("Tokens: '" + token.toString(" ", Integer.MAX_VALUE) + "'");
 		
 		LinkedList<LastState> stateStack = new LinkedList<>();
+		
 		LastState ls = new LastState();
 		{
 			StateToken state = new StateToken(table.start());
 			state.input = token.prev();
-			if(state.input == null) {
-				// Weird
-				return ls.tree;
-			}
 			
 			ls.reductionStack.push(state);
-			stateStack.add(new LastState(ls));
 		}
+		stateStack.add(new LastState(ls));
 		
-		// Cap ambiguity to 100 states..
-		while(true) {
-			if(stateStack.size() > 100) {
-				stateStack.removeFirst();
-			}
-			
-			// System.out.println();
-			// System.out.println("Stack: " + ls.reductionStack + ", size=" + stateStack.size());
+		int max = 1000000;
+		while(max-- > 0) {
+			System.out.println();
+			System.out.println("Stack: " + ls.reductionStack + ", size=" + stateStack.size());
 			// for(int i = Math.max(0, stateStack.size() - 10); i < stateStack.size(); i++) System.out.println("--" + stateStack.get(i));
 			
-			StateToken state = ls.reductionStack.getLast();
 			
-			// System.out.println("  State: (" + state.input.remaining() + ") " + state + ", " + stateStack.size()); //Runtime.getRuntime().totalMemory());
+			// The first action is always a shift action...
+			StateToken state = ls.reductionStack.getLast();
+			System.out.println("  State: " + state);
 			
 			IAction current = state.getAction();
 			
@@ -175,12 +167,7 @@ public class GLRParser {
 					String value = state.value();
 					
 					if(table.acceptItem().equals(value)) {
-						if(state.input.remaining() == 0) {
-							System.out.println("-- PARSED THE INPUT SUCCESSFULLY --");
-						} else {
-							System.out.println("-- FAILED TO PARSE THE INPUT --");
-						}
-						
+						System.out.println("-- PARSED THE INPUT SUCCESSFULLY --");
 						break;
 					}
 				}
@@ -190,22 +177,27 @@ public class GLRParser {
 				StateToken nextState = new StateToken();
 				nextState.input = state.input.next();
 				
-				// System.out.println("  ShiftState : state='" + current + "', input='" + nextState.input + "', i=" + state.index);
+				System.out.println("  ShiftState : state='" + current + "', input='" + nextState.input + "', i=" + state.index);
 				
 				IRow row = table.getRow(current.index);
 				
 				// TODO: Sometimes there are more ways to understand a token..
 				IAction[] actions = getState(row, nextState);
 				if(actions == null || actions.length == 0 || state.index >= actions.length) {
-					// System.out.println("    \"A shift is not valid for the input '" + nextState.input + "'\"");
-					// System.out.println("    \"Going back into search tree\"");
+					System.out.println("    \"A shift is not valid for the input '" + nextState.input + "'\"");
+					System.out.println("    \"Going back into search tree\"");
 					
+					// TODO: If the state at the last position in the stateStack has its index
+					//       greater than the amount of actions it has. It should be removed from
+					//       the list.
 					LastState last = stateStack.getLast();
 					StateToken st = last.reductionStack.getLast();
 					st.index++;
 					
+					// TODO: Check if this works as expected.
 					if(st.index == st.actions.length - 1) {
 						// If we have reached the last index of a state we remove that state because if it's wrong we will never enter it again..
+						
 						// System.out.println("    \"The index is at the end of the actions (" + st.index + ") --- (" + st.actions.length + ")\"");
 						ls = new LastState(stateStack.pollLast());
 					} else if(st.index >= st.actions.length) {
@@ -213,6 +205,7 @@ public class GLRParser {
 						stateStack.removeLast();
 						
 						if(stateStack.isEmpty()) {
+							// We have failed to parse this input
 							System.out.println("-- FAILED TO PARSE THE INPUT --");
 							break;
 						}
@@ -222,23 +215,30 @@ public class GLRParser {
 						ls = new LastState(last);
 					}
 					
+					
 					continue;
 				}
 				
-				// System.out.println("    Actions: " + join(", ", actions));
-				// System.out.println("    Index  : " + state.index);
+				System.out.println("    Actions: " + join(", ", actions));
+				System.out.println("    Index  : " + state.index);
+				
+				if(state.index >= actions.length) {
+					System.out.println("    \"State index was outside bounds of actions array\"");
+				}
 				
 				IAction action = actions[state.index];
-//				System.out.println("    Action : " + action);
+				System.out.println("    Action : " + action);
 				
 				nextState.actions = actions;
 				nextState.index = state.index;
 				
 				if(action.isShift()) {
+					// TODO: Check for null values!!!
 					nextState.input = state.input.next();
 				}
 				
 				ls.reductionStack.add(nextState);
+				
 				ls.tree.add(new PNode(nextState.value()));
 				
 				if(actions == null || actions.length > 1) {
@@ -249,18 +249,23 @@ public class GLRParser {
 			}
 			
 			if(current.isReduce()) {
-				// System.out.println("  ReduceState : state='" + current + "', i=" + state.index + ", stack=" + ls.reductionStack);
-				// System.out.println("    IRuleList: [" + current.rl.itemName + " -> " + current.rl + "]");
+				System.out.println("  ReduceState : state='" + current + "', i=" + state.index + ", stack=" + ls.reductionStack);
+				System.out.println("    IRuleList: [" + current.rl.itemName + " -> " + current.rl + "]");
 				
+				// TODO: Check if the rule matches the end of the stream and then compute the next state
+				// FIXME: For now lets assume that the rule does match
 				IRuleList rule = current.rl;
+				
 				if(!canDoReduction(rule, ls.reductionStack)) {
-					// System.out.println("    \"The reduction rule did not match the current reductionStack\"");
-					// System.out.println("    \"Going back in the search tree\"");
+					// TODO: What do we do here?
+					System.out.println("    \"The reduction rule did not match the current reductionStack\"");
+					System.out.println("    \"Going back in the search tree\"");
 					
 					LastState last = stateStack.getLast();
 					StateToken st = last.reductionStack.getLast();
 					st.index++;
 					
+					// TODO: Check if this works as expected.
 					if(st.index == st.actions.length - 1) {
 						// If we have reached the last index of a state we remove that state because if it's wrong we will never enter it again..
 						
@@ -291,18 +296,18 @@ public class GLRParser {
 				
 				state = ls.reductionStack.getLast();
 				
-				// System.out.println("    State    : " + state);
+				System.out.println("    State    : " + state);
 				
 				IRow row = table.getRow(state.rowIndex());
 				IAction[] actions = getState(row, nextState);
 				
 				if(actions != null) {
-					// System.out.println("    Actions: " + join(", ", actions));
-					// System.out.println("    Index  : " + state.index);
+					System.out.println("    Actions: " + join(", ", actions));
+					System.out.println("    Index  : " + state.index);
 					nextState.actions = actions;
 				}
 				
-				// System.out.println("    Next     : " + nextState);
+				System.out.println("    Next     : " + nextState);
 				
 				ls.reductionStack.add(nextState);
 				ls.tree.reduce(new PNode(nextState.value()), rule.size());
@@ -320,8 +325,10 @@ public class GLRParser {
 		}
 		
 		System.out.println();
-		//System.out.println("END: " + ls.reductionStack);
-		//System.out.println("   : " + stateStack);
+		System.out.println();
+		System.out.println("END: " + ls.reductionStack);
+		System.out.println("   : " + stateStack);
+		System.out.println();
 		System.out.println();
 		
 		return ls.tree;
@@ -334,21 +341,19 @@ public class GLRParser {
 			case INVALID: throw new ParserException("Found a invalid matching rule...");
 			case STRING: return token.toString().equals(rule.value());
 			case REGEX: return token.toString().equals(rule.value());
-			case ITEM: return false; // Cannot match a token and an item
-			case TOKEN: {
-				ItemToken item = (ItemToken)rule.asItem();
-				
-				if(item.isImported()) {
-					System.out.println("Matching test. (" + rule + ") --- (" + token + ")");
-					return rule.value().equals(token.getGroup());
+			case ITEM: {
+				if(rule.isItemToken()) {
+					// This could match... This
+					ItemToken item = (ItemToken)rule.asItem();
+					
+					for(RuleList set : item.getRules()) {
+						if(_match(set, token)) return true;
+					}
 				}
 				
-				for(RuleList set : item.getRules()) {
-					if(_match(set, token)) return true;
-				}
+				return false; // Cannot match a token and an item
 			}
 			case SPECIAL: {
-				// TODO???
 				if(rule.value().equals("{EOF}")) return token == null;
 				return false;
 			}

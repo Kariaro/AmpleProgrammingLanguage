@@ -10,7 +10,7 @@ import java.util.List;
 import javax.swing.JPanel;
 
 import hardcoded.tree.ParseTree;
-import hardcoded.tree.ParseTree.Node;
+import hardcoded.tree.ParseTree.PNode;
 
 /**
  * @author HardCoded
@@ -120,9 +120,12 @@ public final class PTVisualization extends Visualization {
 			ParseTree tree = new ParseTree(parseTree);
 			tree.group();
 			
-			Node node = new Node("ENTRY");
+			PNode node = new PNode("ENTRY");
 			node.nodes.addAll(tree.nodes);
-			elements.add(new Element(null, node));
+			
+			Element entry = new Element(null, node);
+			elements.add(entry);
+			entry.move(-(entry.x + (entry.offset - entry.width) / 2), -entry.y);
 		}
 	}
 	
@@ -136,7 +139,7 @@ public final class PTVisualization extends Visualization {
 		private List<Element> elements;
 		private String content;
 		
-		private Element(Element parent, Node node) {
+		private Element(Element parent, PNode node) {
 			this.elements = new ArrayList<>();
 			this.content = node.value;
 			
@@ -148,7 +151,7 @@ public final class PTVisualization extends Visualization {
 			if(!node.nodes.isEmpty()) {
 				offset = 0;
 				
-				for(Node n : node.nodes) {
+				for(PNode n : node.nodes) {
 					Element e = new Element(this, n);
 					e.move(offset, 140);
 					
@@ -175,13 +178,18 @@ public final class PTVisualization extends Visualization {
 			int x = (int)this.x;
 			int y = (int)this.y;
 			
-			{
-				int xp = x;
+			int xp = x;
+			
+			if(!elements.isEmpty()) {
+				xp += (offset - width) / 2;
+			}
+			
+			if((xp + width + panel.xpos < 0)
+			|| (xp - width + panel.xpos > panel.getWidth() / panel.zoom)
+			|| (y - 5 + (height + 10) + panel.ypos < 0)
+			|| (y - 5 - (height + 10) + panel.ypos > panel.getHeight() / panel.zoom)) {
 				
-				if(!elements.isEmpty()) {
-					xp += (offset - width) / 2;
-				}
-				
+			} else {
 				g.setColor(Color.lightGray);
 				g.fillRoundRect(xp, y - 5, width, height + 10, 10, 10);
 				
@@ -190,14 +198,13 @@ public final class PTVisualization extends Visualization {
 				g.setStroke(new BasicStroke(2));
 				g.drawRoundRect(xp, y - 5, width, height + 10, 10, 10);
 				g.setStroke(stroke);
+				
+				g.setColor(Color.black);
+				FontMetrics fm = g.getFontMetrics(); {
+					Rectangle rect = fm.getStringBounds(content, g).getBounds();
+					g.drawString(content, x - rect.x + ((int)offset - rect.width) / 2, y - rect.y + (height - rect.height) / 2);
+				}
 			}
-			
-			g.setColor(Color.black);
-			FontMetrics fm = g.getFontMetrics(); {
-				Rectangle rect = fm.getStringBounds(content, g).getBounds();
-				g.drawString(content, x - rect.x + ((int)offset - rect.width) / 2, y - rect.y + (height - rect.height) / 2);
-			}
-			
 			
 			for(Element elm : elements) {
 				elm.paint(g);

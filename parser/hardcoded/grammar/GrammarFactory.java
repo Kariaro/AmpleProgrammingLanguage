@@ -64,6 +64,20 @@ public final class GrammarFactory {
 	 * Crate a grammar from the content of a file.
 	 * 
 	 * @param grammarType the type of the grammar.
+	 * @param parent the parent folder of the file.
+	 * @param fileName the name of the grammarFile.
+	 * @return The parsed grammar.
+	 * @throws IOException
+	 */
+	public static Grammar loadFromFile(GrammarType grammarType, File parent, String fileName) throws IOException {
+		return factory.grammars.get(grammarType).loadFromFile(new File(parent, fileName));
+	}
+	
+	
+	/**
+	 * Crate a grammar from the content of a file.
+	 * 
+	 * @param grammarType the type of the grammar.
 	 * @param file the grammar file.
 	 * @return The parsed grammar.
 	 * @throws IOException

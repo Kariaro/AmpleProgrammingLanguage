@@ -16,16 +16,18 @@ import hc.errors.grammar.GrammarException;
  * @author HardCoded
  */
 public class GLRParserGenerator {
+	// FIXME: Serialize the ITable classes.
 	
 	public GLRParserGenerator() {
 		
 	}
 	
+	// This list will contain all global states..
+	private List<IState> globalStates = new ArrayList<>();
+	
 	// The grammar we are generating a parser for
 	private Grammar grammar;
 	
-	// This list will contain all global states..
-	private List<IState> globalStates = new ArrayList<>();
 	
 	public GLRParser generateParser(Grammar grammar) {
 		if(!(grammar instanceof OptimizedGrammar)) {
@@ -36,7 +38,6 @@ public class GLRParserGenerator {
 		
 		String startGroupName = grammar.getStartItem();
 		if(startGroupName == null) {
-			// Could not find a valid start item....
 			throw new GrammarException("The grammar did not specify any start items");
 		}
 		
@@ -45,34 +46,32 @@ public class GLRParserGenerator {
 		computeClosure(state);
 		
 		for(int i = 0; i < globalStates.size(); i++) {
-			// globalStates.get(i).name = "I" + Integer.toString(i);
 			globalStates.get(i).id = i;
 			globalStates.get(i).accept();
-			
-			// prettyPrint(globalStates.get(i));
 		}
 		
-		// new hardcoded.visualization.DFAVisualization_HACK().show(globalStates);
+		// new hardcoded.visualization.DFAVisualization().show(globalStates);
 		
-		// NOTE: This could be a nice addition.. Only for visual stuff though.
-		//       Sort the set list so that all terminals are on the left and all non-terminals are on the right inside this list.
+		// MAYBE: This could be a nice addition.. Only for visual stuff though.
+		//        Sort the set list so that all terminals are on the left and all non-terminals are on the right inside this list.
 		List<IRule> set = globalStates.stream().map(x -> x.action).filter(x -> x != null).distinct().collect(Collectors.toList());
 		
 		return new GLRParser(new ITable(set, globalStates));
 	}
 	
+	// TODO: Make these serializable...
 	// TODO: Some rows should not be included because they are just empty
 	public class ITable {
+		private final IAction entry = new IAction(0, 0);
+		
 		public List<IRule> set;
 		public List<IRow> rows;
-		private IAction entry;
 		private String acceptItem;
 		
 		private ITable(List<IRule> set, List<IState> states) {
+			this.acceptItem = grammar.getStartItem();
+			this.rows = new ArrayList<>();
 			this.set = set;
-			entry = new IAction(null, 0, 0);
-			rows = new ArrayList<>();
-			acceptItem = grammar.getStartItem();
 			
 			for(int i = 0; i < states.size(); i++) {
 				rows.add(new IRow(this, states.get(i)));
@@ -93,7 +92,6 @@ public class GLRParserGenerator {
 			}
 			
 			if(set.size() > 0) sb.deleteCharAt(sb.length() - 1);
-			
 			sb.append("\n");
 			
 			for(int i = 0; i < rows.size(); i++) {
@@ -138,7 +136,6 @@ public class GLRParserGenerator {
 				IRule shiftRule = null;
 				List<IRuleList> reduceRules = null;
 				
-				// Reduce rules*
 				for(IRuleList rl : state.rules) {
 					boolean reduce = (rl.index >= rl.size());
 					
@@ -151,10 +148,7 @@ public class GLRParserGenerator {
 						acts.add(act);
 					} else if(shiftRule == null) {
 						shiftRule = rl.cursor(-1);
-						
-						// This will only be added once...
 						shiftAction = new IAction(0, globalStates.indexOf(state));
-						//acts.add(act);
 					}
 				}
 				
@@ -202,7 +196,6 @@ public class GLRParserGenerator {
 	}
 	
 	public class IAction {
-		
 		/**
 		 * 0: Shift<br>
 		 * 1: Reduce
@@ -210,14 +203,7 @@ public class GLRParserGenerator {
 		public int type;
 		public int index;
 		public IRule rule;
-		public IState state;
 		public IRuleList rl;
-		
-		private IAction(IState state, int type, int index) {
-			this.state = state;
-			this.index = index;
-			this.type = type;
-		}
 		
 		public IAction(int type, int index) {
 			this.index = index;
@@ -340,8 +326,6 @@ public class GLRParserGenerator {
 					String name = next.value;
 					
 					if(!result.hasItem(name)) {
-						// DONE: If this item has a leading non-terminal item then it should also be added
-						//       to this list..
 						result.list.add(getGrammarItem(name));
 					}
 				}
@@ -366,9 +350,8 @@ public class GLRParserGenerator {
 		return result;
 	}
 	
+	// TODO: Optimize this function..
 	private IState createEntrySet(String startGroupName) {
-		// TODO: Optimize this function..
-		
 		IState state = new IState("I0");
 		
 		Set<String> searched = new HashSet<>();
@@ -450,9 +433,6 @@ public class GLRParserGenerator {
 		}
 		
 		private IState accept() {
-			// NOTE: Sort all the items such that the sets inside the rules list is combined iwth the rules inside the list to create
-			//       a more even pattern..
-			
 			allRules.clear();
 			allRules.addAll(rules);
 			allRules.addAll(list.stream().flatMap(x -> x.list.stream()).collect(Collectors.toList()));
@@ -511,8 +491,7 @@ public class GLRParserGenerator {
 			if(!action.equals(state.action)) return false;
 			if(rules.size() != state.rules.size()) return false;
 			
-			// We only need to compare the rules because all the items are computed
-			// from the rules list.
+			// We only need to compare the rules because all the items are computed from the rules list.
 			for(int i = 0; i < rules.size(); i++) {
 				IRuleList a = rules.get(i);
 				IRuleList b = state.rules.get(i);
@@ -646,57 +625,44 @@ public class GLRParserGenerator {
 		}
 	}
 	
-	public enum IType { ITEM, STRING, REGEX, SPECIAL, INVALID }
+	public enum IType { ITEM, TOKEN, STRING, REGEX, SPECIAL, INVALID }
 	public class IRule {
 		private IType type = IType.INVALID;
 		private String value = null;
 		
 		private IRule(Rule rule) {
 			value = rule.value();
-			if(rule instanceof ItemRule) type = IType.ITEM;
-			else if(rule instanceof StringRule) type = IType.STRING;
+			if(rule instanceof ItemRule) {
+				Item item = asItem();
+				
+				if(item instanceof ItemToken) {
+					type = IType.TOKEN;
+				} else {
+					type = IType.ITEM;
+				}
+			} else if(rule instanceof StringRule) type = IType.STRING;
 			else if(rule instanceof RegexRule) type = IType.REGEX;
 			else if(rule instanceof SpecialRule) type = IType.SPECIAL;
 			else throw new GrammarException("Invalid group type -> " + rule.getClass());
 		}
-		
-		public boolean match(String string) {
-			if(type == IType.ITEM) {
-				
-				IItem item = getGrammarItem(value);
-				
-				if(item.token) {
-					for(IRuleList set : item.list) {
-						if(set.rules.get(0).match(string)) return true;
-					}
-					
-					return false;
-				} else {
-					// Can't do anything here
-				}
-			}
-			
-			if(type == IType.REGEX) {
-				System.out.println(value);
-				return string.matches(value);
-			}
-			
-			if(type == IType.STRING) {
-				return value.equals(string);
-			}
-			
-			return false;
-		}
 
-		public boolean isItemType() { return type == IType.ITEM; }
-		public boolean isItemToken() { return grammar.getItem(value) instanceof ItemToken; }
+		public boolean isItemType() {
+			return type == IType.ITEM || type == IType.TOKEN;
+		}
+		
+		public boolean isItemToken() {
+			return type == IType.TOKEN;
+		}
 		
 		public Item asItem() { return grammar.getItem(value); }
 		
 		public IType type() { return type; }
 		public String value() { return value; }
 		
-		public int hashCode() { return value.hashCode() * (type.ordinal() + 1); }
+		public int hashCode() {
+			return value.hashCode() * (type.ordinal() + 1);
+		}
+		
 		public boolean equals(Object obj) {
 			if(!(obj instanceof IRule)) return false;
 			IRule rule = (IRule)obj;

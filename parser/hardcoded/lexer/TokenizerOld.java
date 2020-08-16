@@ -4,12 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TokenizerOld {
-	private TokenizerOld() {
-		
-	}
+	private TokenizerOld() {}
 	
-	public static Token generateTokenChain(byte[] bytes) {
-		List<Symbol> symbols = TokenizerFactory.getDefaultLexer().parse(bytes);
+	public static Token generateTokenChain(Tokenizer lexer, byte[] bytes) {
+		List<Symbol> symbols = lexer.parse(bytes);
+		if(symbols.isEmpty()) return new Token(null, null);
 		
 		List<Token> list = new ArrayList<>();
 		list.add(new Token(null, null));
@@ -28,6 +27,10 @@ public class TokenizerOld {
 			token = t;
 		}
 		
-		return entry;
+		return entry.next;
+	}
+	
+	public static Token generateTokenChain(byte[] bytes) {
+		return generateTokenChain(TokenizerFactory.getDefaultLexer(), bytes);
 	}
 }

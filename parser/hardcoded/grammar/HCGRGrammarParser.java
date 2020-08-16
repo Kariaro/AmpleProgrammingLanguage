@@ -76,7 +76,7 @@ public final class HCGRGrammarParser implements GrammarParserImpl {
 		READER = lexer.unmodifiableTokenizer();
 		
 		lexer.addGroup("WHITESPACE", true).addRegexes("[ \t\r\n]", "#[^\r\n]*");
-		lexer.addGroup("KEYWORD").addStrings("TOKEN", "START");
+		lexer.addGroup("KEYWORD").addStrings("ITOKEN", "TOKEN", "START");
 		lexer.addGroup("DELIMITER").addStrings("(", ")", "[", "]", "{", "}", ":", "|");
 		lexer.addGroup("ITEMNAME").addRegex("[a-zA-Z0-9_]+([ \t\r\n]*)(?=:)");
 		lexer.addGroup("NAME").addRegex("[a-zA-Z0-9_]+");
@@ -104,7 +104,6 @@ public final class HCGRGrammarParser implements GrammarParserImpl {
 				throw new GrammarException("(line:" + sym.line() + " column:" + sym.column() + ") Invalid syntax '" + value + "'");
 			}
 			
-			// Creating new itemGroups and specifying the start item.
 			if(group.equals("KEYWORD")) {
 				if(i + 1 > list.size()) {
 					throw new GrammarException("(line:" + sym.line() + " column:" + sym.column() + ") Invalid placement of the " + value.toLowerCase() + " keyword.");
@@ -133,6 +132,17 @@ public final class HCGRGrammarParser implements GrammarParserImpl {
 					
 					grammar.setStartItem(item.value());
 					i++;
+				} else if(value.equals("ITOKEN")) {
+					if(!item.groupEquals("NAME")) {
+						throw new GrammarException("(line:" + item.line() + " column:" + item.column() + ") Invalid start argument. Expected a item name got '" + item + "'");
+					}
+					
+					itemGroup = new ItemToken(item.value(), true);
+					grammar.addItem(itemGroup);
+					i++;
+					
+					// TODO: Allow for matching the group and string type...
+					// TODO: ITOKEN EQUALS: '=='
 				}
 
 				continue;

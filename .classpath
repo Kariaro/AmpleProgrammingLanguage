@@ -4,6 +4,7 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="parser"/>
 	<classpathentry kind="src" path="util"/>
+	<classpathentry kind="src" path="compiler"/>
 	<classpathentry kind="lib" path="res"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

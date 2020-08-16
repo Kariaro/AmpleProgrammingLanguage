@@ -6,24 +6,23 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import javax.swing.JPanel;
 
-import hardcoded.tree.AbstractSyntaxTree;
-import hardcoded.tree.AbstractSyntaxTree.Node;
+import hardcoded.compiler.*;
+import hardcoded.compiler.Statement.IfStatement;
+import hardcoded.compiler.Statement.Statements;
 
 /**
- * Abstract syntax tree
- * https://en.wikipedia.org/wiki/Abstract_syntax_tree
- * 
  * @author HardCoded
- */	
-public final class ASTVisualization extends Visualization {
-	private ASTPanel panel;
+ */
+public final class HC2Visualization extends Visualization {
+	private PTPanel panel;
 	
-	public ASTVisualization() {
-		super("Abstract Syntax Tree - Visualization", 2);
-		panel = new ASTPanel();
+	public HC2Visualization() {
+		super("ParseTree - Visualization", 2);
+		panel = new PTPanel();
 		panel.setOpaque(true);
 		
 		frame.setSize(640, 460);
@@ -83,7 +82,7 @@ public final class ASTVisualization extends Visualization {
 	
 	public void show(Object... args) {
 		if(args.length != 1) throw new IllegalArgumentException("Expected one argument.");
-		panel.display((AbstractSyntaxTree)args[0]);
+		panel.display((Program)args[0]);
 		frame.setVisible(true);
 	}
 	
@@ -91,7 +90,7 @@ public final class ASTVisualization extends Visualization {
 		frame.setVisible(true);
 	}
 	
-	private class ASTPanel extends JPanel {
+	private class PTPanel extends JPanel {
 		private static final long serialVersionUID = 1L;
 		
 		private List<Element> elements = new ArrayList<>();
@@ -116,15 +115,10 @@ public final class ASTVisualization extends Visualization {
 			for(Element e : elements) e.paint(g);
 		}
 		
-		public void display(AbstractSyntaxTree ast) {
+		public void display(Program program) {
 			elements.clear();
 			
-			AbstractSyntaxTree tree = new AbstractSyntaxTree(ast);
-			
-			Node node = new Node("Abstract Syntax Tree");
-			node.addAll(tree.nodes());
-			
-			Element entry = new Element(null, node);
+			Element entry = new Element(null, program);
 			elements.add(entry);
 			entry.move(-(entry.x + (entry.offset - entry.width) / 2), -entry.y);
 		}
@@ -140,33 +134,40 @@ public final class ASTVisualization extends Visualization {
 		private List<Element> elements;
 		private String content;
 		
-		private Element(Element parent, Node node) {
+		private Element(Element parent, Object object) {
 			this.elements = new ArrayList<>();
-			this.content = node.toString();
 			
+			if(object instanceof Stable) {
+				Stable stab = (Stable)object;
+				setContent(stab.listnm());
+				
+				if(stab.listme().length > 0) {
+					offset = 0;
+					
+					for(Object obj : stab.listme()) {
+						Element e = new Element(this, obj);
+						e.move(offset, 140);
+						offset += e.offset;
+						elements.add(e);
+					}
+					
+					if(width > offset) {
+						double diff = (width - offset) / 2.0;
+						for(Element e2 : elements) e2.move(diff, 0);
+						
+						offset = width;
+					}
+				}
+			} else {
+				setContent(Objects.toString(object));
+			}
+		}
+		
+		public void setContent(String value) {
+			content = value;
 			width = content.length() * 12 + 10;
 			height = 20;
-			
 			offset = width + 1;
-			
-			if(!node.isEmpty()) {
-				offset = 0;
-				
-				for(Node n : node.nodes()) {
-					Element e = new Element(this, n);
-					e.move(offset, 140);
-					
-					offset += e.offset;
-					elements.add(e);
-				}
-				
-				if(width > offset) {
-					double diff = (width - offset) / 2.0;
-					for(Element e : elements) e.move(diff, 0);
-					
-					offset = width;
-				}
-			}
 		}
 		
 		public void move(double x, double y) {
