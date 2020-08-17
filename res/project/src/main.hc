@@ -20,9 +20,27 @@
 // files together into one file.
 // %include "testing.hc";
 
-void main(int asd2) {
-
+void main(int args) {
+	int array[2];
+	
+	array[0] = 1;
+	array[1] = 2;
+	
+	char chars[2];
+	
+	// Convert number into string...
+	chars[0] = array[0] + 0x20;
+	chars[1] = '\0';
+	
+	print(chars);
 }
+
+// specify Structure {};
+// specify GLOBAL 15;
+
+#import "test.hc";
+#set GLOBAL 15;
+
 
 /* My language will allow for functions to
  * be created outside classes and to allow
@@ -40,18 +58,22 @@ export void main(int input, int a, int b, int c) {
 	
 	int test = 32;
 	int* test2 = &test; // Unary get pointer address to value.
-	int test3[(204 ^ 229 * 119 ^ 75 ^ (5) - 163 + 69 + 10 * 30 * 191 | 145 * 139 + 183 * 165 * 248 * 6 & 183 * 243 ^ 11)];// + 32];
+	// int test3[(204 ^ 229 * 119 ^ 75 ^ (5) - 163 + 69 + 10 * 30 * 191 | 145 * 139 + 183 * 165 * 248 * 6 & 183 * 243 ^ 11)];// + 32];
 	int i = 1 + 2 + 3 + 4 + 5;
+	int var2 = (int)(byte)1234283; // Should be 107
 	
-	int test4[(1 ? 15:32)];
+	WORD test[GLOBAL];
 	
-	if((1 + 2) || 3 || 5 || 123232323) {
-		// Testing BiExprV2
-	}
+	char c = '\x23';
 	
-	if(test3[3][2][1] == 0) {
-		// TEST
-	}
+	// int test4[(1 ? 15:32)];
+	if(1 || 2 || 3) print("1st");
+	if(1 && 2 && 3) print("2nd");
+	if(0 || 0 || 0) print("3rd");
+	if(1 && 2 && 0) print("4th");
+	
+	// if((1 + 2) && (0, += 32) && 1) continue;
+	if(test3[3][2][1] == 0) break;
 	
 	if(a > b) {
 		while(1 > 0) {
@@ -91,9 +113,5 @@ bool print(char* string) {
 		buffer++;
 	}
 	
-	return 0;
-}
-
-int testing() {
 	return 0;
 }

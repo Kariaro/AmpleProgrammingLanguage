@@ -68,25 +68,6 @@ public interface Expression extends Stable {
 		public Object[] listme() { return new Object[] { a, b }; }
 	}
 	
-	// BinaryV2
-	// TODO: Implement
-	public static class BiExprList implements Expression {
-		public String operation;
-		public List<Expression> list;
-		
-		public BiExprList(String operation, Expression a, Expression b) {
-			this.operation = operation;
-			this.list = new ArrayList<>(Arrays.asList(a, b));
-		}
-		
-		public String toString() {
-			return StringUtils.join(" " + operation + " ", list);
-		}
-		
-		public String listnm() { return operation; }
-		public Object[] listme() { return list.toArray(); }
-	}
-	
 	// Ternary
 	public static class TeExpr implements Expression {
 		public Expression a;
@@ -140,26 +121,43 @@ public interface Expression extends Stable {
 		}
 		
 		public String toString() {
-			return "(" + type + ")" + a;
+			return "(" + type.type() + ")" + a;
 		}
 		
 		public String listnm() { return "CAST"; }
 		public Object[] listme() { return new Object[] { type, a }; };
 	}
 	
-	public static class VarExpr implements Expression {
-		public String name;
-		public String toString() { return name; }
+	public static class NumberExpr implements Expression {
+		public Number value;
 		
-		public String listnm() { return name; }
-		public Object[] listme() { return new Object[] {}; }
+		public NumberExpr(Number value) {
+			this.value = value;
+		}
+		
+		@Override
+		public String toString() {
+			return Objects.toString(value);
+		}
+		
+		// TODO: Signed unsigned...
+		public boolean isLong() { return value instanceof Long; }
+		public boolean isInteger() { return value instanceof Integer; }
+		public boolean isShort() { return value instanceof Short; }
+		public boolean isByte() { return value instanceof Byte; }
+		public boolean isDouble() { return value instanceof Double; }
+		public boolean isFloat() { return value instanceof Float; }
+		public boolean isFloating() { return isDouble() || isFloat(); }
+		
+		public boolean isCompilerExpr() { return true; }
+		
+		public String listnm() { return Objects.toString(value); }
 	}
 	
-	public static class ValExpr implements Expression {
-		// TODO: This should only be for numbers or strings.
-		public Object value;
+	public static class StringExpr implements Expression {
+		public String value;
 		
-		public ValExpr(Object value) {
+		public StringExpr(String value) {
 			this.value = value;
 		}
 		
@@ -184,6 +182,279 @@ public interface Expression extends Stable {
 		}
 		
 		public String listnm() { return name; }
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	public static Expression optimize(Expression expr) {
+		if(expr instanceof BiExpr) {
+			return optimizeBiExpr((BiExpr)expr);
+		}
+		
+		if(expr instanceof TeExpr) {
+			return optimizeTeExpr((TeExpr)expr);
+		}
+		
+		if(expr instanceof CastExpr) {
+			return optimizeCastExpr((CastExpr)expr);
+		}
+		
+		return expr;
+	}
+	
+	public static Expression optimizeBiExpr(BiExpr expr) {
+		expr.a = optimize(expr.a);
+		expr.b = optimize(expr.b);
+		if(canReduce(expr)) return calulateBiExpr(expr);
+		if(canHalfReduce(expr)) return calulateHalfBiExpr(expr);
+		
+		return expr;
+	}
+	
+	public static Expression optimizeCastExpr(CastExpr expr) {
+		if(expr.type.size() == 0) throw new RuntimeException("Invalid type cast. Cannot cast into a zero byte type '" + expr.type.name() + "'");
+		expr.a = optimize(expr.a);
+		
+		if(expr.a instanceof NumberExpr) {
+			NumberExpr a = (NumberExpr)expr.a;
+			Type type = expr.type;
+			
+			switch(type.size()) {
+				case 1: {
+					if(type.isFloating()) throw new RuntimeException("Invalid");
+					return new NumberExpr(a.value.byteValue());
+				}
+				case 2: {
+					if(type.isFloating()) throw new RuntimeException("Invalid");
+					return new NumberExpr(a.value.shortValue());
+				}
+				case 4: {
+					if(type.isFloating()) return new NumberExpr(a.value.floatValue());
+					return new NumberExpr(a.value.intValue());
+				}
+				case 8: {
+					if(type.isFloating()) return new NumberExpr(a.value.doubleValue());
+					return new NumberExpr(a.value.longValue());
+				}
+				default: {
+					throw new RuntimeException("Invalid type size. (" + type.size() + ")");
+				}
+			}
+		}
+		
+		return expr;
+	}
+	
+	public static Expression optimizeTeExpr(TeExpr expr) {
+		expr.a = optimize(expr.a);
+		expr.b = optimize(expr.b);
+		expr.c = optimize(expr.c);
+		
+		if(expr.a instanceof NumberExpr) { // a?b:c
+			NumberExpr a = (NumberExpr)expr.a;
+			if(a.isDouble()) return (a.value.doubleValue() == 0 ? expr.c:expr.b);
+			if(a.isFloat()) return (a.value.floatValue() == 0 ? expr.c:expr.b);
+			if(a.isLong()) return (a.value.longValue() == 0 ? expr.c:expr.b);
+			if(a.isInteger()) return (a.value.intValue() == 0 ? expr.c:expr.b);
+		}
+		
+		return expr;
+	}
+	
+	public static Expression calulateBiExpr(BiExpr expr) {
+		NumberExpr a = (NumberExpr)expr.a;
+		NumberExpr b = (NumberExpr)expr.b;
+		
+		boolean isDouble = a.isDouble() || b.isDouble();
+		boolean isFloat = a.isFloat() || b.isFloat();
+		boolean isLong = a.isLong() || b.isLong();
+		boolean isInteger = a.isInteger() || b.isInteger();
+		boolean isShort = a.isShort() || b.isShort();
+		boolean isByte = a.isByte() || b.isByte();
+		
+		switch(expr.operation) {
+			case "+": {
+				if(isDouble) return new NumberExpr(a.value.doubleValue() + b.value.doubleValue());
+				if(isFloat) return new NumberExpr(a.value.floatValue() + b.value.floatValue());
+				if(isLong) return new NumberExpr(a.value.longValue() + b.value.longValue());
+				if(isInteger) return new NumberExpr(a.value.intValue() + b.value.intValue());
+				if(isShort) return new NumberExpr(a.value.shortValue() + b.value.shortValue());
+				if(isByte) return new NumberExpr(a.value.byteValue() + b.value.byteValue());
+			}
+			case "-": {
+				if(isDouble) return new NumberExpr(a.value.doubleValue() - b.value.doubleValue());
+				if(isFloat) return new NumberExpr(a.value.floatValue() - b.value.floatValue());
+				if(isLong) return new NumberExpr(a.value.longValue() - b.value.longValue());
+				if(isInteger) return new NumberExpr(a.value.intValue() - b.value.intValue());
+				if(isShort) return new NumberExpr(a.value.shortValue() - b.value.shortValue());
+				if(isByte) return new NumberExpr(a.value.byteValue() - b.value.byteValue());
+			}
+			case "*": {
+				if(isDouble) return new NumberExpr(a.value.doubleValue() * b.value.doubleValue());
+				if(isFloat) return new NumberExpr(a.value.floatValue() * b.value.floatValue());
+				if(isLong) return new NumberExpr(a.value.longValue() * b.value.longValue());
+				if(isInteger) return new NumberExpr(a.value.intValue() * b.value.intValue());
+				if(isShort) return new NumberExpr(a.value.shortValue() * b.value.shortValue());
+				if(isByte) return new NumberExpr(a.value.byteValue() * b.value.byteValue());
+			}
+			case "/": {
+				if(isDouble) return new NumberExpr(a.value.doubleValue() / b.value.doubleValue());
+				if(isFloat) return new NumberExpr(a.value.floatValue() / b.value.floatValue());
+				if(isLong) return new NumberExpr(a.value.longValue() / b.value.longValue());
+				if(isInteger) return new NumberExpr(a.value.intValue() / b.value.intValue());
+				if(isShort) return new NumberExpr(a.value.shortValue() / b.value.shortValue());
+				if(isByte) return new NumberExpr(a.value.byteValue() / b.value.byteValue());
+			}
+			case "%": {
+				if(isDouble) return new NumberExpr(a.value.doubleValue() % b.value.doubleValue());
+				if(isFloat) return new NumberExpr(a.value.floatValue() % b.value.floatValue());
+				if(isLong) return new NumberExpr(a.value.longValue() % b.value.longValue());
+				if(isInteger) return new NumberExpr(a.value.intValue() % b.value.intValue());
+				if(isShort) return new NumberExpr(a.value.shortValue() % b.value.shortValue());
+				if(isByte) return new NumberExpr(a.value.byteValue() % b.value.byteValue());
+			}
+			case "^": {
+				if(isDouble || isFloat) throw new RuntimeException("You cannot apply XOR between floating point values!");
+				if(isLong) return new NumberExpr(a.value.longValue() ^ b.value.longValue());
+				if(isInteger) return new NumberExpr(a.value.intValue() ^ b.value.intValue());
+				if(isShort) return new NumberExpr(a.value.shortValue() ^ b.value.shortValue());
+				if(isByte) return new NumberExpr(a.value.byteValue() ^ b.value.byteValue());
+			}
+			case "&": {
+				if(isDouble || isFloat) throw new RuntimeException("You cannot apply AND between floating point values!");
+				if(isLong) return new NumberExpr(a.value.longValue() & b.value.longValue());
+				if(isInteger) return new NumberExpr(a.value.intValue() & b.value.intValue());
+				if(isShort) return new NumberExpr(a.value.shortValue() & b.value.shortValue());
+				if(isByte) return new NumberExpr(a.value.byteValue() & b.value.byteValue());
+			}
+			case "|": {
+				if(isDouble || isFloat) throw new RuntimeException("You cannot apply OR between floating point values!");
+				if(isLong) return new NumberExpr(a.value.longValue() | b.value.longValue());
+				if(isInteger) return new NumberExpr(a.value.intValue() | b.value.intValue());
+				if(isShort) return new NumberExpr(a.value.shortValue() | b.value.shortValue());
+				if(isByte) return new NumberExpr(a.value.byteValue() | b.value.byteValue());
+			}
+			case ">": {
+				if(isDouble) return new NumberExpr(a.value.doubleValue() > b.value.doubleValue() ? 1:0);
+				if(isFloat) return new NumberExpr(a.value.floatValue() > b.value.floatValue() ? 1:0);
+				if(isLong) return new NumberExpr(a.value.longValue() > b.value.longValue() ? 1:0);
+				if(isInteger) return new NumberExpr(a.value.intValue() > b.value.intValue() ? 1:0);
+				if(isShort) return new NumberExpr(a.value.shortValue() > b.value.shortValue() ? 1:0);
+				if(isByte) return new NumberExpr(a.value.byteValue() > b.value.byteValue() ? 1:0);
+			}
+			case ">=": {
+				if(isDouble) return new NumberExpr(a.value.doubleValue() >= b.value.doubleValue() ? 1:0);
+				if(isFloat) return new NumberExpr(a.value.floatValue() >= b.value.floatValue() ? 1:0);
+				if(isLong) return new NumberExpr(a.value.longValue() >= b.value.longValue() ? 1:0);
+				if(isInteger) return new NumberExpr(a.value.intValue() >= b.value.intValue() ? 1:0);
+				if(isShort) return new NumberExpr(a.value.shortValue() >= b.value.shortValue() ? 1:0);
+				if(isByte) return new NumberExpr(a.value.byteValue() >= b.value.byteValue() ? 1:0);
+			}
+			case "<": {
+				if(isDouble) return new NumberExpr(a.value.doubleValue() < b.value.doubleValue() ? 1:0);
+				if(isFloat) return new NumberExpr(a.value.floatValue() < b.value.floatValue() ? 1:0);
+				if(isLong) return new NumberExpr(a.value.longValue() < b.value.longValue() ? 1:0);
+				if(isInteger) return new NumberExpr(a.value.intValue() < b.value.intValue() ? 1:0);
+				if(isShort) return new NumberExpr(a.value.shortValue() < b.value.shortValue() ? 1:0);
+				if(isByte) return new NumberExpr(a.value.byteValue() < b.value.byteValue() ? 1:0);
+			}
+			case "<=": {
+				if(isDouble) return new NumberExpr(a.value.doubleValue() <= b.value.doubleValue() ? 1:0);
+				if(isFloat) return new NumberExpr(a.value.floatValue() <= b.value.floatValue() ? 1:0);
+				if(isLong) return new NumberExpr(a.value.longValue() <= b.value.longValue() ? 1:0);
+				if(isInteger) return new NumberExpr(a.value.intValue() <= b.value.intValue() ? 1:0);
+				if(isShort) return new NumberExpr(a.value.shortValue() <= b.value.shortValue() ? 1:0);
+				if(isByte) return new NumberExpr(a.value.byteValue() <= b.value.byteValue() ? 1:0);
+			}
+			
+			case "==": {
+				if(isDouble) return new NumberExpr(a.value.doubleValue() == b.value.doubleValue() ? 1:0);
+				if(isFloat) return new NumberExpr(a.value.floatValue() == b.value.floatValue() ? 1:0);
+				if(isLong) return new NumberExpr(a.value.longValue() == b.value.longValue() ? 1:0);
+				if(isInteger) return new NumberExpr(a.value.intValue() == b.value.intValue() ? 1:0);
+				if(isShort) return new NumberExpr(a.value.shortValue() == b.value.shortValue() ? 1:0);
+				if(isByte) return new NumberExpr(a.value.byteValue() == b.value.byteValue() ? 1:0);
+			}
+			case "!=": {
+				if(isDouble) return new NumberExpr(a.value.doubleValue() != b.value.doubleValue() ? 1:0);
+				if(isFloat) return new NumberExpr(a.value.floatValue() != b.value.floatValue() ? 1:0);
+				if(isLong) return new NumberExpr(a.value.longValue() != b.value.longValue() ? 1:0);
+				if(isInteger) return new NumberExpr(a.value.intValue() != b.value.intValue() ? 1:0);
+				if(isShort) return new NumberExpr(a.value.shortValue() != b.value.shortValue() ? 1:0);
+				if(isByte) return new NumberExpr(a.value.byteValue() != b.value.byteValue() ? 1:0);
+			}
+			
+			case "||": {
+				if(isDouble) return new NumberExpr(a.value.doubleValue() != 0 ? 1:(b.value.doubleValue() != 0 ? 1:0));
+				if(isFloat) return new NumberExpr(a.value.floatValue() != 0 ? 1:(b.value.floatValue() != 0 ? 1:0));
+				if(isLong) return new NumberExpr(a.value.longValue() != 0 ? 1:(b.value.longValue() != 0 ? 1:0));
+				if(isInteger) return new NumberExpr(a.value.intValue() != 0 ? 1:(b.value.intValue() != 0 ? 1:0));
+				if(isShort) return new NumberExpr(a.value.shortValue() != 0 ? 1:(b.value.shortValue() != 0 ? 1:0));
+				if(isByte) return new NumberExpr(a.value.byteValue() != 0 ? 1:(b.value.byteValue() != 0 ? 1:0));
+			}
+			case "&&": {
+				if(isDouble) return new NumberExpr(a.value.doubleValue() != 0 ? (b.value.doubleValue() != 0 ? 1:0):0);
+				if(isFloat) return new NumberExpr(a.value.floatValue() != 0 ? (b.value.floatValue() != 0 ? 1:0):0);
+				if(isLong) return new NumberExpr(a.value.longValue() != 0 ? (b.value.longValue() != 0 ? 1:0):0);
+				if(isInteger) return new NumberExpr(a.value.intValue() != 0 ? (b.value.intValue() != 0 ? 1:0):0);
+				if(isShort) return new NumberExpr(a.value.shortValue() != 0 ? (b.value.shortValue() != 0 ? 1:0):0);
+				if(isByte) return new NumberExpr(a.value.byteValue() != 0 ? (b.value.byteValue() != 0 ? 1:0):0);
+			}
+		}
+		
+		return expr;
+	}
+	
+	public static Expression calulateHalfBiExpr(BiExpr expr) {
+		NumberExpr a = (NumberExpr)expr.a;
+		
+		switch(expr.operation) {
+			case "||": {
+				if(a.isDouble()) return (a.value.doubleValue() != 0 ? new NumberExpr(1):expr.b);
+				if(a.isFloat()) return (a.value.floatValue() != 0 ? new NumberExpr(1):expr.b);
+				if(a.isLong()) return (a.value.longValue() != 0 ? new NumberExpr(1):expr.b);
+				if(a.isInteger()) return (a.value.intValue() != 0 ? new NumberExpr(1):expr.b);
+				if(a.isShort()) return (a.value.shortValue() != 0 ? new NumberExpr(1):expr.b);
+				if(a.isByte()) return (a.value.byteValue() != 0 ? new NumberExpr(1):expr.b);
+			}
+			case "&&": {
+				if(a.isDouble()) return new NumberExpr(a.value.doubleValue() != 0 ? 1:0);
+				if(a.isFloat()) return new NumberExpr(a.value.floatValue() != 0 ? 1:0);
+				if(a.isLong()) return new NumberExpr(a.value.longValue() != 0 ? 1:0);
+				if(a.isInteger()) return new NumberExpr(a.value.intValue() != 0 ? 1:0);
+				if(a.isShort()) return new NumberExpr(a.value.shortValue() != 0 ? 1:0);
+				if(a.isByte()) return new NumberExpr(a.value.byteValue() != 0 ? 1:0);
+			}
+		}
+		
+		return expr;
+	}
+	
+	public static boolean canReduce(Expression expr) {
+		if(expr instanceof BiExpr) {
+			BiExpr b_expr = (BiExpr)expr;
+			return (b_expr.a instanceof NumberExpr) && (b_expr.b instanceof NumberExpr);
+		}
+		
+		return false;
+	}
+	
+	public static boolean canHalfReduce(Expression expr) {
+		if(expr instanceof BiExpr) {
+			BiExpr b_expr = (BiExpr)expr;
+			return (b_expr.a instanceof NumberExpr);
+		}
+		
+		return false;
 	}
 	
 	public default String listnm() { return "Undefined(" + this.getClass() + ")"; }
