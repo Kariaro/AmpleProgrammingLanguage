@@ -9,6 +9,7 @@ import hardcoded.lexer.Tokenizer;
 import hardcoded.lexer.TokenizerFactory;
 import hardcoded.lexer.TokenizerOld;
 import hardcoded.utils.FileUtils;
+import hardcoded.utils.StringUtils;
 import hardcoded.visualization.HC2Visualization;
 
 public class HCompiler2 {
@@ -27,7 +28,7 @@ public class HCompiler2 {
 		
 
 		Set<String> keywords = new HashSet<String>();
-		keywords.addAll(Arrays.asList("if", "for", "while", "asm", "return", "break", "continue", "as", "true", "false"));
+		keywords.addAll(Arrays.asList("if", "for", "while", "asm", "return", "break", "continue", "as", "true", "false", "newtype"));
 		KEYWORDS = Collections.unmodifiableSet(keywords);
 	}
 	
@@ -50,8 +51,24 @@ public class HCompiler2 {
 		new HCompiler2();
 	}
 	
-	
+	private Map<String, Type> TYPES;
+	private Map<String, Expression> GLOBAL;
 	public HCompiler2() {
+		GLOBAL = new HashMap<>();
+		
+		TYPES = new HashMap<>();
+		TYPES.put("void", new Type("void", 0));
+		TYPES.put("long", new Type("long", 8));
+		TYPES.put("int", new Type("int", 4));
+		TYPES.put("short", new Type("short", 2));
+		
+		TYPES.put("char", new Type("char", 1));
+		TYPES.put("byte", new Type("byte", 1));
+		TYPES.put("bool", new Type("bool", 1));
+		
+		TYPES.put("double", new Type("double", 8, true));
+		TYPES.put("float", new Type("float", 4, true));
+		
 		try {
 			lexer = TokenizerFactory.loadFromFile(new File("res/project/lexer.lex"));
 			
@@ -61,8 +78,18 @@ public class HCompiler2 {
 		}
 	}
 	
+	private File projectPath = new File("res/project/src/");
 	public void build() throws Exception {
-		Sym symbol = new Sym(TokenizerOld.generateTokenChain(lexer, FileUtils.readFileBytes(new File("res/project/src/main.hc"))));
+		importFile("main.hc");
+		
+	}
+	
+	private Set<String> importedFiles = new HashSet<>();
+	private void importFile(String name) throws Exception {
+		if(importedFiles.contains(name)) return; // Ignore
+		importedFiles.add(name);
+		
+		Sym symbol = new Sym(TokenizerOld.generateTokenChain(lexer, FileUtils.readFileBytes(new File(projectPath, name))));
 		System.out.println("Tokens: '" + symbol.token().toString(" ", Integer.MAX_VALUE) + "'");
 		
 		Program program = parseProgram(symbol);
@@ -78,13 +105,72 @@ public class HCompiler2 {
 	}
 	
 	private Tokenizer lexer;
+	private void parseCompiler(Sym symbol) {
+		if(symbol.valueEquals("type")) {
+			symbol.next();
+			
+			String name = symbol.value();
+			if(TYPES.containsKey(name)) throwError(symbol, "Invalid type name. That type name is already defined '" + name + "'");
+			if(!isValidName(symbol)) throwError(symbol, "Invalid type name. The value '" + name + "' is not a valid type name.");
+			
+			// Define a new type
+			Type type = getTypeFromSymbol(symbol.next());
+			if(!symbol.valueEquals(";")) throwError(symbol, "Invalid type syntax. Expected a semicolon but got '" + symbol + "'");
+			symbol.next();
+			
+			if(TYPES.containsKey(name)) throwError(symbol, "Type is already defined '" + name + "'");
+			
+			TYPES.put(name, new Type(name, type.size(), type.isFloating()));
+			System.out.println("#TYPE [" + name + "] as [" + type + "]");
+		} else if(symbol.valueEquals("import")) {
+			if(!symbol.next().groupEquals("STRING")) throwError(symbol, "Invalid import syntax. Expected a string but got '" + symbol + "'.");
+			String path = symbol.value().substring(1, symbol.value().length() - 1);
+			if(!symbol.next().valueEquals(";")) throwError(symbol, "Invalid newtype syntax. Expected a semicolon but got '" + symbol + "'");
+			symbol.next();
+			
+			System.out.println("#IMPORT [" + path + "]");
+			try {
+				importFile(path);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		} else if(symbol.valueEquals("set")) {
+			if(!isValidName(symbol.next())) throwError(symbol, "Invalid type name. The value '" + symbol + "' is not a valid type name.");
+			String name = symbol.value();
+			Expression expr = parseExpression(symbol.next());
+			if(!symbol.valueEquals(";")) throwError(symbol, "Invalid set syntax. Expected a semicolon but got '" + symbol + "'");
+			symbol.next();
+			System.out.println("#SET [" + name + "] as [" + expr + "]");
+			
+			// TODO: Check that the expression is a compiler value that does not use variables.
+			GLOBAL.put(name, expr);
+		} else if(symbol.valueEquals("unset")) {
+			String name = symbol.next().value();
+			if(!symbol.next().valueEquals(";")) throwError(symbol, "Did you forget a semicolon here?");
+			symbol.next();
+			
+			System.out.println("#UNSET [" + name + "]");
+			if(TYPES.containsKey(name)) TYPES.remove(name);
+			else if(GLOBAL.containsKey(name)) GLOBAL.remove(name);
+			else; // Trying to remove something that does not exist...
+		}
+	}
+	
 	private Program parseProgram(Sym symbol) {
 		Program program = new Program();
 		
 		Function func;
-		while((func = parseFunction(symbol)) != null) {
-			System.out.println("  Function: '" + func + "'");
-			program.functions.add(func);
+		
+		while(true) {
+			if(symbol.valueEquals("#")) {
+				parseCompiler(symbol.next());
+			} else {
+				func = parseFunction(symbol);
+				if(func == null) break;
+				
+				System.out.println("  Function: '" + func + "'");
+				program.functions.add(func);
+			}
 		}
 		
 		return program;
@@ -92,17 +178,14 @@ public class HCompiler2 {
 	
 	private boolean isValidName(Sym symbol) {
 		if(!symbol.groupEquals("IDENTIFIER")) return false;
+		if(TYPES.containsKey(symbol.value())) return false;
+		if(GLOBAL.containsKey(symbol.value())) return false; // Should only be for globals... 
 		if(isModifier(symbol)) return false;
 		if(isKeyword(symbol)) return false;
 		if(isPrimitive(symbol)) return false;
 		return true;
 	}
 	
-	private boolean isType(Sym symbol) {
-		return isPrimitive(symbol) || TYPE_NAMES.contains(symbol.value());
-	}
-	
-	private Set<String> TYPE_NAMES = new HashSet<>();
 	private Function parseFunction(Sym symbol) {
 		if(symbol.remaining() < 1) return null;
 		
@@ -110,7 +193,7 @@ public class HCompiler2 {
 		if(isModifier(symbol)) func.modifier = createNewModifier(symbol);
 		if(!isType(symbol)) throwError(symbol, "Invalid function return type '" + symbol.value() + "'");
 		
-		func.returnType = createNewType(symbol);
+		func.returnType = getTypeFromSymbol(symbol);
 		
 		if(!isValidName(symbol)) throwError(symbol, "Invalid function name '" + symbol.value() + "'");
 		func.name = symbol.value();
@@ -145,40 +228,71 @@ public class HCompiler2 {
 	
 	private Statement createIfStatement(Sym symbol) {
 		symbol.next();
-		if(!symbol.equals("DELIMITER", "(")) throwError(symbol, "Invalid if statement definition. Expected open bracket '(' but got '" + symbol.value() + "'");
+		if(!symbol.valueEquals("(")) throwError(symbol, "Invalid if statement definition. Expected open bracket '(' but got '" + symbol.value() + "'");
 		symbol.next();
 		IfStatement stat = new IfStatement();
 		stat.condition = parseExpression(symbol);
-		if(!symbol.equals("DELIMITER", ")")) throwError(symbol, "Invalid if statement definition. Expected close bracket ')' but got '" + symbol.value() + "'");
+		if(!symbol.valueEquals(")")) throwError(symbol, "Invalid if statement definition. Expected close bracket ')' but got '" + symbol.value() + "'");
 		stat.body = parseStatement(symbol.next());
 		if(symbol.valueEquals("else")) stat.elseBody = parseStatement(symbol.next());
+		
+		if(stat.body instanceof EmptyStatement) {
+			if(stat.elseBody == null) return stat.body;
+			else if(stat.elseBody instanceof EmptyStatement) return stat.body;
+			else {
+				// Change the statement if (x) into 'if(!(x))'
+			}
+		} else {
+			if(stat.elseBody instanceof EmptyStatement) stat.elseBody = null;
+		}
+		
+		if(stat.condition.isCompilerExpr()) {
+			if(stat.condition instanceof NumberExpr) {
+				NumberExpr expr = (NumberExpr)stat.condition;
+				
+				if(expr.value.doubleValue() != 0) return stat.body;
+				if(stat.elseBody != null) return stat.elseBody;
+				return new EmptyStatement();
+			}
+		}
+		
 		return stat;
 	}
 	
 	private Statement createWhileStatement(Sym symbol) {
 		symbol.next();
-		if(!symbol.equals("DELIMITER", "(")) throwError(symbol, "Invalid while statement definition. Expected open bracket '(' but got '" + symbol.value() + "'");
+		if(!symbol.valueEquals("(")) throwError(symbol, "Invalid while statement definition. Expected open bracket '(' but got '" + symbol.value() + "'");
 		symbol.next();
 		WhileStatement stat = new WhileStatement();
 		stat.condition = parseExpression(symbol);
-		if(!symbol.equals("DELIMITER", ")")) throwError(symbol, "Invalid while statement definition. Expected close bracket ')' but got '" + symbol.value() + "'");
+		if(!symbol.valueEquals(")")) throwError(symbol, "Invalid while statement definition. Expected close bracket ')' but got '" + symbol.value() + "'");
 		stat.body = parseStatement(symbol.next());
+		
+		if(stat.condition.isCompilerExpr()) {
+			if(stat.condition instanceof NumberExpr) {
+				NumberExpr expr = (NumberExpr)stat.condition;
+				
+				if(expr.value.doubleValue() != 0) return stat;
+				return new EmptyStatement();
+			}
+		}
+		
 		return stat;
 	}
 	
 	private Statement createForStatement(Sym symbol) {
 		symbol.next();
-		if(!symbol.equals("DELIMITER", "(")) throwError(symbol, "Invalid for statement. Expected open bracket '(' but got '" + symbol.value() + "'");
+		if(!symbol.valueEquals("(")) throwError(symbol, "Invalid for statement. Expected open bracket '(' but got '" + symbol.value() + "'");
 		symbol.next();
 		ForStatement stat = new ForStatement(); {
-			if(!symbol.equals("DELIMITER", ";")) { stat.variables = getVariableDefinition(symbol); symbol.prev(); }
-			if(!symbol.equals("DELIMITER", ";")) throwError(symbol, "Invalid for statement (variables). Expected semicolon but got '" + symbol.value() + "'");
+			if(!symbol.valueEquals(";")) { stat.variables = getVariableDefinition(symbol); symbol.prev(); }
+			if(!symbol.valueEquals(";")) throwError(symbol, "Invalid for statement (variables). Expected semicolon but got '" + symbol.value() + "'");
 			symbol.next();
-			if(!symbol.equals("DELIMITER", ";")) stat.condition = parseExpression(symbol);
-			if(!symbol.equals("DELIMITER", ";")) throwError(symbol, "Invalid for statement (condition). Expected semicolon but got '" + symbol.value() + "'");
+			if(!symbol.valueEquals(";")) stat.condition = parseExpression(symbol);
+			if(!symbol.valueEquals(";")) throwError(symbol, "Invalid for statement (condition). Expected semicolon but got '" + symbol.value() + "'");
 			symbol.next();
-			if(!symbol.equals("DELIMITER", ")")) stat.action = parseExpression(symbol);
-			if(!symbol.equals("DELIMITER", ")")) throwError(symbol, "Invalid for statement (action). Expected closing bracket ')' but got '" + symbol.value() + "'");
+			if(!symbol.valueEquals(")")) stat.action = parseExpression(symbol);
+			if(!symbol.valueEquals(")")) throwError(symbol, "Invalid for statement (action). Expected closing bracket ')' but got '" + symbol.value() + "'");
 			symbol.next();
 		}
 		stat.body = getStatements(symbol);
@@ -208,26 +322,26 @@ public class HCompiler2 {
 			return stat;
 		} else if(symbol.valueEquals("break")) {
 			symbol.next();
-			if(!symbol.equals("DELIMITER", ";")) throwError(symbol, "Invalid break statement. Expected semicolon but got '" + symbol.value() + "'");
+			if(!symbol.valueEquals(";")) throwError(symbol, "Invalid break statement. Expected semicolon but got '" + symbol.value() + "'");
 			symbol.nextClear();
 			return new BreakStatement();
 		} else if(symbol.valueEquals("continue")) {
 			symbol.next();
-			if(!symbol.equals("DELIMITER", ";")) throwError(symbol, "Invalid continue statement. Expected semicolon but got '" + symbol.value() + "'");
+			if(!symbol.valueEquals(";")) throwError(symbol, "Invalid continue statement. Expected semicolon but got '" + symbol.value() + "'");
 			symbol.nextClear();
 			return new ContinueStatement();
 		} else if(symbol.valueEquals("return")) {
 			symbol.next();
 			ReturnStatement stat = new ReturnStatement();
-			if(!symbol.equals("DELIMITER", ";")) stat.value = parseExpression(symbol);
-			if(!symbol.equals("DELIMITER", ";")) throwError(symbol, "Invalid return statement. Expected semicolon but got '" + symbol.value() + "'");
+			if(!symbol.valueEquals(";")) stat.value = parseExpression(symbol);
+			if(!symbol.valueEquals(";")) throwError(symbol, "Invalid return statement. Expected semicolon but got '" + symbol.value() + "'");
 			symbol.nextClear();
 			return stat;
 		} else if(symbol.valueEquals("{")) {
 			return getStatements(symbol);
 		} else {
 			Expression expr = parseExpression(symbol);
-			if(symbol.equals("DELIMITER", ";")) {
+			if(symbol.valueEquals(";")) {
 				symbol.nextClear();
 				return new ExprStatement(expr);
 			}
@@ -240,7 +354,7 @@ public class HCompiler2 {
 	private MultiVariableStatement getVariableDefinition(Sym symbol) {
 		symbol.mark();
 		MultiVariableStatement define = new MultiVariableStatement();
-		define.type = createNewType(symbol);
+		define.type = getTypeFromSymbol(symbol);
 		
 		do {
 			Variable stat = define.create();
@@ -248,32 +362,37 @@ public class HCompiler2 {
 			stat.name = symbol.value();
 			symbol.next();
 			
-			if(symbol.equals("DELIMITER", "[")) {
-				// TODO: Disallow variables in the size..
+			if(symbol.valueEquals("[")) {
 				Expression expr = parseExpression(symbol.next());
-				stat.arraySize = evaluate(expr);
+				if(!(expr instanceof NumberExpr)) {
+					throwError(symbol, "Invalid array variable definition. Expected a integer expression but got '" + expr + "'");
+				} else {
+					NumberExpr number = (NumberExpr)expr;
+					if(!number.isInteger()) throwError(symbol, "Invalid array variable definition. Expected a integer expression. '" + expr + "'");
+					stat.arraySize = number.value.intValue();
+				}
 				stat.isArray = true;
 				
-				if(!symbol.equals("DELIMITER", "]")) throwError(symbol, "Invalid array variable definition. Expected array closure ']' but got '" + symbol.value() + "'");
+				if(!symbol.valueEquals("]")) throwError(symbol, "Invalid array variable definition. Expected array closure ']' but got '" + symbol.value() + "'");
 				symbol.next();
-				if(!symbol.equals("DELIMITER", ";")) throwError(symbol, "Invalid array variable definition. Expected a semicolon ';' but got '" + symbol.value() + "'");
+				if(!symbol.valueEquals(";")) throwError(symbol, "Invalid array variable definition. Expected a semicolon ';' but got '" + symbol.value() + "'");
 				symbol.nextClear();
 				return define;
 			}
 			
-			if(symbol.equals("DELIMITER", ";")) {
+			if(symbol.valueEquals(";")) {
 				stat.initialized = false;
 				symbol.nextClear();
 				return define;
-			} else if(symbol.equals("DELIMITER", "=")) {
+			} else if(symbol.valueEquals("=")) {
 				symbol.next();
 				stat.value = parseExpression(symbol);
 				
-				if(symbol.equals("DELIMITER", ";")) {
+				if(symbol.valueEquals(";")) {
 					stat.initialized = true;
 					symbol.nextClear();
 					return define;
-				} else if(!symbol.equals("DELIMITER", ",")) {
+				} else if(!symbol.valueEquals(",")) {
 					throwError(symbol, "Invalid variable definition. Expected a comma or semicolon but got '" + symbol.value() + "'");
 				}
 				
@@ -285,12 +404,12 @@ public class HCompiler2 {
 	
 	private Statement getStatements(Sym symbol) {
 		symbol.mark();
-		if(symbol.equals("DELIMITER", ";")) {
+		if(symbol.valueEquals(";")) {
 			symbol.nextClear();
-			return new EmptyBracketStatement();
+			return new EmptyStatement();
 		}
 		
-		if(!symbol.equals("DELIMITER", "{")) {
+		if(!symbol.valueEquals("{")) {
 			Statement stat = parseStatement(symbol);
 			symbol.resetMarked();
 			return stat;
@@ -300,60 +419,43 @@ public class HCompiler2 {
 		Statements stat = new Statements();
 		
 		for(;;) {
-			if(symbol.equals("DELIMITER", ";")) { symbol.next(); continue; }
-			if(symbol.equals("DELIMITER", "}")) break;
-			stat.list.add(parseStatement(symbol));
+			if(symbol.valueEquals(";")) { symbol.next(); continue; }
+			if(symbol.valueEquals("}")) break;
+			
+			Statement s = parseStatement(symbol);
+			if(s instanceof EmptyStatement) continue;
+			
+			stat.list.add(s);
 		}
 		
-		if(!symbol.equals("DELIMITER", "}")) {
+		
+		if(!symbol.valueEquals("}")) {
 			throwError(symbol, "Invalid statement closing bracket. Expected '}' but got '" + symbol.value() + "'");
 		}
 		
 		symbol.nextClear();
-		return stat;
-	}
-	
-	private class ForStatement implements Statement {
-		private MultiVariableStatement variables;
-		public Expression condition;
-		public Expression action;
-		public Statement body;
 		
-		@Override
-		public String toString() {
-			StringBuilder sb = new StringBuilder();
-			sb.append("for(");
-			if(variables != null) {
-				String str = variables.toString();
-				sb.append(str.substring(0, str.length() - 1));
-			}
-			sb.append("; ");
-			if(condition != null) sb.append(condition);
-			sb.append("; ");
-			if(action != null) sb.append(action);
-			sb.append(") ").append(body);
-			return sb.toString();
-		}
+		if(stat.list.isEmpty()) return new EmptyStatement();
+		return stat;
 	}
 	
 	private Expression parseExpression(Sym symbol) {
 		symbol.mark();
 		
-		// TODO: Use BiExprList
-		// TODO: Simplify expression if possible always!
 		Expression expr = new Object() {
-			// expr: _exp15
-			Expression parse(Sym symbol) {
+			Expression parse(Sym symbol) { // expr: _exp15
 				Expression expr = e15(symbol);
-				
-				// System.out.println("Parsed: '" + expr + "'");
-				return expr;
+				// String a = expr.toString();
+				// expr = Expression.optimize(expr);
+				// String b = expr.toString();
+				// System.out.println("Parsed: '" + a + "' -> '" + b + "'");
+				return Expression.optimize(expr);
 			}
 			
 			// _exp15: _exp14 | _exp15 ',' _exp14
 			Expression e15(Sym symbol) {
 				Expression e14 = e14(symbol);
-				if(symbol.equals("DELIMITER", ",")) {
+				if(symbol.valueEquals(",")) {
 					symbol.next();
 					return new BiExpr(e14, "COMMA OP", e14(symbol));
 				}
@@ -374,7 +476,7 @@ public class HCompiler2 {
 				  | _exp13 '>>=' _exp14
 				  | _exp13 '<<=' _exp14
 			 */
-			Expression e14(Sym symbol) {
+			Expression e14(Sym symbol) { // Left associative
 				Expression e13 = e13(symbol);
 				
 				switch(symbol.value()) {
@@ -387,14 +489,14 @@ public class HCompiler2 {
 			}
 			
 			// _exp13: _exp12 | _exp13 '?' _exp13 ':' _exp12
-			Expression e13(Sym symbol) { // a?b:c
+			Expression e13(Sym symbol) {
 				Expression e13 = e12(symbol);
 				
-				if(symbol.equals("DELIMITER", "?")) {
+				if(symbol.valueEquals("?")) {
 					symbol.next();
 					
 					Expression a = e12(symbol);
-					if(!symbol.equals("DELIMITER", ":")) throwError(symbol, "Invalid ternary operation a ? b : c. Missing the colon. '" + symbol + "'");
+					if(!symbol.valueEquals(":")) throwError(symbol, "Invalid ternary operation a ? b : c. Missing the colon. '" + symbol + "'");
 					else symbol.next();
 					
 					return new TeExpr(e13, "?", a, ":", e12(symbol));
@@ -403,88 +505,63 @@ public class HCompiler2 {
 				return e13;
 			}
 			
-			// _exp12: _exp11 | _exp12 '||' _exp11
-			Expression e12(Sym symbol) {
-				Expression e11 = e11(symbol);
-//				for(;symbol.equals("DELIMITER", "||");) e11 = new BiExpr(e11, symbol.value(), e11(symbol.next()));
-				BiExprList bl = null;
-				for(;symbol.equals("DELIMITER", "||");) {
-					if(bl != null) bl.list.add(e11(symbol.next()));
-					else bl = new BiExprList(symbol.value(), e11, e11(symbol.next()));
-				}
-				return bl == null ? e11:bl;
-			}
-			
-			// _exp11: _exp10 | _exp11 '&&' _exp10
-			Expression e11(Sym symbol) {
-				Expression e10 = e10(symbol);
-				// for(;symbol.equals("DELIMITER", "&&");) e10 = new BiExpr(e10, symbol.value(), e10(symbol.next()));
-				BiExprList bl = null;
-				for(;symbol.equals("DELIMITER", "&&");) {
-					if(bl != null) bl.list.add(e10(symbol.next()));
-					else bl = new BiExprList(symbol.value(), e10, e10(symbol.next()));
-				}
-				return bl == null ? e10:bl;
-			}
-			
-			// _exp10: _exp9 | _exp10 '|' _exp9
-			Expression e10(Sym symbol) {
-				Expression e9 = e9(symbol);
-				// for(;symbol.equals("DELIMITER", "|");) e9 = new BiExpr(e9, symbol.value(), e9(symbol.next()));
-				BiExprList bl = null;
-				for(;symbol.equals("DELIMITER", "|");) {
-					if(bl != null) bl.list.add(e9(symbol.next()));
-					else bl = new BiExprList(symbol.value(), e9, e9(symbol.next()));
-				}
-				return bl == null ? e9:bl;
-			}
-			
-			// _exp9: _exp8 | _exp9 '^' _exp8
-			Expression e9(Sym symbol) {
-				Expression e8 = e8(symbol);
-				// for(;symbol.equals("DELIMITER", "^");) e8 = new BiExpr(e8, symbol.value(), e8(symbol.next()));
-				BiExprList bl = null;
-				for(;symbol.equals("DELIMITER", "^");) {
-					if(bl != null) bl.list.add(e8(symbol.next()));
-					else bl = new BiExprList(symbol.value(), e8, e8(symbol.next()));
-				}
-				return bl == null ? e8:bl;
-			}
-			
-			// _exp8: _exp7 | _exp8 '&' _exp7
-			Expression e8(Sym symbol) {
-				Expression e7 = e7(symbol);
-				// for(;symbol.equals("DELIMITER", "&");) e7 = new BiExpr(e7, symbol.value(), e7(symbol.next()));
-				BiExprList bl = null;
-				for(;symbol.equals("DELIMITER", "&");) {
-					if(bl != null) bl.list.add(e7(symbol.next()));
-					else bl = new BiExprList(symbol.value(), e7, e7(symbol.next()));
-				}
-				return bl == null ? e7:bl;
-			}
+			Expression e12(Sym symbol) { return e_test2(symbol, "||", this::e11, this::e12); }	// _exp12: _exp11 | _exp12 '||' _exp11
+			Expression e11(Sym symbol) { return e_test2(symbol, "&&", this::e10, this::e11); }	// _exp11: _exp10 | _exp11 '&&' _exp10
+			Expression e10(Sym symbol) { return e_test(symbol, "|", this::e9); }	// _exp10: _exp9 | _exp10 '|' _exp9
+			Expression e9(Sym symbol) { return e_test(symbol, "^", this::e8); }		// _exp9: _exp8 | _exp9 '^' _exp8
+			Expression e8(Sym symbol) { return e_test(symbol, "&", this::e7); }		// _exp8: _exp7 | _exp8 '&' _exp7
 			
 			// _exp7: _exp6 | _exp7 '==' _exp6 | _exp7 '!=' _exp6
 			Expression e7(Sym symbol) {
 				Expression e6 = e6(symbol);
-				BiExprList bl = null;
 				for(;;) {
 					switch(symbol.value()) {
 						case "==": case "!=": {
-							if(bl != null) bl.list.add(e6(symbol.next()));
-							else bl = new BiExprList(symbol.value(), e6, e6(symbol.next())); continue;
+							e6 = new BiExpr(e6, symbol.value(), e7(symbol.next()));
+							continue;
 						}
 					}
 					break;
 				}
-				return bl == null ? e6:bl;
+				return e6;
 			}
+			
+			Expression e_test(Sym symbol, String value, java.util.function.Function<Sym, Expression> func) {
+				Expression expr = func.apply(symbol);
+				for(;symbol.valueEquals(value);) expr = new BiExpr(expr, value, func.apply(symbol.next()));
+				return expr;
+			}
+			
+			Expression e_test2(Sym symbol, String value, java.util.function.Function<Sym, Expression> entry, java.util.function.Function<Sym, Expression> func) {
+				Expression expr = entry.apply(symbol);
+				for(;;) {
+					if(symbol.valueEquals(value)) {
+						expr = new BiExpr(expr, symbol.value(), func.apply(symbol.next()));
+					} else {
+						return expr;
+					}
+				}
+			}
+			
+//			Expression e_test3(Sym symbol, Set<String> list, java.util.function.Function<Sym, Expression> entry, java.util.function.Function<Sym, Expression> func) {
+//				Expression expr = entry.apply(symbol);
+//				for(;;) {
+//					if(list.contains(symbol.value())) {
+//						expr = new BiExpr(expr, symbol.value(), func.apply(symbol.next()));
+//					} else {
+//						return expr;
+//					}
+//				}
+//			}
 			
 			// _exp6: _exp5 | _exp6 '<' _exp5 | _exp6 '<=' _exp5 | _exp6 '>' _exp5 | _exp6 '>=' _exp5
 			Expression e6(Sym symbol) {
 				Expression e5 = e5(symbol);
 				for(;;) {
 					switch(symbol.value()) {
-						case "<": case "<=": case ">": case "=>": e5 = new BiExpr(e5, symbol.value(), e5(symbol.next())); continue;
+						case "<": case "<=": case ">": case "=>": {
+							e5 = new BiExpr(e5, symbol.value(), e5(symbol.next())); continue;
+						}
 					}
 					break;
 				}
@@ -496,7 +573,9 @@ public class HCompiler2 {
 				Expression e4 = e4(symbol);
 				for(;;) {
 					switch(symbol.value()) {
-						case "<<": case ">>": e4 = new BiExpr(e4, symbol.value(), e4(symbol.next())); continue;
+						case "<<": case ">>": {
+							e4 = new BiExpr(e4, symbol.value(), e4(symbol.next())); continue;
+						}
 					}
 					break;
 				}
@@ -506,33 +585,29 @@ public class HCompiler2 {
 			// _exp4: _exp3 | _exp4 '+' _exp3 | _exp4 '-' _exp3
 			Expression e4(Sym symbol) {
 				Expression e3 = e3(symbol);
-				BiExprList bl = null;
 				for(;;) {
 					switch(symbol.value()) {
 						case "+": case "-": {
-							if(bl != null) bl.list.add(e3(symbol.next()));
-							else bl = new BiExprList(symbol.value(), e3, e3(symbol.next())); continue;
+							e3 = new BiExpr(e3, symbol.value(), e3(symbol.next())); continue;
 						}
 					}
 					break;
 				}
-				return bl == null ? e3:bl;
+				return e3;
 			}
 			
 			// _exp3: _exp2 | _exp3 '*' _exp2 | _exp3 '/' _exp2 | _exp3 '%' _exp2
 			Expression e3(Sym symbol) {
 				Expression e2 = e2(symbol);
-				BiExprList bl = null;
 				for(;;) {
 					switch(symbol.value()) {
 						case "*": case "/": case "%": {
-							if(bl != null) bl.list.add(e2(symbol.next()));
-							else bl = new BiExprList(symbol.value(), e2, e2(symbol.next())); continue;
+							e2 = new BiExpr(e2, symbol.value(), e2(symbol.next())); continue;
 						}
 					}
 					break;
 				}
-				return bl == null ? e2:bl;
+				return e2;
 			}
 			
 			/*
@@ -558,7 +633,9 @@ public class HCompiler2 {
 					case "--": return new UnExpr(e1(symbol.next()), value); // ++ -- only on identifiers or pointers. Must be objects and not numbers!
 					case "(": {
 						if(isType(symbol.next())) {
-							return new CastExpr(createNewType(symbol), e1(symbol.next()));
+							Type type = getTypeFromSymbol(symbol);
+							if(!symbol.valueEquals(")")) throwError(symbol, "Invalid cast expression. Expected closing bracket ')' but got '" + symbol + "'");
+							return new CastExpr(type, e2(symbol.next()));
 						} else symbol.prev();
 					}
 					default: {
@@ -575,7 +652,6 @@ public class HCompiler2 {
 						for(;;) {
 							switch(symbol.value()) {
 								case "[": {
-									// Array
 									Expression expr = e15(symbol.next());
 									if(!symbol.valueEquals("]")) throwError(symbol, "Invalid array close character. Expected '[' but got '" + symbol.value() + "'");
 									symbol.next();
@@ -586,7 +662,6 @@ public class HCompiler2 {
 								case "->": e1 = new BiExpr(e1, "PMEMBER", e1(symbol.next())); continue;
 								case "::": e1 = new BiExpr(e1, "NMEMBER", e1(symbol.next())); continue;
 								case "(": {
-									// Call
 									// throwError(symbol, "Implement inline method calling");
 									symbol.next();
 									
@@ -600,6 +675,8 @@ public class HCompiler2 {
 											symbol.next();
 											continue;
 										}
+										
+										// TODO: Check that this function exists.
 										if(!symbol.valueEquals(")")) throwError(symbol, "Invalid inline calling argument. Expected closing bracket ')' but got '" + symbol + "'");
 										symbol.next();
 										break;
@@ -617,16 +694,14 @@ public class HCompiler2 {
 				}
 			}
 			
-			private long parseInteger(String value) {
-				if(value.startsWith("0x")) {
-					return Integer.parseInt(value.substring(2), 16);
-				} else {
-					return Integer.parseInt(value);
-				}
+			private int parseInteger(String value) {
+				if(value.startsWith("0x")) return Integer.parseInt(value.substring(2), 16);
+				else return Integer.parseInt(value);
 			}
 			
-			private double parseDecimal(String value) {
-				return Double.parseDouble(value);
+			private long parseLong(String value) {
+				if(value.startsWith("0x")) return Long.parseLong(value.substring(2, value.length() - 1), 16);
+				else return Long.parseLong(value);
 			}
 			
 			/*
@@ -639,29 +714,43 @@ public class HCompiler2 {
 				| '(' expr ')'
 			*/
 			Expression e1(Sym symbol) {
-				//System.out.println("e1 -> '" + symbol + "'");
-				
-				if(symbol.groupEquals("INTEGERLITERAL")) {
-					String value = symbol.value();
-					symbol.next();
-					return new ValExpr(parseInteger(value));
+				if(symbol.groupEquals("INT")) {
+					String value = symbol.value(); symbol.next();
+					return new NumberExpr(parseInteger(value));
 				}
 				
-				if(symbol.groupEquals("DECIMALLITERAL")) {
-					String value = symbol.value();
-					symbol.next();
-					return new ValExpr(parseDecimal(value));
+				if(symbol.groupEquals("LONG")) {
+					String value = symbol.value(); symbol.next();
+					return new NumberExpr(parseLong(value));
 				}
 				
-				if(symbol.groupEquals("STRINGLITERAL")) {
-					String value = symbol.value();
+				if(symbol.groupEquals("DOUBLE")) {
+					String value = symbol.value(); symbol.next();
+					return new NumberExpr(Double.parseDouble(value));
+				}
+				
+				if(symbol.groupEquals("FLOAT")) {
+					String value = symbol.value(); symbol.next();
+					return new NumberExpr(Float.parseFloat(value));
+				}
+				
+				if(symbol.groupEquals("STRING")) { // TODO: Unicode
+					String value = symbol.value(); symbol.next();
+					return new StringExpr(value);
+				}
+				
+				if(symbol.groupEquals("CHAR")) { // TODO: Unicode
+					String value = StringUtils.unescapeString(symbol.value().substring(1, symbol.value().length() - 1));
+					if(value.length() != 1) throwError(symbol, "Invalid char expression. Expected only one character.");
 					symbol.next();
-					return new ValExpr(value);
+					
+					char c = value.charAt(0);
+					return new NumberExpr((byte)(c & 0xff));
 				}
 				
 				if(symbol.groupEquals("IDENTIFIER")) {
-					String value = symbol.value();
-					symbol.next();
+					String value = symbol.value(); symbol.next();
+					if(GLOBAL.containsKey(value)) return GLOBAL.get(value);
 					return new IdentifierExpr(value);
 				}
 				
@@ -683,120 +772,33 @@ public class HCompiler2 {
 		return expr;
 	}
 	
-	private int evaluate(Expression expr) {
-		// TODO: Global variables....
-		
-		if(expr instanceof UnExpr) {
-			UnExpr e = (UnExpr)expr;
-			int a = evaluate(e.a);
-			switch(e.operation) {
-				case "~": return ~a;
-				case "-": return -a;
-				case "+": return a;
-				case "!": return (a == 0 ? 1:0);
-//				case "*": return a * b;
-//				case "&": return a / b;
-				default: throw new RuntimeException("Invalid unary operation -> '" + e.operation + "'");
-			}
-		}
-		
-		if(expr instanceof BiExpr) {
-			// +, -, *, /, &, |, ^, %
-			BiExpr e = (BiExpr)expr;
-			int a = evaluate(e.a);
-			int b = evaluate(e.b);
-			switch(e.operation) {
-				case "+": return a + b;
-				case "-": return a - b;
-				case "*": return a * b;
-				case "/": return a / b;
-				case "&": return a & b;
-				case "|": return a | b;
-				case "^": return a ^ b;
-				case "%": return a % b;
-				case "==": return (a == b ? 1:0);
-				case "!=": return (a != b ? 1:0);
-				case "<": return (a < b ? 1:0);
-				case "<=": return (a <= b ? 1:0);
-				case ">": return (a > b ? 1:0);
-				case ">=": return (a >= b ? 1:0);
-				case "&&": return (((a != 0) && (b != 0)) ? 1:0);
-				case "||": return (((a != 0) || (b != 0)) ? 1:0);
-				default: throw new RuntimeException("Invalid operation -> '" + e.operation + "'");
-			}
-		}
-		
-		if(expr instanceof BiExprList) {
-			// +, -, *, /, &, |, ^, %
-			BiExprList e = (BiExprList)expr;
-			int a = evaluate(e.list.get(0));
-			
-			for(int i = 1; i < e.list.size(); i++) {
-				int b = evaluate(e.list.get(i));
-				switch(e.operation) {
-					case "+": a += b; continue;
-					case "-": a -= b; continue;
-					case "*": a *= b; continue;
-					case "/": a /= b; continue;
-					case "&": a &= b; continue;
-					case "|": a |= b; continue;
-					case "^": a ^= b; continue;
-					case "%": a %= b; continue;
-					case "==": a = (a == b ? 1:0); continue;
-					case "!=": a = (a != b ? 1:0); continue;
-					case "<": a = (a < b ? 1:0); continue;
-					case "<=": a = (a <= b ? 1:0); continue;
-					case ">": a = (a > b ? 1:0); continue;
-					case ">=": a = (a >= b ? 1:0); continue;
-					case "&&": a = (((a != 0) && (b != 0)) ? 1:0); continue;
-					case "||": a = (((a != 0) || (b != 0)) ? 1:0); continue;
-					default: throw new RuntimeException("Invalid operation -> '" + e.operation + "'");
-				}
-			}
-			
-			return a;
-		}
-		
-		if(expr instanceof TeExpr) {
-			TeExpr e = (TeExpr)expr;
-			int a = evaluate(e.a);
-			int b = evaluate(e.b);
-			int c = evaluate(e.c);
-			return (a != 0) ? b:c;
-		}
-		
-		if(expr instanceof ValExpr) {
-			ValExpr e = (ValExpr)expr;
-			
-			if(e.value instanceof Number) {
-				return ((Number)e.value).intValue();
-			}
-			
-			throw new RuntimeException("Invalid value. You cannot have local variables in compiler time expressions -> '" + expr + "'");
-		}
-		
-		throw new RuntimeException("Invalid expression -> '" + expr + "' class '" + expr.getClass() + "'");
-	}
-	
 	public Argument createNewArgument(Sym symbol) {
 		Argument argument = new Argument();
-		argument.type = createNewType(symbol);
+		argument.type = getTypeFromSymbol(symbol);
 		if(!symbol.groupEquals("IDENTIFIER")) throwError(symbol, "Invalid function argument name '" + symbol.value() + "'");
 		argument.name = symbol.value();
 		symbol.next();
 		return argument;
 	}
 	
-	public Type createNewType(Sym symbol) {
-		Type type = new Type();
-		
+	private boolean isType(Sym symbol) {
+		return TYPES.containsKey(symbol.value());
+	}
+	
+	public Type getTypeFromSymbol(Sym symbol) {
 		if(!isType(symbol)) throwError(symbol, "Invalid type '" + symbol.toString() + "'");
-		type.typeName = symbol.value();
+		Type type = TYPES.get(symbol.value());
 		symbol.next();
 		
-		while(symbol != null && symbol.valueEquals("*")) {
-			type.pointerSize++;
-			symbol.next();
+		if(symbol.valueEquals("*")) {
+			int size = 0;
+			
+			while(symbol.valueEquals("*")) {
+				size++;
+				symbol.next();
+			}
+			
+			return new PointerType(type, size);
 		}
 		
 		return type;

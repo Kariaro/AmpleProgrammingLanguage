@@ -6,6 +6,8 @@ import java.util.List;
 import hardcoded.utils.StringUtils;
 
 public interface Statement extends Stable {
+	// TODO: Variables inside a body statement!
+	
 	// public static class DeclareStatement implements Statement {}
 	public static class IfStatement implements Statement {
 		public Expression condition;
@@ -25,7 +27,31 @@ public interface Statement extends Stable {
 		}
 	}
 	
-	// public static class ForStatement implements Statement {}
+	public static class ForStatement implements Statement {
+		public MultiVariableStatement variables;
+		public Expression condition;
+		public Expression action;
+		public Statement body;
+		
+		@Override
+		public String toString() {
+			StringBuilder sb = new StringBuilder();
+			sb.append("for(");
+			if(variables != null) {
+				String str = variables.toString();
+				sb.append(str.substring(0, str.length() - 1));
+			}
+			sb.append("; ");
+			if(condition != null) sb.append(condition);
+			sb.append("; ");
+			if(action != null) sb.append(action);
+			sb.append(") ").append(body);
+			return sb.toString();
+		}
+		
+		public String listnm() { return "FOR"; }
+		public Object[] listme() { return new Object[] { variables, condition, action, body }; }
+	}
 	
 	public static class WhileStatement implements Statement {
 		public Expression condition;
@@ -102,8 +128,11 @@ public interface Statement extends Stable {
 		public Object[] listme() { return list.toArray(); }
 	}
 	
-	public static class EmptyBracketStatement implements Statement {
+	public static class EmptyStatement implements Statement {
 		public String toString() { return "{ }"; }
+		
+		public String listnm() { return toString(); }
+		public Object[] listme() { return new Object[] {}; }
 	}
 	
 	public static class MultiVariableStatement implements Statement {

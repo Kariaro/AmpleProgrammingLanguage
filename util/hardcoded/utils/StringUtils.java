@@ -55,6 +55,7 @@ public final class StringUtils {
 				
 				switch(c) {
 					case '\'': case '\"': case '\\': sb.append(c); break;
+					case '0': sb.append('\0'); break;
 					case 'r': sb.append('\r'); break;
 					case 'n': sb.append('\n'); break;
 					case 'b': sb.append('\b'); break;
