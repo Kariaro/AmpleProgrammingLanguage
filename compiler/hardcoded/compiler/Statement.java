@@ -1,8 +1,7 @@
 package hardcoded.compiler;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import hardcoded.utils.StringUtils;
 
@@ -11,6 +10,16 @@ public interface Statement extends Stable {
 	
 	public default List<Statement> elements() {
 		return null;
+	}
+	
+	public default List<Expression> expressions() {
+		List<Statement> list = elements();
+		if(list == null) return exprs();
+		return list.stream().filter(x -> x != null).flatMap(x -> x.expressions().stream()).collect(Collectors.toList());
+	}
+	
+	public default List<Expression> exprs() {
+		return Collections.emptyList();
 	}
 	
 	public static class IfStatement implements Statement {
@@ -26,7 +35,13 @@ public interface Statement extends Stable {
 		
 		@Override
 		public List<Statement> elements() {
+			if(elseBody == null) Arrays.asList(body);
 			return Arrays.asList(body, elseBody);
+		}
+		
+		@Override
+		public List<Expression> exprs() {
+			return Arrays.asList(condition);
 		}
 		
 		public String listnm() { return "IF"; }
@@ -60,7 +75,12 @@ public interface Statement extends Stable {
 		
 		@Override
 		public List<Statement> elements() {
-			return Arrays.asList(body);
+			return Arrays.asList(variables, body);
+		}
+		
+		@Override
+		public List<Expression> exprs() {
+			return Arrays.asList(condition, action);
 		}
 		
 		public String listnm() { return "FOR"; }
@@ -79,6 +99,11 @@ public interface Statement extends Stable {
 		@Override
 		public List<Statement> elements() {
 			return Arrays.asList(body);
+		}
+		
+		@Override
+		public List<Expression> exprs() {
+			return Arrays.asList(condition);
 		}
 		
 		public String listnm() { return "WHILE"; }
@@ -107,6 +132,11 @@ public interface Statement extends Stable {
 			this.expr = action;
 		}
 		
+		@Override
+		public List<Expression> exprs() {
+			return Arrays.asList(expr);
+		}
+		
 		public String toString() { return expr.toString() + ";"; }
 		public String listnm() { return expr.toString(); }
 		public Object[] listme() { return new Object[] { expr }; }
@@ -122,6 +152,11 @@ public interface Statement extends Stable {
 		@Override
 		public String toString() {
 			return "{" + StringUtils.join("", list) + "}";
+		}
+		
+		@Override
+		public List<Statement> elements() {
+			return list;
 		}
 		
 		public String listnm() { return "BODY"; }
@@ -164,6 +199,11 @@ public interface Statement extends Stable {
 			stat.type = type;
 			define.add(stat);
 			return stat;
+		}
+		
+		@Override
+		public List<Expression> exprs() {
+			return define.stream().filter(x -> x.initialized).map(x -> x.value).collect(Collectors.toList());
 		}
 		
 		@Override

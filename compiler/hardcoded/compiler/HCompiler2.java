@@ -91,20 +91,95 @@ public class HCompiler2 {
 	
 	private File projectPath = new File("res/project/src/");
 	public void build() throws Exception {
-		importFile("main.hc");
+		if(currentProgram != null) throw new RuntimeException("Building twice is not allowed.........");
+		currentProgram = new Program();
+		
+		importFile(currentProgram, "test_syntax.hc");
+		doConstantFolding(); // 
+		
+		HC2Visualization hc2 = new HC2Visualization();
+		hc2.show(currentProgram);
 	}
 	
 	private Set<String> importedFiles = new HashSet<>();
-	private void importFile(String name) throws Exception {
+	private Program currentProgram;
+	
+	private void expressionFolding(Expression expr, Function func) {
+		if(expr instanceof TestExpr) {
+			TestExpr e = (TestExpr)expr;
+			
+			// TODO: Expand trees where you have nested add into one big add.
+			
+			
+			switch(e.type) {
+				case add: {
+					
+					
+				}
+			}
+		}
+	}
+	
+	private void constantFolding(Expression expr, Function func) {
+		System.out.println("Folding: [" + func.name + "], [" + expr + "]");
+		
+		if(expr instanceof TestExpr) {
+			TestExpr e = (TestExpr)expr;
+			
+			if(e.type == ExprType.add || e.type == ExprType.sub || e.type == ExprType.cor || e.type == ExprType.cand || e.type == ExprType.comma) {
+				for(int i = e.list.size() - 1; i >= 0; i--) {
+					Expression ex = e.list.get(i);
+					if(ex instanceof TestExpr) {
+						TestExpr nx = (TestExpr)ex;
+						
+						if(nx.type == e.type) {
+							e.list.remove(i);
+							e.list.addAll(i, nx.list);
+							i += nx.list.size() + 1;
+							continue;
+						}
+					}
+				}
+			}
+	
+			switch(e.type) {
+				case add: {
+					// int value = (int)e.list.stream().filter(x -> x instanceof NumberExpr).map(x -> (NumberExpr)x).map(x -> x.value).mapToDouble(x -> x.doubleValue()).sum();
+					// System.out.println("value: " + value);
+					
+				}
+				case not: {
+					
+				}
+				default: {
+					
+				}
+			}
+		}
+		
+		System.out.println("       : [" + Expression.optimize(expr) + "]");
+	}
+	
+	private void doConstantFolding() {
+		for(Function func : currentProgram.functions) {
+			List<Expression> list = func.body.expressions();
+			
+			if(list == null) System.out.println("Function had null list. " + func);
+			for(Expression expr : list) {
+				constantFolding(expr, func);
+			}
+		}
+	}
+	
+	private void importFile(Program program, String name) throws Exception {
 		if(importedFiles.contains(name)) return; // Ignore
 		importedFiles.add(name);
 		
 		Sym symbol = new Sym(TokenizerOld.generateTokenChain(lexer, FileUtils.readFileBytes(new File(projectPath, name))));
 		System.out.println("Tokens: '" + symbol.token().toString(" ", Integer.MAX_VALUE) + "'");
 		
-		Program program = null;
 		try {
-			program = parseProgram(symbol);
+			parseProgram(program, symbol);
 		} catch(Exception e) {
 			e.printStackTrace();
 			throwError(symbol, "");
@@ -115,9 +190,6 @@ public class HCompiler2 {
 		for(Function func : program.functions) {
 			System.out.println("  Function: '" + func + "'");
 		}
-		
-		HC2Visualization hc2 = new HC2Visualization();
-		hc2.show(program);
 	}
 	
 	private Function curFunction;
@@ -147,7 +219,7 @@ public class HCompiler2 {
 			
 			System.out.println("#IMPORT [" + path + "]");
 			try {
-				importFile(path);
+				importFile(currentProgram, path);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -176,9 +248,7 @@ public class HCompiler2 {
 		}
 	}
 	
-	private Program parseProgram(Sym symbol) {
-		Program program = new Program();
-		
+	private Program parseProgram(Program program, Sym symbol) {
 		Function func;
 		
 		while(true) {
@@ -556,17 +626,17 @@ public class HCompiler2 {
 				// expr = Expression.optimize(expr);
 				// String b = expr.toString();
 				// System.out.println("Parsed: '" + a + "' -> '" + b + "'");
+				
+				System.out.println("Parsed: '" + expr + "' is_pure=" + expr.isPure());
 				return expr;
 			}
 			
-			// _exp15: _exp14 | _exp15 ',' _exp14
-			Expression e15(Sym symbol) {
-				Expression e14 = e14(symbol);
-				if(symbol.valueEquals(",")) {
-					symbol.next();
-					return new BiExpr("COMMA OP", e14, e14(symbol));
-				}
-				return e14;
+			Expression e15(Sym symbol) { // _exp15: _exp14 | _exp15 ',' _exp14
+				return e_test(symbol,
+					_s(","),
+					_e(ExprType.comma),
+					this::e14
+				);
 			}
 			
 			/*
@@ -613,14 +683,15 @@ public class HCompiler2 {
 						return new TestExpr(ExprType.mov, e13, e14(symbol.next()));
 					}
 					case "+=": {
-						if(!validAssign) throwError(symbol, "Invalid placement of a assign expression.");
+						//if(!validAssign) throwError(symbol, "Invalid placement of a assign expression.");
 						
-						return new TestExpr(ExprType.mov, e13, new TestExpr(ExprType.add, e13, e14(symbol.next())));
+						//return new TestExpr(ExprType.mov, e13, new TestExpr(ExprType.add, e13, e14(symbol.next())));
 					}
 					case "-=":
 					case "<<=":
 					case ">>=":
 					case "*=":
+					case "%=":
 					case "/=": case "&=": case "^=": case "|=":
 						if(!validAssign) throwError(symbol, "Invalid placement of a assign expression.");
 						return new BiExpr(symbol.value(), e13, e14(symbol.next()));
@@ -630,8 +701,7 @@ public class HCompiler2 {
 				return e13;
 			}
 			
-			// _exp13: _exp12 | _exp13 '?' _exp13 ':' _exp12
-			Expression e13(Sym symbol) {
+			Expression e13(Sym symbol) { // _exp13: _exp12 | _exp13 '?' _exp13 ':' _exp12
 				Expression e13 = e12(symbol);
 				
 				if(symbol.valueEquals("?")) {
@@ -653,8 +723,7 @@ public class HCompiler2 {
 			Expression e9(Sym symbol) { return e_test(symbol, _s("^"), _e(ExprType.xor), this::e8); }	// _exp9: _exp8 | _exp9 '^' _exp8
 			Expression e8(Sym symbol) { return e_test(symbol, _s("&"), _e(ExprType.and), this::e7); }	// _exp8: _exp7 | _exp8 '&' _exp7
 			
-			// _exp7: _exp6 | _exp7 '==' _exp6 | _exp7 '!=' _exp6
-			Expression e7(Sym symbol) {
+			Expression e7(Sym symbol) { // _exp7: _exp6 | _exp7 '==' _exp6 | _exp7 '!=' _exp6
 				return e_test(symbol,
 					_s("==", "!="),
 					_e(ExprType.eq, ExprType.neq),
@@ -663,8 +732,7 @@ public class HCompiler2 {
 				);
 			}
 			
-			// _exp6: _exp5 | _exp6 '<' _exp5 | _exp6 '<=' _exp5 | _exp6 '>' _exp5 | _exp6 '>=' _exp5
-			Expression e6(Sym symbol) {
+			Expression e6(Sym symbol) { // _exp6: _exp5 | _exp6 '<' _exp5 | _exp6 '<=' _exp5 | _exp6 '>' _exp5 | _exp6 '>=' _exp5
 				return e_test(symbol,
 					_s("<", "<=", ">", ">="),
 					_e(ExprType.lt, ExprType.lte, ExprType.gt, ExprType.gte),
