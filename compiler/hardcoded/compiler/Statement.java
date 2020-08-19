@@ -1,14 +1,18 @@
 package hardcoded.compiler;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import hardcoded.utils.StringUtils;
 
 public interface Statement extends Stable {
-	// TODO: Variables inside a body statement!
+	// TODO: Class statement and object statement.
 	
-	// public static class DeclareStatement implements Statement {}
+	public default List<Statement> elements() {
+		return null;
+	}
+	
 	public static class IfStatement implements Statement {
 		public Expression condition;
 		public Statement body;
@@ -18,6 +22,11 @@ public interface Statement extends Stable {
 		public String toString() {
 			if(elseBody == null) return "if (" + condition + ") " + body;
 			return "if (" + condition + ") " + body + " else " + elseBody;
+		}
+		
+		@Override
+		public List<Statement> elements() {
+			return Arrays.asList(body, elseBody);
 		}
 		
 		public String listnm() { return "IF"; }
@@ -49,6 +58,11 @@ public interface Statement extends Stable {
 			return sb.toString();
 		}
 		
+		@Override
+		public List<Statement> elements() {
+			return Arrays.asList(body);
+		}
+		
 		public String listnm() { return "FOR"; }
 		public Object[] listme() { return new Object[] { variables, condition, action, body }; }
 	}
@@ -62,24 +76,13 @@ public interface Statement extends Stable {
 			return "while (" + condition + ") " + body;
 		}
 		
+		@Override
+		public List<Statement> elements() {
+			return Arrays.asList(body);
+		}
+		
 		public String listnm() { return "WHILE"; }
 		public Object[] listme() { return new Object[] { condition, body }; }
-	}
-	
-	public static class ReturnStatement implements Statement {
-		public Expression value;
-		
-		@Override
-		public String toString() {
-			if(value == null) return "return;";
-			return "return " + value + ";";
-		}
-		
-		public String listnm() { return "RETURN"; }
-		public Object[] listme() {
-			if(value == null) return new Object[] {};
-			return new Object[] { value };
-		}
 	}
 	
 	public static class BreakStatement implements Statement {
@@ -98,18 +101,15 @@ public interface Statement extends Stable {
 	// public static class LabelStatement implements Statement {}
 	
 	public static class ExprStatement implements Statement {
-		public Expression action;
+		public Expression expr;
 		
 		public ExprStatement(Expression action) {
-			this.action = action;
+			this.expr = action;
 		}
 		
-		public String toString() {
-			return action.toString() + ";";
-		}
-		
-		public String listnm() { return action.toString(); }
-		public Object[] listme() { return new Object[] { action }; }
+		public String toString() { return expr.toString() + ";"; }
+		public String listnm() { return expr.toString(); }
+		public Object[] listme() { return new Object[] { expr }; }
 	}
 	
 	public static class Statements implements Statement {
@@ -130,9 +130,25 @@ public interface Statement extends Stable {
 	
 	public static class EmptyStatement implements Statement {
 		public String toString() { return "{ }"; }
-		
 		public String listnm() { return toString(); }
 		public Object[] listme() { return new Object[] {}; }
+	}
+	
+	public static class StatementList implements Statement {
+		public List<Statement> list;
+		
+		public StatementList() {
+			this.list = new ArrayList<>();
+		}
+		
+		@Override
+		public List<Statement> elements() {
+			return list;
+		}
+		
+		public String toString() { return StringUtils.join("", list); }
+		public String listnm() { return toString(); }
+		public Object[] listme() { return list.toArray(); }
 	}
 	
 	public static class MultiVariableStatement implements Statement {
@@ -153,12 +169,19 @@ public interface Statement extends Stable {
 		@Override
 		public String toString() {
 			if(define.size() == 1) {
-				return type + " " + define.get(0).toString() + ";";
+				return type + " " + define.get(0).shortString() + ";";
 			}
 			
 			StringBuilder sb = new StringBuilder();
-			sb.append(type).append(" ").append(StringUtils.join(", ", define)).append(";");
-			return sb.toString();
+			sb.append(type).append(" ");
+			for(Variable v : define) sb.append(v.shortString()).append(", ");
+			
+			if(!define.isEmpty()) {
+				sb.deleteCharAt(sb.length() - 1);
+				sb.deleteCharAt(sb.length() - 1);
+			}
+			
+			return sb.append(";").toString();
 		}
 		
 

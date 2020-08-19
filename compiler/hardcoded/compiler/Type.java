@@ -1,5 +1,7 @@
 package hardcoded.compiler;
 
+import java.util.Objects;
+
 public class Type {
 	private final String name;
 	private final int size;
@@ -31,6 +33,11 @@ public class Type {
 	
 	public int size() {
 		return size;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		return Objects.equals(this, obj);
 	}
 	
 	@Override
