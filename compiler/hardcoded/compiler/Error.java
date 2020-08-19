@@ -10,7 +10,8 @@ public enum Error {
 	UNSET_PRIMITIVE("You cannot unset the primitive type '{0}'"),
 	REDECLARATION_OF_A_TYPE_NAME("The type '{0}' has already been defined."),
 	VARIABLE_NOT_FOUND_IN_CURRENT_SCOPE("The variable '{0}' was not found in the current scope."),
-	NOT_ENOUGH_ARGUMENTS("Not enough arguments to call function '{0}'. Expected '{1}' argument but got '{2}'"), // TODO: s
+	NOT_ENOUGH_ARGUMENTS("Not enough arguments to call function '{0}'. Expected '{1}' argument but got '{2}'"),
+	
 	;
 	
 	public final String message;

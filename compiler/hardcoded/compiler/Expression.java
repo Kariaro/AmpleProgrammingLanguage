@@ -58,6 +58,7 @@ public interface Expression extends Stable {
 		
 		
 		
+		comma,
 		invalid, // Invalid expression type
 	}
 	
@@ -823,6 +824,7 @@ public interface Expression extends Stable {
 		
 		return false;
 	}
+	
 	
 	public default String listnm() { return "Undefined(" + this.getClass() + ")"; }
 	public default Object[] listme() { return new Object[] {}; }
