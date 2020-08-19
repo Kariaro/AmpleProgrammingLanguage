@@ -17,11 +17,15 @@ public class Variable implements Stable {
 		return type;
 	}
 	
-	@Override
-	public String toString() {
+	public String shortString() {
 		if(isArray) return name + "[" + arraySize + "]";
 		if(!initialized) return name;
 		return name + " = " + value;
+	}
+	
+	@Override
+	public String toString() {
+		return type + " " + shortString();
 	}
 	
 	public String listnm() { return "="; }

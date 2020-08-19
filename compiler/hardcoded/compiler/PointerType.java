@@ -21,6 +21,13 @@ public class PointerType extends Type {
 	}
 	
 	@Override
+	public boolean equals(Object obj) {
+		if(!(obj instanceof PointerType)) return false;
+		PointerType pt = (PointerType)obj;
+		return pointerLength == pt.pointerLength && type.equals(pt.type);
+	}
+	
+	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		for(int i = 0; i < pointerLength; i++) sb.append("*");

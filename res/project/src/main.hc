@@ -20,7 +20,9 @@
 // files together into one file.
 // %include "testing.hc";
 
-void main(int args) {
+bool print(char* string);
+
+void main2(int args) {
 	int array[2];
 	
 	array[0] = 1;
@@ -38,9 +40,10 @@ void main(int args) {
 // specify Structure {};
 // specify GLOBAL 15;
 
-#import "test.hc";
+//#import "test.hc";
 #set GLOBAL 15;
-
+#type WORD short;
+// #unset void;
 
 /* My language will allow for functions to
  * be created outside classes and to allow
@@ -56,15 +59,21 @@ void main(int args) {
 export void main(int input, int a, int b, int c) {
 	int var = 204 ^ 229 * 119 ^ 75 ^ (5) - 163 + 69 + 10 * 30 * 191 | 145 * 139 + 183 * 165 * 248 * 6 & 183 * 243 ^ 11;
 	
-	int test = 32;
+	int test = 32, arg2 = 3, arg73 = "test";
 	int* test2 = &test; // Unary get pointer address to value.
 	// int test3[(204 ^ 229 * 119 ^ 75 ^ (5) - 163 + 69 + 10 * 30 * 191 | 145 * 139 + 183 * 165 * 248 * 6 & 183 * 243 ^ 11)];// + 32];
 	int i = 1 + 2 + 3 + 4 + 5;
 	int var2 = (int)(byte)1234283; // Should be 107
 	
-	WORD test[GLOBAL];
+	WORD test3[GLOBAL];
 	
-	char c = '\x23';
+	int test4 = -1;
+	
+	byte chr = (byte)23;
+	
+	// if(0 && (test4 += 1)) print("Because of the zero, the rest should be removed.");
+	// if(1 || (test4 += 1)) print("Because of the one, the rest should be removed.");
+	// if(1 || (test4 += 1)) print("Because of the one, the rest should be removed.");
 	
 	// int test4[(1 ? 15:32)];
 	if(1 || 2 || 3) print("1st");
@@ -85,13 +94,6 @@ export void main(int input, int a, int b, int c) {
 		// print("This is a \" \" \"static message!");
 	} else {
 		// print("Inside else statement!");
-	}
-	// test();
-	// print(c);
-	
-	
-	for(int i = 0; i < 10; i++) {
-		print("TEST");
 	}
 	
 	int testing = 1 + 3 * 427 & 43 + 20312 + print("testing");

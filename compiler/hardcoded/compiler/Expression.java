@@ -6,20 +6,165 @@ import hardcoded.utils.StringUtils;
 
 // TODO: Evaluate expression at compiler time.
 public interface Expression extends Stable {
-	public static enum ExpressionType {
-		CALL,
+	public static enum ExprType {
+		// Atoms
+		string,
+		int1, int2, int4, int8,
+		float4, float8,
+		
+		// Math
+		add,	// x + y
+		sub,	// x - y
+		div,	// x / y
+		mul,	// x * y
+		mod,	// x % y      SAME      x - (int)(x / y) * y
+		
+		xor,	// x ^ y
+		and,	// x & y
+		or,		// x | y
+		shl,	// x << y
+		shr,	// x >> y
+		
+		// Unary
+		not,	// !x
+		nor,	// ~x
+		neg,	// -x
+		
+		// Compares
+		eq,		// x == y
+		neq,	// x != y
+		gt,		// x > y
+		gte,	// x >= y
+		lt,		// x < y
+		lte,	// x <= y
+		cor,	// x || y
+		cand,	// x && y
+		
+		// Memory operations
+		mov,	// Move a value y into x
+		// copy,	// Copy a value y into x
+		
+		// Pointer
+		incptr, // &x
+		decptr, // *x
+		
+		// Function
+		call,	// Call
+		
+		br,		// Branch
+		cbr,	// Conditional branch
+		ret,	// Call return
+		nop,	// No operation
+		
+		
+		
+		invalid, // Invalid expression type
+	}
+	
+	/** ExprType */
+	public default ExprType type() {
+		return ExprType.invalid;
+	}
+	
+	/** Elements */
+	public default List<Expression> elements() {
+		return null;
 	}
 	
 	/** This is true if the expression can be reduced while compiling. */
-	public default boolean isCompilerExpr() {
-		return false;
+	public default boolean isPure() {
+		List<Expression> list = elements();
+		if(list != null) {
+			for(Expression expr : list) {
+				if(!expr.isPure()) return false;
+			}
+		}
+		
+		if(type() == null) return false;
+		
+		switch(type()) {
+			case invalid:
+			case call:
+			case mov:
+			case ret:
+				return false;
+			default: return true;
+		}
 	}
 	
 	// TODO: Changes value...
 	// TODO: ....
 	// TODO: Always contain children.
 	
-	public static class StatementExpression implements Expression {}
+	public static class StatementExpression implements Expression {
+		
+	}
+	
+	public static class TestExpr implements Expression {
+		public List<Expression> list;
+		public ExprType type;
+		
+		public TestExpr(ExprType type, Expression... array) {
+			this.type = type;
+			
+			list = new ArrayList<>();
+			for(Expression expr : array) {
+				list.add(expr);
+			}
+		}
+		
+		public TestExpr add(Expression expr) {
+			list.add(expr);
+			return this;
+		}
+		
+		public int size() {
+			return list.size();
+		}
+		
+		@Override
+		public ExprType type() {
+			return type;
+		}
+		
+		@Override
+		public List<Expression> elements() {
+			return list;
+		}
+		
+		@Override
+		public String toString() {
+			return type + "(" + StringUtils.join(", ", list) + ")";
+		}
+		
+		public String listnm() { return type.toString(); }
+		public Object[] listme() { return list.toArray(); }
+	}
+	
+	public static class StackExpr implements Expression {
+		// ebp 
+		public Variable var;
+		public Type type;
+		public int index;
+		
+		public StackExpr(Variable var, int index) {
+			this.var = var;
+			this.type = var.type;
+			this.index = index;
+		}
+		
+		@Override
+		public String toString() {
+			return var.name + ":" + "[ebx - " + index + "]";
+		}
+		
+		public ExprType type() {
+			if(var.value == null) return null;
+			return var.value.type();
+		}
+		
+		public String listnm() { return toString(); }
+	}
 	
 	// Unary
 	public static class UnExpr implements Expression {
@@ -54,7 +199,7 @@ public interface Expression extends Stable {
 		public String operation;
 		public Expression b;
 		
-		public BiExpr(Expression a, String operation, Expression b) {
+		public BiExpr(String operation, Expression a, Expression b) {
 			this.a = a;
 			this.b = b;
 			this.operation = operation;
@@ -69,6 +214,7 @@ public interface Expression extends Stable {
 	}
 	
 	// Ternary
+	// TODO: Remove with operators.
 	public static class TeExpr implements Expression {
 		public Expression a;
 		public String op1;
@@ -103,8 +249,8 @@ public interface Expression extends Stable {
 			return pointer + "(" + StringUtils.join(", ", args) + ")";
 		}
 		
-		public ExpressionType getType() {
-			return ExpressionType.CALL;
+		public ExprType getType() {
+			return ExprType.call;
 		}
 		
 		public String listnm() { return "CALL [" + pointer + "]"; }
@@ -130,9 +276,26 @@ public interface Expression extends Stable {
 	
 	public static class NumberExpr implements Expression {
 		public Number value;
+		public ExprType type;
+		
+		// TODO: Use something like this and then cast...
+		public long integer_value;
+		public double double_value;
 		
 		public NumberExpr(Number value) {
 			this.value = value;
+			
+			if(value instanceof Double) type = ExprType.float8;
+			if(value instanceof Float) type = ExprType.float4;
+			if(value instanceof Long) type = ExprType.int8;
+			if(value instanceof Integer) type = ExprType.int4;
+			if(value instanceof Short) type = ExprType.int2;
+			if(value instanceof Byte) type = ExprType.int1;
+			// Invalid if type is null.
+		}
+		public NumberExpr(Number value, ExprType type) {
+			this.value = value;
+			this.type = type;
 		}
 		
 		@Override
@@ -141,17 +304,29 @@ public interface Expression extends Stable {
 		}
 		
 		// TODO: Signed unsigned...
-		public boolean isLong() { return value instanceof Long; }
-		public boolean isInteger() { return value instanceof Integer; }
-		public boolean isShort() { return value instanceof Short; }
-		public boolean isByte() { return value instanceof Byte; }
-		public boolean isDouble() { return value instanceof Double; }
-		public boolean isFloat() { return value instanceof Float; }
+		// TODO: Remove
+		public boolean isLong() { return type == ExprType.int8; }
+		public boolean isInteger() { return type == ExprType.int4; }
+		public boolean isShort() { return type == ExprType.int2; }
+		public boolean isByte() { return type == ExprType.int1; }
+		public boolean isDouble() { return type == ExprType.float8; }
+		public boolean isFloat() { return type == ExprType.float4; }
 		public boolean isFloating() { return isDouble() || isFloat(); }
 		
-		public boolean isCompilerExpr() { return true; }
+		public boolean isPure() { return true; }
 		
-		public String listnm() { return Objects.toString(value); }
+		@Override
+		public ExprType type() {
+			if(isDouble()) return ExprType.float8;
+			if(isFloat()) return ExprType.float4;
+			if(isLong()) return ExprType.int8;
+			if(isInteger()) return ExprType.int4;
+			if(isShort()) return ExprType.int2;
+			if(isByte()) return ExprType.int1;
+			return null; // Invalid
+		}
+		
+		public String listnm() { return Objects.toString(value) + ":" + type(); }
 	}
 	
 	public static class StringExpr implements Expression {
@@ -166,7 +341,23 @@ public interface Expression extends Stable {
 			return Objects.toString(value);
 		}
 		
-		public String listnm() { return Objects.toString(value); }
+		public ExprType type() { return ExprType.string; }
+		public String listnm() { return Objects.toString(value) + ":" + type(); }
+	}
+	
+	public static class FunctionExpr implements Expression {
+		public Function func;
+		
+		public FunctionExpr(Function func) {
+			this.func = func;
+		}
+		
+		@Override
+		public String toString() {
+			return func.name;
+		}
+		
+		public String listnm() { return func.name; }
 	}
 	
 	public static class IdentifierExpr implements Expression {
@@ -196,8 +387,8 @@ public interface Expression extends Stable {
 	
 	
 	public static Expression optimize(Expression expr) {
-		if(expr instanceof BiExpr) {
-			return optimizeBiExpr((BiExpr)expr);
+		if(expr instanceof TestExpr) {
+			return optimizeTestExpr((TestExpr)expr);
 		}
 		
 		if(expr instanceof TeExpr) {
@@ -208,14 +399,47 @@ public interface Expression extends Stable {
 			return optimizeCastExpr((CastExpr)expr);
 		}
 		
+		// TODO: Unary
+		
 		return expr;
 	}
 	
-	public static Expression optimizeBiExpr(BiExpr expr) {
-		expr.a = optimize(expr.a);
-		expr.b = optimize(expr.b);
-		if(canReduce(expr)) return calulateBiExpr(expr);
-		if(canHalfReduce(expr)) return calulateHalfBiExpr(expr);
+	public static Expression optimizeTestExpr(TestExpr expr) {
+		for(int i = 0; i < expr.list.size(); i++) {
+			expr.list.set(i, optimize(expr.list.get(i)));
+		}
+		
+		if(canReduce(expr)) return calulateTestExpr(expr);
+		if(canHalfReduce(expr)) return calulateHalfTestExpr(expr);
+		
+		if(expr.size() == 2) {
+			Expression av = expr.list.get(0);
+			Expression bv = expr.list.get(1);
+			boolean an = av instanceof NumberExpr;
+			boolean bn = bv instanceof NumberExpr;
+			
+			NumberExpr a = null;
+			Expression b = null;
+			if(an && !bn) {
+				a = (NumberExpr)av;
+				b = bv;
+			}
+			
+			if(bn && !an) {
+				a = (NumberExpr)bv;
+				b = av;
+			}
+			
+			if(a != null && b != null) {
+				switch(expr.type) {
+					case add: if(a.value.doubleValue() == 0) return b;
+					case sub: if(a.value.doubleValue() == 0) return b;
+					default: {
+						
+					}
+				}
+			}
+		}
 		
 		return expr;
 	}
@@ -270,9 +494,9 @@ public interface Expression extends Stable {
 		return expr;
 	}
 	
-	public static Expression calulateBiExpr(BiExpr expr) {
-		NumberExpr a = (NumberExpr)expr.a;
-		NumberExpr b = (NumberExpr)expr.b;
+	public static Expression calulateTestExpr(TestExpr expr) {
+		NumberExpr a = (NumberExpr)expr.list.get(0);
+		NumberExpr b = (NumberExpr)expr.list.get(1);
 		
 		boolean isDouble = a.isDouble() || b.isDouble();
 		boolean isFloat = a.isFloat() || b.isFloat();
@@ -281,8 +505,8 @@ public interface Expression extends Stable {
 		boolean isShort = a.isShort() || b.isShort();
 		boolean isByte = a.isByte() || b.isByte();
 		
-		switch(expr.operation) {
-			case "+": {
+		switch(expr.type) {
+			case add: {
 				if(isDouble) return new NumberExpr(a.value.doubleValue() + b.value.doubleValue());
 				if(isFloat) return new NumberExpr(a.value.floatValue() + b.value.floatValue());
 				if(isLong) return new NumberExpr(a.value.longValue() + b.value.longValue());
@@ -290,7 +514,7 @@ public interface Expression extends Stable {
 				if(isShort) return new NumberExpr(a.value.shortValue() + b.value.shortValue());
 				if(isByte) return new NumberExpr(a.value.byteValue() + b.value.byteValue());
 			}
-			case "-": {
+			case sub: {
 				if(isDouble) return new NumberExpr(a.value.doubleValue() - b.value.doubleValue());
 				if(isFloat) return new NumberExpr(a.value.floatValue() - b.value.floatValue());
 				if(isLong) return new NumberExpr(a.value.longValue() - b.value.longValue());
@@ -298,7 +522,7 @@ public interface Expression extends Stable {
 				if(isShort) return new NumberExpr(a.value.shortValue() - b.value.shortValue());
 				if(isByte) return new NumberExpr(a.value.byteValue() - b.value.byteValue());
 			}
-			case "*": {
+			case mul: {
 				if(isDouble) return new NumberExpr(a.value.doubleValue() * b.value.doubleValue());
 				if(isFloat) return new NumberExpr(a.value.floatValue() * b.value.floatValue());
 				if(isLong) return new NumberExpr(a.value.longValue() * b.value.longValue());
@@ -306,7 +530,7 @@ public interface Expression extends Stable {
 				if(isShort) return new NumberExpr(a.value.shortValue() * b.value.shortValue());
 				if(isByte) return new NumberExpr(a.value.byteValue() * b.value.byteValue());
 			}
-			case "/": {
+			case div: {
 				if(isDouble) return new NumberExpr(a.value.doubleValue() / b.value.doubleValue());
 				if(isFloat) return new NumberExpr(a.value.floatValue() / b.value.floatValue());
 				if(isLong) return new NumberExpr(a.value.longValue() / b.value.longValue());
@@ -314,7 +538,7 @@ public interface Expression extends Stable {
 				if(isShort) return new NumberExpr(a.value.shortValue() / b.value.shortValue());
 				if(isByte) return new NumberExpr(a.value.byteValue() / b.value.byteValue());
 			}
-			case "%": {
+			case mod: {
 				if(isDouble) return new NumberExpr(a.value.doubleValue() % b.value.doubleValue());
 				if(isFloat) return new NumberExpr(a.value.floatValue() % b.value.floatValue());
 				if(isLong) return new NumberExpr(a.value.longValue() % b.value.longValue());
@@ -322,28 +546,44 @@ public interface Expression extends Stable {
 				if(isShort) return new NumberExpr(a.value.shortValue() % b.value.shortValue());
 				if(isByte) return new NumberExpr(a.value.byteValue() % b.value.byteValue());
 			}
-			case "^": {
+			
+			case xor: {
 				if(isDouble || isFloat) throw new RuntimeException("You cannot apply XOR between floating point values!");
 				if(isLong) return new NumberExpr(a.value.longValue() ^ b.value.longValue());
 				if(isInteger) return new NumberExpr(a.value.intValue() ^ b.value.intValue());
 				if(isShort) return new NumberExpr(a.value.shortValue() ^ b.value.shortValue());
 				if(isByte) return new NumberExpr(a.value.byteValue() ^ b.value.byteValue());
 			}
-			case "&": {
+			case and: {
 				if(isDouble || isFloat) throw new RuntimeException("You cannot apply AND between floating point values!");
 				if(isLong) return new NumberExpr(a.value.longValue() & b.value.longValue());
 				if(isInteger) return new NumberExpr(a.value.intValue() & b.value.intValue());
 				if(isShort) return new NumberExpr(a.value.shortValue() & b.value.shortValue());
 				if(isByte) return new NumberExpr(a.value.byteValue() & b.value.byteValue());
 			}
-			case "|": {
+			case or: {
 				if(isDouble || isFloat) throw new RuntimeException("You cannot apply OR between floating point values!");
 				if(isLong) return new NumberExpr(a.value.longValue() | b.value.longValue());
 				if(isInteger) return new NumberExpr(a.value.intValue() | b.value.intValue());
 				if(isShort) return new NumberExpr(a.value.shortValue() | b.value.shortValue());
 				if(isByte) return new NumberExpr(a.value.byteValue() | b.value.byteValue());
 			}
-			case ">": {
+			case shr: {
+				if(isDouble || isFloat) throw new RuntimeException("You cannot apply SHR between floating point values!");
+				if(isLong) return new NumberExpr(a.value.longValue() >> b.value.longValue());
+				if(isInteger) return new NumberExpr(a.value.intValue() >> b.value.intValue());
+				if(isShort) return new NumberExpr(a.value.shortValue() >> b.value.shortValue());
+				if(isByte) return new NumberExpr(a.value.byteValue() >> b.value.byteValue());
+			}
+			case shl: {
+				if(isDouble || isFloat) throw new RuntimeException("You cannot apply SHL between floating point values!");
+				if(isLong) return new NumberExpr(a.value.longValue() << b.value.longValue());
+				if(isInteger) return new NumberExpr(a.value.intValue() << b.value.intValue());
+				if(isShort) return new NumberExpr(a.value.shortValue() << b.value.shortValue());
+				if(isByte) return new NumberExpr(a.value.byteValue() << b.value.byteValue());
+			}
+			
+			case gt: {
 				if(isDouble) return new NumberExpr(a.value.doubleValue() > b.value.doubleValue() ? 1:0);
 				if(isFloat) return new NumberExpr(a.value.floatValue() > b.value.floatValue() ? 1:0);
 				if(isLong) return new NumberExpr(a.value.longValue() > b.value.longValue() ? 1:0);
@@ -351,7 +591,7 @@ public interface Expression extends Stable {
 				if(isShort) return new NumberExpr(a.value.shortValue() > b.value.shortValue() ? 1:0);
 				if(isByte) return new NumberExpr(a.value.byteValue() > b.value.byteValue() ? 1:0);
 			}
-			case ">=": {
+			case gte: {
 				if(isDouble) return new NumberExpr(a.value.doubleValue() >= b.value.doubleValue() ? 1:0);
 				if(isFloat) return new NumberExpr(a.value.floatValue() >= b.value.floatValue() ? 1:0);
 				if(isLong) return new NumberExpr(a.value.longValue() >= b.value.longValue() ? 1:0);
@@ -359,7 +599,7 @@ public interface Expression extends Stable {
 				if(isShort) return new NumberExpr(a.value.shortValue() >= b.value.shortValue() ? 1:0);
 				if(isByte) return new NumberExpr(a.value.byteValue() >= b.value.byteValue() ? 1:0);
 			}
-			case "<": {
+			case lt: {
 				if(isDouble) return new NumberExpr(a.value.doubleValue() < b.value.doubleValue() ? 1:0);
 				if(isFloat) return new NumberExpr(a.value.floatValue() < b.value.floatValue() ? 1:0);
 				if(isLong) return new NumberExpr(a.value.longValue() < b.value.longValue() ? 1:0);
@@ -367,7 +607,7 @@ public interface Expression extends Stable {
 				if(isShort) return new NumberExpr(a.value.shortValue() < b.value.shortValue() ? 1:0);
 				if(isByte) return new NumberExpr(a.value.byteValue() < b.value.byteValue() ? 1:0);
 			}
-			case "<=": {
+			case lte: {
 				if(isDouble) return new NumberExpr(a.value.doubleValue() <= b.value.doubleValue() ? 1:0);
 				if(isFloat) return new NumberExpr(a.value.floatValue() <= b.value.floatValue() ? 1:0);
 				if(isLong) return new NumberExpr(a.value.longValue() <= b.value.longValue() ? 1:0);
@@ -375,8 +615,7 @@ public interface Expression extends Stable {
 				if(isShort) return new NumberExpr(a.value.shortValue() <= b.value.shortValue() ? 1:0);
 				if(isByte) return new NumberExpr(a.value.byteValue() <= b.value.byteValue() ? 1:0);
 			}
-			
-			case "==": {
+			case eq: {
 				if(isDouble) return new NumberExpr(a.value.doubleValue() == b.value.doubleValue() ? 1:0);
 				if(isFloat) return new NumberExpr(a.value.floatValue() == b.value.floatValue() ? 1:0);
 				if(isLong) return new NumberExpr(a.value.longValue() == b.value.longValue() ? 1:0);
@@ -384,7 +623,7 @@ public interface Expression extends Stable {
 				if(isShort) return new NumberExpr(a.value.shortValue() == b.value.shortValue() ? 1:0);
 				if(isByte) return new NumberExpr(a.value.byteValue() == b.value.byteValue() ? 1:0);
 			}
-			case "!=": {
+			case neq: {
 				if(isDouble) return new NumberExpr(a.value.doubleValue() != b.value.doubleValue() ? 1:0);
 				if(isFloat) return new NumberExpr(a.value.floatValue() != b.value.floatValue() ? 1:0);
 				if(isLong) return new NumberExpr(a.value.longValue() != b.value.longValue() ? 1:0);
@@ -393,7 +632,7 @@ public interface Expression extends Stable {
 				if(isByte) return new NumberExpr(a.value.byteValue() != b.value.byteValue() ? 1:0);
 			}
 			
-			case "||": {
+			case cor: {
 				if(isDouble) return new NumberExpr(a.value.doubleValue() != 0 ? 1:(b.value.doubleValue() != 0 ? 1:0));
 				if(isFloat) return new NumberExpr(a.value.floatValue() != 0 ? 1:(b.value.floatValue() != 0 ? 1:0));
 				if(isLong) return new NumberExpr(a.value.longValue() != 0 ? 1:(b.value.longValue() != 0 ? 1:0));
@@ -401,7 +640,7 @@ public interface Expression extends Stable {
 				if(isShort) return new NumberExpr(a.value.shortValue() != 0 ? 1:(b.value.shortValue() != 0 ? 1:0));
 				if(isByte) return new NumberExpr(a.value.byteValue() != 0 ? 1:(b.value.byteValue() != 0 ? 1:0));
 			}
-			case "&&": {
+			case cand: {
 				if(isDouble) return new NumberExpr(a.value.doubleValue() != 0 ? (b.value.doubleValue() != 0 ? 1:0):0);
 				if(isFloat) return new NumberExpr(a.value.floatValue() != 0 ? (b.value.floatValue() != 0 ? 1:0):0);
 				if(isLong) return new NumberExpr(a.value.longValue() != 0 ? (b.value.longValue() != 0 ? 1:0):0);
@@ -409,24 +648,134 @@ public interface Expression extends Stable {
 				if(isShort) return new NumberExpr(a.value.shortValue() != 0 ? (b.value.shortValue() != 0 ? 1:0):0);
 				if(isByte) return new NumberExpr(a.value.byteValue() != 0 ? (b.value.byteValue() != 0 ? 1:0):0);
 			}
+			
+			default: {
+				
+			}
 		}
 		
 		return expr;
 	}
 	
-	public static Expression calulateHalfBiExpr(BiExpr expr) {
-		NumberExpr a = (NumberExpr)expr.a;
+	public static Expression calulateHalfTestExpr(TestExpr expr) {
+		Expression a = expr.list.get(0);
+		Expression b = expr.list.get(1);
 		
-		switch(expr.operation) {
-			case "||": {
-				if(a.isDouble()) return (a.value.doubleValue() != 0 ? new NumberExpr(1):expr.b);
-				if(a.isFloat()) return (a.value.floatValue() != 0 ? new NumberExpr(1):expr.b);
-				if(a.isLong()) return (a.value.longValue() != 0 ? new NumberExpr(1):expr.b);
-				if(a.isInteger()) return (a.value.intValue() != 0 ? new NumberExpr(1):expr.b);
-				if(a.isShort()) return (a.value.shortValue() != 0 ? new NumberExpr(1):expr.b);
-				if(a.isByte()) return (a.value.byteValue() != 0 ? new NumberExpr(1):expr.b);
+//		NumberExpr n;
+//		Expression k;
+//		if(a instanceof NumberExpr) {
+//			n = (NumberExpr)a;
+//			k = b;
+//		} else {
+//			n = (NumberExpr)b;
+//			k = a;
+//		}
+		
+		// Reduce All
+		//   IDENT + 0         == IDENT
+		//   IDENT - 0         == IDENT
+		//   IDENT / 1         == IDENT
+		//   IDENT * 1         == IDENT
+		
+		//   IDENT << 0        == IDENT
+		//   IDENT >> 0        == IDENT
+		//   IDENT ^ 0         == IDENT
+		//   IDENT & 0         == 0
+		//   IDENT | 0         == IDENT
+		// What if the operator changes ?
+		
+		switch(expr.type) {
+//			case add: return n.value.doubleValue() == 0 ? k:expr;
+//			case sub: return n.value.doubleValue() == 0 ? k:expr;
+//			case mul: {
+//				if(n.isDouble()) return (Double.compare(n.value.doubleValue(), 1D) == 0 ? b:expr);
+//				if(n.isFloat()) return (Float.compare(n.value.floatValue(), 1F) == 0 ? b:expr);
+//				if(n.isLong()) return (n.value.longValue() == 1 ? b:expr);
+//				if(n.isInteger()) return (n.value.intValue() == 1 ? b:expr);
+//				if(n.isShort()) return (n.value.shortValue() == 1 ? b:expr);
+//				if(n.isByte()) return (n.value.byteValue() == 1 ? b:expr);
+//				break;
+//			}
+//			case div: {
+//				if(n.isDouble()) return (Double.compare(n.value.doubleValue(), 1D) == 0 ? b:expr);
+//				if(n.isFloat()) return (Float.compare(n.value.floatValue(), 1F) == 0 ? b:expr);
+//				if(n.isLong()) return (n.value.longValue() == 1 ? b:expr);
+//				if(n.isInteger()) return (n.value.intValue() == 1 ? b:expr);
+//				if(n.isShort()) return (n.value.shortValue() == 1 ? b:expr);
+//				if(n.isByte()) return (n.value.byteValue() == 1 ? b:expr);
+//				break;
+//			}
+//			
+//			case shl:
+//			case shr:
+//			case xor:
+//			case or: {
+//				if(n.isFloating()) throw new RuntimeException("You cannot apply " + expr.type.toString().toUpperCase() + " between integers and floats!");
+//				return n.value.doubleValue() == 0 ? k:expr;
+//			}
+//			
+//			case and: {
+//				if(n.isFloating()) throw new RuntimeException("You cannot apply AND between integers and floats!");
+//				return n.value.doubleValue() == 0 ? new NumberExpr(0):expr;
+//			}
+			
+			case cor: {
+				if(a instanceof NumberExpr) { // Should never encounter this
+					NumberExpr A = (NumberExpr)a;
+					if(A.isDouble()) return (A.value.doubleValue() != 0 ? new NumberExpr(1):b);
+					if(A.isFloat()) return (A.value.floatValue() != 0 ? new NumberExpr(1):b);
+					if(A.isLong()) return (A.value.longValue() != 0 ? new NumberExpr(1):b);
+					if(A.isInteger()) return (A.value.intValue() != 0 ? new NumberExpr(1):b);
+					if(A.isShort()) return (A.value.shortValue() != 0 ? new NumberExpr(1):b);
+					if(A.isByte()) return (A.value.byteValue() != 0 ? new NumberExpr(1):b);
+				}
+				break;
 			}
-			case "&&": {
+			case cand: {
+				if(a instanceof NumberExpr) { // Should never encounter this
+					NumberExpr A = (NumberExpr)a;
+					if(A.isDouble()) return new NumberExpr(A.value.doubleValue() != 0 ? 1:0);
+					if(A.isFloat()) return new NumberExpr(A.value.floatValue() != 0 ? 1:0);
+					if(A.isLong()) return new NumberExpr(A.value.longValue() != 0 ? 1:0);
+					if(A.isInteger()) return new NumberExpr(A.value.intValue() != 0 ? 1:0);
+					if(A.isShort()) return new NumberExpr(A.value.shortValue() != 0 ? 1:0);
+					if(A.isByte()) return new NumberExpr(A.value.byteValue() != 0 ? 1:0);
+				}
+				break;
+			}
+			
+			default: break;
+		}
+		
+		return expr;
+	}
+	
+	public static Expression calulateHalfTestExpr2(TestExpr expr) {
+		NumberExpr a = (NumberExpr)expr.list.get(0);
+		Expression b = expr.list.get(1);
+		
+		// Reduce All
+		//   IDENT + 0         == IDENT
+		//   IDENT - 0         == IDENT
+		//   IDENT << 0        == IDENT
+		//   IDENT >> 0        == IDENT
+		//   IDENT ^ 0         == IDENT
+		//   IDENT & 0         == 0
+		//   IDENT | 0         == IDENT
+		//   IDENT / 1         == IDENT
+		//   IDENT * 1         == IDENT
+		
+		
+		switch(expr.type) {
+			case cor: {
+				if(a.isDouble()) return (a.value.doubleValue() != 0 ? new NumberExpr(1):b);
+				if(a.isFloat()) return (a.value.floatValue() != 0 ? new NumberExpr(1):b);
+				if(a.isLong()) return (a.value.longValue() != 0 ? new NumberExpr(1):b);
+				if(a.isInteger()) return (a.value.intValue() != 0 ? new NumberExpr(1):b);
+				if(a.isShort()) return (a.value.shortValue() != 0 ? new NumberExpr(1):b);
+				if(a.isByte()) return (a.value.byteValue() != 0 ? new NumberExpr(1):b);
+			}
+			case cand: {
 				if(a.isDouble()) return new NumberExpr(a.value.doubleValue() != 0 ? 1:0);
 				if(a.isFloat()) return new NumberExpr(a.value.floatValue() != 0 ? 1:0);
 				if(a.isLong()) return new NumberExpr(a.value.longValue() != 0 ? 1:0);
@@ -434,24 +783,42 @@ public interface Expression extends Stable {
 				if(a.isShort()) return new NumberExpr(a.value.shortValue() != 0 ? 1:0);
 				if(a.isByte()) return new NumberExpr(a.value.byteValue() != 0 ? 1:0);
 			}
+			default: {
+				
+			}
 		}
 		
 		return expr;
 	}
 	
 	public static boolean canReduce(Expression expr) {
-		if(expr instanceof BiExpr) {
-			BiExpr b_expr = (BiExpr)expr;
-			return (b_expr.a instanceof NumberExpr) && (b_expr.b instanceof NumberExpr);
+		if(expr instanceof TestExpr) {
+			TestExpr e = (TestExpr)expr;
+			if(e.list.size() == 2) {
+				return (e.list.get(0) instanceof NumberExpr) && (e.list.get(1) instanceof NumberExpr);
+			}
 		}
 		
 		return false;
 	}
 	
 	public static boolean canHalfReduce(Expression expr) {
-		if(expr instanceof BiExpr) {
-			BiExpr b_expr = (BiExpr)expr;
-			return (b_expr.a instanceof NumberExpr);
+		if(expr instanceof TestExpr) {
+			TestExpr e = (TestExpr)expr;
+			if(e.list.size() == 2) {
+				return (e.list.get(0) instanceof NumberExpr);
+			}
+		}
+		
+		return false;
+	}
+	
+	public static boolean canHalfReduce2(Expression expr) {
+		if(expr instanceof TestExpr) {
+			TestExpr e = (TestExpr)expr;
+			if(e.list.size() == 2) {
+				return (e.list.get(0) instanceof NumberExpr) || (e.list.get(1) instanceof NumberExpr);
+			}
 		}
 		
 		return false;

@@ -10,6 +10,15 @@ public class Program implements Stable {
 		functions = new ArrayList<>();
 	}
 	
+	public boolean hasFunction(String name) {
+		throw new UnsupportedOperationException("Implement");
+	}
+	
+	public Function current() {
+		if(functions.isEmpty()) return null;
+		return functions.get(functions.size() - 1);
+	}
+	
 	@Override
 	public String toString() {
 		return super.toString();
