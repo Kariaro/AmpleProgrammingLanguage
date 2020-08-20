@@ -4,17 +4,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
+import hardcoded.compiler.Expression.IdentifierExpr;
 import hardcoded.utils.StringUtils;
 
-
-// TODO: Function declaration or definition.
 public class Function implements Stable {
 	public Modifier modifier;
 	public Type returnType;
 	public String name;
 	public List<Variable> arguments;
-	public Statement body;
+	public Expression body;
 	public int stackLength;
+	
+	public int temp_counter;
 	
 	public Function() {
 		arguments = new ArrayList<>();
@@ -97,6 +98,14 @@ public class Function implements Stable {
 		}
 		
 		return index;
+	}
+	
+	public IdentifierExpr temp(Type type) {
+		Variable result = new Variable(type);
+		result.name = "$temp" + (temp_counter++);
+		getScope().add(result);
+		
+		return new IdentifierExpr(result.name);
 	}
 	
 	public Function inc_scope() {

@@ -11,8 +11,6 @@ import java.util.Objects;
 import javax.swing.JPanel;
 
 import hardcoded.compiler.*;
-import hardcoded.compiler.Statement.IfStatement;
-import hardcoded.compiler.Statement.Statements;
 
 /**
  * @author HardCoded
