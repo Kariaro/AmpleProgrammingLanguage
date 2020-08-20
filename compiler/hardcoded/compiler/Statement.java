@@ -5,57 +5,51 @@ import java.util.stream.Collectors;
 
 import hardcoded.utils.StringUtils;
 
-public interface Statement extends Stable {
-	// TODO: Class statement and object statement.
+public interface Statement extends Expression {
+	// TODO: Make everything expressions maybe?
 	
-	public default List<Statement> elements() {
-		return null;
-	}
-	
-	public default List<Expression> expressions() {
-		List<Statement> list = elements();
-		if(list == null) return exprs();
-		return list.stream().filter(x -> x != null).flatMap(x -> x.expressions().stream()).collect(Collectors.toList());
-	}
-	
-	public default List<Expression> exprs() {
+	@Deprecated
+	public default List<Statement> elementsStatements() {
 		return Collections.emptyList();
 	}
 	
-	public static class IfStatement implements Statement {
-		public Expression condition;
-		public Statement body;
-		public Statement elseBody;
-		
-		@Override
-		public String toString() {
-			if(elseBody == null) return "if (" + condition + ") " + body;
-			return "if (" + condition + ") " + body + " else " + elseBody;
-		}
-		
-		@Override
-		public List<Statement> elements() {
-			if(elseBody == null) Arrays.asList(body);
-			return Arrays.asList(body, elseBody);
-		}
-		
-		@Override
-		public List<Expression> exprs() {
-			return Arrays.asList(condition);
-		}
-		
-		public String listnm() { return "IF"; }
-		public Object[] listme() {
-			if(elseBody == null) return new Object[] { condition, body };
-			return new Object[] { condition, body, elseBody };
-		}
+	public default List<Expression> stat_expressions_NOP() {
+		List<Statement> list = elementsStatements();
+		if(list.size() < 1) return stat_expressions();
+		return list.stream().filter(x -> x != null).flatMap(x -> x.stat_expressions_NOP().stream()).collect(Collectors.toList());
+	}
+	
+	public default List<Expression> stat_expressions() {
+		return Collections.emptyList();
 	}
 	
 	public static class ForStatement implements Statement {
-		public MultiVariableStatement variables;
-		public Expression condition;
-		public Expression action;
-		public Statement body;
+		public Statement variables;
+		public List<Expression> list;
+		public Expression body;
+		
+		//public Expression condition;
+		//public Expression action;
+		
+		public ForStatement() {
+			list = new ArrayList<>(Arrays.asList(null, null, null));
+		}
+		
+		public void setAction(Expression expr) {
+			list.set(2, expr);
+		}
+		
+		public void setCondition(Expression expr) {
+			list.set(1, expr);
+		}
+		
+		public Expression action() {
+			return list.get(2);
+		}
+		
+		public Expression condition() {
+			return list.get(1);
+		}
 		
 		@Override
 		public String toString() {
@@ -66,48 +60,25 @@ public interface Statement extends Stable {
 				sb.append(str.substring(0, str.length() - 1));
 			}
 			sb.append("; ");
-			if(condition != null) sb.append(condition);
+			if(condition() != null) sb.append(condition());
 			sb.append("; ");
-			if(action != null) sb.append(action);
+			if(action() != null) sb.append(action());
 			sb.append(") ").append(body);
 			return sb.toString();
 		}
 		
 		@Override
-		public List<Statement> elements() {
-			return Arrays.asList(variables, body);
+		public List<Statement> elementsStatements() {
+			return null; //return Arrays.asList(variables, body);
 		}
 		
 		@Override
-		public List<Expression> exprs() {
-			return Arrays.asList(condition, action);
+		public List<Expression> stat_expressions() {
+			return list;
 		}
 		
 		public String listnm() { return "FOR"; }
-		public Object[] listme() { return new Object[] { variables, condition, action, body }; }
-	}
-	
-	public static class WhileStatement implements Statement {
-		public Expression condition;
-		public Statement body;
-		
-		@Override
-		public String toString() {
-			return "while (" + condition + ") " + body;
-		}
-		
-		@Override
-		public List<Statement> elements() {
-			return Arrays.asList(body);
-		}
-		
-		@Override
-		public List<Expression> exprs() {
-			return Arrays.asList(condition);
-		}
-		
-		public String listnm() { return "WHILE"; }
-		public Object[] listme() { return new Object[] { condition, body }; }
+		public Object[] listme() { return new Object[] { variables, condition(), action(), body }; }
 	}
 	
 	public static class BreakStatement implements Statement {
@@ -126,24 +97,33 @@ public interface Statement extends Stable {
 	// public static class LabelStatement implements Statement {}
 	
 	public static class ExprStatement implements Statement {
-		public Expression expr;
+		public List<Expression> list;
 		
 		public ExprStatement(Expression action) {
-			this.expr = action;
+			list = new ArrayList<>();
+			list.add(action);
+		}
+		
+		public ExprStatement() {
+			list = new ArrayList<>();
 		}
 		
 		@Override
-		public List<Expression> exprs() {
-			return Arrays.asList(expr);
+		public List<Expression> stat_expressions() {
+			return list;
 		}
 		
-		public String toString() { return expr.toString() + ";"; }
-		public String listnm() { return expr.toString(); }
-		public Object[] listme() { return new Object[] { expr }; }
+		public String toString() {
+			return StringUtils.join(";\n", list) + (list.isEmpty() ? "":";");
+		}
+		
+		public String listnm() { return toString(); }
+		public Object[] listme() { return list.toArray(); }
 	}
 	
+	// TODO: Remove
 	public static class Statements implements Statement {
-		public List<Statement> list;
+		public List<Expression> list;
 		
 		public Statements() {
 			this.list = new ArrayList<>();
@@ -155,8 +135,8 @@ public interface Statement extends Stable {
 		}
 		
 		@Override
-		public List<Statement> elements() {
-			return list;
+		public List<Statement> elementsStatements() {
+			return null; //return list;
 		}
 		
 		public String listnm() { return "BODY"; }
@@ -169,6 +149,13 @@ public interface Statement extends Stable {
 		public Object[] listme() { return new Object[] {}; }
 	}
 	
+	public static class ExpandStatement extends StatementList {
+		public ExpandStatement(List<? extends Statement> list) {
+			this.list = new ArrayList<>();
+			this.list.addAll(list);
+		}
+	}
+	
 	public static class StatementList implements Statement {
 		public List<Statement> list;
 		
@@ -177,56 +164,13 @@ public interface Statement extends Stable {
 		}
 		
 		@Override
-		public List<Statement> elements() {
+		public List<Statement> elementsStatements() {
 			return list;
 		}
 		
 		public String toString() { return StringUtils.join("", list); }
 		public String listnm() { return toString(); }
 		public Object[] listme() { return list.toArray(); }
-	}
-	
-	public static class MultiVariableStatement implements Statement {
-		public List<Variable> define;
-		public Type type;
-		
-		public MultiVariableStatement() {
-			define = new ArrayList<>();
-		}
-		
-		public Variable create() {
-			Variable stat = new Variable();
-			stat.type = type;
-			define.add(stat);
-			return stat;
-		}
-		
-		@Override
-		public List<Expression> exprs() {
-			return define.stream().filter(x -> x.initialized).map(x -> x.value).collect(Collectors.toList());
-		}
-		
-		@Override
-		public String toString() {
-			if(define.size() == 1) {
-				return type + " " + define.get(0).shortString() + ";";
-			}
-			
-			StringBuilder sb = new StringBuilder();
-			sb.append(type).append(" ");
-			for(Variable v : define) sb.append(v.shortString()).append(", ");
-			
-			if(!define.isEmpty()) {
-				sb.deleteCharAt(sb.length() - 1);
-				sb.deleteCharAt(sb.length() - 1);
-			}
-			
-			return sb.append(";").toString();
-		}
-		
-
-		public String listnm() { return "DEFINE"; }
-		public Object[] listme() { return define.toArray(); }
 	}
 	
 	public default String listnm() { return "Undefined(" + this.getClass() + ")"; }

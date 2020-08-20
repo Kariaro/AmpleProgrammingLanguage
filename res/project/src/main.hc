@@ -67,6 +67,8 @@ export void main(int input, int a, int b, int c) {
 	
 	WORD test3[GLOBAL];
 	
+	// TODO: Add assert
+	
 	int test4 = -1;
 	
 	byte chr = (byte)23;
