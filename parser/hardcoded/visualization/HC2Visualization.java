@@ -50,8 +50,8 @@ public final class HC2Visualization extends Visualization {
 					panel.xpos += xx;
 					panel.ypos += yy;
 					
-					selectedX = mouse.x * scroll - panel.xpos;
-					selectedY = mouse.y * scroll - panel.ypos;
+					//selectedX = mouse.x * scroll - panel.xpos;
+					//selectedY = mouse.y * scroll - panel.ypos;
 				}
 				
 				panel.zoom = 1.0 / scroll;
@@ -101,6 +101,7 @@ public final class HC2Visualization extends Visualization {
 		public void paint(Graphics gr) {
 			Graphics2D g = (Graphics2D)gr;
 			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
 			g.setFont(font);
 			
 			g.setColor(Color.WHITE);
@@ -135,14 +136,15 @@ public final class HC2Visualization extends Visualization {
 		private Element(Element parent, Object object) {
 			this.elements = new ArrayList<>();
 			
-			if(object instanceof Stable) {
-				Stable stab = (Stable)object;
+			if(object instanceof Printable) {
+				Printable stab = (Printable)object;
 				setContent(stab.listnm());
 				
 				if(stab.listme().length > 0) {
 					offset = 0;
 					
 					for(Object obj : stab.listme()) {
+						// System.out.println("object: " + object.getClass() + ",    [" + obj + "] [" + obj.getClass() + "]");
 						Element e = new Element(this, obj);
 						e.move(offset, 140);
 						offset += e.offset;

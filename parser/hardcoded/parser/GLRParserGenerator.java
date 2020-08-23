@@ -50,7 +50,7 @@ public class GLRParserGenerator {
 			globalStates.get(i).accept();
 		}
 		
-		// new hardcoded.visualization.DFAVisualization().show(globalStates);
+		//new hardcoded.visualization.DFAVisualization().show(globalStates);
 		
 		// MAYBE: This could be a nice addition.. Only for visual stuff though.
 		//        Sort the set list so that all terminals are on the left and all non-terminals are on the right inside this list.

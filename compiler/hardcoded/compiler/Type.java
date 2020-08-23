@@ -6,17 +6,17 @@ public class Type {
 	private final String name;
 	private final int size;
 	private final boolean floating;
+	private final boolean signed;
 	
 	public Type(String name, int size) {
-		this.name = name;
-		this.size = size;
-		this.floating = false;
+		this(name, size, false, true);
 	}
 	
-	public Type(String name, int size, boolean floating) {
+	public Type(String name, int size, boolean floating, boolean signed) {
 		this.name = name;
 		this.size = size;
 		this.floating = floating;
+		this.signed = (floating ? true:signed);
 	}
 	
 	public Type type() {
@@ -29,6 +29,10 @@ public class Type {
 	
 	public boolean isFloating() {
 		return floating;
+	}
+	
+	public boolean isSigned() {
+		return signed;
 	}
 	
 	public int size() {

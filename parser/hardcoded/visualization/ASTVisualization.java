@@ -104,6 +104,7 @@ public final class ASTVisualization extends Visualization {
 		public void paint(Graphics gr) {
 			Graphics2D g = (Graphics2D)gr;
 			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
 			g.setFont(font);
 			
 			g.setColor(Color.WHITE);

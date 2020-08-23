@@ -59,12 +59,13 @@ public final class DFAVisualization extends Visualization {
 					panel.xpos += xx;
 					panel.ypos += yy;
 					
-					selectedX = mouse.x * scroll;
-					selectedY = mouse.y * scroll;
+					
 					if(selected == null) {
-						selectedX -= panel.xpos;
-						selectedY -= panel.ypos;
+						//selectedX -= panel.xpos;
+						//selectedY -= panel.ypos;
 					} else {
+						selectedX = mouse.x * scroll;
+						selectedY = mouse.y * scroll;
 						selectedX -= selected.x;
 						selectedY -= selected.y;
 					}
@@ -192,6 +193,7 @@ public final class DFAVisualization extends Visualization {
 		public void paint(Graphics gr) {
 			Graphics2D g = (Graphics2D)gr;
 			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
 			g.setFont(font);
 			
 			g.setColor(Color.WHITE);
