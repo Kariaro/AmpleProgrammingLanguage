@@ -1,6 +1,6 @@
 package hardcoded.compiler;
 
-public interface Stable {
+public interface Printable {
 	public String listnm();
 	public Object[] listme();
 }

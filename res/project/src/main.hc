@@ -21,6 +21,13 @@
 // %include "testing.hc";
 
 bool print(char* string);
+void expr() {
+	int _ = 1 - 32 + 32 - 32 + 32; // Exptected 1
+	
+	if(10 != 9) {
+		print("Why?!??!?!?");
+	}
+}
 
 void main2(int args) {
 	int array[2];
@@ -62,10 +69,11 @@ export void main(int input, int a, int b, int c) {
 	int test = 32, arg2 = 3, arg73 = "test";
 	int* test2 = &test; // Unary get pointer address to value.
 	// int test3[(204 ^ 229 * 119 ^ 75 ^ (5) - 163 + 69 + 10 * 30 * 191 | 145 * 139 + 183 * 165 * 248 * 6 & 183 * 243 ^ 11)];// + 32];
-	int i = 1 + 2 + 3 + 4 + 5;
+	int i = 1 + 2 + 3 + 4 + 5.0D;
 	int var2 = (int)(byte)1234283; // Should be 107
 	
 	WORD test3[GLOBAL];
+	int i32 = 0 + 0;
 	
 	// TODO: Add assert
 	
@@ -76,6 +84,14 @@ export void main(int input, int a, int b, int c) {
 	// if(0 && (test4 += 1)) print("Because of the zero, the rest should be removed.");
 	// if(1 || (test4 += 1)) print("Because of the one, the rest should be removed.");
 	// if(1 || (test4 += 1)) print("Because of the one, the rest should be removed.");
+	
+	// Should throw an error.
+	void __0 = (byte)32;
+	void __1 = (short)32;
+	void __2 = (int)32;
+	void __3 = (long)32;
+	void __4 = (float)32;
+	void __5 = (double)32;
 	
 	// int test4[(1 ? 15:32)];
 	if(1 || 2 || 3) print("1st");
@@ -93,9 +109,9 @@ export void main(int input, int a, int b, int c) {
 	}
 	
 	if(input > 3) {
-		// print("This is a \" \" \"static message!");
+		print("This is a \" \" \"static message!");
 	} else {
-		// print("Inside else statement!");
+		print("Inside else statement!");
 	}
 	
 	int testing = 1 + 3 * 427 & 43 + 20312 + print("testing");

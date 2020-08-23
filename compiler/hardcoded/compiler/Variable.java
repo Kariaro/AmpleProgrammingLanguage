@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Variable implements Statement {
-	private List<Expression> list;
+	public List<Expression> list;
 	
 	public Type type;
 	public String name;
@@ -33,11 +33,6 @@ public class Variable implements Statement {
 	
 	public boolean isInitialized() {
 		return !list.isEmpty();
-	}
-	
-	@Override
-	public List<Expression> stat_expressions() {
-		return list;
 	}
 	
 	@Override
