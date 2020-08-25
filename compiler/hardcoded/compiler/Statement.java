@@ -2,13 +2,14 @@ package hardcoded.compiler;
 
 import java.util.*;
 
+import hardcoded.compiler.constants.Printable;
 import hardcoded.utils.StringUtils;
 
 public interface Statement extends Printable {
 	public static final Statement EMPTY = new Statement() {
 		public String toString() { return ""; }
-		public String listnm() { return ""; }
-		public Object[] listme() { return new Object[] {}; }
+		public String asString() { return ""; }
+		public Object[] asList() { return new Object[] {}; }
 	};
 	
 	public default boolean hasStatements() {
@@ -65,8 +66,8 @@ public interface Statement extends Printable {
 			list.remove(index);
 		}
 		
-		public String listnm() { return "BODY"; }
-		public Object[] listme() { return list.toArray(); }
+		public String asString() { return "BODY"; }
+		public Object[] asList() { return list.toArray(); }
 	}
 	
 	public static class SwitchStat extends NestedStat {
@@ -95,7 +96,7 @@ public interface Statement extends Printable {
 			set(1, stat);
 		}
 		
-		public String listnm() { return "WHILE"; }
+		public String asString() { return "WHILE"; }
 		public String toString() { return "while(" + condition() + ");"; }
 	}
 	
@@ -139,7 +140,7 @@ public interface Statement extends Printable {
 			set(3, stat);
 		}
 		
-		public String listnm() { return "FOR"; }
+		public String asString() { return "FOR"; }
 		public String toString() {
 			String vars = Objects.toString(variables(), null);
 			String cond = Objects.toString(condition(), null);
@@ -189,20 +190,20 @@ public interface Statement extends Printable {
 			return stat;
 		}
 		
-		public String listnm() { return "IF"; }
+		public String asString() { return "IF"; }
 		public String toString() { return "if(" + condition() + ");"; } // TODO: Show if else?
 	}
 	
 	public static class BreakStat implements Statement {
 		public String toString() { return "break;"; }
-		public String listnm() { return "BREAK"; }
-		public Object[] listme() { return new Object[] {}; }
+		public String asString() { return "BREAK"; }
+		public Object[] asList() { return new Object[] {}; }
 	}
 	
 	public static class ContinueStat implements Statement {
 		public String toString() { return "continue;"; }
-		public String listnm() { return "CONTINUE"; }
-		public Object[] listme() { return new Object[] {}; }
+		public String asString() { return "CONTINUE"; }
+		public Object[] asList() { return new Object[] {}; }
 	}
 	
 	public static class ReturnStat extends ExprStat {
@@ -218,8 +219,8 @@ public interface Statement extends Printable {
 			return list.get(0);
 		}
 		
-		public String listnm() { return "RETURN"; }
-		public Object[] listme() { return new Object[] { value() }; }
+		public String asString() { return "RETURN"; }
+		public Object[] asList() { return new Object[] { value() }; }
 		public String toString() { return "return" + (value() == null ? "":(" " + value())) + ";"; }
 	}
 	
@@ -238,8 +239,8 @@ public interface Statement extends Printable {
 			return list.get(0);
 		}
 		
-		public String listnm() { return toString(); }
-		public Object[] listme() { return list.toArray(); }
+		public String asString() { return toString(); }
+		public Object[] asList() { return list.toArray(); }
 		public String toString() { return Objects.toString(expr()); }
 	}
 	
@@ -265,10 +266,10 @@ public interface Statement extends Printable {
 		}
 		
 		public String toString() { return StringUtils.join("", list); }
-		public String listnm() { return toString(); }
-		public Object[] listme() { return list.toArray(); }
+		public String asString() { return toString(); }
+		public Object[] asList() { return list.toArray(); }
 	}
 	
-	public default String listnm() { return "Undefined(" + this.getClass() + ")"; }
-	public default Object[] listme() { return new Object[] {}; };
+	public default String asString() { return "Undefined(" + this.getClass() + ")"; }
+	public default Object[] asList() { return new Object[] {}; };
 }

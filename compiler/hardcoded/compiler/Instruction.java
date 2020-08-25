@@ -1,31 +1,36 @@
 package hardcoded.compiler;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import hardcoded.compiler.constants.Insts;
+import hardcoded.utils.StringUtils;
+
 public class Instruction {
-	public enum Inst {
-		mov,		// mov		[R0], [R1]				Set R0 to R1
-		write,		// write	[R0], [R1]				Write the value of R1 to the pointer R0
-		read,		// read		[R0], [R1]				Set R0 to value of pointer R1
+	public static class Reg {
+		public int index;
+	}
+	
+	public Instruction next;
+	public Instruction prev;
+	
+	public List<Reg> params = new ArrayList<>();
+	public Insts op;
+	
+	public Instruction() {
 		
-		// Math
-		add,		// add		[R0], [R1], [R2]		Set R0 to (R1 + R2)
-		sub,		// sub		[R0], [R1], [R2]		Set R0 to (R1 - R2)
-		mul,		// mul		[R0], [R1], [R2]		Set R0 to (R1 * R2)
-		div,		// div		[R0], [R1], [R2]		Set R0 to (R1 / R2)
-		
-		xor,		// xor		[R0], [R1], [R2]		Set R0 to (R1 ^ R2)
-		and,		// and		[R0], [R1], [R2]		Set R0 to (R1 & R2)
-		or,			// or		[R0], [R1], [R2]		Set R0 to (R1 | R2)
-		shr,		// shr		[R0], [R1], [R2]		Set R0 to (R1>> R2)
-		shl,		// shl		[R0], [R1], [R2]		Set R0 to (R1<< R2)
-		
-		neg,		// neg		[R0], [R1]				Set R0 to (-R1)
-		nor,		// nor		[R0], [R1]				Set R0 to (~R1)
-		not,		// not		[R0], [R1]				Set R0 to (!R1)
-		
-		// Function
-		call,		// call		[R0], [LABEL]			Call label and set R0 to result
-		ret,		// ret		[R0]					Return R0
-		br,			// br		[LABEL]					Jump to [LABEL]
-		brz,		// brz		[LABEL], [R0]			Branch to label if R0 is zero
+	}
+	
+	public Instruction(Insts op) {
+		this.op = op;
+	}
+	
+	public Insts type() {
+		return op;
+	}
+	
+	@Override
+	public String toString() {
+		return op + " " + StringUtils.join(", ", params);
 	}
 }

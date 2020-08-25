@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Vector;
 
 import hardcoded.compiler.Identifier.VarIdent;
+import hardcoded.compiler.constants.Printable;
 
 public interface Block extends Printable {
 	public default boolean hasElements() {
@@ -27,8 +28,8 @@ public interface Block extends Printable {
 			return list;
 		}
 		
-		public String listnm() { return "null"; }
-		public Object[] listme() { return list.toArray(); }
+		public String asString() { return "null"; }
+		public Object[] asList() { return list.toArray(); }
 	}
 	
 	public static class ClassBlock extends NestedBlock {
@@ -128,8 +129,8 @@ public interface Block extends Printable {
 			return sb.append(");").toString();
 		}
 		
-		public String listnm() { return "function " + name + "[" + var_index + (var_index == 1 ? " variable":" variables") + "]"; }
-		public Object[] listme() { return new Object[] { body }; }
+		public String asString() { return "function " + name + "[" + var_index + (var_index == 1 ? " variable":" variables") + "]"; }
+		public Object[] asList() { return new Object[] { body }; }
 	}
 
 }

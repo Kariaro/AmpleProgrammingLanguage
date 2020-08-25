@@ -42,8 +42,8 @@ public class Variable implements Statement {
 		return type + " " + name + " = " + value() + ";";
 	}
 	
-	public String listnm() { return toString(); }
-	public Object[] listme() {
+	public String asString() { return toString(); }
+	public Object[] asList() {
 		if(isArray) return new Object[] { name, arraySize };
 		if(!isInitialized()) return new Object[] { name };
 		return new Object[] { name, value() };
