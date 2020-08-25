@@ -11,6 +11,7 @@ import java.util.Objects;
 import javax.swing.JPanel;
 
 import hardcoded.compiler.*;
+import hardcoded.compiler.constants.Printable;
 
 /**
  * @author HardCoded
@@ -138,12 +139,12 @@ public final class HC2Visualization extends Visualization {
 			
 			if(object instanceof Printable) {
 				Printable stab = (Printable)object;
-				setContent(stab.listnm());
+				setContent(stab.asString());
 				
-				if(stab.listme().length > 0) {
+				if(stab.asList().length > 0) {
 					offset = 0;
 					
-					for(Object obj : stab.listme()) {
+					for(Object obj : stab.asList()) {
 						// System.out.println("object: " + object.getClass() + ",    [" + obj + "] [" + obj.getClass() + "]");
 						Element e = new Element(this, obj);
 						e.move(offset, 140);

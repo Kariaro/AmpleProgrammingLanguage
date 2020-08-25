@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import hardcoded.compiler.Identifier.IdType;
+import hardcoded.compiler.constants.Printable;
 
 /**
  * A program class that contains blocks
@@ -55,6 +56,6 @@ public class Program implements Printable {
 		return blocks;
 	}
 	
-	public String listnm() { return "PROGRAM"; }
-	public Object[] listme() { return blocks.toArray(); };
+	public String asString() { return "PROGRAM"; }
+	public Object[] asList() { return blocks.toArray(); };
 }

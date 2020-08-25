@@ -3,8 +3,7 @@ package hardcoded.compiler;
 import java.util.Arrays;
 import java.util.List;
 
-import hardcoded.compiler.Expression.AtomExpr;
-import hardcoded.compiler.Expression.ExprType;
+import hardcoded.compiler.Expression.*;
 
 public final class ExpressionParser {
 	/**
@@ -29,15 +28,15 @@ public final class ExpressionParser {
 		return ((AtomExpr)a).isNumber();
 	}
 	
-	private static final List<ExprType> types = Arrays.asList(ExprType.float8, ExprType.float4, ExprType.int8, ExprType.int4, ExprType.int2, ExprType.int1);
-	private static final ExprType nextType(ExprType a, ExprType b) {
+	private static final List<AtomType> types = Arrays.asList(AtomType.float8, AtomType.float4, AtomType.int8, AtomType.int4, AtomType.int2, AtomType.int1);
+	private static final AtomType nextAtom(AtomType a, AtomType b) {
 		int ax = types.indexOf(a);
 		int bx = types.indexOf(b);
 		return types.get(Math.min(ax, bx));
 	}
 	
-	private static final boolean isFloating(ExprType a) {
-		return a == ExprType.float8 || a == ExprType.float4;
+	private static final boolean isFloating(AtomType a) {
+		return a == AtomType.float8 || a == AtomType.float4;
 	}
 	
 	/**
@@ -52,7 +51,7 @@ public final class ExpressionParser {
 	 * @param e1
 	 * @return
 	 */
-	private static final int getType(ExprType e0, ExprType e1) {
+	private static final int getType(AtomType e0, AtomType e1) {
 		boolean a = isFloating(e0);
 		boolean b = isFloating(e1);
 		return (a ? 0:2) + (b ? 0:1);
@@ -69,7 +68,7 @@ public final class ExpressionParser {
 				default: throw new RuntimeException("Invalid index");
 			}
 			
-			return c.convert(nextType(a.atomType, b.atomType));
+			return c.convert(nextAtom(a.atomType, b.atomType));
 		}
 		
 		public AtomExpr o(long a, long b) { throw new UnsupportedOperationException(error()); }
@@ -99,13 +98,6 @@ public final class ExpressionParser {
 		public AtomExpr o(double a, long b) { return new AtomExpr(a + b); }
 		public AtomExpr o(double a, double b) { return new AtomExpr(a + b); }
 	};
-	
-//	private static final BiOpr SUB = new BiOpr() {
-//		public AtomExpr o(long a, long b) { return new AtomExpr(a - b); }
-//		public AtomExpr o(long a, double b) { return new AtomExpr(a - b); }
-//		public AtomExpr o(double a, long b) { return new AtomExpr(a - b); }
-//		public AtomExpr o(double a, double b) { return new AtomExpr(a - b); }
-//	};
 	
 	private static final BiOpr MUL = new BiOpr() {
 		public AtomExpr o(long a, long b) { return new AtomExpr(a * b); }
@@ -220,6 +212,28 @@ public final class ExpressionParser {
 	public static Expression neg(Expression e0) { return isNumber(e0) ? NEG.run((AtomExpr)e0):null; }
 	public static Expression not(Expression e0) { return isNumber(e0) ? NOT.run((AtomExpr)e0):null; }
 	public static Expression nor(Expression e0) { return isNumber(e0) ? NOR.run((AtomExpr)e0):null; }
+
+	public static Expression compute(ExprType type, OpExpr e) {
+		switch(type) {
+			case neg: return ExpressionParser.neg(e.first());
+			case not: return ExpressionParser.not(e.first());
+			
+			case mul: return ExpressionParser.mul(e.first(), e.last());
+			case div: return ExpressionParser.div(e.first(), e.last());
+			
+			case nor: return ExpressionParser.nor(e.first());
+			case xor: return ExpressionParser.xor(e.first(), e.last());
+			case or: return ExpressionParser.or(e.first(), e.last());
+			case and: return ExpressionParser.and(e.first(), e.last());
+			case shr: return ExpressionParser.shr(e.first(), e.last());
+			case shl: return ExpressionParser.shl(e.first(), e.last());
+			
+			case eq: return ExpressionParser.eq(e.first(), e.last());
+			case lte: return ExpressionParser.lte(e.first(), e.last());
+			case lt: return ExpressionParser.lt(e.first(), e.last());
+			default: return null;
+		}
+	}
 	
 	// TODO: Create a check type size function that goes throuh a expression tree and get's the largest type that was added in that tree.
 	// float + double + byte + byte + byte. would give double

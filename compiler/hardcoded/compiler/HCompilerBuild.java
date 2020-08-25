@@ -7,6 +7,8 @@ import hardcoded.compiler.Block.Function;
 import hardcoded.compiler.Identifier.*;
 import hardcoded.compiler.Expression.*;
 import hardcoded.compiler.Statement.*;
+import hardcoded.compiler.constants.*;
+import hardcoded.errors.CompilerException;
 import hardcoded.lexer.Tokenizer;
 import hardcoded.lexer.TokenizerFactory;
 import hardcoded.lexer.TokenizerOld;
@@ -14,97 +16,57 @@ import hardcoded.utils.FileUtils;
 import hardcoded.utils.StringUtils;
 import hardcoded.visualization.HC2Visualization;
 import static hardcoded.compiler.Expression.ExprType.*;
+import static hardcoded.compiler.Expression.AtomType.*;
 
-public class HCompiler2 {
-	private static final Set<String> MODIFIERS;
-	private static final Set<String> KEYWORDS;
-	
-	static {
-		Set<String> modifiers = new HashSet<String>();
-		modifiers.addAll(Arrays.asList("export"));
-		MODIFIERS = Collections.unmodifiableSet(modifiers);
-		
-
-		Set<String> keywords = new HashSet<String>();
-		// lbreak, break out of a branch directly. Jump to end of branch..
-		keywords.addAll(Arrays.asList(
-			"switch", "while", "for", "if",
-			"return", "break", "continue",
-			"case", "default", "asm"
-		));
-		KEYWORDS = Collections.unmodifiableSet(keywords);
-	}
-	
-	private static final boolean isModifier(Sym symbol) {
-		return MODIFIERS.contains(symbol.value());
-	}
-	
-	private static final boolean isKeyword(Sym symbol) {
-		return KEYWORDS.contains(symbol.value());
-	}
-	
-	public static final void main(String[] args) {
-		//int val = 204 ^ 229 * 119 ^ 75 ^ (5) - 163 + 69 + 10 * 30 * 191 | 145 * 139 + 183 * 165 * 248 * 6 & 183 * 243 ^ 11;
-		//System.out.println("val -> " + val);
-		
-		new HCompiler2();
-	}
-	
-	
-	private void addPrimitive(String name, ExprType type, int size, boolean floating) {
-		TYPES.put(name, new PrimitiveType(name, type, size, floating, false));
-	}
-	
-	private void addPrimitive(String name, ExprType type, int size) {
-		TYPES.put(name, new PrimitiveType(name, type, size));
-	}
-	
-	private Map<String, Type> TYPES;
+public class HCompilerBuild {
+	private Map<String, Type> defined_types = new HashMap<>();
 	private Map<String, Expression> GLOBAL;
-	private Map<String, Function> FUNCTIONS; // TODO: Remove
-	public HCompiler2() {
+	private Map<String, Function> FUNCTIONS;
+	public HCompilerBuild() {
 		FUNCTIONS = new HashMap<>();
 		GLOBAL = new HashMap<>();
-		TYPES = new HashMap<>();
 		
-		addPrimitive("void", null, 0);
-		addPrimitive("long", int8, 8);
-		addPrimitive("int", int4, 4);
-		addPrimitive("short", int2, 2);
-		addPrimitive("byte", int1, 1);
-		
-		addPrimitive("char", int1, 1);
-		addPrimitive("bool", int1, 1);
-		
-		addPrimitive("double", float8, 8, true);
-		addPrimitive("float", float4, 4, true);
+		for(Type t : Primitives.getAllTypes()) {
+			defined_types.put(t.name(), t);
+		}
 		
 		try {
 			lexer = TokenizerFactory.loadFromFile(new File("res/project/lexer.lex"));
 			
-			build();
+			String file = "main.hc";
+			// file = "test_syntax.hc";
+			
+			build(file);
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
 	}
 	
 	private File projectPath = new File("res/project/src/");
-	public void build() throws Exception {
+	
+	public void build(String fileName) throws Exception {
 		if(curProgram != null) throw new RuntimeException("Building twice is not allowed.........");
 		curProgram = new Program();
 		
-		importFile(curProgram, "main.hc");
-		doConstantFolding(); // test_syntax
+		importFile(curProgram, fileName);
+		if(hasErrors) {
+			throw new CompilerException("Compiler errors.");
+		}
+			
+		doConstantFolding();
+		createInstructions();
 		
+		/*
 		HC2Visualization hc2 = new HC2Visualization();
 		hc2.show(curProgram);
+		*/
 		
 		for(Block block : curProgram.list()) {
 			if(!(block instanceof Function)) continue;
 			
 			System.out.println("========================================================");
 			Function func = (Function)block;
-			String str = printPretty(func);
+			String str = Utils.printPretty(func);
 			System.out.println(str.replace("\t", "    "));
 		}
 		
@@ -112,53 +74,77 @@ public class HCompiler2 {
 	}
 	
 	private Set<String> importedFiles = new HashSet<>();
+	private boolean hasErrors = false;
 	private Program curProgram;
 	
-	private String printPretty(Function func) {
-		String str = func.toString();
-		StringBuilder sb = new StringBuilder().append(str.substring(0, str.length() - 1));
-		if(func.isPlaceholder()) return sb.append(";").toString();
-		return sb.append(" {").append(printPretty(func.body)).append("\n}").toString();
+	private void createInstructions() {
+		// Create the correct instructions for, 'if', 'while', 'switch', 'for'
+		for(int i = 0; i < curProgram.size(); i++) {
+			Block block = curProgram.get(i);
+			
+			if(!(block instanceof Function)) continue;
+			Function func = (Function)block;
+			
+			Instruction inst = createInstructions(func, func.body);
+			
+			System.out.println("Instructions");
+			int count = 0;
+			while(inst != null) {
+				System.out.println("   [" + (count++) + "] " + inst);
+				inst = inst.next;
+			}
+		}
 	}
 	
-	private String printPretty(Statement stat) {
-		StringBuilder sb = new StringBuilder();
-		if(stat == null) return "?"; // Invalid
-		
-		if(stat instanceof IfStat) {
-			IfStat is = (IfStat)stat;
-			String str = is.toString();
-			sb.append(str.substring(0, str.length() - 1)).append(" {").append(printPretty(is.body())).append("\n}");
-			if(is.elseBody() != null) sb.append(" else {").append(printPretty(is.elseBody())).append("\n}");
-			return sb.toString();
-		}
-		
-		if(stat instanceof WhileStat || stat instanceof ForStat) {
-			NestedStat ns = (NestedStat)stat;
-			String str = ns.toString();
-			return sb.append(str.substring(0, str.length() - 1)).append(" {").append(printPretty(ns.body())).append("\n}").toString();
-		}
+	private Instruction createInstructions(Function func, Statement stat) {
+		Instruction inst = new Instruction();
 		
 		if(stat.hasStatements()) {
-			for(Statement s : stat.getStatements()) {
-				String str = printPretty(s);
-				if(str.startsWith("\n\t")) str = str.substring(2);
-				sb.append("\n\t").append(str.replace("\n", "\n\t"));
+			Instruction group = new Instruction();
+			Instruction point = group;
+			
+			if(stat instanceof NestedStat) {
+				// do nothing...
 			}
 			
-			return sb.toString();
+			if(stat instanceof WhileStat) {
+				WhileStat ws = (WhileStat)stat;
+				
+				// while(x) {}
+				// while:
+				// brz [end], [x]
+				//    ...
+				// br [while]
+				// end:
+			}
+			
+			for(Statement s : stat.getStatements()) {
+				System.out.println(": " + s);
+				Instruction next = createInstructions(func, s);
+				if(next == null) continue;
+				
+				point.next = next;
+				next.prev = point;
+				
+				point = next;
+			}
+			
+			System.out.println("Group Inst");
+			int count = 0;
+			Instruction gi = group;
+			while(gi != null) {
+				System.out.println("   [" + (count++) + "] " + gi);
+				gi = gi.next;
+			}
 		}
 		
-		return "\n\t" + stat.toString();
+//		Utils.execute_for_all_statements(func, (parent, index, function) -> {
+//			System.out.println("[" + index + "] " + parent.get(index));
+//		});
+		
+		return inst;
 	}
 	
-	@FunctionalInterface
-	private interface FoldingFunc {
-		void constantFolding(List<Expression> parent, int index, Function func);
-	}
-	
-	// TODO: Design feature. A break statement can break out of any nested branch. if, switch, while, for
-	//       the keyword is 'lbreak' or 'lbreak <expr>' leaves <expr> branches.
 	private void constantFolding(List<Expression> parent, int index, Function func) {
 		Expression expr = parent.get(index);
 		// System.out.println("Folding: [" + func.name + "], [" + expr + "]");
@@ -221,9 +207,6 @@ public class HCompiler2 {
 								e.list.remove(i);
 								i--;
 							} else {
-								// if(a.atomType == string) throw new RuntimeException("You cannot add string and a number");
-								// TODO: Operator overrides.
-								// TODO: Identifiers.
 								//throw new RuntimeException("You cannot add a non number value");
 							}
 						}
@@ -244,9 +227,7 @@ public class HCompiler2 {
 					if(e.size() == 1) {
 						parent.set(index, e.first());
 					}
-					
-					// int value = (int)e.list.stream().filter(x -> x instanceof NumberExpr).map(x -> (NumberExpr)x).map(x -> x.value).mapToDouble(x -> x.doubleValue()).sum();
-					// System.out.println("value: " + value);
+
 					break;
 				}
 				
@@ -257,12 +238,25 @@ public class HCompiler2 {
 						if(e0 instanceof AtomExpr) {
 							AtomExpr a = (AtomExpr)e0;
 							
-							if(a.isZero()) {
-								for(; i < e.size(); ) {
-									e.list.remove(i);
+							if(a.isNumber()) {
+								if(a.isZero()) {
+									for(; i + 1 < e.size(); ) {
+										e.list.remove(i + 1);
+									}
+								} else {
+									if(i < e.size() - 1) e.list.remove(i--);
 								}
 							}
 						}
+					}
+					
+//					if(e.size() == 1 && (e.first() instanceof AtomExpr)) {
+//						AtomExpr a = (AtomExpr)e.first();
+//						if(a.isNumber()) parent.set(index, new AtomExpr(a.isZero() ? 0:1));
+//					}
+					
+					if(e.size() == 1) {
+						parent.set(index, e.first());
 					}
 					
 					break;
@@ -275,34 +269,40 @@ public class HCompiler2 {
 						if(e0 instanceof AtomExpr) {
 							AtomExpr a = (AtomExpr)e0;
 							
-							if(a.isZero()) {
-								for(; i < e.size(); ) {
-									e.list.remove(i);
+							if(a.isNumber()) {
+								if(!a.isZero()) {
+									for(; i + 1 < e.size(); ) {
+										e.list.remove(i + 1);
+									}
+								} else {
+									if(i < e.size() - 1) e.list.remove(i--);
 								}
 							}
 						}
 					}
 					
+					if(e.size() == 1) {
+						parent.set(index, e.first());
+					}
+//					if(e.size() == 1 && (e.first() instanceof AtomExpr)) {
+//						AtomExpr a = (AtomExpr)e.first();
+//						if(a.isNumber() && !a.isZero()) parent.set(index, new AtomExpr(a.isZero() ? 0:1));
+//					}
+					
 					break;
 				}
 				
-				case neg: { Expression next = ExpressionParser.neg(e.first()); if(next != null) parent.set(index, next); break; }
-				case not: { Expression next = ExpressionParser.not(e.first()); if(next != null) parent.set(index, next); break; }
+				case neg: case not:
+				case mul: case div:
+				case nor: case xor:
+				case shr: case shl:
+				case or: case and:
+				case lt: case lte:
+				case eq: {
+					Expression next = ExpressionParser.compute(e.type, e);
+					if(next != null) parent.set(index, next); break;
+				}
 				
-				case mul: { Expression next = ExpressionParser.mul(e.first(), e.last()); if(next != null) parent.set(index, next); break; }
-				case div: { Expression next = ExpressionParser.div(e.first(), e.last()); if(next != null) parent.set(index, next); break; }
-				
-				
-				case nor: { Expression next = ExpressionParser.nor(e.first()); if(next != null) parent.set(index, next); break; }
-				case xor: { Expression next = ExpressionParser.xor(e.first(), e.last()); if(next != null) parent.set(index, next); break; }
-				case or: { Expression next = ExpressionParser.or(e.first(), e.last()); if(next != null) parent.set(index, next); break; }
-				case and: { Expression next = ExpressionParser.and(e.first(), e.last()); if(next != null) parent.set(index, next); break; }
-				case shr: { Expression next = ExpressionParser.shr(e.first(), e.last()); if(next != null) parent.set(index, next); break; }
-				case shl: { Expression next = ExpressionParser.shl(e.first(), e.last()); if(next != null) parent.set(index, next); break; }
-				
-				case eq: { Expression next = ExpressionParser.eq(e.first(), e.last()); if(next != null) parent.set(index, next); break; }
-				case lt: { Expression next = ExpressionParser.lt(e.first(), e.last()); if(next != null) parent.set(index, next); break; }
-				case lte: { Expression next = ExpressionParser.lte(e.first(), e.last()); if(next != null) parent.set(index, next); break; }
 				
 				default: {
 					
@@ -324,47 +324,50 @@ public class HCompiler2 {
 			if(!(block instanceof Function)) continue;
 			Function func = (Function)block;
 			
-			execute_for_all_expressions(func, (parent, index, function) -> {
-				String bef = "" + parent.get(index);
+			Utils.execute_for_all_expressions(func, (parent, index, function) -> {
+				//String bef = "" + parent.get(index);
 				constantFolding(parent, index, function);
-				System.out.println("[" + index + "] (" + bef + ") -> (" + parent.get(index) + ")");
+				//System.out.println("[" + index + "] (" + bef + ") -> (" + parent.get(index) + ")");
 			});
-		}
-	}
-	
-	private void execute_for_all_expressions(Function func, FoldingFunc fc) {
-		getAllExpressions(func, func.body, fc);
-	}
-	
-	private void getAllExpressions(Function func, Statement stat, FoldingFunc fc) {
-		if(stat.hasStatements()) {
-			for(Statement s : stat.getStatements()) getAllExpressions(func, s, fc);
-		}
-		
-		if(stat instanceof ExprStat) {
-			ExprStat es = (ExprStat)stat;
-			for(int i = 0; i < es.list.size(); i++) {
-				getAllExpressions(func, es.list.get(i), fc);
-				fc.constantFolding(es.list, i, func);
-			}
-		}
-		
-		if(stat instanceof Variable) {
-			Variable var = (Variable)stat;
-			for(int i = 0; i < var.list.size(); i++) {
-				getAllExpressions(func, var.list.get(i), fc);
-				fc.constantFolding(var.list, i, func);
-			}
-		}
-	}
-	
-	private void getAllExpressions(Function func, Expression expr, FoldingFunc fc) {
-		if(expr.hasElements()) {
-			List<Expression> list = expr.getElements();
-			for(int i = 0; i < list.size(); i++) {
-				getAllExpressions(func, list.get(i), fc);
-				fc.constantFolding(list, i, func);
-			}
+			
+			Utils.execute_for_all_statements(func, (parent, index, function) -> {
+				Statement stat = parent.get(index);
+				
+				if(stat instanceof ForStat) {
+					Expression c = ((ForStat)stat).condition();
+					if(c instanceof AtomExpr) {
+						AtomExpr a = (AtomExpr)c;
+						if(a.isNumber() && a.isZero()) parent.set(index, Statement.EMPTY);
+					}
+				}
+				
+				if(stat instanceof WhileStat) {
+					Expression c = ((WhileStat)stat).condition();
+					if(c instanceof AtomExpr) {
+						AtomExpr a = (AtomExpr)c;
+						if(a.isNumber() && a.isZero()) parent.set(index, Statement.EMPTY);
+					}
+				}
+				
+				if(stat instanceof IfStat) {
+					IfStat is = (IfStat)stat;
+					Expression c = is.condition();
+					if(c instanceof AtomExpr) {
+						AtomExpr a = (AtomExpr)c;
+						if(a.isNumber()) {
+							if(a.isZero()) {
+								if(is.elseBody() == null) {
+									parent.set(index, Statement.EMPTY);
+								} else {
+									parent.set(index, is.elseBody());
+								}
+							} else {
+								parent.set(index, is.body());
+							}
+						}
+					}
+				}
+			});
 		}
 	}
 	
@@ -381,12 +384,6 @@ public class HCompiler2 {
 			e.printStackTrace();
 			throwError(symbol, "");
 		}
-		
-//		System.out.println();
-//		System.out.println("Program: '" + program + "'");
-//		for(Function func : program.functions) {
-//			System.out.println("  Function: '" + func + "'");
-//		}
 	}
 	
 	private Function curFunction;
@@ -396,7 +393,7 @@ public class HCompiler2 {
 			symbol.next();
 			
 			String name = symbol.value();
-			if(TYPES.containsKey(name)) throwError(symbol, "Invalid type name. That type name is already defined '" + name + "'");
+			if(defined_types.containsKey(name)) throwError(symbol, "Invalid type name. That type name is already defined '" + name + "'");
 			if(!isValidName(symbol)) throwError(symbol, "Invalid type name. The value '" + name + "' is not a valid type name.");
 			
 			// Define a new type
@@ -404,9 +401,9 @@ public class HCompiler2 {
 			if(!symbol.valueEquals(";")) throwError(symbol, "Invalid type syntax. Expected a semicolon but got '" + symbol + "'");
 			symbol.next();
 			
-			if(TYPES.containsKey(name)) throwError(symbol, "Type is already defined '" + name + "'");
+			if(defined_types.containsKey(name)) throwError(symbol, "Type is already defined '" + name + "'");
 			
-			TYPES.put(name, new Type(name, type.size(), type.isFloating(), type.isSigned()));
+			defined_types.put(name, new Type(name, type.size(), type.isFloating(), type.isSigned()));
 			// System.out.println("#TYPE [" + name + "] as [" + type + "]");
 		} else if(symbol.valueEquals("import")) {
 			if(!symbol.next().groupEquals("STRING")) throwError(symbol, "Invalid import syntax. Expected a string but got '" + symbol + "'.");
@@ -436,9 +433,9 @@ public class HCompiler2 {
 			symbol.next();
 			
 			// System.out.println("#UNSET [" + name + "]");
-			if(TYPES.containsKey(name)) {
-				if(TYPES.get(name) instanceof PrimitiveType) throwError(symbol, "Invalid unset syntax. You cannot unset the primitive type '" + name + "'");
-				TYPES.remove(name);
+			if(defined_types.containsKey(name)) {
+				if(defined_types.get(name) instanceof PrimitiveType) throwError(symbol, "Invalid unset syntax. You cannot unset the primitive type '" + name + "'");
+				defined_types.remove(name);
 			}
 			else if(GLOBAL.containsKey(name)) GLOBAL.remove(name);
 			else; // Trying to remove something that does not exist...
@@ -454,11 +451,6 @@ public class HCompiler2 {
 			} else {
 				func = parseFunction(symbol);
 				if(func == null) break;
-				
-//				System.out.println("  Function: '" + func + "'");
-//				if(!func.isPlaceholder()) {
-//					program.add(func);
-//				}
 			}
 		}
 		
@@ -467,10 +459,10 @@ public class HCompiler2 {
 	
 	private boolean isValidName(Sym symbol) {
 		if(!symbol.groupEquals("IDENTIFIER")) return false;
-		if(TYPES.containsKey(symbol.value())) return false; // Contains all primitives.
+		if(defined_types.containsKey(symbol.value())) return false;
 		if(GLOBAL.containsKey(symbol.value())) return false; // Should only be for globals... 
-		if(isModifier(symbol)) return false;
-		if(isKeyword(symbol)) return false;
+		if(Modifiers.contains(symbol.value())) return false;
+		if(Keywords.contains(symbol.value())) return false;
 		return true;
 	}
 	
@@ -478,7 +470,7 @@ public class HCompiler2 {
 		if(symbol.remaining() < 1) return null;
 		
 		Function func = new Function();
-		if(isModifier(symbol)) func.modifier = createNewModifier(symbol);
+		if(Modifiers.contains(symbol.value())) func.modifier = createNewModifier(symbol);
 		if(!isType(symbol)) throwError(symbol, "Invalid function return type '" + symbol.value() + "'");
 		func.returnType = getTypeFromSymbol(symbol);
 		
@@ -538,7 +530,7 @@ public class HCompiler2 {
 		return func;
 	}
 	
-	private Statement createWhileExpr(Sym symbol) {
+	private Statement makeWhileStatement(Sym symbol) {
 		if(!symbol.next().valueEquals("(")) throwError(symbol, "Invalid while statement definition. Expected open bracket '(' but got '" + symbol.value() + "'");
 		WhileStat stat = new WhileStat();
 		stat.setCondition(parseExpression(symbol.next()));
@@ -547,7 +539,7 @@ public class HCompiler2 {
 		return stat;
 	}
 	
-	private Statement createForStatement(Sym symbol) {
+	private Statement makeForStatement(Sym symbol) {
 		if(!symbol.next().valueEquals("(")) throwError(symbol, "Invalid for statement. Expected open bracket '(' but got '" + symbol.value() + "'");
 		ForStat stat = new ForStat(); {
 			symbol.next();
@@ -564,7 +556,7 @@ public class HCompiler2 {
 		return stat;
 	}
 	
-	private Statement createIfStatement(Sym symbol) {
+	private Statement makeIfStatement(Sym symbol) {
 		if(!symbol.next().valueEquals("(")) throwError(symbol, "Invalid if statement definition. Expected open bracket '(' but got '" + symbol.value() + "'");
 		IfStat stat = new IfStat();
 		stat.setCondition(parseExpression(symbol.next()));
@@ -589,7 +581,6 @@ public class HCompiler2 {
 					if(!var.isInitialized()) {
 						list.list.remove(i--);
 					} else {
-						// FIXME: Replace var with a move expression!!!!!
 						list.list.set(i, new ExprStat(new OpExpr(ExprType.mov, new AtomExpr(ident), var.value())));
 					}
 				}
@@ -600,11 +591,11 @@ public class HCompiler2 {
 		}
 		
 		if(symbol.valueEquals("if")) {
-			Statement stat = createIfStatement(symbol); symbol.resetMarked(); return stat;
+			Statement stat = makeIfStatement(symbol); symbol.resetMarked(); return stat;
 		} else if(symbol.valueEquals("while")) {
-			Statement stat = createWhileExpr(symbol); symbol.resetMarked(); return stat;
+			Statement stat = makeWhileStatement(symbol); symbol.resetMarked(); return stat;
 		} else if(symbol.valueEquals("for")) {
-			Statement stat = createForStatement(symbol); symbol.resetMarked(); return stat;
+			Statement stat = makeForStatement(symbol); symbol.resetMarked(); return stat;
 		}
 		
 		
@@ -661,8 +652,8 @@ public class HCompiler2 {
 					throwError(symbol, "Invalid array variable definition. Expected a integer expression but got '" + expr + "'");
 				} else {
 					AtomExpr number = (AtomExpr)expr;
-					if(!number.isInteger()) throwError(symbol, "Invalid array variable definition. Expected a integer expression. '" + expr + "'");
-					var.arraySize = number.value().intValue();
+					//if(!number.isInteger()) throwError(symbol, "Invalid array variable definition. Expected a integer expression. '" + expr + "'");
+					var.arraySize = number.value().intValue(); // todo.
 				}
 				var.isArray = true;
 				
@@ -714,7 +705,7 @@ public class HCompiler2 {
 			if(symbol.valueEquals("}")) break;
 			
 			Statement s = parseStatement(symbol);
-			if(s == Statement.EMPTY) continue;
+			if(s == Statement.EMPTY || s == null) continue;
 			
 			if(s.hasStatements() && s.getStatements().size() == 0) continue;
 			if(s instanceof StatementList) {
@@ -812,7 +803,7 @@ public class HCompiler2 {
 				// return new TestExpr(ExprType.mov, e13, e14(symbol.next()));
 				if(type == null) return e13;
 				switch(type) {
-					case mod:
+					case mod: case sub:
 					
 					case shl: case shr:
 					case mul: case div:
@@ -906,7 +897,7 @@ public class HCompiler2 {
 					if(symbol.valueEquals("+")) {
 						expr = new OpExpr(add, expr, e3(symbol.next()));
 					} else if(symbol.valueEquals("-")) {
-						expr = new OpExpr(neg, new OpExpr(add, expr, e3(symbol.next())));
+						expr = new OpExpr(add, expr, new OpExpr(neg, e3(symbol.next())));
 					} else return expr;
 				}
 			}
@@ -1131,7 +1122,7 @@ public class HCompiler2 {
 	private boolean acceptModification(Expression expr) {
 		if(expr instanceof AtomExpr) {
 			AtomExpr e = (AtomExpr)expr;
-			return e.type() == ident;
+			return e.atomType() == ident;
 		}
 		
 		if(expr instanceof OpExpr) {
@@ -1143,12 +1134,12 @@ public class HCompiler2 {
 	}
 	
 	private boolean isType(Sym symbol) {
-		return TYPES.containsKey(symbol.value());
+		return defined_types.containsKey(symbol.value());
 	}
 	
 	public Type getTypeFromSymbol(Sym symbol) {
 		if(!isType(symbol)) throwError(symbol, "Invalid type '" + symbol.toString() + "'");
-		Type type = TYPES.get(symbol.value());
+		Type type = defined_types.get(symbol.value());
 		symbol.next();
 		
 		if(symbol.valueEquals("*")) {
@@ -1177,6 +1168,11 @@ public class HCompiler2 {
 		int column = symbol.column();
 		
 		if(!symbol.marked().isEmpty()) symbol.reset();
-		throw new RuntimeException("(line:" + line + " column:" + column + ") " + message);
+		String errorMessage = "(line:" + line + " column:" + column + ") " + message;
+		System.err.println(errorMessage);
+		symbol.next();
+		
+		hasErrors = true;
+		// throw new RuntimeException(errorMessage);
 	}
 }

@@ -1,4 +1,4 @@
-package hardcoded.compiler;
+package hardcoded.errors;
 
 // TODO: Implement for all error codes
 public enum Error {
