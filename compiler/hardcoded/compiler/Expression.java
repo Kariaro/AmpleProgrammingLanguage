@@ -36,10 +36,7 @@ public interface Expression extends Printable {
 		
 		// Compares
 		eq,		// x == y
-		//@Deprecated neq,	// x != y  same as (not(eq(x, y)))
-		//@Deprecated gt,		// x > y
-		//@Deprecated gte,	// x >= y
-
+		
 		lt,		// x < y		SAME as (not(gte(x, y)))
 		lte,	// x <= y		SAME as (not(gt(x, y)))
 		
@@ -61,30 +58,25 @@ public interface Expression extends Printable {
 		loop,	// Looping
 		
 		atom,	// Atom Value
+		cast,	// Cast Type
 		comma,
 		invalid, // Invalid expression type
 	}
 	
-	/** ExprType */
-	public default ExprType type() {
-		return ExprType.invalid;
-	}
+	public ExprType type();
 	
-	public default boolean hasElements() {
-		return false;
-	}
-	
-	public default List<Expression> getElements() {
-		return null;
-	}
+	public boolean hasElements();
+	public List<Expression> getElements();
 	
 	public default Expression first() {
+		if(!hasElements()) return null;
 		List<Expression> list = getElements();
 		if(list == null || list.size() < 1) return null;
 		return list.get(0);
 	}
 	
 	public default Expression last() {
+		if(!hasElements()) return null;
 		List<Expression> list = getElements();
 		if(list == null || list.size() < 1) return null;
 		return list.get(list.size() - 1);
@@ -109,6 +101,27 @@ public interface Expression extends Printable {
 				return false;
 			default: return true;
 		}
+	}
+	
+	/**
+	 * This method checks if the expression is modifying any value.
+	 * 
+	 * @return true if any modifications happen.
+	 */
+	public default boolean hasSideEffects() {
+		// mov can cause side effects
+		// call can cause side effects.
+		ExprType type = type();
+		if(type == ExprType.mov
+		|| type == ExprType.call) return true;
+		
+		if(hasElements()) {
+			for(Expression expr : getElements()) {
+				if(expr.hasSideEffects()) return true;
+			}
+		}
+		
+		return false;
 	}
 	
 	public static class OpExpr implements Expression {
@@ -163,6 +176,8 @@ public interface Expression extends Printable {
 		public Expression value() {
 			return list.get(0);
 		}
+		
+		public ExprType type() { return ExprType.cast; }
 		
 		public boolean hasElements() { return true; }
 		public List<Expression> getElements() { return list; }
@@ -274,6 +289,10 @@ public interface Expression extends Printable {
 			return isNumber() && (!isFloating());
 		}
 		
+		public boolean isString() {
+			return atomType == AtomType.string;
+		}
+		
 		public boolean isZero() {
 			if(!isNumber()) throw new RuntimeException("You cannot check a non number if it is zero.");
 			
@@ -295,9 +314,8 @@ public interface Expression extends Printable {
 			}
 		}
 		
-		public boolean isString() {
-			return atomType == AtomType.string;
-		}
+		public List<Expression> getElements() { return null; }
+		public boolean hasElements() { return false; }
 		
 		public boolean isPure() { return true; }
 		public AtomType atomType() { return atomType; }
@@ -317,16 +335,12 @@ public interface Expression extends Printable {
 				case float8: return Double.toString(f_value) + 'D';
 				case float4: return Float.toString((float)f_value) + 'F';
 				case int8: return Long.toString(i_value) + 'L';
-				case int4: return Integer.toString((int)i_value);
-				case int2: return Short.toString((short)i_value);
-				case int1: return Byte.toString((byte)i_value);
+				case int4: return Integer.toString((int)i_value) + 'i';
+				case int2: return Short.toString((short)i_value) + 's';
+				case int1: return Byte.toString((byte)i_value) + 'b';
 				default: throw new RuntimeException("Invalid atom type '" + atomType + "'");
 			}
 		}
-	}
-	
-	public static boolean isNumber(Expression expr) {
-		return expr instanceof AtomExpr;
 	}
 	
 	public default String asString() { return "Undefined(" + this.getClass() + ")"; }

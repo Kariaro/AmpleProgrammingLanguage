@@ -1,23 +1,12 @@
-package hardcoded.compiler;
+package hardcoded.compiler.expression;
 
 import java.util.Arrays;
 import java.util.List;
 
+import hardcoded.compiler.Expression;
 import hardcoded.compiler.Expression.*;
 
 public final class ExpressionParser {
-	/**
-	 * <float> & <expr> = <ERROR>
-	 * <float> | <expr> = <ERROR>
-	 * <float> ^ <expr> = <ERROR>
-	 * <int> & <float> = <ERROR>
-	 * <int> | <float> = <ERROR>
-	 * <int> ^ <float> = <ERROR>
-	 * @return 
-	 * 
-	 *  
-	 */
-	
 	private static final boolean isNumbers(Expression... array) {
 		for(Expression e : array) if(!isNumber(e)) return false;
 		return true;
