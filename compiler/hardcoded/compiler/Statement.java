@@ -190,6 +190,11 @@ public interface Statement extends Printable {
 			return stat;
 		}
 		
+		public boolean hasElseBody() {
+			Statement stat = elseBody();
+			return stat != null && stat != EMPTY;
+		}
+		
 		public String asString() { return "IF"; }
 		public String toString() { return "if(" + condition() + ");"; } // TODO: Show if else?
 	}

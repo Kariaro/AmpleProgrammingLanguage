@@ -6,8 +6,10 @@ import java.util.*;
 import hardcoded.compiler.Block.Function;
 import hardcoded.compiler.Identifier.*;
 import hardcoded.compiler.Expression.*;
+import hardcoded.compiler.Instruction.*;
 import hardcoded.compiler.Statement.*;
 import hardcoded.compiler.constants.*;
+import hardcoded.compiler.expression.ExpressionParser;
 import hardcoded.errors.CompilerException;
 import hardcoded.lexer.Tokenizer;
 import hardcoded.lexer.TokenizerFactory;
@@ -85,7 +87,7 @@ public class HCompilerBuild {
 			if(!(block instanceof Function)) continue;
 			Function func = (Function)block;
 			
-			Instruction inst = createInstructions(func, func.body);
+			Instruction inst = createInstructions(func, func.body).first();
 			
 			System.out.println("Instructions");
 			int count = 0;
@@ -96,53 +98,134 @@ public class HCompilerBuild {
 		}
 	}
 	
-	private Instruction createInstructions(Function func, Statement stat) {
-		Instruction inst = new Instruction();
+	private Instruction createInstructions(Function func, Expression expr) {
+		Instruction inst = new Instruction(Insts.nop, new ObjectReg(expr.toString()));
 		
-		if(stat.hasStatements()) {
-			Instruction group = new Instruction();
-			Instruction point = group;
-			
-			if(stat instanceof NestedStat) {
-				// do nothing...
-			}
-			
-			if(stat instanceof WhileStat) {
-				WhileStat ws = (WhileStat)stat;
-				
-				// while(x) {}
-				// while:
-				// brz [end], [x]
-				//    ...
-				// br [while]
-				// end:
-			}
-			
-			for(Statement s : stat.getStatements()) {
-				System.out.println(": " + s);
-				Instruction next = createInstructions(func, s);
-				if(next == null) continue;
-				
-				point.next = next;
-				next.prev = point;
-				
-				point = next;
-			}
-			
-			System.out.println("Group Inst");
-			int count = 0;
-			Instruction gi = group;
-			while(gi != null) {
-				System.out.println("   [" + (count++) + "] " + gi);
-				gi = gi.next;
+		if(expr.hasElements()) {
+			// TODO: Check for a the element that is not pure and recurse it. 
+			for(Expression e : expr.getElements()) {
+				inst = inst.append(createInstructions(func, e));
 			}
 		}
+		
+		return inst.last();
+	}
+	
+	private Instruction createIfInstructions(Function func, IfStat stat) {
+		Instruction inst = new Instruction();
+		
+		Expression condition = stat.condition();
+		if(condition.hasSideEffects()) {
+			// TODO:
+		}
+		
+		Label label_end = new Label("end");
+		
+		if(stat.hasElseBody()) {
+			// ============================== //
+			// if(x) { ... } else { ... }
+			
+			// brz [else] [x]				Branch to [else] if [x] is zero
+			//    ...
+			// br [end]						Branch to [end]
+			// else:
+			//    ...
+			// end:
+			
+			Label label_else = new Label("else");
+			
+			inst = inst.append(new Instruction(Insts.brz, label_else));
+			inst = inst.append(createInstructions(func, stat.body()));
+			inst = inst.append(new Instruction(Insts.br, label_end));
+			inst = inst.append(new Instruction(Insts.label, label_else));
+			inst = inst.append(createInstructions(func, stat.elseBody()));
+			inst = inst.append(new Instruction(Insts.label, label_end));
+		} else {
+			// ============================== //
+			// if(x) { ... }
+			
+			// brz [end] [x]				Branch to [end] if [x] is zero
+			//    ...
+			// end:
+			
+			inst = inst.append(new Instruction(Insts.brz, label_end));
+			inst = inst.append(createInstructions(func, stat.body()));
+			inst = inst.append(new Instruction(Insts.label, label_end));
+		}
+		
+		// 
+		return inst.last();
+	}
+	
+	private Instruction createWhileInstructions(Function func, WhileStat stat) {
+		Instruction inst = new Instruction();
+		
+		Expression condition = stat.condition();
+		if(condition.hasSideEffects()) {
+			// TODO:
+		}
+		
+		
+		// ============================== //
+		// while(x) { ... }
+		
+		// next:
+		//   ; if x has side effects evaluate x here!
+		// brz [end] x					Branch to [end] if x is zero
+		// loop:
+		//   ...
+		//   ; if x has side effects jump to next...
+		//   br [loop]
+		// end:
+		
+		Label label_end = new Label("end");
+		Label label_next = new Label("next");
+		Label label_loop = new Label("loop");
+
+		inst = inst.append(new Instruction(Insts.label, label_next));
+		inst = inst.append(createInstructions(func, stat.condition())); // Evaluate x only when there are side effects...
+		inst = inst.append(new Instruction(Insts.brz, label_end, new ObjectReg(stat.condition())));
+		inst = inst.append(new Instruction(Insts.label, label_loop));
+		inst = inst.append(createInstructions(func, stat.body()));
+		inst = inst.append(new Instruction(Insts.br, label_loop));
+		inst = inst.append(new Instruction(Insts.label, label_end));
+		
+		return inst.last();
+	}
+	
+	private Instruction createInstructions(Function func, Statement stat) {
+		if(stat == null || stat == Statement.EMPTY) return null;
+		Instruction inst = new Instruction(Insts.nop, new ObjectReg(stat.toString()));
+		
+		if(stat instanceof IfStat) {
+			inst = inst.append(createIfInstructions(func, (IfStat)stat));
+		} else if(stat instanceof WhileStat) {
+			inst = inst.append(createWhileInstructions(func, (WhileStat)stat));
+		} else if(stat instanceof ExprStat) {
+			inst = inst.append(createInstructions(func, ((ExprStat)stat).expr()));
+		} else {
+//			else if(stat instanceof NestedStat) {
+//				// TODO: ???
+//			} 
+			if(stat.hasStatements()) {
+				Instruction group = inst;
+				Instruction point = group;
+				
+				
+				
+				for(Statement s : stat.getStatements()) {
+					point = point.append(createInstructions(func, s));
+				}
+			}
+		}
+		
+		
 		
 //		Utils.execute_for_all_statements(func, (parent, index, function) -> {
 //			System.out.println("[" + index + "] " + parent.get(index));
 //		});
 		
-		return inst;
+		return inst.last();
 	}
 	
 	private void constantFolding(List<Expression> parent, int index, Function func) {
@@ -250,15 +333,7 @@ public class HCompilerBuild {
 						}
 					}
 					
-//					if(e.size() == 1 && (e.first() instanceof AtomExpr)) {
-//						AtomExpr a = (AtomExpr)e.first();
-//						if(a.isNumber()) parent.set(index, new AtomExpr(a.isZero() ? 0:1));
-//					}
-					
-					if(e.size() == 1) {
-						parent.set(index, e.first());
-					}
-					
+					if(e.size() == 1) parent.set(index, e.first());
 					break;
 				}
 				
@@ -281,14 +356,7 @@ public class HCompilerBuild {
 						}
 					}
 					
-					if(e.size() == 1) {
-						parent.set(index, e.first());
-					}
-//					if(e.size() == 1 && (e.first() instanceof AtomExpr)) {
-//						AtomExpr a = (AtomExpr)e.first();
-//						if(a.isNumber() && !a.isZero()) parent.set(index, new AtomExpr(a.isZero() ? 0:1));
-//					}
-					
+					if(e.size() == 1) parent.set(index, e.first());
 					break;
 				}
 				

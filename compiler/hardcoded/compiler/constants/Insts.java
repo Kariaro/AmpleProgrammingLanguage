@@ -33,5 +33,6 @@ public enum Insts {
 	br,			// br		[LABEL]					Jump to [LABEL]
 	brz,		// brz		[LABEL], [R0]			Branch to label if R0 is zero
 	
+	nop,		// nop								No operation
 	label,		// label	?
 }
