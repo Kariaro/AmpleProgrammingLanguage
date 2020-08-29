@@ -7,21 +7,19 @@ import hardcoded.utils.StringUtils;
 
 public interface Expression extends Printable {
 	public static enum AtomType {
-		float8, float4,
 		int8, int4, int2, int1,
-		string, ident,
+		string,
+		ident,
 	}
 	
 	public static enum ExprType {
 		// Math
 		add,	// x + y
-		
-		@Deprecated
 		sub,	// x - y
+		
 		div,	// x / y
 		mul,	// x * y
-		
-		mod,	// x % y     (If removed it will make optimization harder)
+		mod,	// x % y
 		
 		xor,	// x ^ y
 		and,	// x & y
@@ -36,9 +34,12 @@ public interface Expression extends Printable {
 		
 		// Compares
 		eq,		// x == y
+		neq,	// x != y
 		
-		lt,		// x < y		SAME as (not(gte(x, y)))
-		lte,	// x <= y		SAME as (not(gt(x, y)))
+		gt,		// x > y
+		gte,	// x >= y
+		lt,		// x < y
+		lte,	// x <= y
 		
 		cor,	// x || y
 		cand,	// x && y
@@ -64,22 +65,20 @@ public interface Expression extends Printable {
 	}
 	
 	public ExprType type();
-	
 	public boolean hasElements();
 	public List<Expression> getElements();
 	
+	public Expression get(int index);
+	public int size();
+	
 	public default Expression first() {
-		if(!hasElements()) return null;
-		List<Expression> list = getElements();
-		if(list == null || list.size() < 1) return null;
-		return list.get(0);
+		if(!hasElements() || size() < 1) return null;
+		return getElements().get(0);
 	}
 	
 	public default Expression last() {
-		if(!hasElements()) return null;
-		List<Expression> list = getElements();
-		if(list == null || list.size() < 1) return null;
-		return list.get(list.size() - 1);
+		if(!hasElements() || size() < 1) return null;
+		return getElements().get(size() - 1);
 	}
 	
 	/** This is true if the expression can be reduced while compiling. */
@@ -109,8 +108,6 @@ public interface Expression extends Printable {
 	 * @return true if any modifications happen.
 	 */
 	public default boolean hasSideEffects() {
-		// mov can cause side effects
-		// call can cause side effects.
 		ExprType type = type();
 		if(type == ExprType.mov
 		|| type == ExprType.call) return true;
@@ -181,6 +178,8 @@ public interface Expression extends Printable {
 		
 		public boolean hasElements() { return true; }
 		public List<Expression> getElements() { return list; }
+		public Expression get(int index) { return null; }
+		public int size() { return list.size(); }
 		
 		public String toString() { return "(" + type.type() + ")" + value(); }
 		public String asString() { return "CAST"; }
@@ -192,16 +191,7 @@ public interface Expression extends Printable {
 		
 		public Identifier d_value; // ident
 		public String s_value; // string
-		public double f_value; // float8, float4
 		public long i_value;  // int8, int4, int2, int1
-		
-		public AtomExpr(double value) {
-			this(value, AtomType.float8);
-		}
-		
-		public AtomExpr(float value) {
-			this(value, AtomType.float4);
-		}
 		
 		public AtomExpr(long value) {
 			this(value, AtomType.int8);
@@ -237,66 +227,41 @@ public interface Expression extends Printable {
 			this.atomType = type;
 			
 			switch(type) {
-				case string: { s_value = value.toString(); break; }
-				case ident: { d_value = (Identifier)value; break; }
+				case string: s_value = value.toString(); break;
+				case ident: d_value = (Identifier)value; break;
 				
-				case float4:
-				case float8: { f_value = ((Number)value).doubleValue(); break; }
-				
-				case int4:
-				case int2:
 				case int1:
-				case int8: { i_value = ((Number)value).longValue(); break; }
+				case int2:
+				case int4:
+				case int8: i_value = ((Number)value).longValue(); break;
 				default: throw new RuntimeException("Invalid atom type '" + type + "'");
 			}
 		}
 		
 		public boolean isNumber() {
-			return isFloating() ||
-				atomType == AtomType.int8 ||
-				atomType == AtomType.int4 ||
-				atomType == AtomType.int2 ||
-				atomType == AtomType.int1;
-		}
-		
-		public AtomExpr convert(AtomType type) {
-			if(!isNumber()) return null; // Invalid
-			
-			if(isFloating()) {
-				if(type == AtomType.float8) return new AtomExpr((double)f_value);
-				if(type == AtomType.float4) return new AtomExpr((float)f_value);
-				if(type == AtomType.int8) return new AtomExpr((long)f_value);
-				if(type == AtomType.int4) return new AtomExpr((int)f_value);
-				if(type == AtomType.int2) return new AtomExpr((short)f_value);
-				if(type == AtomType.int1) return new AtomExpr((byte)f_value);
-			} else {
-				if(type == AtomType.float8) return new AtomExpr((double)i_value);
-				if(type == AtomType.float4) return new AtomExpr((float)i_value);
-				if(type == AtomType.int8) return new AtomExpr((long)i_value);
-				if(type == AtomType.int4) return new AtomExpr((int)i_value);
-				if(type == AtomType.int2) return new AtomExpr((short)i_value);
-				if(type == AtomType.int1) return new AtomExpr((byte)i_value);
-			}
-			
-			throw new RuntimeException("Invalid type cast '" + type + "'");
-		}
-		
-		public boolean isFloating() {
-			return atomType == AtomType.float8 || atomType == AtomType.float4;
-		}
-		
-		public boolean isInteger() {
-			return isNumber() && (!isFloating());
+			return atomType == AtomType.int8 ||
+				   atomType == AtomType.int4 ||
+				   atomType == AtomType.int2 ||
+				   atomType == AtomType.int1;
 		}
 		
 		public boolean isString() {
 			return atomType == AtomType.string;
 		}
 		
+		public AtomExpr convert(AtomType type) {
+			if(!isNumber()) return null; // Invalid
+			
+			if(type == AtomType.int8) return new AtomExpr((long)i_value);
+			if(type == AtomType.int4) return new AtomExpr((int)i_value);
+			if(type == AtomType.int2) return new AtomExpr((short)i_value);
+			if(type == AtomType.int1) return new AtomExpr((byte)i_value);
+			
+			throw new RuntimeException("Invalid type cast '" + type + "'");
+		}
+		
 		public boolean isZero() {
 			if(!isNumber()) throw new RuntimeException("You cannot check a non number if it is zero.");
-			
-			if(isFloating()) return Double.doubleToRawLongBits(f_value) == 0;
 			return i_value == 0;
 		}
 		
@@ -304,8 +269,6 @@ public interface Expression extends Printable {
 			if(!isNumber()) throw new RuntimeException("You cannot check a non number if it is zero.");
 			
 			switch(atomType) {
-				case float8: return Double.compare(f_value, 1D) == 0;
-				case float4: return Float.compare((float)f_value, 1F) == 0;
 				case int8: return i_value == 1;
 				case int4: return i_value == 1;
 				case int2: return i_value == 1;
@@ -316,24 +279,18 @@ public interface Expression extends Printable {
 		
 		public List<Expression> getElements() { return null; }
 		public boolean hasElements() { return false; }
+		public int size() { return 0; }
+		public Expression get(int index) { return null; }
 		
 		public boolean isPure() { return true; }
 		public AtomType atomType() { return atomType; }
 		public ExprType type() { return ExprType.atom; }
 		
-		public Number value() {
-			if(isFloating()) return f_value;
-			return i_value;
-		}
-		
 		public String asString() { return toString() + ":" + atomType(); }
-		
 		public String toString() {
 			switch(atomType) {
 				case string: return '\"' + s_value + '\"';
 				case ident: return d_value.name();
-				case float8: return Double.toString(f_value) + 'D';
-				case float4: return Float.toString((float)f_value) + 'F';
 				case int8: return Long.toString(i_value) + 'L';
 				case int4: return Integer.toString((int)i_value) + 'i';
 				case int2: return Short.toString((short)i_value) + 's';

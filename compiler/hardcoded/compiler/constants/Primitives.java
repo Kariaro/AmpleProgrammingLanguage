@@ -19,8 +19,8 @@ public final class Primitives {
 	
 	private static final Set<Type> PRIMITIVE;
 	public static final Type VOID = new PrimitiveType("void", null, 0);
-	public static final Type DOUBLE = new PrimitiveType("double", AtomType.float8, 8, true, true);
-	public static final Type FLOAT = new PrimitiveType("float", AtomType.float4, 4, true, true);
+	// public static final Type DOUBLE = new PrimitiveType("double", AtomType.int8, 8, true, true);
+	// public static final Type FLOAT = new PrimitiveType("float", AtomType.int4, 4, true, true);
 	public static final Type LONG = new PrimitiveType("long", AtomType.int8, 8);
 	public static final Type INT = new PrimitiveType("int", AtomType.int4, 4);
 	public static final Type SHORT = new PrimitiveType("short", AtomType.int2, 2);
@@ -31,8 +31,8 @@ public final class Primitives {
 	static {
 		Set<Type> types = new HashSet<Type>();
 		types.add(VOID);
-		types.add(DOUBLE);
-		types.add(FLOAT);
+		// types.add(DOUBLE);
+		// types.add(FLOAT);
 		types.add(LONG);
 		types.add(INT);
 		types.add(SHORT);

@@ -8,13 +8,8 @@ import hardcoded.compiler.Identifier.VarIdent;
 import hardcoded.compiler.constants.Printable;
 
 public interface Block extends Printable {
-	public default boolean hasElements() {
-		return false;
-	}
-	
-	public default List<Statement> getElements() {
-		return null;
-	}
+	public boolean hasElements();
+	public List<Statement> getElements();
 	
 	public static class NestedBlock implements Block {
 		public List<Statement> list = new ArrayList<>();
@@ -37,6 +32,8 @@ public interface Block extends Printable {
 		// TODO: Constructor
 		// TODO: Methods
 		// TODO: Operator overrides.
+		
+		
 	}
 	
 	public static class Function implements Block {
@@ -66,7 +63,8 @@ public interface Block extends Printable {
 				return ident;
 			}
 			
-			return null; // TODO: Error?
+			// TODO: Error?
+			return null;
 		}
 		
 		public boolean hasIdentifier(String name) {
@@ -128,6 +126,9 @@ public interface Block extends Printable {
 			}
 			return sb.append(");").toString();
 		}
+		
+		public boolean hasElements() { return false; }
+		public List<Statement> getElements() { return null; }
 		
 		public String asString() { return "function " + name + "[" + var_index + (var_index == 1 ? " variable":" variables") + "]"; }
 		public Object[] asList() { return new Object[] { body }; }

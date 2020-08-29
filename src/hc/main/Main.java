@@ -16,7 +16,6 @@ import hardcoded.parser.GLRParserGenerator;
 import hardcoded.tree.ParseTree;
 import hardcoded.utils.FileUtils;
 import hardcoded.visualization.PTVisualization;
-import hc.compiler.HCompiler;
 
 //https://www.cs.ru.ac.za/compilers/pdfvers.pdf
 //http://www.orcca.on.ca/~watt/home/courses/2007-08/cs447a/notes/LR1%20Parsing%20Tables%20Example.pdf

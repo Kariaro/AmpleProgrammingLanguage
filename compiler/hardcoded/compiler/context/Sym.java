@@ -1,4 +1,4 @@
-package hardcoded.compiler;
+package hardcoded.compiler.context;
 
 import java.util.LinkedList;
 import java.util.Objects;
@@ -16,6 +16,10 @@ public class Sym {
 	
 	public LinkedList<Token> marked() {
 		return marked;
+	}
+	
+	public int fileOffset() {
+		return token.fileOffset();
 	}
 	
 	public int remaining() {
@@ -74,7 +78,7 @@ public class Sym {
 	}
 	
 	public String group() {
-		return token.getGroup();
+		return token.group();
 	}
 	
 	public boolean valueEquals(String string) {
@@ -93,11 +97,11 @@ public class Sym {
 	}
 	
 	public int line() {
-		return token.getLineIndex();
+		return token.line();
 	}
 	
 	public int column() {
-		return token.getColumnIndex();
+		return token.column();
 	}
 	
 	@Override
