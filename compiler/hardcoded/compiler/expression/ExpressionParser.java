@@ -17,89 +17,42 @@ public final class ExpressionParser {
 		return ((AtomExpr)a).isNumber();
 	}
 	
-	private static final List<AtomType> types = Arrays.asList(AtomType.float8, AtomType.float4, AtomType.int8, AtomType.int4, AtomType.int2, AtomType.int1);
+	private static final List<AtomType> types = Arrays.asList(AtomType.int8, AtomType.int4, AtomType.int2, AtomType.int1);
 	private static final AtomType nextAtom(AtomType a, AtomType b) {
 		int ax = types.indexOf(a);
 		int bx = types.indexOf(b);
 		return types.get(Math.min(ax, bx));
 	}
 	
-	private static final boolean isFloating(AtomType a) {
-		return a == AtomType.float8 || a == AtomType.float4;
-	}
-	
-	/**
-	 *<pre>
-	 * 0: float float
-	 * 1: float int
-	 * 2: int   float
-	 * 3: int   int
-	 *</pre>
-	 * 
-	 * @param e0
-	 * @param e1
-	 * @return
-	 */
-	private static final int getType(AtomType e0, AtomType e1) {
-		boolean a = isFloating(e0);
-		boolean b = isFloating(e1);
-		return (a ? 0:2) + (b ? 0:1);
-	}
-	
 	private static abstract class BiOpr {
 		public AtomExpr run(AtomExpr a, AtomExpr b) {
-			AtomExpr c = null;
-			switch(getType(a.atomType, b.atomType)) {
-				case 0: c = o(a.f_value, b.f_value); break;
-				case 1: c = o(a.f_value, b.i_value); break;
-				case 2: c = o(a.i_value, b.f_value); break;
-				case 3: c = o(a.i_value, b.i_value); break;
-				default: throw new RuntimeException("Invalid index");
-			}
-			
-			return c.convert(nextAtom(a.atomType, b.atomType));
+			return o(a.i_value, b.i_value).convert(nextAtom(a.atomType, b.atomType));
 		}
 		
 		public AtomExpr o(long a, long b) { throw new UnsupportedOperationException(error()); }
-		public AtomExpr o(long a, double b) { throw new UnsupportedOperationException(error()); }
-		public AtomExpr o(double a, long b) { throw new UnsupportedOperationException(error()); }
-		public AtomExpr o(double a, double b) { throw new UnsupportedOperationException(error()); }
 		public String error() { return "Invalid operation"; }
 	 }
 	
 	private static abstract class UnOpr {
-		public AtomExpr run(AtomExpr a) {
-			if(isFloating(a.atomType)) {
-				return o(a.f_value).convert(a.atomType);
-			} else {
-				return o(a.i_value).convert(a.atomType);
-			}
-		}
-		
+		public AtomExpr run(AtomExpr a) { return o(a.i_value).convert(a.atomType); }
 		public AtomExpr o(long a) { throw new UnsupportedOperationException(error()); }
-		public AtomExpr o(double a) { throw new UnsupportedOperationException(error()); }
 		public String error() { return "Invalid operation"; }
 	 }
 	
 	private static final BiOpr ADD = new BiOpr() {
 		public AtomExpr o(long a, long b) { return new AtomExpr(a + b); }
-		public AtomExpr o(long a, double b) { return new AtomExpr(a + b); }
-		public AtomExpr o(double a, long b) { return new AtomExpr(a + b); }
-		public AtomExpr o(double a, double b) { return new AtomExpr(a + b); }
+	};
+	
+	private static final BiOpr SUB = new BiOpr() {
+		public AtomExpr o(long a, long b) { return new AtomExpr(a - b); }
 	};
 	
 	private static final BiOpr MUL = new BiOpr() {
 		public AtomExpr o(long a, long b) { return new AtomExpr(a * b); }
-		public AtomExpr o(long a, double b) { return new AtomExpr(a * b); }
-		public AtomExpr o(double a, long b) { return new AtomExpr(a * b); }
-		public AtomExpr o(double a, double b) { return new AtomExpr(a * b); }
 	};
 	
 	private static final BiOpr DIV = new BiOpr() {
 		public AtomExpr o(long a, long b) { return new AtomExpr(a / b); }
-		public AtomExpr o(long a, double b) { return new AtomExpr(a / b); }
-		public AtomExpr o(double a, long b) { return new AtomExpr(a / b); }
-		public AtomExpr o(double a, double b) { return new AtomExpr(a / b); }
 	};
 	
 	
@@ -110,57 +63,50 @@ public final class ExpressionParser {
 	
 	private static final BiOpr AND = new BiOpr() {
 		public AtomExpr o(long a, long b) { return new AtomExpr(a & b); }
-		public String error() { return "AND is not allowed for float values."; }
 	};
 	
 	private static final BiOpr OR = new BiOpr() {
 		public AtomExpr o(long a, long b) { return new AtomExpr(a | b); }
-		public String error() { return "OR is not allowed for float values."; }
 	};
 	
 	private static final BiOpr SHR = new BiOpr() {
 		public AtomExpr o(long a, long b) { return new AtomExpr(a >>> b); }
-		public String error() { return "SHR is not allowed for float values."; }
 	};
 	
 	private static final BiOpr SHL = new BiOpr() {
 		public AtomExpr o(long a, long b) { return new AtomExpr(a << b); }
-		public String error() { return "SHL is not allowed for float values."; }
 	};
 	
 	private static final BiOpr EQ = new BiOpr() {
 		public AtomExpr o(long a, long b) { return new AtomExpr(a == b ? 1:0); }
-		public AtomExpr o(long a, double b) { return new AtomExpr(a == b ? 1:0); }
-		public AtomExpr o(double a, long b) { return new AtomExpr(a == b ? 1:0); }
-		public AtomExpr o(double a, double b) { return new AtomExpr(a == b ? 1:0); }
+	};
+	
+	private static final BiOpr NEQ = new BiOpr() {
+		public AtomExpr o(long a, long b) { return new AtomExpr(a != b ? 1:0); }
 	};
 	
 	private static final BiOpr LT = new BiOpr() {
 		public AtomExpr o(long a, long b) { return new AtomExpr(a < b ? 1:0); }
-		public AtomExpr o(long a, double b) { return new AtomExpr(a < b ? 1:0); }
-		public AtomExpr o(double a, long b) { return new AtomExpr(a < b ? 1:0); }
-		public AtomExpr o(double a, double b) { return new AtomExpr(a < b ? 1:0); }
 	};
 	
 	private static final BiOpr LTE = new BiOpr() {
 		public AtomExpr o(long a, long b) { return new AtomExpr(a <= b ? 1:0); }
-		public AtomExpr o(long a, double b) { return new AtomExpr(a <= b ? 1:0); }
-		public AtomExpr o(double a, long b) { return new AtomExpr(a <= b ? 1:0); }
-		public AtomExpr o(double a, double b) { return new AtomExpr(a <= b ? 1:0); }
+	};
+	
+	private static final BiOpr GT = new BiOpr() {
+		public AtomExpr o(long a, long b) { return new AtomExpr(a > b ? 1:0); }
+	};
+	
+	private static final BiOpr GTE = new BiOpr() {
+		public AtomExpr o(long a, long b) { return new AtomExpr(a >= b ? 1:0); }
 	};
 	
 	private static final BiOpr CAND = new BiOpr() {
 		public AtomExpr o(long a, long b) { return new AtomExpr(((a != 0) && (b != 0)) ? 1:0); }
-		public AtomExpr o(long a, double b) { return new AtomExpr(((a != 0) && (b != 0)) ? 1:0); }
-		public AtomExpr o(double a, long b) { return new AtomExpr(((a != 0) && (b != 0)) ? 1:0); }
-		public AtomExpr o(double a, double b) { return new AtomExpr(((a != 0) && (b != 0)) ? 1:0); }
 	};
 	
 	private static final BiOpr COR = new BiOpr() {
 		public AtomExpr o(long a, long b) { return new AtomExpr(((a != 0) || (b != 0)) ? 1:0); }
-		public AtomExpr o(long a, double b) { return new AtomExpr(((a != 0) || (b != 0)) ? 1:0); }
-		public AtomExpr o(double a, long b) { return new AtomExpr(((a != 0) || (b != 0)) ? 1:0); }
-		public AtomExpr o(double a, double b) { return new AtomExpr(((a != 0) || (b != 0)) ? 1:0); }
 	};
 	
 	
@@ -172,60 +118,72 @@ public final class ExpressionParser {
 	
 	private static final UnOpr NOT = new UnOpr() {
 		public AtomExpr o(long a) { return new AtomExpr(a == 0 ? 1:0); }
-		public AtomExpr o(double a) { return new AtomExpr(Double.doubleToLongBits(a) == 0 ? 1:0); }
 	};
 	
 	private static final UnOpr NEG = new UnOpr() {
 		public AtomExpr o(long a) { return new AtomExpr(-a); }
-		public AtomExpr o(double a) { return new AtomExpr(-a); }
 	};
 	
-	public static Expression add(Expression e0, Expression e1) { return isNumbers(e0, e1) ? ADD.run((AtomExpr)e0, (AtomExpr)e1):null; }
-	public static Expression mul(Expression e0, Expression e1) { return isNumbers(e0, e1) ? MUL.run((AtomExpr)e0, (AtomExpr)e1):null; }
-	public static Expression div(Expression e0, Expression e1) { return isNumbers(e0, e1) ? DIV.run((AtomExpr)e0, (AtomExpr)e1):null; }
+	public static Expression add(AtomExpr a, AtomExpr b) { return ADD.run(a, b); }
+	public static Expression mul(AtomExpr a, AtomExpr b) { return MUL.run(a, b); }
+	public static Expression div(AtomExpr a, AtomExpr b) { return DIV.run(a, b); }
 	
-	public static Expression xor(Expression e0, Expression e1) { return isNumbers(e0, e1) ? XOR.run((AtomExpr)e0, (AtomExpr)e1):null; }
-	public static Expression or(Expression e0, Expression e1) { return isNumbers(e0, e1) ? OR.run((AtomExpr)e0, (AtomExpr)e1):null; }
-	public static Expression and(Expression e0, Expression e1) { return isNumbers(e0, e1) ? AND.run((AtomExpr)e0, (AtomExpr)e1):null; }
-	public static Expression shr(Expression e0, Expression e1) { return isNumbers(e0, e1) ? SHR.run((AtomExpr)e0, (AtomExpr)e1):null; }
-	public static Expression shl(Expression e0, Expression e1) { return isNumbers(e0, e1) ? SHL.run((AtomExpr)e0, (AtomExpr)e1):null; }
+	public static Expression xor(AtomExpr a, AtomExpr b) { return XOR.run(a, b); }
+	public static Expression or(AtomExpr a, AtomExpr b) { return OR.run(a, b); }
+	public static Expression and(AtomExpr a, AtomExpr b) { return AND.run(a, b); }
+	public static Expression shr(AtomExpr a, AtomExpr b) { return SHR.run(a, b); }
+	public static Expression shl(AtomExpr a, AtomExpr b) { return SHL.run(a, b); }
 	
-	public static Expression lt(Expression e0, Expression e1) { return isNumbers(e0, e1) ? LT.run((AtomExpr)e0, (AtomExpr)e1):null; }
-	public static Expression lte(Expression e0, Expression e1) { return isNumbers(e0, e1) ? LTE.run((AtomExpr)e0, (AtomExpr)e1):null; }
-	public static Expression eq(Expression e0, Expression e1) { return isNumbers(e0, e1) ? EQ.run((AtomExpr)e0, (AtomExpr)e1):null; }
+	public static Expression lt(AtomExpr a, AtomExpr b) { return LT.run(a, b); }
+	public static Expression lte(AtomExpr a, AtomExpr b) { return LTE.run(a, b); }
+	public static Expression gt(AtomExpr a, AtomExpr b) { return GT.run(a, b); }
+	public static Expression gte(AtomExpr a, AtomExpr b) { return GTE.run(a, b); }
+	public static Expression eq(AtomExpr a, AtomExpr b) { return EQ.run(a, b); }
+	public static Expression neq(AtomExpr a, AtomExpr b) { return NEQ.run(a, b); }
 	
 
-	public static Expression cand(Expression e0, Expression e1) { return isNumbers(e0, e1) ? CAND.run((AtomExpr)e0, (AtomExpr)e1):null; }
-	public static Expression cor(Expression e0, Expression e1) { return isNumbers(e0, e1) ? COR.run((AtomExpr)e0, (AtomExpr)e1):null; }
+	public static Expression cand(AtomExpr a, AtomExpr b) { return CAND.run(a, b); }
+	public static Expression cor(AtomExpr a, AtomExpr b) { return COR.run(a, b); }
 	
-	public static Expression neg(Expression e0) { return isNumber(e0) ? NEG.run((AtomExpr)e0):null; }
-	public static Expression not(Expression e0) { return isNumber(e0) ? NOT.run((AtomExpr)e0):null; }
-	public static Expression nor(Expression e0) { return isNumber(e0) ? NOR.run((AtomExpr)e0):null; }
+	public static Expression neg(AtomExpr a) { return NEG.run(a); }
+	public static Expression not(AtomExpr a) { return NOT.run(a); }
+	public static Expression nor(AtomExpr a) { return NOR.run(a); }
 
 	public static Expression compute(ExprType type, OpExpr e) {
+		return compute(type, e.first(), e.last());
+	}
+	
+	public static Expression compute(ExprType type, Expression e0, Expression e1) {
+		if(!isNumbers(e0, e1)) return null;
+		AtomExpr a = (AtomExpr)e0;
+		AtomExpr b = (AtomExpr)e1;
+		
 		switch(type) {
-			case neg: return ExpressionParser.neg(e.first());
-			case not: return ExpressionParser.not(e.first());
+			case neg: return NEG.run(a);
+			case nor: return NOR.run(a);
+			case not: return NOT.run(a);
 			
-			case mul: return ExpressionParser.mul(e.first(), e.last());
-			case div: return ExpressionParser.div(e.first(), e.last());
+			case mul: return MUL.run(a, b);
+			case div: return DIV.run(a, b);
+
+			case add: return ADD.run(a, b);
+			case sub: return SUB.run(a, b);
 			
-			case nor: return ExpressionParser.nor(e.first());
-			case xor: return ExpressionParser.xor(e.first(), e.last());
-			case or: return ExpressionParser.or(e.first(), e.last());
-			case and: return ExpressionParser.and(e.first(), e.last());
-			case shr: return ExpressionParser.shr(e.first(), e.last());
-			case shl: return ExpressionParser.shl(e.first(), e.last());
+			case xor: return XOR.run(a, b);
 			
-			case eq: return ExpressionParser.eq(e.first(), e.last());
-			case lte: return ExpressionParser.lte(e.first(), e.last());
-			case lt: return ExpressionParser.lt(e.first(), e.last());
+			case or: return OR.run(a, b);
+			case and: return AND.run(a, b);
+			case shr: return SHR.run(a, b);
+			case shl: return SHL.run(a, b);
+			
+			case eq: return EQ.run(a, b);
+			case neq: return NEQ.run(a, b);
+			case lt: return LT.run(a, b);
+			case lte: return LTE.run(a, b);
+			case gt: return GT.run(a, b);
+			case gte: return GTE.run(a, b);
+			
 			default: return null;
 		}
 	}
-	
-	// TODO: Create a check type size function that goes throuh a expression tree and get's the largest type that was added in that tree.
-	// float + double + byte + byte + byte. would give double
-	// add(ident, cast(int, neg(double))) would give either int or the size of the identifier 'ident';
-	// User defined types +????????
 }

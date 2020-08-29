@@ -3,7 +3,7 @@ package hardcoded.grammar;
 import java.util.*;
 
 import hardcoded.grammar.Grammar.*;
-import hardcoded.lexer.Symbol;
+import hardcoded.lexer.TokenizerSymbol;
 import hardcoded.lexer.Tokenizer;
 import hardcoded.lexer.TokenizerFactory;
 import hc.errors.grammar.GrammarException;
@@ -73,14 +73,14 @@ public final class HCGRGrammarParser implements GrammarParserImpl {
 	private static final hardcoded.lexer.Tokenizer READER;
 	static {
 		Tokenizer lexer = TokenizerFactory.createNew();
-		READER = lexer.unmodifiableTokenizer();
+		READER = lexer.getImmutableTokenizer();
 		
-		lexer.addGroup("WHITESPACE", true).addRegexes("[ \t\r\n]", "#[^\r\n]*");
-		lexer.addGroup("KEYWORD").addStrings("ITOKEN", "TOKEN", "START");
-		lexer.addGroup("DELIMITER").addStrings("(", ")", "[", "]", "{", "}", ":", "|");
-		lexer.addGroup("ITEMNAME").addRegex("[a-zA-Z0-9_]+([ \t\r\n]*)(?=:)");
-		lexer.addGroup("NAME").addRegex("[a-zA-Z0-9_]+");
-		lexer.addGroup("LITERAL").addRegexes(
+		lexer.add("WHITESPACE", true).addRegexes("[ \t\r\n]", "#[^\r\n]*");
+		lexer.add("KEYWORD").addStrings("ITOKEN", "TOKEN", "START");
+		lexer.add("DELIMITER").addStrings("(", ")", "[", "]", "{", "}", ":", "|");
+		lexer.add("ITEMNAME").addRegex("[a-zA-Z0-9_]+([ \t\r\n]*)(?=:)");
+		lexer.add("NAME").addRegex("[a-zA-Z0-9_]+");
+		lexer.add("LITERAL").addRegexes(
 			"\'[^\'\\\\]*(?:\\\\.[^\'\\\\]*)*\'",
 			"\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\""
 		);
@@ -91,11 +91,11 @@ public final class HCGRGrammarParser implements GrammarParserImpl {
 		Item itemGroup = null;
 		RuleList set = null;
 		
-		List<Symbol> list = READER.parse(bytes);
+		List<TokenizerSymbol> list = READER.parse(bytes);
 		LinkedList<BracketRule> brackets = new LinkedList<>();
 		
 		for(int i = 0; i < list.size(); i++) {
-			Symbol sym = list.get(i);
+			TokenizerSymbol sym = list.get(i);
 			
 			String group = sym.group();
 			String value = sym.value();
@@ -109,7 +109,7 @@ public final class HCGRGrammarParser implements GrammarParserImpl {
 					throw new GrammarException("(line:" + sym.line() + " column:" + sym.column() + ") Invalid placement of the " + value.toLowerCase() + " keyword.");
 				}
 
-				Symbol item = list.get(i + 1);
+				TokenizerSymbol item = list.get(i + 1);
 				if(value.equals("TOKEN")) {
 					if(!item.groupEquals("ITEMNAME")) {
 						throw new GrammarException("(line:" + item.line() + " column:" + item.column() + ") Invalid token argument. Expected a item name got '" + item + "'");
@@ -179,7 +179,7 @@ public final class HCGRGrammarParser implements GrammarParserImpl {
 					throw new GrammarException("(line:" + list.get(i + 2).line() + " column:" + list.get(i + 2).column() + ") Invalid regex close character. '" + list.get(i + 2) + "'");
 				}
 				
-				Symbol item = list.get(i + 1);
+				TokenizerSymbol item = list.get(i + 1);
 				if(!item.groupEquals("LITERAL")) {
 					throw new GrammarException("(line:" + item.line() + " column:" + item.column() + ") The regex match can only contain string literals.");
 				}

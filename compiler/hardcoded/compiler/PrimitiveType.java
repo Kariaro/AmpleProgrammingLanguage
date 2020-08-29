@@ -4,8 +4,9 @@ import hardcoded.compiler.Expression.AtomType;
 
 public class PrimitiveType extends Type {
 	private AtomType type;
-	public PrimitiveType(String name, AtomType type, int size, boolean floating, boolean signed) {
-		super(name, size, floating, signed);
+	
+	public PrimitiveType(String name, AtomType type, int size, boolean signed) {
+		super(name, size, signed);
 		this.type = type;
 	}
 	

@@ -6,24 +6,55 @@ import java.util.*;
 import hardcoded.compiler.Block.Function;
 import hardcoded.compiler.Identifier.*;
 import hardcoded.compiler.Expression.*;
-import hardcoded.compiler.Instruction.*;
 import hardcoded.compiler.Statement.*;
 import hardcoded.compiler.constants.*;
+import hardcoded.compiler.context.Sym;
 import hardcoded.compiler.expression.ExpressionParser;
+import hardcoded.compiler.instruction.HInstructionCompiler;
 import hardcoded.errors.CompilerException;
 import hardcoded.lexer.Tokenizer;
 import hardcoded.lexer.TokenizerFactory;
 import hardcoded.lexer.TokenizerOld;
 import hardcoded.utils.FileUtils;
 import hardcoded.utils.StringUtils;
-import hardcoded.visualization.HC2Visualization;
 import static hardcoded.compiler.Expression.ExprType.*;
 import static hardcoded.compiler.Expression.AtomType.*;
 
 public class HCompilerBuild {
+	private static final Tokenizer LEXER;
+	
+	static {
+		Tokenizer lexer = null;
+		
+		try {
+			lexer = TokenizerFactory.loadFromFile(new File("res/project/lexer.lex"));
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		LEXER = lexer.getImmutableTokenizer();
+	}
+	
 	private Map<String, Type> defined_types = new HashMap<>();
 	private Map<String, Expression> GLOBAL;
 	private Map<String, Function> FUNCTIONS;
+	private Function curFunction;
+	
+	private File projectPath = new File("res/project/src/");
+	
+	private Set<String> importedFiles = new HashSet<>();
+	private boolean hasErrors = false;
+	
+	private Program current_program;
+	
+	/**
+	 * The instruction compiler.
+	 */
+	private HInstructionCompiler hic;
+	
+	
+	// TODO: Convert strings into decptr(<ptr to string>);
+	// TODO: Only if string is const otherwise stack....
 	public HCompilerBuild() {
 		FUNCTIONS = new HashMap<>();
 		GLOBAL = new HashMap<>();
@@ -32,10 +63,11 @@ public class HCompilerBuild {
 			defined_types.put(t.name(), t);
 		}
 		
+		hic = new HInstructionCompiler();
+		
 		try {
-			lexer = TokenizerFactory.loadFromFile(new File("res/project/lexer.lex"));
-			
 			String file = "main.hc";
+			file = "tests/pointer_000.hc";
 			// file = "test_syntax.hc";
 			
 			build(file);
@@ -44,26 +76,21 @@ public class HCompilerBuild {
 		}
 	}
 	
-	private File projectPath = new File("res/project/src/");
-	
 	public void build(String fileName) throws Exception {
-		if(curProgram != null) throw new RuntimeException("Building twice is not allowed.........");
-		curProgram = new Program();
+		if(current_program != null) throw new RuntimeException("Building twice is not allowed.........");
+		current_program = new Program();
 		
-		importFile(curProgram, fileName);
+		importFile(current_program, fileName);
 		if(hasErrors) {
 			throw new CompilerException("Compiler errors.");
 		}
-			
+		
 		doConstantFolding();
-		createInstructions();
+		hic.compile(current_program);
 		
-		/*
-		HC2Visualization hc2 = new HC2Visualization();
-		hc2.show(curProgram);
-		*/
+		// new hardcoded.visualization.HC2Visualization().show(curProgram);
 		
-		for(Block block : curProgram.list()) {
+		for(Block block : current_program.list()) {
 			if(!(block instanceof Function)) continue;
 			
 			System.out.println("========================================================");
@@ -75,157 +102,19 @@ public class HCompilerBuild {
 		System.out.println("========================================================");
 	}
 	
-	private Set<String> importedFiles = new HashSet<>();
-	private boolean hasErrors = false;
-	private Program curProgram;
-	
-	private void createInstructions() {
-		// Create the correct instructions for, 'if', 'while', 'switch', 'for'
-		for(int i = 0; i < curProgram.size(); i++) {
-			Block block = curProgram.get(i);
-			
-			if(!(block instanceof Function)) continue;
-			Function func = (Function)block;
-			
-			Instruction inst = createInstructions(func, func.body).first();
-			
-			System.out.println("Instructions");
-			int count = 0;
-			while(inst != null) {
-				System.out.println("   [" + (count++) + "] " + inst);
-				inst = inst.next;
-			}
+	private void importFile(Program program, String name) throws Exception {
+		if(importedFiles.contains(name)) return; // Ignore
+		importedFiles.add(name);
+		
+		Sym symbol = new Sym(TokenizerOld.generateTokenChain(LEXER, FileUtils.readFileBytes(new File(projectPath, name))));
+		System.out.println("Tokens: '" + symbol.token().toString(" ", Integer.MAX_VALUE) + "'");
+		
+		try {
+			parseProgram(program, symbol);
+		} catch(Exception e) {
+			e.printStackTrace();
+			throwError(symbol, "");
 		}
-	}
-	
-	private Instruction createInstructions(Function func, Expression expr) {
-		Instruction inst = new Instruction(Insts.nop, new ObjectReg(expr.toString()));
-		
-		if(expr.hasElements()) {
-			// TODO: Check for a the element that is not pure and recurse it. 
-			for(Expression e : expr.getElements()) {
-				inst = inst.append(createInstructions(func, e));
-			}
-		}
-		
-		return inst.last();
-	}
-	
-	private Instruction createIfInstructions(Function func, IfStat stat) {
-		Instruction inst = new Instruction();
-		
-		Expression condition = stat.condition();
-		if(condition.hasSideEffects()) {
-			// TODO:
-		}
-		
-		Label label_end = new Label("end");
-		
-		if(stat.hasElseBody()) {
-			// ============================== //
-			// if(x) { ... } else { ... }
-			
-			// brz [else] [x]				Branch to [else] if [x] is zero
-			//    ...
-			// br [end]						Branch to [end]
-			// else:
-			//    ...
-			// end:
-			
-			Label label_else = new Label("else");
-			
-			inst = inst.append(new Instruction(Insts.brz, label_else));
-			inst = inst.append(createInstructions(func, stat.body()));
-			inst = inst.append(new Instruction(Insts.br, label_end));
-			inst = inst.append(new Instruction(Insts.label, label_else));
-			inst = inst.append(createInstructions(func, stat.elseBody()));
-			inst = inst.append(new Instruction(Insts.label, label_end));
-		} else {
-			// ============================== //
-			// if(x) { ... }
-			
-			// brz [end] [x]				Branch to [end] if [x] is zero
-			//    ...
-			// end:
-			
-			inst = inst.append(new Instruction(Insts.brz, label_end));
-			inst = inst.append(createInstructions(func, stat.body()));
-			inst = inst.append(new Instruction(Insts.label, label_end));
-		}
-		
-		// 
-		return inst.last();
-	}
-	
-	private Instruction createWhileInstructions(Function func, WhileStat stat) {
-		Instruction inst = new Instruction();
-		
-		Expression condition = stat.condition();
-		if(condition.hasSideEffects()) {
-			// TODO:
-		}
-		
-		
-		// ============================== //
-		// while(x) { ... }
-		
-		// next:
-		//   ; if x has side effects evaluate x here!
-		// brz [end] x					Branch to [end] if x is zero
-		// loop:
-		//   ...
-		//   ; if x has side effects jump to next...
-		//   br [loop]
-		// end:
-		
-		Label label_end = new Label("end");
-		Label label_next = new Label("next");
-		Label label_loop = new Label("loop");
-
-		inst = inst.append(new Instruction(Insts.label, label_next));
-		inst = inst.append(createInstructions(func, stat.condition())); // Evaluate x only when there are side effects...
-		inst = inst.append(new Instruction(Insts.brz, label_end, new ObjectReg(stat.condition())));
-		inst = inst.append(new Instruction(Insts.label, label_loop));
-		inst = inst.append(createInstructions(func, stat.body()));
-		inst = inst.append(new Instruction(Insts.br, label_loop));
-		inst = inst.append(new Instruction(Insts.label, label_end));
-		
-		return inst.last();
-	}
-	
-	private Instruction createInstructions(Function func, Statement stat) {
-		if(stat == null || stat == Statement.EMPTY) return null;
-		Instruction inst = new Instruction(Insts.nop, new ObjectReg(stat.toString()));
-		
-		if(stat instanceof IfStat) {
-			inst = inst.append(createIfInstructions(func, (IfStat)stat));
-		} else if(stat instanceof WhileStat) {
-			inst = inst.append(createWhileInstructions(func, (WhileStat)stat));
-		} else if(stat instanceof ExprStat) {
-			inst = inst.append(createInstructions(func, ((ExprStat)stat).expr()));
-		} else {
-//			else if(stat instanceof NestedStat) {
-//				// TODO: ???
-//			} 
-			if(stat.hasStatements()) {
-				Instruction group = inst;
-				Instruction point = group;
-				
-				
-				
-				for(Statement s : stat.getStatements()) {
-					point = point.append(createInstructions(func, s));
-				}
-			}
-		}
-		
-		
-		
-//		Utils.execute_for_all_statements(func, (parent, index, function) -> {
-//			System.out.println("[" + index + "] " + parent.get(index));
-//		});
-		
-		return inst.last();
 	}
 	
 	private void constantFolding(List<Expression> parent, int index, Function func) {
@@ -249,7 +138,6 @@ public class HCompilerBuild {
 						// Casting into a pointer is always allowed
 						// PointerType pt = (PointerType)cast;
 						
-						if(a.isFloating()) throw new RuntimeException("Cannot cast a floating point value into a pointer");
 						// (int*)((int)(double));
 						parent.set(index, a.convert(int8));
 					}
@@ -260,7 +148,7 @@ public class HCompilerBuild {
 		if(expr instanceof OpExpr) {
 			OpExpr e = (OpExpr)expr;
 			
-			if(e.type == add || e.type == cor || e.type == cand || e.type == comma) {
+			if(e.type == add || e.type == sub || e.type == cor || e.type == cand || e.type == comma) {
 				for(int i = e.size() - 1; i >= 0; i--) {
 					Expression ex = e.get(i);
 					if(ex instanceof OpExpr) {
@@ -277,6 +165,16 @@ public class HCompilerBuild {
 			}
 	
 			switch(e.type) {
+				case comma: {
+					for(int i = 0; i < e.size() - 1; i++) {
+						if(!e.hasSideEffects()) e.list.remove(i--);
+					}
+					
+					if(e.size() == 1) parent.set(index, e.first());
+					break;
+				}
+				
+				case sub:
 				case add: {
 					List<AtomExpr> list = new ArrayList<>();
 					for(int i = 0; i < e.size(); i++) {
@@ -297,20 +195,17 @@ public class HCompilerBuild {
 					
 					if(!list.isEmpty()) {
 						for(; list.size() > 1;) {
-							AtomExpr c = (AtomExpr)ExpressionParser.add(list.get(0), list.get(1));
+							AtomExpr c = (AtomExpr)ExpressionParser.compute(e.type, list.get(0), list.get(1));
 							list.remove(0);
 							list.set(0, c);
 						}
 						
 						if(!(list.get(0).isZero() && e.size() > 0)) {
-							e.list.add(0, list.get(0));
+							e.list.add(list.get(0));
 						}
 					}
 					
-					if(e.size() == 1) {
-						parent.set(index, e.first());
-					}
-
+					if(e.size() == 1) parent.set(index, e.first());
 					break;
 				}
 				
@@ -366,7 +261,8 @@ public class HCompilerBuild {
 				case shr: case shl:
 				case or: case and:
 				case lt: case lte:
-				case eq: {
+				case gt: case gte:
+				case eq: case neq: {
 					Expression next = ExpressionParser.compute(e.type, e);
 					if(next != null) parent.set(index, next); break;
 				}
@@ -386,8 +282,8 @@ public class HCompilerBuild {
 	}
 	
 	private void doConstantFolding() {
-		for(int i = 0; i < curProgram.size(); i++) {
-			Block block = curProgram.get(i);
+		for(int i = 0; i < current_program.size(); i++) {
+			Block block = current_program.get(i);
 			
 			if(!(block instanceof Function)) continue;
 			Function func = (Function)block;
@@ -439,23 +335,6 @@ public class HCompilerBuild {
 		}
 	}
 	
-	private void importFile(Program program, String name) throws Exception {
-		if(importedFiles.contains(name)) return; // Ignore
-		importedFiles.add(name);
-		
-		Sym symbol = new Sym(TokenizerOld.generateTokenChain(lexer, FileUtils.readFileBytes(new File(projectPath, name))));
-		System.out.println("Tokens: '" + symbol.token().toString(" ", Integer.MAX_VALUE) + "'");
-		
-		try {
-			parseProgram(program, symbol);
-		} catch(Exception e) {
-			e.printStackTrace();
-			throwError(symbol, "");
-		}
-	}
-	
-	private Function curFunction;
-	private Tokenizer lexer;
 	private void parseCompiler(Sym symbol) {
 		if(symbol.valueEquals("type")) {
 			symbol.next();
@@ -464,14 +343,13 @@ public class HCompilerBuild {
 			if(defined_types.containsKey(name)) throwError(symbol, "Invalid type name. That type name is already defined '" + name + "'");
 			if(!isValidName(symbol)) throwError(symbol, "Invalid type name. The value '" + name + "' is not a valid type name.");
 			
-			// Define a new type
 			Type type = getTypeFromSymbol(symbol.next());
 			if(!symbol.valueEquals(";")) throwError(symbol, "Invalid type syntax. Expected a semicolon but got '" + symbol + "'");
 			symbol.next();
 			
 			if(defined_types.containsKey(name)) throwError(symbol, "Type is already defined '" + name + "'");
 			
-			defined_types.put(name, new Type(name, type.size(), type.isFloating(), type.isSigned()));
+			defined_types.put(name, new Type(name, type.size(), type.isSigned()));
 			// System.out.println("#TYPE [" + name + "] as [" + type + "]");
 		} else if(symbol.valueEquals("import")) {
 			if(!symbol.next().groupEquals("STRING")) throwError(symbol, "Invalid import syntax. Expected a string but got '" + symbol + "'.");
@@ -481,7 +359,7 @@ public class HCompilerBuild {
 			
 			// System.out.println("#IMPORT [" + path + "]");
 			try {
-				importFile(curProgram, path);
+				importFile(current_program, path);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -579,8 +457,8 @@ public class HCompilerBuild {
 			} else symbol.next();
 		}
 		
-		if(!curProgram.hasFunction(func.name)) {
-			curProgram.add(func);
+		if(!current_program.hasFunction(func.name)) {
+			current_program.add(func);
 		}
 		
 		if(!symbol.valueEquals(")")) throwError(symbol, "Invalid closing of the funtion arguments. Expected a closing bracket ')'.");
@@ -720,8 +598,13 @@ public class HCompilerBuild {
 					throwError(symbol, "Invalid array variable definition. Expected a integer expression but got '" + expr + "'");
 				} else {
 					AtomExpr number = (AtomExpr)expr;
-					//if(!number.isInteger()) throwError(symbol, "Invalid array variable definition. Expected a integer expression. '" + expr + "'");
-					var.arraySize = number.value().intValue(); // todo.
+					if(!number.isNumber()) {
+						throwError(symbol, "Invalid array variable definition. Expected a integer expression. But got '" + expr + "'");
+					}
+					
+					// TODO: Negative numbers
+					
+					var.arraySize = (int)number.i_value;
 				}
 				var.isArray = true;
 				
@@ -807,16 +690,12 @@ public class HCompilerBuild {
 			private ExprType[] _e(ExprType... array) { return array; }
 			Expression e_read(Sym symbol, String[] values, ExprType[] exprs, java.util.function.Function<Sym, Expression> func) { return e_read(symbol, values, exprs, func, func); }
 			Expression e_read(Sym symbol, String[] values, ExprType[] exprs, java.util.function.Function<Sym, Expression> entry, java.util.function.Function<Sym, Expression> func) {
-				Expression expr = entry.apply(symbol);
-				for(;;) {
+				for(Expression expr = entry.apply(symbol);;) {
 					boolean found = false;
 					for(int i = 0; i < values.length; i++) {
-						String value = values[i];
-						ExprType type = exprs[i];
-						
-						if(symbol.valueEquals(value)) {
+						if(symbol.valueEquals(values[i])) {
 							found = true;
-							expr = new OpExpr(type, expr, func.apply(symbol.next()));
+							expr = new OpExpr(exprs[i], expr, func.apply(symbol.next()));
 							break;
 						}
 					}
@@ -867,8 +746,6 @@ public class HCompilerBuild {
 					case "|=": type = or; break;
 				}
 				
-				// if(!validAssign) throwError(symbol, "Invalid placement of a assign expression.");
-				// return new TestExpr(ExprType.mov, e13, e14(symbol.next()));
 				if(type == null) return e13;
 				switch(type) {
 					case mod: case sub:
@@ -902,26 +779,25 @@ public class HCompilerBuild {
 				return e13;
 			}
 			
-			Expression e13(Sym symbol) { // _exp13: _exp12 | _exp13 '?' _exp13 ':' _exp12
+			Expression e13(Sym symbol) {
 				Expression e13 = e12(symbol);
 				if(symbol.valueEquals("?")) {
-					Expression a = e12(symbol.next());
+					Expression b = e12(symbol.next());
 					if(!symbol.valueEquals(":")) throwError(symbol, "Invalid ternary operation a ? b : c. Missing the colon. '" + symbol + "'");
 					
 					// Cannot optimize easyly
-					// (e13 && (temp = a, 1) || (temp = b), temp)
-					Expression b = e12(symbol.next());
+					// (e13 && (temp = b, 1) || (temp = c), temp)
+					Expression c = e12(symbol.next());
 					
-					// return new TeExpr(e13, "?", a, ":", b);
 					AtomExpr temp = new AtomExpr(curFunction.temp(new UndefinedType()));
-					return new OpExpr( // TODO: Check if this is correct
+					return new OpExpr(
 						comma,
 						new OpExpr(cor,
 							new OpExpr(cand,
 								e13,
-								new OpExpr(comma, new OpExpr(mov, temp, a), new AtomExpr(1))
+								new OpExpr(comma, new OpExpr(mov, temp, b), new AtomExpr(1))
 							),
-							new OpExpr(comma, new OpExpr(mov, temp, b))
+							new OpExpr(comma, new OpExpr(mov, temp, c))
 						),
 						temp
 					);
@@ -935,39 +811,39 @@ public class HCompilerBuild {
 			Expression e10(Sym symbol) { return e_read(symbol, _s("|"), _e(or), this::e9); }
 			Expression e9(Sym symbol) { return e_read(symbol, _s("^"), _e(xor), this::e8); }
 			Expression e8(Sym symbol) { return e_read(symbol, _s("&"), _e(and), this::e7); }
-			Expression e7(Sym symbol) {
-				Expression expr = e6(symbol);
-				for(;;) {
-					if(symbol.valueEquals("==")) {
-						expr = new OpExpr(eq, expr, e7(symbol.next()));
-					} else if(symbol.valueEquals("!=")) {
-						expr = new OpExpr(not, new OpExpr(eq, expr, e7(symbol.next())));
-					} else return expr;
-				}
+			Expression e7(Sym symbol)  { return e_read(symbol, _s("==", "!="), _e(eq, neq), this::e6, this::e7);
+//				Expression expr = e6(symbol);
+//				for(;;) {
+//					if(symbol.valueEquals("==")) {
+//						expr = new OpExpr(eq, expr, e7(symbol.next()));
+//					} else if(symbol.valueEquals("!=")) {
+//						expr = new OpExpr(not, new OpExpr(eq, expr, e7(symbol.next())));
+//					} else return expr;
+//				}
 			}
 			
-			Expression e6(Sym symbol) {
-				for(Expression expr = e5(symbol);;) {
-					if(symbol.valueEquals("<")) {
-						expr = new OpExpr(lt, expr, e5(symbol.next()));
-					} else if(symbol.valueEquals("<=")) {
-						expr = new OpExpr(lte, expr, e5(symbol.next()));
-					} else if(symbol.valueEquals(">")) {
-						expr = new OpExpr(not, new OpExpr(lte, expr, e5(symbol.next())));
-					} else if(symbol.valueEquals(">=")) {
-						expr = new OpExpr(not, new OpExpr(lt, expr, e5(symbol.next())));
-					} else return expr;
-				}
+			Expression e6(Sym symbol) { return e_read(symbol, _s("<", "<=", ">", ">="), _e(lt, lte, gt, gte), this::e5);
+//				for(Expression expr = e5(symbol);;) {
+//					if(symbol.valueEquals("<")) {
+//						expr = new OpExpr(lt, expr, e5(symbol.next()));
+//					} else if(symbol.valueEquals("<=")) {
+//						expr = new OpExpr(lte, expr, e5(symbol.next()));
+//					} else if(symbol.valueEquals(">")) {
+//						expr = new OpExpr(not, new OpExpr(lte, expr, e5(symbol.next())));
+//					} else if(symbol.valueEquals(">=")) {
+//						expr = new OpExpr(not, new OpExpr(lt, expr, e5(symbol.next())));
+//					} else return expr;
+//				}
 			}
 			Expression e5(Sym symbol) { return e_read(symbol, _s("<<", ">>"), _e(shl, shr), this::e4); }
-			Expression e4(Sym symbol) {
-				for(Expression expr = e3(symbol);;) {
-					if(symbol.valueEquals("+")) {
-						expr = new OpExpr(add, expr, e3(symbol.next()));
-					} else if(symbol.valueEquals("-")) {
-						expr = new OpExpr(add, expr, new OpExpr(neg, e3(symbol.next())));
-					} else return expr;
-				}
+			Expression e4(Sym symbol) { return e_read(symbol, _s("+", "-"), _e(add, sub), this::e3);
+//				for(Expression expr = e3(symbol);;) {
+//					if(symbol.valueEquals("+")) {
+//						expr = new OpExpr(add, expr, e3(symbol.next()));
+//					} else if(symbol.valueEquals("-")) {
+//						expr = new OpExpr(add, expr, new OpExpr(neg, e3(symbol.next())));
+//					} else return expr;
+//				}
 			}
 			
 			Expression e3(Sym symbol) { return e_read(symbol, _s("*", "/", "%"), _e(mul, div, mod), this::e2); }
@@ -1111,21 +987,20 @@ public class HCompilerBuild {
 				}
 			}
 			
-			private int parseInteger(String value) {
-				if(value.startsWith("0x")) return Integer.parseInt(value.substring(2), 16);
-				else return Integer.parseInt(value);
-			}
-			
 			private long parseLong(String value) {
 				if(value.startsWith("0x")) return Long.parseLong(value.substring(2, value.length() - 1), 16);
 				else return Long.parseLong(value);
 			}
 			
+			private int parseInteger(String value) {
+				if(value.startsWith("0x")) return Integer.parseInt(value.substring(2), 16);
+				else return Integer.parseInt(value);
+			}
+			
 			Expression e1(Sym symbol) {
+				if(symbol.groupEquals("DOUBLE") || symbol.groupEquals("FLOAT")) throwError(symbol, "Float data types are not implemented in this language."); // TODO: Implement
 				if(symbol.groupEquals("LONG")) { String value = symbol.value(); symbol.next(); return new AtomExpr(parseLong(value)); }
 				if(symbol.groupEquals("INT")) { String value = symbol.value(); symbol.next(); return new AtomExpr(parseInteger(value)); }
-				if(symbol.groupEquals("DOUBLE")) { String value = symbol.value(); symbol.next(); return new AtomExpr(Double.parseDouble(value)); }
-				if(symbol.groupEquals("FLOAT")) { String value = symbol.value(); symbol.next(); return new AtomExpr(Float.parseFloat(value)); }
 				if(symbol.groupEquals("STRING")) { String value = symbol.value(); symbol.next(); return new AtomExpr(value.substring(1, value.length() - 1)); } // TODO: Unicode ?
 				
 				if(symbol.groupEquals("CHAR")) { // TODO: Unicode
@@ -1146,7 +1021,7 @@ public class HCompilerBuild {
 						}
 						if(FUNCTIONS.containsKey(value)) {
 							symbol.next();
-							return new AtomExpr(curProgram.getFunction(value));
+							return new AtomExpr(current_program.getFunction(value));
 						}
 						
 						throwError(symbol, "Undeclared variable name. Could not find the variable '" + value + "'");

@@ -1,5 +1,7 @@
 package hardcoded.compiler.constants;
 
+import hardcoded.compiler.Expression.ExprType;
+
 /**
  * This is the full instruction set for the ir part of the compiler.
  * 
@@ -23,6 +25,13 @@ public enum Insts {
 	shr,		// shr		[R0], [R1], [R2]		Set R0 to (R1>> R2)
 	shl,		// shl		[R0], [R1], [R2]		Set R0 to (R1<< R2)
 	
+	eq,			// eq		[R0], [R1], [R2]		Set R0 to (R1== R2)
+	neq,		// neq		[R0], [R1], [R2]		Set R0 to (R1!= R2)
+	lt,			// lt		[R0], [R1], [R2]		Set R0 to (R1 < R2)
+	lte,		// lte		[R0], [R1], [R2]		Set R0 to (R1<= R2)
+	gt,			// gt		[R0], [R1], [R2]		Set R0 to (R1 > R2)
+	gte,		// gte		[R0], [R1], [R2]		Set R0 to (R1>= R2)
+	
 	neg,		// neg		[R0], [R1]				Set R0 to (-R1)
 	nor,		// nor		[R0], [R1]				Set R0 to (~R1)
 	not,		// not		[R0], [R1]				Set R0 to (!R1)
@@ -35,4 +44,38 @@ public enum Insts {
 	
 	nop,		// nop								No operation
 	label,		// label	?
+	;
+	
+	public static final Insts convert(ExprType type) {
+		switch(type) {
+			case nop: return nop;
+			
+			case neg: return neg;
+			case not: return not;
+			case nor: return nor;
+			
+			case eq: return eq;
+			case neq: return neq;
+			case lt: return lt;
+			case lte: return lte;
+			case gt: return gt;
+			case gte: return gte;
+
+			case add: return add;
+			case sub: return sub;
+			case mul: return mul;
+			case div: return div;
+			
+			case xor: return xor;
+			case and: return and;
+			case shl: return shl;
+			case shr: return shr;
+			case or: return or;
+			
+			default: {
+				// Invalid
+				return null;
+			}
+		}
+	}
 }

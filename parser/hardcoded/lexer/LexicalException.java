@@ -8,6 +8,10 @@ public class LexicalException extends RuntimeException {
 		this.message = message;
 	}
 	
+	public LexicalException(TokenizerSymbol symbol, String message) {
+		this.message = "(line:" + symbol.line() + " column:" + symbol.column() + ") " + message;
+	}
+	
 	public String getMessage() {
 		return message;
 	}

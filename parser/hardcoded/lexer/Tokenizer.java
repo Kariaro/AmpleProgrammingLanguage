@@ -1,5 +1,6 @@
 package hardcoded.lexer;
 
+import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -9,16 +10,27 @@ import java.util.regex.Pattern;
 import hardcoded.utils.StringUtils;
 
 /**
- * This class is thread-safe as long as no groups are added while calling the addGroup functions.
+ * This is a lexer class. This class takes a string input or byte input and outputs
+ * a list of tokens generated from the set of rules that this lexer has goten.
  * 
  * @author HardCoded
  */
-public class Tokenizer {
-	private ImmutableTokenzier immutable;
+public class Tokenizer implements Serializable {
+	private static final long serialVersionUID = -39792822918295242L;
+	private transient ImmutableTokenzier immutable;
 	
-	// TODO: Optimize the groups to ensure that if there is two symbols A:'ab' and C:'abcd', C should be tested always before A.
 	private final Map<String, SymbolGroup> groups;
+	
+	/**
+	 * If a token didn't match any group it will default to this value.
+	 */
 	private String defaultGroup = null;
+	
+	/**
+	 * This field is set if groups should automaticly be discarded
+	 * from the token list.
+	 */
+	private boolean autoDiscard = true;
 	
 	protected Tokenizer() {
 		groups = new LinkedHashMap<>();
@@ -32,40 +44,75 @@ public class Tokenizer {
 		return defaultGroup;
 	}
 	
-	public SymbolGroup addGroup(String groupName) {
-		return addGroup(groupName, false);
+	/**
+	 * Add a new symbol group to this tokenizer.
+	 * 
+	 * @param name
+	 * @return a new symbol group.
+	 */
+	public SymbolGroup add(String name) {
+		return add(name, false);
 	}
 	
-	public SymbolGroup addGroup(String groupName, boolean discard) {
-		if(contains(groupName)) return null;
+	/**
+	 * Add a new symbol group to this tokenizer.
+	 * 
+	 * @param name
+	 * @param discard
+	 * @return a new symbol group.
+	 */
+	public SymbolGroup add(String name, boolean discard) {
+		if(contains(name)) return null;
 		
-		SymbolGroup group = new SymbolGroup(groupName);
+		SymbolGroup group = new SymbolGroup(name);
 		group.setDiscard(discard);
-		groups.put(groupName, group);
+		groups.put(name, group);
 		return group;
 	}
 	
-	public SymbolGroup getGroup(String groupName) {
-		return groups.get(groupName);
+	/**
+	 * Set if the lexer should automaticly remove all tokens that has the discard flag.
+	 * @param enable
+	 */
+	public void setAutoDiscard(boolean enable) {
+		autoDiscard = enable;
 	}
 	
-	public void removeGroup(String groupName) {
-		groups.remove(groupName);
+	public boolean hasAutoDiscard() {
+		return autoDiscard;
 	}
 	
 	/**
-	 * Check if this tokenizer contains this item.
-	 * @param groupName the group name.
+	 * Get a group from this tokenizer.
+	 * @param name the group name.
+	 * @return the group that matched the name.
+	 */
+	public SymbolGroup get(String name) {
+		return groups.get(name);
+	}
+	
+	/**
+	 * Remove a group from this tokenizer.
+	 * @param name the group name
+	 * @return true if the group was found and removed.
+	 */
+	public boolean remove(String name) {
+		return groups.remove(name) != null;
+	}
+	
+	/**
+	 * Check if this tokenizer contains this group.
+	 * @param name the group name.
 	 * @return true if the tokenizer found the item.
 	 */
-	public boolean contains(String groupName) {
-		return groups.containsKey(groupName);
+	public boolean contains(String name) {
+		return groups.containsKey(name);
 	}
 	
 	/**
-	 * Get a unmodifiable version of this tokenizer.
+	 * Get a immutable version of this tokenizer.
 	 */
-	public Tokenizer unmodifiableTokenizer() {
+	public Tokenizer getImmutableTokenizer() {
 		if(immutable == null) {
 			immutable = new ImmutableTokenzier(this);
 		}
@@ -73,15 +120,11 @@ public class Tokenizer {
 		return immutable;
 	}
 	
-	public boolean isParseOnly() {
+	/**
+	 * Get if this tokenizer is immutable.
+	 */
+	public boolean isImmutable() {
 		return this.getClass() != Tokenizer.class;
-	}
-	
-	void dump() {
-		for(String name : groups.keySet()) {
-			SymbolGroup group = groups.get(name);
-			System.out.println(group);
-		}
 	}
 	
 	/**
@@ -91,7 +134,7 @@ public class Tokenizer {
 	 * @return a list of symbols.
 	 * @throws NullPointerException if the string was null.
 	 */
-	public List<Symbol> parse(String string) {
+	public List<TokenizerSymbol> parse(String string) {
 		return parse(string.getBytes(StandardCharsets.ISO_8859_1));
 	}
 	
@@ -102,7 +145,7 @@ public class Tokenizer {
 	 * @return a list of symbols.
 	 * @throws NullPointerException if the string was null.
 	 */
-	public List<Symbol> parse(String string, Charset charset) {
+	public List<TokenizerSymbol> parse(String string, Charset charset) {
 		return parse(string.getBytes(charset));
 	}
 	
@@ -113,31 +156,33 @@ public class Tokenizer {
 	 * @param bytes
 	 * @return a list of symbols.
 	 */
-	public List<Symbol> parse(byte[] bytes) {
+	public List<TokenizerSymbol> parse(byte[] bytes) {
 		TokenizerString string = new TokenizerString(bytes);
-		List<Symbol> list = new ArrayList<>();
+		List<TokenizerSymbol> list = new ArrayList<>();
 		
 		StringBuilder sb = new StringBuilder();
 		boolean hasNull = false;
 		
 		int line = 0;
 		int column = 0;
+		int index = 0;
 		
 		while(string.length() > 0) {
-			Symbol sym = parseSingle(string, 0);
+			TokenizerSymbol sym = parseSingle(string, 0);
 			if(sym != null) {
 				if(hasNull) {
 					hasNull = false;
 					
-					list.add(new Symbol(defaultGroup, false, sb.toString(), line, column));
+					list.add(new TokenizerSymbol(defaultGroup, false, sb.toString(), line, column, index));
 					sb.delete(0, sb.length());
 				}
 				
-				if(!sym.shouldDiscard()) list.add(sym);
+				if(!autoDiscard || !sym.discard()) list.add(sym);
 			} else {
 				if(!hasNull) {
 					line = string.getLine();
 					column = string.getColumn();
+					index = string.getIndex();
 					hasNull = true;
 				}
 				
@@ -147,61 +192,63 @@ public class Tokenizer {
 		}
 		
 		if(hasNull) {
-			list.add(new Symbol(defaultGroup, false, sb.toString(), line, column));
-			hasNull = false;
+			list.add(new TokenizerSymbol(defaultGroup, false, sb.toString(), line, column, index));
 		}
-		
-		// for(Symbol sym : list) System.out.printf("[%s] %s\n", sym.group(), sym.value());
 		
 		return list;
 	}
 	
-	private Symbol parseSingle(TokenizerString string, int index) {
+	private TokenizerSymbol parseSingle(TokenizerString string, int index) {
+		SymbolGroup g = null;
+		int length = -1;
+		
 		for(SymbolGroup group : groups.values()) {
 			for(Rule rule : group.rules) {
-				int length = -1;
+				int len = -1;
 				
-				if(rule.isString()) {
-					String rule_string = rule.string();
+				if(rule.string != null) {
+					String rule_string = rule.string;
 					
 					if(rule_string.length() <= string.length()) {
-						length = rule_string.length();
+						len = rule_string.length();
 						for(int i = 0; i < rule_string.length(); i++) {
 							if(rule_string.charAt(i) != string.charAt(i)) {
-								length = -1;
+								len = -1;
 								break;
 							}
 						}
 					}
-				} else if(rule.isPattern()) {
-					Matcher matcher = rule.pattern().matcher(string);
-					if(matcher.lookingAt()) length = matcher.end();
+				} else {
+					Matcher matcher = rule.pattern.matcher(string);
+					if(matcher.lookingAt()) len = matcher.end();
 				}
 				
-				if(length > 0) {
-					Symbol sym = new Symbol(rule.group.name, rule.group.discard, string.subSequence(0, length).toString(), string.getLine(), string.getColumn());
-					string.move(length);
-					return sym;
+				if(len >= length) {
+					length = len;
+					g = group;
 				}
 			}
+		}
+		
+		if(g != null && length > 0) {
+			TokenizerSymbol sym = new TokenizerSymbol(g.name, g.discard, string.subSequence(0, length).toString(), string.getLine(), string.getColumn(), string.getIndex());
+			string.move(length);
+			return sym;
 		}
 		
 		return null;
 	}
 	
-	public class SymbolGroup {
+	public class SymbolGroup implements Serializable {
+		private static final long serialVersionUID = -8706828513749481057L;
+		
 		private final List<Rule> rules;
+		private final String name; 
 		private boolean discard;
-		private String name;
 		
 		private SymbolGroup(String name) {
 			this.rules = new ArrayList<>();
 			this.name = name;
-		}
-		
-		public SymbolGroup setName(String name) {
-			this.name = name;
-			return this;
 		}
 		
 		public SymbolGroup setDiscard(boolean discard) {
@@ -210,31 +257,31 @@ public class Tokenizer {
 		}
 		
 		public SymbolGroup addString(String string) {
-			rules.add(new Rule(this, StringUtils.unescapeString(string)));
+			rules.add(new Rule(StringUtils.unescapeString(string)));
 			return this;
 		}
 		
 		public SymbolGroup addStrings(String... strings) {
 			for(String string : strings) {
-				rules.add(new Rule(this, StringUtils.unescapeString(string)));
+				rules.add(new Rule(StringUtils.unescapeString(string)));
 			}
 			return this;
 		}
 		
 		public SymbolGroup addRegex(String regex) {
-			rules.add(new Rule(this, Pattern.compile(regex, Pattern.DOTALL)));
+			rules.add(new Rule(Pattern.compile(regex, Pattern.DOTALL)));
 			return this;
 		}
 		
 		public SymbolGroup addRegexes(String... patterns) {
 			for(String regex : patterns) {
-				rules.add(new Rule(this, Pattern.compile(regex, Pattern.DOTALL)));
+				rules.add(new Rule(Pattern.compile(regex, Pattern.DOTALL)));
 			}
 			return this;
 		}
 		
 		public SymbolGroup addDelimiter(String open, String escape, String close) {
-			rules.add(new Rule(this, open, escape, close));
+			rules.add(new Rule(open, escape, close));
 			return this;
 		}
 		
@@ -244,16 +291,6 @@ public class Tokenizer {
 		
 		public boolean shouldDiscard() {
 			return discard;
-		}
-		
-		protected SymbolGroup clone() {
-			SymbolGroup group = new SymbolGroup(name);
-			group.discard = discard;
-			rules.forEach((a) -> {
-				if(a.isPattern()) group.rules.add(new Rule(group, a.pattern));
-				else group.rules.add(new Rule(group, a.string));
-			});
-			return group;
 		}
 		
 		@Override
@@ -272,20 +309,12 @@ public class Tokenizer {
 		}
 	}
 	
-	public Tokenizer clone() {
-		Tokenizer lexer = new Tokenizer();
-		lexer.defaultGroup = defaultGroup;
-		groups.forEach((a, b) -> lexer.groups.put(a, b.clone()));
-		return lexer;
-	}
-	
-	// TODO: Convert all strings into regex patterns to make this class smaller? (Performance???)
-	class Rule {
-		private final SymbolGroup group;
-		private final Pattern pattern;
-		private final String string;
+	private class Rule implements Serializable {
+		private static final long serialVersionUID = 1885877594264837458L;
+		protected final Pattern pattern;
+		protected final String string;
 		
-		private Rule(SymbolGroup group, String open, String escape, String close) {
+		private Rule(String open, String escape, String close) {
 			String S = StringUtils.regexEscape(StringUtils.unescapeString(open));
 			String C = StringUtils.regexEscape(StringUtils.unescapeString(close));
 			
@@ -299,53 +328,45 @@ public class Tokenizer {
 			
 			this.pattern = Pattern.compile(regex, Pattern.DOTALL);
 			this.string = null;
-			this.group = group;
 		}
 		
-		private Rule(SymbolGroup group, Pattern pattern) {
+		private Rule(Pattern pattern) {
 			this.pattern = pattern;
 			this.string = null;
-			this.group = group;
 		}
 		
-		private Rule(SymbolGroup group, String string) {
+		private Rule(String string) {
 			this.pattern = null;
 			this.string = string;
-			this.group = group;
 		}
-		
-		public boolean isPattern() { return pattern != null; }
-		public boolean isString() { return string != null; }
-		
-		public Pattern pattern() { return pattern; }
-		public String string() { return string; }
 		
 		@Override
 		public String toString() {
-			if(pattern != null) return "['" + pattern + "']";
-			if(string != null) return "'" + string + "'";
-			return null;
+			return pattern == null ? ("'" + string + "'"):("['" + pattern + "']");
 		}
 	}
 	
 	private class ImmutableTokenzier extends Tokenizer {
+		private static final long serialVersionUID = 5232114952149326460L;
+		
 		private final Tokenizer tokenizer;
 		private ImmutableTokenzier(Tokenizer lexer) {
 			if(lexer == null) throw new NullPointerException();
 			this.tokenizer = lexer;
 		}
 		
-		public void setDefaultGroup(String string) { throw new UnsupportedOperationException("You cannot modify this tokenizer."); }
-		public String getDefaultGroup() { return tokenizer.defaultGroup; }
-		public SymbolGroup addGroup(String name) { throw new UnsupportedOperationException("You cannot modify this tokenizer."); }
-		public SymbolGroup addGroup(String name, boolean discard) { throw new UnsupportedOperationException("You cannot modify this tokenizer."); }
-		public void removeGroup(String name) { throw new UnsupportedOperationException("You cannot modify this tokenizer."); }
-		public SymbolGroup getGroup(String name) { throw new UnsupportedOperationException("You cannot modify this tokenizer."); }
+		public SymbolGroup add(String name, boolean discard) { throw new UnsupportedOperationException("Tokenizer is not modifiable."); }
+		public void setAutoDiscard(boolean enable) { throw new UnsupportedOperationException("Tokenizer is not modifiable."); }
+		public void setDefaultGroup(String string) { throw new UnsupportedOperationException("Tokenizer is not modifiable."); }
+		public SymbolGroup get(String name) { throw new UnsupportedOperationException("Tokenizer is not modifiable."); }
+		public boolean remove(String name) { throw new UnsupportedOperationException("Tokenizer is not modifiable."); }
 		public boolean contains(String itemName) { return tokenizer.contains(itemName); }
-		public Tokenizer unmodifiableTokenizer() { return this; }
-		public List<Symbol> parse(String string, Charset charset) { return tokenizer.parse(string, charset); }
-		public List<Symbol> parse(String string) { return tokenizer.parse(string); }
-		public List<Symbol> parse(byte[] bytes) { return tokenizer.parse(bytes); }
+		public String getDefaultGroup() { return tokenizer.defaultGroup; }
+		public boolean hasAutoDiscard() { return tokenizer.autoDiscard; }
+		public Tokenizer getImmutableTokenizer() { return this; }
+		public List<TokenizerSymbol> parse(String string, Charset charset) { return tokenizer.parse(string, charset); }
+		public List<TokenizerSymbol> parse(String string) { return tokenizer.parse(string); }
+		public List<TokenizerSymbol> parse(byte[] bytes) { return tokenizer.parse(bytes); }
 		public boolean equals(Object obj) { return Objects.equals(tokenizer, obj); }
 		public int hashCode() { return tokenizer.hashCode(); }
 		public String toString() { return tokenizer.toString(); }

@@ -5,18 +5,16 @@ import java.util.Objects;
 public class Type {
 	private final String name;
 	private final int size;
-	private final boolean floating;
 	private final boolean signed;
 	
 	public Type(String name, int size) {
-		this(name, size, false, true);
+		this(name, size, true);
 	}
 	
-	public Type(String name, int size, boolean floating, boolean signed) {
+	public Type(String name, int size, boolean signed) {
 		this.name = name;
 		this.size = size;
-		this.floating = floating;
-		this.signed = (floating ? true:signed);
+		this.signed = signed;
 	}
 	
 	public Type type() {
@@ -25,10 +23,6 @@ public class Type {
 	
 	public String name() {
 		return name;
-	}
-	
-	public boolean isFloating() {
-		return floating;
 	}
 	
 	public boolean isSigned() {

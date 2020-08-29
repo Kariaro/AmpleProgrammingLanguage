@@ -14,7 +14,24 @@ import hardcoded.utils.StringUtils;
 public class Instruction {
 	public static class Reg {
 		public int index;
+		
+		public Reg() {
+			
+		}
+		
+		public Reg(int index) {
+			this.index = index;
+		}
+		
+		@Override
+		public String toString() {
+			return "R" + index;
+		}
 	}
+	
+	private static final AtomicInteger atomic_reg = new AtomicInteger();
+	public static Reg temp() { return new Reg(atomic_reg.getAndIncrement()); }
+	public static Reg temp(Reg reg) { return reg != null ? reg:temp(); }
 	
 	public static class ObjectReg extends Reg {
 		public Object obj;
@@ -40,7 +57,7 @@ public class Instruction {
 		
 		public Label(String name, boolean compiler) {
 			this.compiler = compiler;
-			this.name = (compiler ? "\0_":"") + name + (compiler ? ("_" + atomic.getAndIncrement()):"");
+			this.name = (compiler ? "_":"") + name + (compiler ? ("_" + atomic.getAndIncrement() + ""):"");
 		}
 		
 		@Override
@@ -105,6 +122,10 @@ public class Instruction {
 		Instruction inst = this; // TODO: What if this gets stuck in a loop?
 		while(inst.prev != null) inst = inst.prev;
 		return inst;
+	}
+	
+	public boolean hasNeighbours() {
+		return (next != null) || (prev != null);
 	}
 	
 	@Override
