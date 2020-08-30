@@ -5,8 +5,8 @@ package hardcoded.compiler.context;
  * @author HardCoded
  */
 public final class LangReader {
-	private Sym sym;
-	public LangReader(Sym sym) {
+	private Lang sym;
+	public LangReader(Lang sym) {
 		this.sym = sym;
 	}
 	

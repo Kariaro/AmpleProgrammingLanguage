@@ -1,5 +1,7 @@
 package hardcoded.compiler;
 
+import hardcoded.compiler.types.Type;
+
 public interface Identifier {
 	public enum IdType {
 		clazz,

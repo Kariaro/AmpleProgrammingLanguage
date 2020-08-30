@@ -37,6 +37,10 @@ public class Program implements Printable {
 		return blocks.size();
 	}
 	
+	public boolean contains(Block block) {
+		return blocks.contains(block);
+	}
+	
 	public Block.Function add(Block.Function block) {
 		blocks.add(block);
 		idents.add(new Identifier.FuncIdent(block.name, function_index++));

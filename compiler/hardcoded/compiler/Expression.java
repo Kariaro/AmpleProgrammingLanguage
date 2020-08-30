@@ -3,11 +3,12 @@ package hardcoded.compiler;
 import java.util.*;
 
 import hardcoded.compiler.constants.Printable;
+import hardcoded.compiler.types.Type;
 import hardcoded.utils.StringUtils;
 
 public interface Expression extends Printable {
 	public static enum AtomType {
-		int8, int4, int2, int1,
+		i64, i32, i16, i8,
 		string,
 		ident,
 	}
@@ -194,19 +195,19 @@ public interface Expression extends Printable {
 		public long i_value;  // int8, int4, int2, int1
 		
 		public AtomExpr(long value) {
-			this(value, AtomType.int8);
+			this(value, AtomType.i64);
 		}
 		
 		public AtomExpr(int value) {
-			this(Integer.toUnsignedLong(value), AtomType.int4);
+			this(Integer.toUnsignedLong(value), AtomType.i32);
 		}
 		
 		public AtomExpr(short value) {
-			this(Short.toUnsignedLong(value), AtomType.int2);
+			this(Short.toUnsignedLong(value), AtomType.i16);
 		}
 		
 		public AtomExpr(byte value) {
-			this(Byte.toUnsignedLong(value), AtomType.int1);
+			this(Byte.toUnsignedLong(value), AtomType.i8);
 		}
 		
 		public AtomExpr(Identifier value) {
@@ -230,19 +231,19 @@ public interface Expression extends Printable {
 				case string: s_value = value.toString(); break;
 				case ident: d_value = (Identifier)value; break;
 				
-				case int1:
-				case int2:
-				case int4:
-				case int8: i_value = ((Number)value).longValue(); break;
+				case i8:
+				case i16:
+				case i32:
+				case i64: i_value = ((Number)value).longValue(); break;
 				default: throw new RuntimeException("Invalid atom type '" + type + "'");
 			}
 		}
 		
 		public boolean isNumber() {
-			return atomType == AtomType.int8 ||
-				   atomType == AtomType.int4 ||
-				   atomType == AtomType.int2 ||
-				   atomType == AtomType.int1;
+			return atomType == AtomType.i64 ||
+				   atomType == AtomType.i32 ||
+				   atomType == AtomType.i16 ||
+				   atomType == AtomType.i8;
 		}
 		
 		public boolean isString() {
@@ -252,10 +253,10 @@ public interface Expression extends Printable {
 		public AtomExpr convert(AtomType type) {
 			if(!isNumber()) return null; // Invalid
 			
-			if(type == AtomType.int8) return new AtomExpr((long)i_value);
-			if(type == AtomType.int4) return new AtomExpr((int)i_value);
-			if(type == AtomType.int2) return new AtomExpr((short)i_value);
-			if(type == AtomType.int1) return new AtomExpr((byte)i_value);
+			if(type == AtomType.i64) return new AtomExpr((long)i_value);
+			if(type == AtomType.i32) return new AtomExpr((int)i_value);
+			if(type == AtomType.i16) return new AtomExpr((short)i_value);
+			if(type == AtomType.i8) return new AtomExpr((byte)i_value);
 			
 			throw new RuntimeException("Invalid type cast '" + type + "'");
 		}
@@ -269,10 +270,10 @@ public interface Expression extends Printable {
 			if(!isNumber()) throw new RuntimeException("You cannot check a non number if it is zero.");
 			
 			switch(atomType) {
-				case int8: return i_value == 1;
-				case int4: return i_value == 1;
-				case int2: return i_value == 1;
-				case int1: return i_value == 1;
+				case i64: return i_value == 1;
+				case i32: return i_value == 1;
+				case i16: return i_value == 1;
+				case i8: return i_value == 1;
 				default: throw new RuntimeException("You cannot check non numbers if they are one.");
 			}
 		}
@@ -291,10 +292,10 @@ public interface Expression extends Printable {
 			switch(atomType) {
 				case string: return '\"' + s_value + '\"';
 				case ident: return d_value.name();
-				case int8: return Long.toString(i_value) + 'L';
-				case int4: return Integer.toString((int)i_value) + 'i';
-				case int2: return Short.toString((short)i_value) + 's';
-				case int1: return Byte.toString((byte)i_value) + 'b';
+				case i64: return Long.toString(i_value) + 'L';
+				case i32: return Integer.toString((int)i_value) + 'i';
+				case i16: return Short.toString((short)i_value) + 's';
+				case i8: return Byte.toString((byte)i_value) + 'b';
 				default: throw new RuntimeException("Invalid atom type '" + atomType + "'");
 			}
 		}

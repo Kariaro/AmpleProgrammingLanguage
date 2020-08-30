@@ -8,11 +8,11 @@ import java.util.List;
 import hardcoded.compiler.*;
 import hardcoded.compiler.Block.Function;
 import hardcoded.compiler.Expression.AtomExpr;
-import hardcoded.compiler.Instruction.Label;
-import hardcoded.compiler.Instruction.ObjectReg;
-import hardcoded.compiler.Instruction.Reg;
 import hardcoded.compiler.Statement.*;
 import hardcoded.compiler.constants.Insts;
+import hardcoded.compiler.instruction.Instruction.Label;
+import hardcoded.compiler.instruction.Instruction.ObjectReg;
+import hardcoded.compiler.instruction.Instruction.Reg;
 
 public class HInstructionCompiler {
 	
@@ -31,15 +31,21 @@ public class HInstructionCompiler {
 			
 			Instruction inst = compileInstructions(func, func.body).first();
 			
-			System.out.println("Instructions");
+			System.out.println("Instructions:\n");
+			
+			System.out.println(func);
 			int count = 0;
 			while(inst != null) {
+				int idx = count++;
 				if(inst.op == Insts.nop) {
-					inst = inst.next;
-					continue;
+					//inst = inst.next;
+					//continue;
 				}
 				
-				System.out.println("   [" + (count++) + "] " + inst);
+				if(inst.op == Insts.label) System.out.println();
+				System.out.printf("%4d: ", idx);
+				if(inst.op != Insts.label) System.out.print("  ");
+				System.out.printf("%s\n", inst);
 				inst = inst.next;
 			}
 		}
@@ -72,7 +78,7 @@ public class HInstructionCompiler {
 						if(shouldCheck(f)) {
 							reg_0 = Instruction.temp();
 							inst = inst.append(createInstructions(func, a.first(), reg_0));
-						} else{
+						} else {
 							reg_0 = new ObjectReg(f);
 						}
 						
@@ -99,7 +105,6 @@ public class HInstructionCompiler {
 			}
 			
 			
-			case add: case sub:
 			case div: case mul:
 			case shl: case shr:
 			case lt: case lte:
@@ -177,6 +182,52 @@ public class HInstructionCompiler {
 				break;
 			}
 			
+			case add: case sub: {
+				Insts type = Insts.convert(expr.type());
+				Expression a = expr.get(0), b = expr.get(1);
+				
+				Reg reg_0 = new ObjectReg(a);
+				if(shouldCheck(a)) {
+					reg_0 = Instruction.temp();
+					inst = inst.append(createInstructions(func, a, reg_0));
+				}
+
+				Reg reg_1 = new ObjectReg(b);
+				if(shouldCheck(b)) {
+					reg_1 = Instruction.temp();
+					inst = inst.append(createInstructions(func, b, reg_1));
+				}
+				
+				if(expr.size() > 2) {
+					
+				} else {
+					inst = inst.append(new Instruction(type, Instruction.temp(request), reg_0, reg_1));
+					break;
+				}
+				
+				Reg reg_2 = Instruction.temp();
+				inst = inst.append(new Instruction(type, reg_2, reg_0, reg_1));
+				
+				for(int i = 2; i < expr.size(); i++) {
+					b = expr.get(i);
+					reg_1 = new ObjectReg(b);
+					if(shouldCheck(b)) {
+						reg_1 = Instruction.temp();
+						inst = inst.append(createInstructions(func, b, reg_1));
+					}
+					
+					reg_0 = reg_2;
+					if(i == expr.size() - 1) {
+						reg_2 = Instruction.temp(request);
+					} else {
+						reg_2 = Instruction.temp();
+					}
+					inst = inst.append(new Instruction(type, reg_2, reg_0, reg_1));
+				}
+				
+				break;
+			}
+			
 			case call: {
 				List<Reg> params = new ArrayList<>();
 				
@@ -203,13 +254,21 @@ public class HInstructionCompiler {
 			}
 		}
 		
+		// This checks if we have modified the instruction.
+		// If we did modify the instruction we should remove
+		// the first entry because it's not needed anymore.
+		if(inst.first() != inst.last()) {
+			inst.first().next.prev = null;
+			return inst.last();
+		}
+		
 		return inst.last();
 	}
 	
 	private Instruction createIfInstructions(Function func, IfStat stat) {
 		Instruction inst = new Instruction();
 		
-		Label label_end = new Label("end");
+		Label label_end = new Label("if.end");
 		
 		if(stat.hasElseBody()) {
 			// ============================== //
@@ -222,7 +281,7 @@ public class HInstructionCompiler {
 			//    ...
 			// end:
 			
-			Label label_else = new Label("else");
+			Label label_else = new Label("if.else");
 			
 			Reg temp = Instruction.temp();
 			inst = inst.append(createInstructions(func, stat.condition(), temp));
@@ -266,9 +325,9 @@ public class HInstructionCompiler {
 		//   br [loop]
 		// end:
 		
-		Label label_end = new Label("end");
-		Label label_next = new Label("next");
-		Label label_loop = new Label("loop");
+		Label label_end = new Label("while.end");
+		Label label_next = new Label("while.next");
+		Label label_loop = new Label("while.loop");
 
 		inst = inst.append(new Instruction(Insts.label, label_next));
 		Reg temp = Instruction.temp();

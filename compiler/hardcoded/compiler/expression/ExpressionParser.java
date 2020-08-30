@@ -17,7 +17,7 @@ public final class ExpressionParser {
 		return ((AtomExpr)a).isNumber();
 	}
 	
-	private static final List<AtomType> types = Arrays.asList(AtomType.int8, AtomType.int4, AtomType.int2, AtomType.int1);
+	private static final List<AtomType> types = Arrays.asList(AtomType.i64, AtomType.i32, AtomType.i16, AtomType.i8);
 	private static final AtomType nextAtom(AtomType a, AtomType b) {
 		int ax = types.indexOf(a);
 		int bx = types.indexOf(b);
