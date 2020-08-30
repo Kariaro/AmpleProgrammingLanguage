@@ -1,4 +1,4 @@
-package hardcoded.compiler;
+package hardcoded.compiler.types;
 
 public class PointerType extends Type {
 	private Type type;

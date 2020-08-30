@@ -1,4 +1,4 @@
-package hardcoded.compiler;
+package hardcoded.compiler.types;
 
 import java.util.Objects;
 

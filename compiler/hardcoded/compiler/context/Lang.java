@@ -5,11 +5,11 @@ import java.util.Objects;
 
 import hardcoded.lexer.Token;
 
-public class Sym {
+public class Lang {
 	private LinkedList<Token> marked;
 	private Token token;
 	
-	public Sym(Token token) {
+	public Lang(Token token) {
 		this.token = token;
 		this.marked = new LinkedList<>();
 	}
@@ -31,43 +31,43 @@ public class Sym {
 		return token;
 	}
 	
-	public Sym mark() {
+	public Lang mark() {
 		marked.push(token);
 		return this;
 	}
 	
-	public Sym reset() {
+	public Lang reset() {
 		token = marked.poll();
 		return this;
 	}
 	
-	public Sym resetMarked() {
+	public Lang resetMarked() {
 		marked.clear();
 		return this;
 	}
 	
-	public Sym next() {
+	public Lang next() {
 		token = token.next();
 		return this;
 	}
 	
-	public Sym nextClear() {
+	public Lang nextClear() {
 		token = token.next();
 		marked.clear();
 		return this;
 	}
 	
-	public Sym next(int count) {
+	public Lang next(int count) {
 		token = token.next(count);
 		return this;
 	}
 	
-	public Sym prev() {
+	public Lang prev() {
 		token = token.prev();
 		return this;
 	}
 	
-	public Sym prev(int count) {
+	public Lang prev(int count) {
 		token = token.prev(count);
 		return this;
 	}

@@ -5,8 +5,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import hardcoded.compiler.Expression.AtomType;
-import hardcoded.compiler.PrimitiveType;
-import hardcoded.compiler.Type;
+import hardcoded.compiler.types.PrimitiveType;
+import hardcoded.compiler.types.Type;
 
 /**
  * This is a container class for all primitive data types.
@@ -21,12 +21,12 @@ public final class Primitives {
 	public static final Type VOID = new PrimitiveType("void", null, 0);
 	// public static final Type DOUBLE = new PrimitiveType("double", AtomType.int8, 8, true, true);
 	// public static final Type FLOAT = new PrimitiveType("float", AtomType.int4, 4, true, true);
-	public static final Type LONG = new PrimitiveType("long", AtomType.int8, 8);
-	public static final Type INT = new PrimitiveType("int", AtomType.int4, 4);
-	public static final Type SHORT = new PrimitiveType("short", AtomType.int2, 2);
-	public static final Type BYTE = new PrimitiveType("byte", AtomType.int1, 1);
-	public static final Type CHAR = new PrimitiveType("char", AtomType.int1, 1);
-	public static final Type BOOL = new PrimitiveType("bool", AtomType.int1, 1);
+	public static final Type LONG = new PrimitiveType("long", AtomType.i64, 8);
+	public static final Type INT = new PrimitiveType("int", AtomType.i32, 4);
+	public static final Type SHORT = new PrimitiveType("short", AtomType.i16, 2);
+	public static final Type BYTE = new PrimitiveType("byte", AtomType.i8, 1);
+	public static final Type CHAR = new PrimitiveType("char", AtomType.i8, 1);
+	public static final Type BOOL = new PrimitiveType("bool", AtomType.i8, 1);
 	
 	static {
 		Set<Type> types = new HashSet<Type>();

@@ -1,8 +1,9 @@
-package hardcoded.compiler;
+package hardcoded.compiler.instruction;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import hardcoded.compiler.Expression.AtomType;
 import hardcoded.compiler.constants.Insts;
 import hardcoded.utils.StringUtils;
 
@@ -12,6 +13,22 @@ import hardcoded.utils.StringUtils;
  * @author HardCoded
  */
 public class Instruction {
+	private static String createValue(int value) {
+		StringBuilder sb = new StringBuilder();
+		
+		while(true) {
+			int v = (value) % 26;
+			sb.insert(0, (char)(v + 97));
+			
+			if(value > 25) {
+				value = ((value - v) / 26) - 1;
+			} else {
+				break;
+			}
+		}
+		return sb.toString();
+	}
+	
 	public static class Reg {
 		public int index;
 		
@@ -25,7 +42,7 @@ public class Instruction {
 		
 		@Override
 		public String toString() {
-			return "R" + index;
+			return "$" + createValue(index);
 		}
 	}
 	
@@ -68,9 +85,11 @@ public class Instruction {
 	
 	public Instruction next;
 	public Instruction prev;
+	// Size modifier
 	
 	public List<Reg> params = new ArrayList<>();
 	public Insts op;
+	public AtomType size;
 	
 	public Instruction() {
 		this.op = Insts.nop;
@@ -132,6 +151,7 @@ public class Instruction {
 	public String toString() {
 		if(op == Insts.label) return params.get(0) + ":";
 		if(params.isEmpty()) return Objects.toString(op);
-		return op + " [" + StringUtils.join("], [", params) + "]";
+		return op + (size != null ? (" " + size):"")
+				  + " [" + StringUtils.join("], [", params) + "]";
 	}
 }

@@ -75,7 +75,7 @@ public final class Utils {
 	
 	public static String printPretty(Statement stat) {
 		StringBuilder sb = new StringBuilder();
-		if(stat == null) return "?"; // Invalid
+		if(stat == null) return "?";
 		
 		if(stat instanceof IfStat) {
 			IfStat is = (IfStat)stat;

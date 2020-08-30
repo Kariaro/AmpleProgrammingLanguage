@@ -6,8 +6,17 @@ import java.util.Vector;
 
 import hardcoded.compiler.Identifier.VarIdent;
 import hardcoded.compiler.constants.Printable;
+import hardcoded.compiler.types.Type;
 
 public interface Block extends Printable {
+	public static final Block EMPTY = new Block() {
+		public String asString() { return ""; }
+		public Object[] asList() { return new Object[] { }; }
+		public boolean hasElements() { return false; }
+		public List<Statement> getElements() { return null; }
+		public String toString() { return "null"; }
+	};
+	
 	public boolean hasElements();
 	public List<Statement> getElements();
 	

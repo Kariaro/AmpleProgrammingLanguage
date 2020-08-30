@@ -3,6 +3,8 @@ package hardcoded.compiler;
 import java.util.ArrayList;
 import java.util.List;
 
+import hardcoded.compiler.types.Type;
+
 public class Variable implements Statement {
 	public List<Expression> list;
 	

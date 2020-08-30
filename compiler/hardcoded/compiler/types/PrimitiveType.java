@@ -1,4 +1,4 @@
-package hardcoded.compiler;
+package hardcoded.compiler.types;
 
 import hardcoded.compiler.Expression.AtomType;
 
