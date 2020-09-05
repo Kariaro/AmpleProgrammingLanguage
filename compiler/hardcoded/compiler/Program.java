@@ -43,7 +43,7 @@ public class Program implements Printable {
 	
 	public Block.Function add(Block.Function block) {
 		blocks.add(block);
-		idents.add(new Identifier.FuncIdent(block.name, function_index++));
+		idents.add(Identifier.createFuncIdent(block.name, function_index++, block));
 		return block;
 	}
 	

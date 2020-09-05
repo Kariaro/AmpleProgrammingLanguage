@@ -46,8 +46,27 @@ public class Instruction {
 		}
 	}
 	
+	public static class NamedReg extends Reg {
+		public String name;
+		
+		public NamedReg(String name) {
+			this.name = name;
+		}
+		
+		public NamedReg(String name, int index) {
+			this.index = index;
+			this.name = name;
+		}
+		
+		@Override
+		public String toString() {
+			return name;
+		}
+	}
+	
 	private static final AtomicInteger atomic_reg = new AtomicInteger();
 	public static Reg temp() { return new Reg(atomic_reg.getAndIncrement()); }
+	public static Reg temp(String name) { return new NamedReg(name, atomic_reg.getAndIncrement()); }
 	public static Reg temp(Reg reg) { return reg != null ? reg:temp(); }
 	
 	public static class ObjectReg extends Reg {

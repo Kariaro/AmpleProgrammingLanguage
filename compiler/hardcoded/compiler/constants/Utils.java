@@ -16,6 +16,7 @@ public final class Utils {
 		void constantFolding(List<T> parent, int index, Function func);
 	}
 	
+	// TODO: Allow for removing and adding to the expression while preserving the execute_for_all !!
 	public static void execute_for_all_expressions(Function func, Folding<Expression> fc) {
 		getAllExpressions(func, func.body, fc);
 	}
@@ -42,8 +43,10 @@ public final class Utils {
 		if(stat instanceof ExprStat) {
 			ExprStat es = (ExprStat)stat;
 			for(int i = 0; i < es.list.size(); i++) {
-				getAllExpressions(func, es.list.get(i), fc);
+				Expression e = es.list.get(i);
+				getAllExpressions(func, e, fc);
 				fc.constantFolding(es.list, i, func);
+				if(e != es.list.get(i)) i--;
 			}
 		}
 		

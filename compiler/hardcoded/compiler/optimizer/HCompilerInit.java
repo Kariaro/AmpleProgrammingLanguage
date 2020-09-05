@@ -1,6 +1,5 @@
 package hardcoded.compiler.optimizer;
 
-import static hardcoded.compiler.Expression.AtomType.*;
 import static hardcoded.compiler.Expression.ExprType.*;
 
 import java.io.File;
@@ -10,14 +9,11 @@ import java.util.*;
 import hardcoded.compiler.*;
 import hardcoded.compiler.Block.Function;
 import hardcoded.compiler.Expression.*;
-import hardcoded.compiler.Identifier.ParamIdent;
 import hardcoded.compiler.Statement.*;
-import hardcoded.compiler.constants.Keywords;
-import hardcoded.compiler.constants.Modifiers;
-import hardcoded.compiler.constants.Primitives;
+import hardcoded.compiler.constants.*;
 import hardcoded.compiler.context.Lang;
 import hardcoded.compiler.types.*;
-import hardcoded.errors.CompilerException;
+import hardcoded.errors.CompilerError;
 import hardcoded.lexer.Tokenizer;
 import hardcoded.lexer.TokenizerFactory;
 import hardcoded.lexer.TokenizerOld;
@@ -63,10 +59,6 @@ public class HCompilerInit {
 		
 		return this.current_program;
 	}
-	
-//	public Program getProgram() {
-//		return current_program;
-//	}
 	
 	public boolean hasErrors() {
 		return hasErrors;
@@ -129,8 +121,6 @@ public class HCompilerInit {
 	}
 	
 	public Block nextBlock() {
-		// TODO: Classes and global variables
-		
 		if(reader.valueEquals("#")) {
 			reader.next();
 			parseCompiler();
@@ -211,7 +201,7 @@ public class HCompilerInit {
 		if(!isType(reader)) syntaxError("Invalid function return type '%s'", reader);
 		func.returnType = getTypeFromSymbol();
 		
-		if(!isValidName(reader)) syntaxError("Invalid function name '%s'", reader);
+		if(!isValidName(reader)) syntaxError(CompilerError.INVALID_FUNCTION_NAME, reader); // "Invalid function name '%s'"
 		
 		boolean needsBody = false;
 		if(FUNCTIONS.containsKey(reader.value())) {
@@ -242,7 +232,7 @@ public class HCompilerInit {
 		
 		while(!reader.valueEquals(")")) {
 			Variable arg = createNewArgument();
-			func.arguments.add(new ParamIdent(arg.type, arg.name, func.arguments.size()));
+			func.arguments.add(Identifier.createParamIdent(arg.name, func.arguments.size(), arg.type));
 			if(!reader.valueEquals(",")) {
 				if(reader.valueEquals(")")) break;
 				syntaxError("Invalid function argument separator '%s' did you forget a comma ? ','", reader);
@@ -283,7 +273,7 @@ public class HCompilerInit {
 					if(!var.isInitialized()) {
 						list.list.remove(i--);
 					} else {
-						list.list.set(i, new ExprStat(new OpExpr(ExprType.mov, new AtomExpr(ident), var.value())));
+						list.list.set(i, new ExprStat(new OpExpr(ExprType.set, new AtomExpr(ident), var.value())));
 					}
 				}
 			}
@@ -304,19 +294,20 @@ public class HCompilerInit {
 		if(reader.valueEquals("break")) {
 			if(!reader.next().valueEquals(";")) syntaxError("Invalid break statement. Expected semicolon but got '%s'", reader);
 			reader.nextClear();
-			return new BreakStat();
+			return new ExprStat(new OpExpr(leave));
 		} else if(reader.valueEquals("continue")) {
 			if(!reader.next().valueEquals(";")) syntaxError("Invalid continue statement. Expected semicolon but got '%s'", reader);
 			reader.nextClear();
-			return new ContinueStat();
+			return new ExprStat(new OpExpr(loop));
 		} else if(reader.valueEquals("return")) {
-			ReturnStat stat = new ReturnStat();
+			OpExpr expr = new OpExpr(ret);
 			
 			reader.next();
-			if(!reader.valueEquals(";")) stat.setValue(nextExpression());
+			if(!reader.valueEquals(";")) expr.add(nextExpression());
 			if(!reader.valueEquals(";")) syntaxError("Invalid return statement. Expected semicolon but got '%s'", reader);
 			reader.nextClear();
-			return stat;
+			
+			return new ExprStat(expr);
 		}
 		
 		
@@ -328,18 +319,19 @@ public class HCompilerInit {
 				reader.nextClear();
 				return new ExprStat(expr);
 			}
-			syntaxError("Invalid expression statement. Expected semicolon but got '%s'", reader);
+			syntaxError("Invalid expr statement. Expected semicolon but got '%s'", reader);
+			reader.nextClear();
 		}
 		
 		return null;
 	}
 	
 	private Statement makeWhileStatement() {
-		if(!reader.next().valueEquals("(")) syntaxError("Invalid while statement definition. Expected open bracket '(' but got '%s'", reader);
+		if(!reader.next().valueEquals("(")) syntaxError(CompilerError.INVALID_XXX_STATEMENT_EXPECTED_OPEN_PARENTHESIS, "while", reader);
 		WhileStat stat = new WhileStat();
 		reader.next();
 		stat.setCondition(nextExpression());
-		if(!reader.valueEquals(")")) syntaxError("Invalid while statement definition. Expected close bracket ')' but got '%s'", reader);
+		if(!reader.valueEquals(")")) syntaxError(CompilerError.UNCLOSED_STATEMENT_PARENTHESES, reader);
 		reader.next();
 		stat.setBody(nextStatement());
 		reader.resetMarked();
@@ -347,7 +339,7 @@ public class HCompilerInit {
 	}
 	
 	private Statement makeForStatement() {
-		if(!reader.next().valueEquals("(")) syntaxError("Invalid for statement. Expected open bracket '(' but got '%s'", reader);
+		if(!reader.next().valueEquals("(")) syntaxError(CompilerError.INVALID_XXX_STATEMENT_EXPECTED_OPEN_PARENTHESIS, "for", reader);
 		ForStat stat = new ForStat(); {
 			reader.next();
 			if(!reader.valueEquals(";")) { stat.setVariables(getVariableDefinition()); reader.prev(); }
@@ -357,7 +349,7 @@ public class HCompilerInit {
 			if(!reader.valueEquals(";")) syntaxError("Invalid for statement (condition). Expected semicolon but got '%s'", reader);
 			reader.next();
 			if(!reader.valueEquals(")")) stat.setAction(nextExpression());
-			if(!reader.valueEquals(")")) syntaxError("Invalid for statement (action). Expected closing bracket ')' but got '%s'", reader);
+			if(!reader.valueEquals(")")) syntaxError(CompilerError.UNCLOSED_STATEMENT_PARENTHESES, reader);
 		}
 		reader.next();
 		stat.setBody(getStatements());
@@ -366,11 +358,11 @@ public class HCompilerInit {
 	}
 	
 	private Statement makeIfStatement() {
-		if(!reader.next().valueEquals("(")) syntaxError("Invalid if statement definition. Expected open bracket '(' but got '%s'", reader);
+		if(!reader.next().valueEquals("(")) syntaxError(CompilerError.INVALID_XXX_STATEMENT_EXPECTED_OPEN_PARENTHESIS, "if", reader);
 		IfStat stat = new IfStat();
 		reader.next();
 		stat.setCondition(nextExpression());
-		if(!reader.valueEquals(")")) syntaxError("Invalid if statement definition. Expected close bracket ')' but got '%s'", reader);
+		if(!reader.valueEquals(")")) syntaxError(CompilerError.UNCLOSED_STATEMENT_PARENTHESES, reader);
 		reader.next();
 		stat.setBody(nextStatement());
 		if(reader.valueEquals("else")) {
@@ -390,7 +382,7 @@ public class HCompilerInit {
 			Variable var = new Variable(type);
 			list.add(var);
 			
-			if(!isValidName(reader)) syntaxError("Invalid local variable name '%s'", reader);
+			if(!isValidName(reader)) syntaxError(CompilerError.INVALID_VARIABLE_NAME, reader); // "Invalid local variable name '%s'", reader);
 			if(current_function.hasIdentifier(reader.value())) syntaxError("Redeclaration of a local variable '%s'", reader);
 			var.name = reader.value();
 			reader.next();
@@ -412,9 +404,8 @@ public class HCompilerInit {
 				}
 				var.isArray = true;
 				
-				if(!reader.valueEquals("]")) syntaxError("Invalid array variable definition. Expected array closure ']' but got '%s'", reader);
-				reader.next();
-				if(!reader.valueEquals(";")) syntaxError("Invalid array variable definition. Expected a semicolon ';' but got '%s'", reader);
+				if(!reader.valueEquals("]")) syntaxError(CompilerError.UNCLOSED_ARRAY_DEFINITION, reader);
+				if(!reader.next().valueEquals(";")) syntaxError(CompilerError.UNCLOSED_VARIABLE_DECLARATION);
 				reader.nextClear();
 				break;
 			}
@@ -472,11 +463,7 @@ public class HCompilerInit {
 			stat.list.add(s);
 		}
 		
-		
-		if(!reader.valueEquals("}")) {
-			syntaxError("Invalid statement closing bracket. Expected '}' but got '%s'", reader);
-		}
-		
+		if(!reader.valueEquals("}")) syntaxError(CompilerError.UNCLOSED_CURLY_BRACKETS_STATEMENT, reader);
 		reader.nextClear();
 		
 		if(stat.list.isEmpty()) return Statement.EMPTY;
@@ -490,6 +477,9 @@ public class HCompilerInit {
 	private Expression nextExpression(boolean skipComma) {
 		reader.mark();
 		
+		/*
+		 * This is a recursive descent parser.
+		 */
 		Expression expr = new Object() {
 			private ExprType[] _e(ExprType... array) { return array; }
 			private String[] _s(String... array) { return array; }
@@ -511,30 +501,41 @@ public class HCompilerInit {
 				}
 			}
 			
-			Expression parse() {
-				return skipComma ? e14():e15();
+			Expression e_read_combine(String value, ExprType type, java.util.function.Supplier<Expression> func) { return e_read_combine(value, type, func, func); }
+			Expression e_read_combine(String value, ExprType type, java.util.function.Supplier<Expression> entry, java.util.function.Supplier<Expression> func) {
+				boolean hasFirst = false;
+				for(Expression expr = entry.get();;) {
+					if(reader.valueEquals(value)) {
+						reader.next();
+						
+						if(!hasFirst) {
+							expr = new OpExpr(type, expr, func.get());
+							hasFirst = true;
+						} else {
+							OpExpr o = (OpExpr)expr;
+							o.add(func.get());
+						}
+					} else return expr;
+				}
 			}
 			
-			Expression e15() { return e_read(_s(","), _e(comma), this::e14); }
+			Expression parse() { return skipComma ? e14():e15(); }
+			Expression e15() { return e_read_combine(",", comma, this::e14); }
 			Expression e14() { // Left associative
-				Expression e13 = e13();
+				Expression lhs = e13();
 				
-				// If the next expression modifies the assigner then
-				//   a temporary variable should get created that holds
-				//   the value and adds it in the end.
+				// Check if the value we are looking at is a assignment operator.
+				if(!Operators.isAssignmentOperator(reader.value())) return lhs;
+				
+				// Check if the left hand side can be modified
+				if(!acceptModification(lhs)) syntaxError(CompilerError.INVALID_MODIFICATION);
 				
 				ExprType type = null;
 				switch(reader.value()) {
-					case "=": {
-						if(!acceptModification(e13)) syntaxError("The expression you are trying to modify is not modifiable.");
-						reader.next();
-						return new OpExpr(mov, e13, e14());
-					}
-					
+					case "=": type = set; break;
 					case "-=": type = sub; break;
 					case "+=": type = add; break;
 					case "%=": type = mod; break;
-					
 					case "<<=": type = shl; break;
 					case ">>=": type = shr; break;
 					case "*=": type = mul; break;
@@ -544,67 +545,87 @@ public class HCompilerInit {
 					case "|=": type = or; break;
 				}
 				
-				if(type == null) return e13;
-				switch(type) {
-					case mod: case sub:
-					
-					case shl: case shr:
-					case mul: case div:
-					case add: case and:
-					case xor: case or: {
-						if(!acceptModification(e13)) syntaxError("The expression you are trying to modify is not modifiable.");
-						reader.next();
-						Expression next = e14();
-						if(!next.isPure()) {
-							AtomExpr temp = new AtomExpr(current_function.temp(new UndefinedType()));
-							
-							return new OpExpr(comma,
-								new OpExpr(mov, temp, new OpExpr(addptr, e13)),
-								new OpExpr(mov,
-									new OpExpr(decptr, temp),
-									new OpExpr(type,
-										new OpExpr(decptr, temp),
-										next
-									)
-								)
-							);
+				reader.next();
+				
+				// The value that should be assigned.
+				Expression assigner = lhs;
+				
+				// Right hand side of the expression.
+				Expression rhs = e14();
+				
+				/*
+				 * If the left hand side is a comma expression then
+				 * this will be the expression containing the assigner
+				 * variable.
+				 */
+				Expression comma_parent = lhs;
+				boolean comma_assigned = false;
+				
+				{
+					/* If the left hand side of the expression is a comma	[ ( ... , x) ]
+					 * then the assignment operation should be placed only
+					 * on the last element of that comma expression.
+					 * 
+					 * An example would be that the expression 	[ ( ... , x) += 5 ]
+					 * should become 							[ ( ... , x += 5) ]
+					 */
+					if(lhs.type() == comma) {
+						while(assigner.type() == comma) {
+							comma_parent = assigner;
+							assigner = assigner.last();
 						}
 						
-						return new OpExpr(mov, e13, new OpExpr(type, e13, next));
+						comma_assigned = true;
 					}
-					default:
+					
+					/* Check if the right hand side of the expression is not pure.
+					 * A pure expression is a expression only made up of purely
+					 * numbers and mathimatical operations on those numbers.
+					 */
+					if(!rhs.isPure()) {
+						AtomExpr temp = new AtomExpr(current_function.temp(Primitives.getTypeFromAtom(rhs.calculateNumberSize())));
+						rhs = new OpExpr(comma,
+							new OpExpr(set, temp, rhs),
+							temp
+						);
+					}
+					
+					if(type != set) rhs = new OpExpr(type, lhs, rhs);
+					
+					if(comma_assigned) {
+						((OpExpr)comma_parent).set(comma_parent.size() - 1, new OpExpr(set, assigner, rhs));
+						return lhs;
+					}
+					
+					return new OpExpr(set, assigner, rhs);
 				}
-				
-				return e13;
 			}
 			
 			Expression e13() {
-				Expression e13 = e12();
+				Expression expr = e12();
 				if(reader.valueEquals("?")) {
 					reader.next();
 					Expression b = e12();
 					if(!reader.valueEquals(":")) syntaxError("Invalid ternary operation a ? b : c. Missing the colon. '%s'", reader);
-					
-					// Cannot optimize easyly
-					// (e13 && (temp = b, 1) || (temp = c), temp)
 					reader.next();
 					Expression c = e12();
 					
-					AtomExpr temp = new AtomExpr(current_function.temp(new UndefinedType()));
+					
+					AtomExpr temp = new AtomExpr(current_function.temp(Primitives.getTypeFromAtom(AtomType.largest(b.calculateNumberSize(), c.calculateNumberSize()))));
 					return new OpExpr(
 						comma,
 						new OpExpr(cor,
 							new OpExpr(cand,
-								e13,
-								new OpExpr(comma, new OpExpr(mov, temp, b), new AtomExpr(1))
+								expr,
+								new OpExpr(comma, new OpExpr(set, temp, b), new AtomExpr(1))
 							),
-							new OpExpr(comma, new OpExpr(mov, temp, c))
+							new OpExpr(comma, new OpExpr(set, temp, c))
 						),
 						temp
 					);
 				}
 				
-				return e13;
+				return expr;
 			}
 			
 			Expression e12() { return e_read(_s("||"), _e(cor), this::e11, this::e12); }
@@ -630,30 +651,55 @@ public class HCompilerInit {
 					case "~": { reader.next(); return new OpExpr(nor, e1()); }
 					case "-": { reader.next(); return new OpExpr(neg, e1()); }
 					
-					// FIXME: Add this later!!!!
 					case "++": case "--": {
 						reader.next();
-						Expression expr = e1();
-						if(!acceptModification(expr)) syntaxError("The expression you are trying to modify is not modifiable.");
+						Expression rhs = e1();
+						if(!acceptModification(rhs)) syntaxError(CompilerError.INVALID_MODIFICATION);
 						
-						int direction = value.equals("++") ? 1:-1;
+						AtomExpr number = new AtomExpr(value.equals("++") ? 1:-1, rhs.calculateNumberSize());
 						
-						if(!expr.isPure()) {
-							AtomExpr ident = new AtomExpr(current_function.temp(new UndefinedType()));
+						// TODO:
+//						Expression assigner = rhs;
+//						Expression comma_parent = rhs;
+//						boolean comma_assigned = false;
+//						if(rhs.type() == comma) {
+//							while(assigner.type() == comma) {
+//								comma_parent = assigner;
+//								assigner = assigner.last();
+//							}
+//							comma_assigned = true;
+//						}
+//						
+//						if(!rhs.isPure()) {
+//							AtomExpr temp = new AtomExpr(current_function.temp(Primitives.getTypeFromAtom(number.atomType())));
+//							rhs = new OpExpr(comma,
+//								new OpExpr(set, temp, assigner),
+//								new OpExpr(set, assigner assigner),
+//								temp
+//							);
+//						}
+//						
+//						if(comma_assigned) {
+//							return assigner;
+//						}
+						
+						// TODO: Use the same method as the assignment operators.
+						if(!rhs.isPure()) {
+							AtomExpr ident = new AtomExpr(current_function.temp(Primitives.getTypeFromAtom(number.atomType()))); // rhs.calculateNumberSize())));
 							
 							return new OpExpr(comma,
-								new OpExpr(mov, ident, new OpExpr(addptr, expr)),
-								new OpExpr(mov,
+								new OpExpr(set, ident, new OpExpr(addptr, rhs)),
+								new OpExpr(set,
 									new OpExpr(decptr, ident),
 									new OpExpr(add,
 										new OpExpr(decptr, ident),
-										new AtomExpr(direction)
+										number //new AtomExpr(direction, rhs.calculateNumberSize())
 									)
 								)
 							);
 						}
 						
-						return new OpExpr(mov, expr, new OpExpr(add, expr, new AtomExpr(direction)));
+						return new OpExpr(set, rhs, new OpExpr(add, rhs, number)); //new AtomExpr(direction, rhs.calculateNumberSize())));
 					}
 					
 					case "(": {
@@ -661,11 +707,10 @@ public class HCompilerInit {
 							Type type = getTypeFromSymbol();
 							if(type instanceof PrimitiveType) {
 								PrimitiveType pt = (PrimitiveType)type;
-								
-								if(pt.getType() == null) syntaxError("Invalid cast expression. You cannot cast to the type 'void'.");
+								if(pt.getType() == null) syntaxError(CompilerError.INVALID_CAST_TYPE, pt.getType());
 							}
 							
-							if(!reader.valueEquals(")")) syntaxError("Invalid cast expression. Expected closing bracket ')' but got '%s'", reader);
+							if(!reader.valueEquals(")")) syntaxError(CompilerError.UNCLOSED_CAST_PARENTHESES, reader);
 							reader.next();
 							return new CastExpr(type, e2());
 						} else reader.prev();
@@ -674,29 +719,30 @@ public class HCompilerInit {
 					default: {
 						Expression e1 = e1();
 						
-						// FIXME: Add this later!!!!
 						switch(reader.value()) {
 							case "++": case "--": {
-								if(!acceptModification(e1)) syntaxError("The expression you are trying to modify is not modifiable.");
+								if(!acceptModification(e1)) syntaxError(CompilerError.INVALID_MODIFICATION);
 								int direction = reader.value().equals("++") ? 1:-1;
 								reader.next();
 								
-								AtomExpr ident2 = new AtomExpr(current_function.temp(new UndefinedType()));
+								// TODO: Use the same solution as the assignment operators.
+								
+								AtomExpr ident2 = new AtomExpr(current_function.temp(Primitives.getTypeFromAtom(e1.calculateNumberSize())));
 								if(!e1.isPure()) {
-									AtomExpr ident1 = new AtomExpr(current_function.temp(new UndefinedType()));
+									AtomExpr ident1 = new AtomExpr(current_function.temp(Primitives.getTypeFromAtom(e1.calculateNumberSize())));
 									
 									return new OpExpr(comma,
-										new OpExpr(mov, ident2, new OpExpr(addptr, e1)),
-										new OpExpr(mov, ident1, new OpExpr(decptr, ident2)),
-										new OpExpr(mov, new OpExpr(decptr, ident2), new OpExpr(add, new OpExpr(decptr, ident2), new AtomExpr(direction))),
-										new OpExpr(mov, e1, new OpExpr(add, e1, new AtomExpr(direction))),
+										new OpExpr(set, ident2, new OpExpr(addptr, e1)),
+										new OpExpr(set, ident1, new OpExpr(decptr, ident2)),
+										new OpExpr(set, new OpExpr(decptr, ident2), new OpExpr(add, new OpExpr(decptr, ident2), new AtomExpr(direction))),
+										new OpExpr(set, e1, new OpExpr(add, e1, new AtomExpr(direction))),
 										ident1
 									);
 								}
 								
 								return new OpExpr(comma,
-									new OpExpr(mov, ident2, e1),
-									new OpExpr(mov, e1, new OpExpr(add, e1, new AtomExpr(direction))),
+									new OpExpr(set, ident2, e1),
+									new OpExpr(set, e1, new OpExpr(add, e1, new AtomExpr(direction))),
 									ident2
 								);
 							}
@@ -707,7 +753,8 @@ public class HCompilerInit {
 								case "[": {
 									reader.next();
 									Expression expr = e15();
-									if(!reader.valueEquals("]")) syntaxError("Invalid array close character. Expected '[' but got '%s'", reader);
+									
+									if(!reader.valueEquals("]")) syntaxError(CompilerError.UNCLOSED_ARRAY_EXPRESSION, reader);
 									reader.next();
 									
 									e1 = new OpExpr(decptr, new OpExpr(add, e1, expr));
@@ -720,8 +767,13 @@ public class HCompilerInit {
 								// case "::": e1 = new BiExpr("NMEMBER", e1, e1(symbol.next())); continue;
 								
 								case "(": {
-									OpExpr expr = new OpExpr(call);
-									expr.list.add(e1);
+									if(!(e1 instanceof AtomExpr)) {
+										// Function pointer ?
+										syntaxError("Invalid call expression! %s", e1);
+										break;
+									}
+									OpExpr o = new OpExpr(call);
+									o.list.add(e1);
 									reader.next();
 									
 									AtomExpr ae = (AtomExpr)e1;
@@ -729,12 +781,9 @@ public class HCompilerInit {
 									
 									int length = func.arguments.size();
 									for(int i = 0; i < length; i++) {
-										//Variable argument = func.arguments.get(i);
-										
 										Expression arg = e14();
 										if(arg == null) syntaxError("Invalid call argument value.");
-										// System.out.println(argument + " /// " + arg + " [" + arg.type() + "]");
-										expr.list.add(arg);
+										o.list.add(arg);
 										
 										if(reader.valueEquals(",")) {
 											if(i == length - 1) syntaxError("Too many arguments calling function '%s' expected %s", func.name, length + (length == 1 ? " argument":"arguments"));
@@ -744,12 +793,12 @@ public class HCompilerInit {
 										
 										if(i != length - 1) syntaxError("Not enough arguments to call function '%s' expected %s but got %d", func.name, length + (length == 1 ? " argument":"arguments"), i + 1);
 										
-										if(!reader.valueEquals(")")) syntaxError("Invalid inline calling argument. Expected closing bracket ')' but got '%s'", reader);
+										if(!reader.valueEquals(")")) syntaxError(CompilerError.UNCLOSED_CALL_PARENTHESES, reader);
 										reader.next();
 										break;
 									}
 									
-									e1 = expr;
+									e1 = o;
 									continue;
 								}
 							}
@@ -761,29 +810,18 @@ public class HCompilerInit {
 				}
 			}
 			
-			private long parseLong(String value) {
-				if(value.startsWith("0x")) return Long.parseLong(value.substring(2, value.length() - 1), 16);
-				else return Long.parseLong(value);
-			}
-			
-			private int parseInteger(String value) {
-				if(value.startsWith("0x")) return Integer.parseInt(value.substring(2), 16);
-				else return Integer.parseInt(value);
-			}
-			
 			Expression e1() {
-				if(reader.groupEquals("DOUBLE") || reader.groupEquals("FLOAT")) syntaxError("Float data types are not implemented in this language."); // TODO: Implement
+				if(reader.groupEquals("DOUBLE") || reader.groupEquals("FLOAT")) syntaxError("Float data types are not implemented in this language.");
 				if(reader.groupEquals("LONG")) { String value = reader.value(); reader.next(); return new AtomExpr(parseLong(value)); }
 				if(reader.groupEquals("INT")) { String value = reader.value(); reader.next(); return new AtomExpr(parseInteger(value)); }
 				if(reader.groupEquals("STRING")) { String value = reader.value(); reader.next(); return new AtomExpr(value.substring(1, value.length() - 1)); } // TODO: Unicode ?
 				
 				if(reader.groupEquals("CHAR")) { // TODO: Unicode
 					String value = StringUtils.unescapeString(reader.value().substring(1, reader.value().length() - 1));
-					if(value.length() != 1) syntaxError("Invalid char expression. Expected only one character.");
+					if(value.length() != 1) syntaxError(CompilerError.INVALID_CHAR_LITERAL_SIZE);
 					reader.next();
 					
-					char c = value.charAt(0);
-					return new AtomExpr((byte)(c & 0xff));
+					return new AtomExpr((byte)(value.charAt(0) & 0xff));
 				}
 				
 				if(reader.groupEquals("IDENTIFIER")) {
@@ -812,12 +850,22 @@ public class HCompilerInit {
 				if(reader.valueEquals("(")) {
 					reader.next();
 					Expression expr = e15();
-					if(!reader.valueEquals(")")) syntaxError("Invalid bracket close on expression. Expected close bracket ')' but got '%s'", reader);
+					if(!reader.valueEquals(")")) syntaxError(CompilerError.UNCLOSED_EXPRESSION_PARENTHESES, reader);
 					reader.next();
 					return expr;
 				}
 				
 				return null;
+			}
+			
+			private long parseLong(String value) {
+				if(value.startsWith("0x")) return Long.parseLong(value.substring(2, value.length() - 1), 16);
+				else return Long.parseLong(value.substring(0, value.length() - 1));
+			}
+			
+			private int parseInteger(String value) {
+				if(value.startsWith("0x")) return Integer.parseInt(value.substring(2), 16);
+				else return Integer.parseInt(value);
 			}
 		}.parse();
 		
@@ -837,11 +885,18 @@ public class HCompilerInit {
 	private boolean acceptModification(Expression expr) {
 		if(expr instanceof AtomExpr) {
 			AtomExpr e = (AtomExpr)expr;
-			return e.atomType() == ident;
+			if(!e.isIdentifier()) return false;
+			Identifier ident = e.d_value;
+			
+			return !ident.temp();
 		}
 		
 		if(expr instanceof OpExpr) {
 			OpExpr e = (OpExpr)expr;
+			if(e.type == comma) {
+				return acceptModification(e.last());
+			}
+			
 			return e.type == decptr;
 		}
 		
@@ -853,7 +908,7 @@ public class HCompilerInit {
 	}
 	
 	public Type getTypeFromSymbol() {
-		if(!isType(reader)) syntaxError("Invalid type '%s'", reader);
+		if(!isType(reader)) syntaxError(CompilerError.INVALID_TYPE, reader);
 		Type type = defined_types.get(reader.value());
 		reader.next();
 		
@@ -887,13 +942,17 @@ public class HCompilerInit {
 		return true;
 	}
 	
+	public void syntaxError(CompilerError error, Object... args) {
+		syntaxError(error.getMessage(), args);
+	}
+	
 	public void syntaxError(String format, Object... args) {
 		StringBuilder message = new StringBuilder();
-		message.append("(line:").append(reader.line()).append(", column:").append(reader.column()).append(") ")
+		message.append("(line:").append(reader.line()).append(", col:").append(reader.column()).append(") ")
 			.append(String.format(format, args));
 		
 		System.err.println(message);
 		hasErrors = true;
-		throw new CompilerException();
+		//throw new CompilerException();
 	}
 }

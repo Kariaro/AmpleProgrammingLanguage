@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
-import hardcoded.compiler.Identifier.VarIdent;
 import hardcoded.compiler.constants.Printable;
 import hardcoded.compiler.types.Type;
 
@@ -67,7 +66,7 @@ public interface Block extends Printable {
 		
 		public Identifier add(Variable var) {
 			if(!hasIdentifier(var.name)) { // throw already defined?
-				Identifier ident = new VarIdent(var.type, var.name, var_index++);
+				Identifier ident = Identifier.createVarIdent(var.name, var_index++, var.type);
 				getScope().add(ident);
 				return ident;
 			}
@@ -101,12 +100,12 @@ public interface Block extends Printable {
 			return null;
 		}
 		
-		public VarIdent temp(Type type) {
-			VarIdent result = new VarIdent(type, "$temp" + temp_counter, temp_counter);
-			getScope().add(result);
+		public Identifier temp(Type type) {
+			Identifier ident = Identifier.createVarIdent("$temp" + temp_counter, temp_counter, type, true);
+			getScope().add(ident);
 			temp_counter++;
 			
-			return result;
+			return ident;
 		}
 		
 		public Function inc_scope() {

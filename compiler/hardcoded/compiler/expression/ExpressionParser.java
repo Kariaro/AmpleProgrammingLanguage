@@ -6,6 +6,7 @@ import java.util.List;
 import hardcoded.compiler.Expression;
 import hardcoded.compiler.Expression.*;
 
+// TODO: Unsigned addition.
 public final class ExpressionParser {
 	private static final boolean isNumbers(Expression... array) {
 		for(Expression e : array) if(!isNumber(e)) return false;
@@ -53,6 +54,10 @@ public final class ExpressionParser {
 	
 	private static final BiOpr DIV = new BiOpr() {
 		public AtomExpr o(long a, long b) { return new AtomExpr(a / b); }
+	};
+	
+	private static final BiOpr MOD = new BiOpr() {
+		public AtomExpr o(long a, long b) { return new AtomExpr(a % b); }
 	};
 	
 	
@@ -127,6 +132,7 @@ public final class ExpressionParser {
 	public static Expression add(AtomExpr a, AtomExpr b) { return ADD.run(a, b); }
 	public static Expression mul(AtomExpr a, AtomExpr b) { return MUL.run(a, b); }
 	public static Expression div(AtomExpr a, AtomExpr b) { return DIV.run(a, b); }
+	public static Expression mod(AtomExpr a, AtomExpr b) { return MOD.run(a, b); }
 	
 	public static Expression xor(AtomExpr a, AtomExpr b) { return XOR.run(a, b); }
 	public static Expression or(AtomExpr a, AtomExpr b) { return OR.run(a, b); }
@@ -165,6 +171,7 @@ public final class ExpressionParser {
 			
 			case mul: return MUL.run(a, b);
 			case div: return DIV.run(a, b);
+			case mod: return MOD.run(a, b);
 
 			case add: return ADD.run(a, b);
 			case sub: return SUB.run(a, b);

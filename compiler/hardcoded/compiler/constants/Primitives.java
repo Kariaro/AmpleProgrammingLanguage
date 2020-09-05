@@ -69,6 +69,14 @@ public final class Primitives {
 		return null;
 	}
 	
+	public static Type getTypeFromAtom(AtomType type) {
+		if(type == AtomType.i64) return LONG;
+		if(type == AtomType.i32) return INT;
+		if(type == AtomType.i16) return SHORT;
+		if(type == AtomType.i8) return BYTE;
+		return null;
+	}
+	
 	/**
 	 * Returns a unmodifiable set with all primitives inside of it.
 	 * @return the set of primitives.

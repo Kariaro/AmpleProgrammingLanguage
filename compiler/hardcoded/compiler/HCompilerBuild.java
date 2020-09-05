@@ -39,8 +39,13 @@ public class HCompilerBuild {
 		init = new HCompilerInit();
 		
 		String file = "main.hc";
-		//file = "tests/pointer_000.hc";
-		//file = "test_syntax.hc";
+		// file = "tests/000_pointer.hc";
+		// file = "tests/001_comma.hc";
+		// file = "tests/002_invalid_assign.hc";
+		// file = "tests/003_invalid_brackets.hc";
+		// file = "tests/004_cor_cand.hc";
+		// file = "tests/005_assign_comma.hc";
+		// file = "test_syntax.hc";
 		
 		try {
 			build(file);
@@ -49,6 +54,7 @@ public class HCompilerBuild {
 		}
 	}
 	
+	private hardcoded.visualization.HC2Visualization vs = null;
 	/**
 	 * 
 	 * @param	pathname	A pathname string.
@@ -62,12 +68,12 @@ public class HCompilerBuild {
 			throw new CompilerException("Compiler errors.");
 		}
 		
-		
-		
+		vs = new hardcoded.visualization.HC2Visualization();
+		vs.show(current_program);
+		//Thread.sleep(5000);
 		doConstantFolding();
 		hic.compile(current_program);
 		
-		// new hardcoded.visualization.HC2Visualization().show(current_program);
 		
 		for(Block block : current_program.list()) {
 			if(!(block instanceof Function)) continue;
@@ -84,6 +90,15 @@ public class HCompilerBuild {
 	private void constantFolding(List<Expression> parent, int index, Function func) {
 		Expression expr = parent.get(index);
 		// System.out.println("Folding: [" + func.name + "], [" + expr + "]");
+		
+		/* If the left hand side of the expression is a comma	[ ( ... , x) ]
+		 * then the assignment operation should be placed only
+		 * on the last element of that comma expression.
+		 * 
+		 * An example would be that the expression 	[ ( ... , x) += 5 ]
+		 * should become 							[ ( ... , x += 5) ]
+		 */
+		
 		
 		if(expr instanceof CastExpr) {
 			CastExpr e = (CastExpr)expr;
@@ -112,6 +127,18 @@ public class HCompilerBuild {
 		if(expr instanceof OpExpr) {
 			OpExpr e = (OpExpr)expr;
 			
+			/* If the type of the expression is one of	[ add, sub, cor, cand, comma ]
+			 * then the expression can be expanded.
+			 * 
+			 * Expanding an expression is to remove nested operations and put them
+			 * into one expression. 
+			 * 
+			 * An example of this expansion would be	[ add(1, add(2, add(3, 4))) ]
+			 * where it can be expanded into			[ add(1, 2, 3, 4) ]
+			 * 
+			 * Expanding expression will make it easier for the compiler to convert
+			 * to machine code later.
+			 */
 			if(e.type == add || e.type == sub || e.type == cor || e.type == cand || e.type == comma) {
 				for(int i = e.size() - 1; i >= 0; i--) {
 					Expression ex = e.get(i);
@@ -129,17 +156,59 @@ public class HCompilerBuild {
 			}
 	
 			switch(e.type) {
-				case comma: {
-					for(int i = 0; i < e.size() - 1; i++) {
-						if(!e.hasSideEffects()) e.list.remove(i--);
+				case set: {
+					Expression a = e.first();
+					Expression b = e.last();
+					
+					boolean hasComma = a.type() == comma || b.type() == comma;
+					
+					if(hasComma) {
+						/* Folding the expression			[ set(comma( AAA , x), comma( BBB , y)) ]
+						 * 
+						 * The comma expression has already removed all elements that does not
+						 * have side effects or expanded the comma expression if there was only one
+						 * element inside it. This means that if we see a comma expression then we
+						 * need to change it to				[ comma( AAA , BBB , set(x, y)) ]
+						 */
+						OpExpr o = new OpExpr(comma);
+						
+						if(a.type() == comma) {
+							/* Folding the expression		[ set(comma( AAA , x), y) ]
+							 * into							[ comma( AAA , set(x, y)) ] */
+							for(int i = 0; i < a.size() - 1; i++) o.add(a.get(i));
+							e.set(0, a.last());
+						}
+						
+						if(b.type() == comma) {
+							/* Folding the expression		[ set(x, comma( BBB , y)) ]
+							 * into							[ comma( BBB , set(x, y)) ] */
+							for(int i = 0; i < b.size() - 1; i++) o.add(b.get(i));
+							e.set(1, b.last());
+						}
+						
+						o.add(e);
+						
+						// Change the expression into the new format.
+						parent.set(index, o);
 					}
+					
+					break;
+				}
+				
+				case comma: {
+					System.out.println("Befor -> '" + e.list + "'");
+					
+					for(int i = 0; i < e.size() - 1; i++) {
+						if(!e.get(i).hasSideEffects()) e.list.remove(i--);
+					}
+					
+					System.out.println("After -> '" + e.list + "'");
 					
 					if(e.size() == 1) parent.set(index, e.first());
 					break;
 				}
 				
-				case sub:
-				case add: {
+				case sub: case add: {
 					List<AtomExpr> list = new ArrayList<>();
 					for(int i = 0; i < e.size(); i++) {
 						Expression e0 = e.get(i);
@@ -237,12 +306,6 @@ public class HCompilerBuild {
 				}
 			}
 		}
-		
-		// Good now we can change the object in question..
-		// parent.set(index, null); // Testing
-		// Expression next = Expression.optimize(expr);
-		// parent.set(index, next);
-		// System.out.println("       : [" + next + "]");
 	}
 	
 	private void doConstantFolding() {
@@ -253,9 +316,22 @@ public class HCompilerBuild {
 			Function func = (Function)block;
 			
 			Utils.execute_for_all_expressions(func, (parent, index, function) -> {
-				//String bef = "" + parent.get(index);
+				String bef = "" + parent.get(index);
 				constantFolding(parent, index, function);
-				//System.out.println("[" + index + "] (" + bef + ") -> (" + parent.get(index) + ")");
+				
+				String now = "" + parent.get(index);
+				
+				if(!bef.equals(now)) {
+					vs.show(current_program);
+					vs.getComponent().repaint();
+//					try {
+//						Thread.sleep(1000);
+//					} catch (InterruptedException e) {
+//						e.printStackTrace();
+//					}
+					
+					System.out.println("[" + index + "] (" + bef + ")\n[" + index + "] (" + now + ")\n");
+				}
 			});
 			
 			Utils.execute_for_all_statements(func, (parent, index, function) -> {
