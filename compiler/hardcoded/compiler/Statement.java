@@ -23,9 +23,7 @@ public interface Statement extends Printable {
 	public static class NestedStat implements Statement {
 		public List<Statement> list = new ArrayList<>();
 		
-		public NestedStat() {
-			
-		}
+		public NestedStat() {}
 		
 		public NestedStat(Statement... fill) {
 			list.addAll(Arrays.asList(fill));
@@ -123,7 +121,6 @@ public interface Statement extends Printable {
 			return get(3);
 		}
 		
-		// Statement or Expression ?
 		public void setVariables(Statement stat) {
 			set(1, stat);
 		}
@@ -199,36 +196,6 @@ public interface Statement extends Printable {
 		public String toString() { return "if(" + condition() + ");"; } // TODO: Show if else?
 	}
 	
-	public static class BreakStat implements Statement {
-		public String toString() { return "break;"; }
-		public String asString() { return "BREAK"; }
-		public Object[] asList() { return new Object[] {}; }
-	}
-	
-	public static class ContinueStat implements Statement {
-		public String toString() { return "continue;"; }
-		public String asString() { return "CONTINUE"; }
-		public Object[] asList() { return new Object[] {}; }
-	}
-	
-	public static class ReturnStat extends ExprStat {
-		public ReturnStat() {
-			super(null);
-		}
-		
-		public void setValue(Expression expr) {
-			list.set(0, expr);
-		}
-		
-		public Expression value() {
-			return list.get(0);
-		}
-		
-		public String asString() { return "RETURN"; }
-		public Object[] asList() { return new Object[] { value() }; }
-		public String toString() { return "return" + (value() == null ? "":(" " + value())) + ";"; }
-	}
-	
 	// public static class GotoStatement implements Statement {}
 	// public static class LabelStatement implements Statement {}
 	
@@ -246,7 +213,7 @@ public interface Statement extends Printable {
 		
 		public String asString() { return toString(); }
 		public Object[] asList() { return list.toArray(); }
-		public String toString() { return Objects.toString(expr()); }
+		public String toString() { return StringUtils.join(" ", list); }
 	}
 	
 	public static class StatementList implements Statement {

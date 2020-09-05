@@ -3,7 +3,7 @@ package hardcoded.compiler.constants;
 import java.util.*;
 
 /**
- * This class contains all the keywords that are used in the programminglanguage.
+ * This class contains all the keywords that are used in the programming language.
  * @author HardCoded
  */
 public final class Keywords {

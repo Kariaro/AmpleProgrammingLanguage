@@ -7,13 +7,68 @@ import hardcoded.compiler.types.Type;
 import hardcoded.utils.StringUtils;
 
 public interface Expression extends Printable {
+	public static final Expression EMPTY = new Expression() {
+		public String toString() { return "nop"; }
+		public String asString() { return "nop"; }
+		public Object[] asList() { return new Object[] {}; }
+		public ExprType type() { return ExprType.nop; }
+		public boolean hasElements() { return false; }
+		public List<Expression> getElements() { return null; }
+		public Expression get(int index) { return null; }
+		public int size() { return 0; }
+	};
+	
 	public static enum AtomType {
 		i64, i32, i16, i8,
 		string,
-		ident,
+		ident;
+		
+		/**
+		 * Check if this <code>AtomType</code> is one of the types <code>i64, i32, i16, i8</code>.
+		 * @return true if this <code>AtomType</code> is a number type
+		 */
+		public boolean isNumber() {
+			return this == i64 || this == i32 || this == i16 || this == i8;
+		}
+		
+		/**
+		 * Get the size of this <code>AtomType</code> in bytes.
+		 * @return -1 if there is no constant size
+		 */
+		public int size() {
+			if(this == i64) return 8;
+			if(this == i32) return 4;
+			if(this == i16) return 2;
+			if(this == i8) return 1;
+			return -1;
+		}
+		
+		/**
+		 * Get the <code>AtomType</code> with the largest size.
+		 * @param a
+		 * @param b
+		 * @return
+		 */
+		public static AtomType largest(AtomType a, AtomType b) {
+			if(a == null) {
+				if(b == null) return null;
+				return b.isNumber() ? b:null;
+			} else if(b == null) {
+				return a.isNumber() ? a:null;
+			}
+			
+			if(a.isNumber() && b.isNumber()) {
+				return a.size() > b.size() ? a:b;
+			}
+			
+			return null; // Invalid combination
+		}
 	}
 	
 	public static enum ExprType {
+		// Memory operations
+		set,	// Move a value y into x
+		
 		// Math
 		add,	// x + y
 		sub,	// x - y
@@ -45,10 +100,6 @@ public interface Expression extends Printable {
 		cor,	// x || y
 		cand,	// x && y
 		
-		// Memory operations
-		mov,	// Move a value y into x
-		
-		
 		// Pointer
 		addptr, // &x
 		decptr, // *x
@@ -57,7 +108,9 @@ public interface Expression extends Printable {
 		call,	// Call
 		ret,	// Call return
 		nop,	// No operation
-		loop,	// Looping
+		
+		leave,	// Break
+		loop,	// Continue
 		
 		atom,	// Atom Value
 		cast,	// Cast Type
@@ -96,7 +149,7 @@ public interface Expression extends Printable {
 		switch(type()) {
 			case invalid:
 			case call:
-			case mov:
+			case set:
 			case ret:
 				return false;
 			default: return true;
@@ -104,13 +157,15 @@ public interface Expression extends Printable {
 	}
 	
 	/**
-	 * This method checks if the expression is modifying any value.
+	 * Checks whether or not an expression modifies any values.
+	 * A modification can cause unknown side effects and thats
+	 * why changing a value can give side effects.
 	 * 
-	 * @return true if any modifications happen.
+	 * @return 
 	 */
 	public default boolean hasSideEffects() {
 		ExprType type = type();
-		if(type == ExprType.mov
+		if(type == ExprType.set
 		|| type == ExprType.call) return true;
 		
 		if(hasElements()) {
@@ -120,6 +175,47 @@ public interface Expression extends Printable {
 		}
 		
 		return false;
+	}
+	
+	/**
+	 * Calculate the size of the nummerical size that this expression might hold.<br>
+	 * <code>1L + 3 = (long)1 + (int)3 = (long)</code>
+	 * 
+	 * @return
+	 */
+	public default AtomType calculateNumberSize() {
+		AtomType curr = null;
+		
+		if(hasElements()) {
+			for(Expression expr : getElements()) {
+				AtomType type = expr.calculateNumberSize();
+				if(type == null) continue;
+				
+				curr = curr == null ? type:AtomType.largest(curr, type);
+			}
+		} else {
+			AtomExpr a = (AtomExpr)this;
+			
+			if(a.isIdentifier()) {
+				Identifier ident = a.d_value;
+				
+				if(ident.hasType()) {
+					int size = ident.type.size();
+					
+					if(size == 8) return AtomType.i64;
+					if(size == 4) return AtomType.i32;
+					if(size == 2) return AtomType.i16;
+					if(size == 1) return AtomType.i8;
+					return null;
+				}
+			}
+			
+			if(a.isNumber()) {
+				return a.atomType;
+			}
+		}
+		
+		return curr;
 	}
 	
 	public static class OpExpr implements Expression {
@@ -234,20 +330,21 @@ public interface Expression extends Printable {
 				case i8:
 				case i16:
 				case i32:
-				case i64: i_value = ((Number)value).longValue(); break;
+				case i64: i_value = ((Number)value).longValue(); break; // TODO: Unsigned signed?
 				default: throw new RuntimeException("Invalid atom type '" + type + "'");
 			}
 		}
 		
 		public boolean isNumber() {
-			return atomType == AtomType.i64 ||
-				   atomType == AtomType.i32 ||
-				   atomType == AtomType.i16 ||
-				   atomType == AtomType.i8;
+			return atomType.isNumber();
 		}
 		
 		public boolean isString() {
 			return atomType == AtomType.string;
+		}
+		
+		public boolean isIdentifier() {
+			return atomType == AtomType.ident;
 		}
 		
 		public AtomExpr convert(AtomType type) {
@@ -268,14 +365,7 @@ public interface Expression extends Printable {
 		
 		public boolean isOne() {
 			if(!isNumber()) throw new RuntimeException("You cannot check a non number if it is zero.");
-			
-			switch(atomType) {
-				case i64: return i_value == 1;
-				case i32: return i_value == 1;
-				case i16: return i_value == 1;
-				case i8: return i_value == 1;
-				default: throw new RuntimeException("You cannot check non numbers if they are one.");
-			}
+			return i_value == 1;
 		}
 		
 		public List<Expression> getElements() { return null; }
@@ -291,7 +381,7 @@ public interface Expression extends Printable {
 		public String toString() {
 			switch(atomType) {
 				case string: return '\"' + s_value + '\"';
-				case ident: return d_value.name();
+				case ident: return Objects.toString(d_value);
 				case i64: return Long.toString(i_value) + 'L';
 				case i32: return Integer.toString((int)i_value) + 'i';
 				case i16: return Short.toString((short)i_value) + 's';

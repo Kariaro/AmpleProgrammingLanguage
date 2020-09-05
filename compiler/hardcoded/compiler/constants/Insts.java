@@ -53,6 +53,7 @@ public enum Insts {
 			case neg: return neg;
 			case not: return not;
 			case nor: return nor;
+			case ret: return ret;
 			
 			case eq: return eq;
 			case neq: return neq;

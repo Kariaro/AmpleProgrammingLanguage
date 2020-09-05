@@ -2,8 +2,7 @@ package hardcoded.compiler.instruction;
 
 import static hardcoded.compiler.Expression.ExprType.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import hardcoded.compiler.*;
 import hardcoded.compiler.Block.Function;
@@ -28,6 +27,7 @@ public class HInstructionCompiler {
 			
 			if(!(block instanceof Function)) continue;
 			Function func = (Function)block;
+			variables.clear();
 			
 			Instruction inst = compileInstructions(func, func.body).first();
 			
@@ -59,15 +59,35 @@ public class HInstructionCompiler {
 		return createInstructions(func, expr, null);
 	}
 	
+	private Map<String, Reg> variables = new HashMap<>();
+	
+	private Reg createObject(Expression e) {
+		if(e.type() == atom) {
+			AtomExpr a = (AtomExpr)e;
+			
+			if(a.isIdentifier()) {
+				Identifier ident = a.d_value;
+				String name = ident.name();
+				
+				if(variables.containsKey(name)) return variables.get(name);
+				Reg next = Instruction.temp(name);
+				variables.put(name, next);
+				return next;
+			}
+		}
+		
+		return new ObjectReg(e);
+	}
+	
 	private Instruction createInstructions(Function func, Expression expr, Reg request) {
 		Instruction inst = new Instruction(Insts.nop, new ObjectReg(expr.toString()));
 		
 		switch(expr.type()) {
-			case mov: {
+			case set: {
 				Expression a = expr.first(), b = expr.last();
 				
-				Reg reg_0 = new ObjectReg(a);
-				Reg reg_1 = new ObjectReg(b);
+				Reg reg_0 = createObject(a);
+				Reg reg_1 = createObject(b);
 				boolean pointer = false;
 				if(shouldCheck(a)) {
 					if(a.type() == decptr) {
@@ -101,6 +121,10 @@ public class HInstructionCompiler {
 					inst = inst.append(new Instruction(action, reg_0, reg_1));
 				}
 				
+				if(request != null) {
+					inst = inst.append(new Instruction(action, request, reg_1));
+				}
+				
 				break;
 			}
 			
@@ -114,8 +138,8 @@ public class HInstructionCompiler {
 			case xor: {
 				Expression a = expr.first(), b = expr.last();
 				
-				Reg reg_0 = new ObjectReg(a);
-				Reg reg_1 = new ObjectReg(b);
+				Reg reg_0 = createObject(a);
+				Reg reg_1 = createObject(b);
 				if(shouldCheck(a)) {
 					reg_0 = Instruction.temp();
 					inst = inst.append(createInstructions(func, a, reg_0));
@@ -130,12 +154,13 @@ public class HInstructionCompiler {
 				break;
 			}
 			
+			case ret:
 			case neg:
 			case not:
 			case nor: {
 				Expression a = expr.first();
 				
-				Reg reg_0 = new ObjectReg(a);
+				Reg reg_0 = createObject(a);
 				if(shouldCheck(a)) {
 					reg_0 = Instruction.temp();
 					inst = inst.append(createInstructions(func, a, reg_0));
@@ -150,7 +175,7 @@ public class HInstructionCompiler {
 				
 				Expression a = expr.first();
 				
-				Reg reg_0 = new ObjectReg(a);
+				Reg reg_0 = createObject(a);
 				if(shouldCheck(a)) {
 					reg_0 = Instruction.temp();
 					inst = inst.append(createInstructions(func, a, reg_0));
@@ -163,7 +188,7 @@ public class HInstructionCompiler {
 			case decptr: {
 				Expression a = expr.first();
 				
-				Reg reg_0 = new ObjectReg(a);
+				Reg reg_0 = createObject(a);
 				if(shouldCheck(a)) {
 					reg_0 = Instruction.temp();
 					inst = inst.append(createInstructions(func, a, reg_0));
@@ -178,7 +203,16 @@ public class HInstructionCompiler {
 					inst = inst.append(createInstructions(func, expr.get(i)));
 				}
 				
-				inst = inst.append(createInstructions(func, expr.last(), request));
+				if(request != null) {
+					if(expr.last().hasSideEffects()) {
+						inst = inst.append(createInstructions(func, expr.last(), request));
+					} else {
+						inst = inst.append(new Instruction(Insts.mov, request, createObject(expr.last())));
+					}
+				} else {
+					inst = inst.append(createInstructions(func, expr.last()));
+				}
+				
 				break;
 			}
 			
@@ -186,7 +220,7 @@ public class HInstructionCompiler {
 				Insts type = Insts.convert(expr.type());
 				Expression a = expr.get(0), b = expr.get(1);
 				
-				Reg reg_0 = new ObjectReg(a);
+				Reg reg_0 = createObject(a);
 				if(shouldCheck(a)) {
 					reg_0 = Instruction.temp();
 					inst = inst.append(createInstructions(func, a, reg_0));
@@ -210,7 +244,7 @@ public class HInstructionCompiler {
 				
 				for(int i = 2; i < expr.size(); i++) {
 					b = expr.get(i);
-					reg_1 = new ObjectReg(b);
+					reg_1 = createObject(b);
 					if(shouldCheck(b)) {
 						reg_1 = Instruction.temp();
 						inst = inst.append(createInstructions(func, b, reg_1));
@@ -233,7 +267,7 @@ public class HInstructionCompiler {
 				
 				for(int i = 0; i < expr.size(); i++) {
 					Expression e = expr.get(i);
-					Reg reg = new ObjectReg(e);
+					Reg reg = createObject(e);
 					
 					if(shouldCheck(e)) {
 						reg = Instruction.temp();
@@ -246,6 +280,28 @@ public class HInstructionCompiler {
 				params.add(0, Instruction.temp(request));
 				
 				inst = inst.append(new Instruction(Insts.call, params.toArray(new Reg[0])));
+				break;
+			}
+			
+			case cand: {
+				Label label_end = new Label("cand.end");
+				
+				if(request != null) inst = inst.append(new Instruction(Insts.mov, request, new ObjectReg(0)));
+				
+				for(int i = 0; i < expr.size(); i++) {
+					Expression e = expr.get(i);
+					Reg reg = createObject(e);
+					
+					if(shouldCheck(e)) {
+						reg = Instruction.temp();
+						inst = inst.append(createInstructions(func, e, reg));
+					}
+					
+					inst = inst.append(new Instruction(Insts.brz, label_end, reg));
+				}
+
+				if(request != null) inst = inst.append(new Instruction(Insts.mov, request, new ObjectReg(1)));
+				inst = inst.append(new Instruction(Insts.label, label_end));
 				break;
 			}
 			
@@ -341,6 +397,19 @@ public class HInstructionCompiler {
 		return inst.last();
 	}
 	
+	private Instruction createExprInstructions(Function func, ExprStat stat) {
+		Instruction inst = new Instruction();
+		
+		if(stat.list.isEmpty()) return inst;
+		inst = createInstructions(func, stat.list.get(0));
+		
+		for(int i = 1; i < stat.list.size(); i++) {
+			inst = inst.append(createInstructions(func, stat.list.get(i)));
+		}
+		
+		return inst.last();
+	}
+	
 	private Instruction compileInstructions(Function func, Statement stat) {
 		Instruction inst = createInstructions(func, stat);
 		return inst == null ? new Instruction():inst;
@@ -353,27 +422,10 @@ public class HInstructionCompiler {
 			return createIfInstructions(func, (IfStat)stat);
 		} else if(stat instanceof WhileStat) {
 			return createWhileInstructions(func, (WhileStat)stat);
-		} else if(stat instanceof ReturnStat) {
-			ReturnStat rs = (ReturnStat)stat;
-			
-			if(rs.expr() == null) {
-				return new Instruction(Insts.ret);
-			} else {
-				Expression e = rs.expr();
-				
-				if(e.hasSideEffects()) {
-					Reg temp = Instruction.temp();
-					Instruction inst = createInstructions(func, e, temp);
-					return inst.append(new Instruction(Insts.ret, temp));
-				}
-				
-				return new Instruction(Insts.ret, new ObjectReg(e));
-			}
 		} else if(stat instanceof ExprStat) {
-			return createInstructions(func, ((ExprStat)stat).expr());
+			return createExprInstructions(func, (ExprStat)stat);
 		}
 		
-
 		Instruction inst = new Instruction(Insts.nop, new ObjectReg(stat.toString()));
 		
 		if(stat.hasStatements()) {
