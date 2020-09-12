@@ -305,8 +305,30 @@ public class HInstructionCompiler {
 				break;
 			}
 			
-			default: {
+			case cor: {
+				Label label_end = new Label("cor.end");
 				
+				if(request != null) inst = inst.append(new Instruction(Insts.mov, request, new ObjectReg(1)));
+				
+				for(int i = 0; i < expr.size(); i++) {
+					Expression e = expr.get(i);
+					Reg reg = createObject(e);
+					
+					if(shouldCheck(e)) {
+						reg = Instruction.temp();
+						inst = inst.append(createInstructions(func, e, reg));
+					}
+					
+					inst = inst.append(new Instruction(Insts.bnz, label_end, reg));
+				}
+
+				if(request != null) inst = inst.append(new Instruction(Insts.mov, request, new ObjectReg(0)));
+				inst = inst.append(new Instruction(Insts.label, label_end));
+				break;
+			}
+			
+			default: {
+				System.err.println("[MISSING INSTRUCTION] -> " + expr);
 			}
 		}
 		

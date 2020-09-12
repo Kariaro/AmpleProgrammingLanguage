@@ -251,7 +251,10 @@ public interface Expression extends Printable {
 		
 		public String asString() { return type.toString(); }
 		public Object[] asList() { return list.toArray(); }
-		public String toString() { return type + "(" + StringUtils.join(", ", list) + ")"; }
+		
+		public String toString() {
+			return type + "(" + StringUtils.join(", ", list) + ")";
+		}
 	}
 
 	public static class CastExpr implements Expression {
@@ -288,7 +291,7 @@ public interface Expression extends Printable {
 		
 		public Identifier d_value; // ident
 		public String s_value; // string
-		public long i_value;  // int8, int4, int2, int1
+		public long i_value;  // i64, i32, i16, i8
 		
 		public AtomExpr(long value) {
 			this(value, AtomType.i64);
@@ -330,7 +333,7 @@ public interface Expression extends Printable {
 				case i8:
 				case i16:
 				case i32:
-				case i64: i_value = ((Number)value).longValue(); break; // TODO: Unsigned signed?
+				case i64: i_value = ((Number)value).longValue(); break; // TODO: Signed unsigned?
 				default: throw new RuntimeException("Invalid atom type '" + type + "'");
 			}
 		}
@@ -350,6 +353,7 @@ public interface Expression extends Printable {
 		public AtomExpr convert(AtomType type) {
 			if(!isNumber()) return null; // Invalid
 			
+			// TODO: Signed unsigned?
 			if(type == AtomType.i64) return new AtomExpr((long)i_value);
 			if(type == AtomType.i32) return new AtomExpr((int)i_value);
 			if(type == AtomType.i16) return new AtomExpr((short)i_value);
@@ -379,7 +383,7 @@ public interface Expression extends Printable {
 		
 		public String asString() { return toString() + ":" + atomType(); }
 		public String toString() {
-			switch(atomType) {
+			switch(atomType) { // TODO: Signed unsigned?
 				case string: return '\"' + s_value + '\"';
 				case ident: return Objects.toString(d_value);
 				case i64: return Long.toString(i_value) + 'L';

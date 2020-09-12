@@ -8,7 +8,6 @@ import java.util.*;
  */
 public final class Operators {
 	private static final Set<String> ASSIGNMENT;
-	
 	private Operators() {}
 	
 	static {

@@ -13,14 +13,12 @@ import hardcoded.compiler.types.Type;
  * @author HardCoded
  */
 public final class Primitives {
-	private Primitives() {
-		
-	}
+	private Primitives() {}
 	
 	private static final Set<Type> PRIMITIVE;
 	public static final Type VOID = new PrimitiveType("void", null, 0);
-	// public static final Type DOUBLE = new PrimitiveType("double", AtomType.int8, 8, true, true);
-	// public static final Type FLOAT = new PrimitiveType("float", AtomType.int4, 4, true, true);
+	// public static final Type DOUBLE = new PrimitiveType("double", AtomType.i64, 8, true, true);
+	// public static final Type FLOAT = new PrimitiveType("float", AtomType.i32, 4, true, true);
 	public static final Type LONG = new PrimitiveType("long", AtomType.i64, 8);
 	public static final Type INT = new PrimitiveType("int", AtomType.i32, 4);
 	public static final Type SHORT = new PrimitiveType("short", AtomType.i16, 2);

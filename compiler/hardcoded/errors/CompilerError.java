@@ -29,6 +29,8 @@ public enum CompilerError {
 	UNCLOSED_CURLY_BRACKETS_STATEMENT("Unclosed curly brackets. Expected the character '}' but got '%s'"),
 	
 	INVALID_XXX_STATEMENT_EXPECTED_OPEN_PARENTHESIS("Invalid %s statement. Expected open parenthesis '(' but got '%s'"),
+	INVALID_XXX_STATEMENT_EXPECTED_SEMICOLON("Invalid %s statement. Expected a semicolon ';' but got '%s'"),
+	
 	UNCLOSED_EXPRESSION_PARENTHESES("Unclosed parentheses. Expected the character ')' but got '%s'"),
 	UNCLOSED_STATEMENT_PARENTHESES("Unclosed parentheses. Expected the character ')' but got '%s'"),
 	UNCLOSED_CALL_PARENTHESES("Unclosed call parentheses. Expected the character ')' but got '%s'"),

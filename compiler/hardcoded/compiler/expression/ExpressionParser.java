@@ -1,13 +1,12 @@
 package hardcoded.compiler.expression;
 
-import java.util.Arrays;
-import java.util.List;
-
 import hardcoded.compiler.Expression;
 import hardcoded.compiler.Expression.*;
 
-// TODO: Unsigned addition.
+// TODO: Signed unsigned?
 public final class ExpressionParser {
+	private ExpressionParser() {}
+	
 	private static final boolean isNumbers(Expression... array) {
 		for(Expression e : array) if(!isNumber(e)) return false;
 		return true;
@@ -18,142 +17,75 @@ public final class ExpressionParser {
 		return ((AtomExpr)a).isNumber();
 	}
 	
-	private static final List<AtomType> types = Arrays.asList(AtomType.i64, AtomType.i32, AtomType.i16, AtomType.i8);
-	private static final AtomType nextAtom(AtomType a, AtomType b) {
-		int ax = types.indexOf(a);
-		int bx = types.indexOf(b);
-		return types.get(Math.min(ax, bx));
+	@FunctionalInterface
+	private static interface BiFnc {
+		public default AtomExpr run(AtomExpr a, AtomExpr b) { return o(a.i_value, b.i_value).convert(AtomType.largest(a.atomType, b.atomType)); }
+		AtomExpr o(long a, long b);
 	}
 	
-	private static abstract class BiOpr {
-		public AtomExpr run(AtomExpr a, AtomExpr b) {
-			return o(a.i_value, b.i_value).convert(nextAtom(a.atomType, b.atomType));
-		}
-		
-		public AtomExpr o(long a, long b) { throw new UnsupportedOperationException(error()); }
-		public String error() { return "Invalid operation"; }
-	 }
+	@FunctionalInterface
+	private static interface UnFnc {
+		public default AtomExpr run(AtomExpr a) { return o(a.i_value).convert(a.atomType); }
+		AtomExpr o(long a);
+	}
 	
-	private static abstract class UnOpr {
-		public AtomExpr run(AtomExpr a) { return o(a.i_value).convert(a.atomType); }
-		public AtomExpr o(long a) { throw new UnsupportedOperationException(error()); }
-		public String error() { return "Invalid operation"; }
-	 }
+	private static final BiFnc ADD = (a, b) -> { return new AtomExpr(a + b); };
+	private static final BiFnc SUB = (a, b) -> { return new AtomExpr(a - b); };
+	private static final BiFnc MUL = (a, b) -> { return new AtomExpr(a * b); };
+	private static final BiFnc DIV = (a, b) -> { return new AtomExpr(a / b); };
+	private static final BiFnc MOD = (a, b) -> { return new AtomExpr(a % b); };
 	
-	private static final BiOpr ADD = new BiOpr() {
-		public AtomExpr o(long a, long b) { return new AtomExpr(a + b); }
-	};
+	/* unsigned safe */ private static final BiFnc XOR = (a, b) -> { return new AtomExpr(a ^ b); };
+	/* unsigned safe */ private static final BiFnc AND = (a, b) -> { return new AtomExpr(a & b); };
+	/* unsigned safe */ private static final BiFnc OR = (a, b) -> { return new AtomExpr(a | b); };
 	
-	private static final BiOpr SUB = new BiOpr() {
-		public AtomExpr o(long a, long b) { return new AtomExpr(a - b); }
-	};
+	private static final BiFnc SHR = (a, b) -> { return new AtomExpr(a >>> b); };
+	private static final BiFnc SHL = (a, b) -> { return new AtomExpr(a << b); };
 	
-	private static final BiOpr MUL = new BiOpr() {
-		public AtomExpr o(long a, long b) { return new AtomExpr(a * b); }
-	};
+	/* unsigned safe */ private static final BiFnc EQ = (a, b) -> { return new AtomExpr(a == b ? 1:0); };
+	/* unsigned safe */ private static final BiFnc NEQ = (a, b) -> { return new AtomExpr(a != b ? 1:0); };
 	
-	private static final BiOpr DIV = new BiOpr() {
-		public AtomExpr o(long a, long b) { return new AtomExpr(a / b); }
-	};
+	private static final BiFnc LT = (a, b) -> { return new AtomExpr(a < b ? 1:0); };
+	private static final BiFnc LTE = (a, b) -> { return new AtomExpr(a <= b ? 1:0); };
+	private static final BiFnc GT = (a, b) -> { return new AtomExpr(a > b ? 1:0); };
+	private static final BiFnc GTE = (a, b) -> { return new AtomExpr(a >= b ? 1:0); };
 	
-	private static final BiOpr MOD = new BiOpr() {
-		public AtomExpr o(long a, long b) { return new AtomExpr(a % b); }
-	};
-	
-	
-	private static final BiOpr XOR = new BiOpr() {
-		public AtomExpr o(long a, long b) { return new AtomExpr(a ^ b); }
-		public String error() { return "XOR is not allowed for float values."; }
-	};
-	
-	private static final BiOpr AND = new BiOpr() {
-		public AtomExpr o(long a, long b) { return new AtomExpr(a & b); }
-	};
-	
-	private static final BiOpr OR = new BiOpr() {
-		public AtomExpr o(long a, long b) { return new AtomExpr(a | b); }
-	};
-	
-	private static final BiOpr SHR = new BiOpr() {
-		public AtomExpr o(long a, long b) { return new AtomExpr(a >>> b); }
-	};
-	
-	private static final BiOpr SHL = new BiOpr() {
-		public AtomExpr o(long a, long b) { return new AtomExpr(a << b); }
-	};
-	
-	private static final BiOpr EQ = new BiOpr() {
-		public AtomExpr o(long a, long b) { return new AtomExpr(a == b ? 1:0); }
-	};
-	
-	private static final BiOpr NEQ = new BiOpr() {
-		public AtomExpr o(long a, long b) { return new AtomExpr(a != b ? 1:0); }
-	};
-	
-	private static final BiOpr LT = new BiOpr() {
-		public AtomExpr o(long a, long b) { return new AtomExpr(a < b ? 1:0); }
-	};
-	
-	private static final BiOpr LTE = new BiOpr() {
-		public AtomExpr o(long a, long b) { return new AtomExpr(a <= b ? 1:0); }
-	};
-	
-	private static final BiOpr GT = new BiOpr() {
-		public AtomExpr o(long a, long b) { return new AtomExpr(a > b ? 1:0); }
-	};
-	
-	private static final BiOpr GTE = new BiOpr() {
-		public AtomExpr o(long a, long b) { return new AtomExpr(a >= b ? 1:0); }
-	};
-	
-	private static final BiOpr CAND = new BiOpr() {
-		public AtomExpr o(long a, long b) { return new AtomExpr(((a != 0) && (b != 0)) ? 1:0); }
-	};
-	
-	private static final BiOpr COR = new BiOpr() {
-		public AtomExpr o(long a, long b) { return new AtomExpr(((a != 0) || (b != 0)) ? 1:0); }
-	};
+	/* unsigned safe */
+	@SuppressWarnings("unused") private static final BiFnc CAND = (a, b) -> { return new AtomExpr(((a != 0) && (b != 0)) ? 1:0); };
+	@SuppressWarnings("unused") private static final BiFnc COR = (a, b) -> { return new AtomExpr(((a != 0) || (b != 0)) ? 1:0); };
 	
 	
 	
-	private static final UnOpr NOR = new UnOpr() {
-		public AtomExpr o(long a) { return new AtomExpr(~a); }
-		public String error() { return "NOR is not allowed for float values."; }
-	};
+	// public String error() { return "NOR is not allowed for float values."; }
+	/* unsigned safe */ private static final UnFnc NOR = (a) -> { return new AtomExpr(~a); };
+	/* unsigned safe */ private static final UnFnc NOT = (a) -> { return new AtomExpr(a == 0 ? 1:0); };
+	private static final UnFnc NEG = (a) -> { return new AtomExpr(-a); };
 	
-	private static final UnOpr NOT = new UnOpr() {
-		public AtomExpr o(long a) { return new AtomExpr(a == 0 ? 1:0); }
-	};
-	
-	private static final UnOpr NEG = new UnOpr() {
-		public AtomExpr o(long a) { return new AtomExpr(-a); }
-	};
-	
-	public static Expression add(AtomExpr a, AtomExpr b) { return ADD.run(a, b); }
-	public static Expression mul(AtomExpr a, AtomExpr b) { return MUL.run(a, b); }
-	public static Expression div(AtomExpr a, AtomExpr b) { return DIV.run(a, b); }
-	public static Expression mod(AtomExpr a, AtomExpr b) { return MOD.run(a, b); }
-	
-	public static Expression xor(AtomExpr a, AtomExpr b) { return XOR.run(a, b); }
-	public static Expression or(AtomExpr a, AtomExpr b) { return OR.run(a, b); }
-	public static Expression and(AtomExpr a, AtomExpr b) { return AND.run(a, b); }
-	public static Expression shr(AtomExpr a, AtomExpr b) { return SHR.run(a, b); }
-	public static Expression shl(AtomExpr a, AtomExpr b) { return SHL.run(a, b); }
-	
-	public static Expression lt(AtomExpr a, AtomExpr b) { return LT.run(a, b); }
-	public static Expression lte(AtomExpr a, AtomExpr b) { return LTE.run(a, b); }
-	public static Expression gt(AtomExpr a, AtomExpr b) { return GT.run(a, b); }
-	public static Expression gte(AtomExpr a, AtomExpr b) { return GTE.run(a, b); }
-	public static Expression eq(AtomExpr a, AtomExpr b) { return EQ.run(a, b); }
-	public static Expression neq(AtomExpr a, AtomExpr b) { return NEQ.run(a, b); }
-	
-
-	public static Expression cand(AtomExpr a, AtomExpr b) { return CAND.run(a, b); }
-	public static Expression cor(AtomExpr a, AtomExpr b) { return COR.run(a, b); }
-	
-	public static Expression neg(AtomExpr a) { return NEG.run(a); }
-	public static Expression not(AtomExpr a) { return NOT.run(a); }
-	public static Expression nor(AtomExpr a) { return NOR.run(a); }
+//	public static Expression add(AtomExpr a, AtomExpr b) { return ADD.run(a, b); }
+//	public static Expression mul(AtomExpr a, AtomExpr b) { return MUL.run(a, b); }
+//	public static Expression div(AtomExpr a, AtomExpr b) { return DIV.run(a, b); }
+//	public static Expression mod(AtomExpr a, AtomExpr b) { return MOD.run(a, b); }
+//	
+//	public static Expression xor(AtomExpr a, AtomExpr b) { return XOR.run(a, b); }
+//	public static Expression or(AtomExpr a, AtomExpr b) { return OR.run(a, b); }
+//	public static Expression and(AtomExpr a, AtomExpr b) { return AND.run(a, b); }
+//	public static Expression shr(AtomExpr a, AtomExpr b) { return SHR.run(a, b); }
+//	public static Expression shl(AtomExpr a, AtomExpr b) { return SHL.run(a, b); }
+//	
+//	public static Expression lt(AtomExpr a, AtomExpr b) { return LT.run(a, b); }
+//	public static Expression lte(AtomExpr a, AtomExpr b) { return LTE.run(a, b); }
+//	public static Expression gt(AtomExpr a, AtomExpr b) { return GT.run(a, b); }
+//	public static Expression gte(AtomExpr a, AtomExpr b) { return GTE.run(a, b); }
+//	public static Expression eq(AtomExpr a, AtomExpr b) { return EQ.run(a, b); }
+//	public static Expression neq(AtomExpr a, AtomExpr b) { return NEQ.run(a, b); }
+//	
+//
+//	public static Expression cand(AtomExpr a, AtomExpr b) { return CAND.run(a, b); }
+//	public static Expression cor(AtomExpr a, AtomExpr b) { return COR.run(a, b); }
+//	
+//	public static Expression neg(AtomExpr a) { return NEG.run(a); }
+//	public static Expression not(AtomExpr a) { return NOT.run(a); }
+//	public static Expression nor(AtomExpr a) { return NOR.run(a); }
 
 	public static Expression compute(ExprType type, OpExpr e) {
 		return compute(type, e.first(), e.last());
@@ -164,6 +96,7 @@ public final class ExpressionParser {
 		AtomExpr a = (AtomExpr)e0;
 		AtomExpr b = (AtomExpr)e1;
 		
+		// TODO: Cand, cor.
 		switch(type) {
 			case neg: return NEG.run(a);
 			case nor: return NOR.run(a);

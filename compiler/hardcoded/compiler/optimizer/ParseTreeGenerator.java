@@ -11,6 +11,7 @@ import hardcoded.compiler.Block.Function;
 import hardcoded.compiler.Expression.*;
 import hardcoded.compiler.Statement.*;
 import hardcoded.compiler.constants.*;
+import hardcoded.compiler.constants.Modifiers.Modifier;
 import hardcoded.compiler.context.Lang;
 import hardcoded.compiler.types.*;
 import hardcoded.errors.CompilerError;
@@ -21,7 +22,7 @@ import hardcoded.utils.FileUtils;
 import hardcoded.utils.StringUtils;
 
 // TODO: Try unrolling recursion.
-public class HCompilerInit {
+public class ParseTreeGenerator {
 	private static final Tokenizer LEXER;
 	
 	static {
@@ -197,7 +198,7 @@ public class HCompilerInit {
 		if(reader.remaining() < 1) return null;
 		
 		Function func = new Function();
-		if(Modifiers.contains(reader.value())) func.modifier = createNewModifier();
+		if(Modifiers.contains(reader.value())) func.modifier = nextFuncModifier();
 		if(!isType(reader)) syntaxError("Invalid function return type '%s'", reader);
 		func.returnType = getTypeFromSymbol();
 		
@@ -231,7 +232,7 @@ public class HCompilerInit {
 		reader.next();
 		
 		while(!reader.valueEquals(")")) {
-			Variable arg = createNewArgument();
+			Variable arg = nextFuncArgument();
 			func.arguments.add(Identifier.createParamIdent(arg.name, func.arguments.size(), arg.type));
 			if(!reader.valueEquals(",")) {
 				if(reader.valueEquals(")")) break;
@@ -292,11 +293,11 @@ public class HCompilerInit {
 		
 		
 		if(reader.valueEquals("break")) {
-			if(!reader.next().valueEquals(";")) syntaxError("Invalid break statement. Expected semicolon but got '%s'", reader);
+			if(!reader.next().valueEquals(";")) syntaxError(CompilerError.INVALID_XXX_STATEMENT_EXPECTED_SEMICOLON, "break", reader);
 			reader.nextClear();
 			return new ExprStat(new OpExpr(leave));
 		} else if(reader.valueEquals("continue")) {
-			if(!reader.next().valueEquals(";")) syntaxError("Invalid continue statement. Expected semicolon but got '%s'", reader);
+			if(!reader.next().valueEquals(";")) syntaxError(CompilerError.INVALID_XXX_STATEMENT_EXPECTED_SEMICOLON, "continue", reader);
 			reader.nextClear();
 			return new ExprStat(new OpExpr(loop));
 		} else if(reader.valueEquals("return")) {
@@ -304,7 +305,7 @@ public class HCompilerInit {
 			
 			reader.next();
 			if(!reader.valueEquals(";")) expr.add(nextExpression());
-			if(!reader.valueEquals(";")) syntaxError("Invalid return statement. Expected semicolon but got '%s'", reader);
+			if(!reader.valueEquals(";")) syntaxError(CompilerError.INVALID_XXX_STATEMENT_EXPECTED_SEMICOLON, "return", reader);
 			reader.nextClear();
 			
 			return new ExprStat(expr);
@@ -319,7 +320,8 @@ public class HCompilerInit {
 				reader.nextClear();
 				return new ExprStat(expr);
 			}
-			syntaxError("Invalid expr statement. Expected semicolon but got '%s'", reader);
+			
+			syntaxError(CompilerError.INVALID_XXX_STATEMENT_EXPECTED_SEMICOLON, "expr", reader);
 			reader.nextClear();
 		}
 		
@@ -590,7 +592,7 @@ public class HCompilerInit {
 						);
 					}
 					
-					if(type != set) rhs = new OpExpr(type, lhs, rhs);
+					if(type != set) rhs = new OpExpr(type, assigner, rhs);
 					
 					if(comma_assigned) {
 						((OpExpr)comma_parent).set(comma_parent.size() - 1, new OpExpr(set, assigner, rhs));
@@ -709,6 +711,8 @@ public class HCompilerInit {
 								PrimitiveType pt = (PrimitiveType)type;
 								if(pt.getType() == null) syntaxError(CompilerError.INVALID_CAST_TYPE, pt.getType());
 							}
+							
+							// TODO: Change the type of the value to a 'i64' if the value is a class object.
 							
 							if(!reader.valueEquals(")")) syntaxError(CompilerError.UNCLOSED_CAST_PARENTHESES, reader);
 							reader.next();
@@ -842,7 +846,6 @@ public class HCompilerInit {
 						return new AtomExpr(current_function.getIdentifier(value));
 					}
 					
-					// TODO: Dead code.
 					reader.next();
 					return null;
 				}
@@ -873,7 +876,7 @@ public class HCompilerInit {
 		return expr;
 	}
 	
-	public Variable createNewArgument() {
+	public Variable nextFuncArgument() {
 		Variable variable = new Variable(getTypeFromSymbol());
 		if(!reader.groupEquals("IDENTIFIER")) syntaxError("Invalid function argument name '%s'", reader);
 		if(current_function.hasIdentifier(reader.value())) syntaxError("Redefinition of a variable named '%s'", reader);
@@ -881,6 +884,13 @@ public class HCompilerInit {
 		reader.next();
 		return variable;
 	}
+	
+	public Modifier nextFuncModifier() {
+		String value = reader.toString();
+		reader.next();
+		return Modifiers.get(value);
+	}
+	
 	
 	private boolean acceptModification(Expression expr) {
 		if(expr instanceof AtomExpr) {
@@ -926,13 +936,6 @@ public class HCompilerInit {
 		return type;
 	}
 	
-	public Modifier createNewModifier() {
-		Modifier modifier = new Modifier();
-		modifier.name = reader.toString();
-		reader.next();
-		return modifier;
-	}
-
 	private boolean isValidName(Lang reader) {
 		if(!reader.groupEquals("IDENTIFIER")) return false;
 		if(defined_types.containsKey(reader.value())) return false;
@@ -941,6 +944,8 @@ public class HCompilerInit {
 		if(Keywords.contains(reader.value())) return false;
 		return true;
 	}
+	
+	
 	
 	public void syntaxError(CompilerError error, Object... args) {
 		syntaxError(error.getMessage(), args);
@@ -953,6 +958,5 @@ public class HCompilerInit {
 		
 		System.err.println(message);
 		hasErrors = true;
-		//throw new CompilerException();
 	}
 }
