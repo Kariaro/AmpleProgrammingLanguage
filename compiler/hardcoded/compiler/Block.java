@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
+import hardcoded.compiler.Statement.Variable;
+import hardcoded.compiler.constants.Modifiers.Modifier;
 import hardcoded.compiler.constants.Printable;
 import hardcoded.compiler.types.Type;
 
@@ -36,10 +38,7 @@ public interface Block extends Printable {
 	}
 	
 	public static class ClassBlock extends NestedBlock {
-		// TODO: Variables
-		// TODO: Constructor
-		// TODO: Methods
-		// TODO: Operator overrides.
+		// TODO: Variables, Constructor, Methods, Operator overrides
 		
 		
 	}
@@ -128,8 +127,8 @@ public interface Block extends Printable {
 			if(modifier != null) sb.append(modifier).append(" ");
 			sb.append(returnType).append(" ").append(name).append("(");
 			for(int i = 0; i < arguments.size(); i++) {
-				String str = arguments.get(i).toString();
-				sb.append(str.substring(0, str.length() - 1));
+				Identifier ident = arguments.get(i);
+				sb.append(ident.type).append(" ").append(ident);
 				if(i < arguments.size() - 1) sb.append(", ");
 			}
 			return sb.append(");").toString();

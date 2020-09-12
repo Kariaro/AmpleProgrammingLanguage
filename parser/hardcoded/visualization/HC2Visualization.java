@@ -111,16 +111,20 @@ public final class HC2Visualization extends Visualization {
 			g.scale(zoom, zoom);
 			g.translate(xpos, ypos);
 			
-			for(Element e : elements) e.paintLines(g);
-			for(Element e : elements) e.paint(g);
+			synchronized (elements) {
+				for(Element e : elements) e.paintLines(g);
+				for(Element e : elements) e.paint(g);
+			}
 		}
 		
 		public void display(Program program) {
-			elements.clear();
-			
-			Element entry = new Element(null, program);
-			elements.add(entry);
-			entry.move(-(entry.x + (entry.offset - entry.width) / 2), -entry.y);
+			synchronized(elements) {
+				elements.clear();
+				
+				Element entry = new Element(null, program);
+				elements.add(entry);
+				entry.move(-(entry.x + (entry.offset - entry.width) / 2), -entry.y);
+			}
 		}
 	}
 	

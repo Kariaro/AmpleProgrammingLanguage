@@ -45,7 +45,7 @@ final class TokenizerString implements CharSequence {
 					lineIndex++;
 					columnIndex = 1;
 				} else {
-					if(c == '\t') columnIndex += 3; // TODO: Notepad++, Eclipse counts tabs as 4 cols.
+					if(c == '\t') columnIndex += 3; // Notepad++, Eclipse counts tabs as 4 cols.
 					columnIndex++;
 				}
 			}

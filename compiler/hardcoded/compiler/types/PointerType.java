@@ -3,8 +3,8 @@ package hardcoded.compiler.types;
 public class PointerType extends Type {
 	private Type type;
 	public int pointerLength;
-
-	public static final int POINTER_SIZE = 8;
+	
+	public static final int POINTER_SIZE = 8; // Type of atomType i64...
 	
 	public PointerType(Type type, int pointerLength) {
 		super(null, POINTER_SIZE);

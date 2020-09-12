@@ -8,7 +8,7 @@ import hardcoded.compiler.constants.Insts;
 import hardcoded.utils.StringUtils;
 
 /**
- * This is a dualylinked list instruction.
+ * This is a doubly linked list.
  * 
  * @author HardCoded
  */
@@ -65,6 +65,7 @@ public class Instruction {
 	}
 	
 	private static final AtomicInteger atomic_reg = new AtomicInteger();
+	
 	public static Reg temp() { return new Reg(atomic_reg.getAndIncrement()); }
 	public static Reg temp(String name) { return new NamedReg(name, atomic_reg.getAndIncrement()); }
 	public static Reg temp(Reg reg) { return reg != null ? reg:temp(); }
@@ -104,11 +105,11 @@ public class Instruction {
 	
 	public Instruction next;
 	public Instruction prev;
+	public AtomType size;
 	// Size modifier
 	
 	public List<Reg> params = new ArrayList<>();
 	public Insts op;
-	public AtomType size;
 	
 	public Instruction() {
 		this.op = Insts.nop;

@@ -8,9 +8,7 @@ import java.util.*;
  */
 public final class Keywords {
 	private static final Set<String> KEYWORDS;
-	private Keywords() {
-		
-	}
+	private Keywords() {}
 	
 	// TODO: Design feature. A break statement can break out of any nested branch. if, switch, while, for
 	//       the keyword is 'lbreak' or 'lbreak <expr>' leaves <expr> branches.

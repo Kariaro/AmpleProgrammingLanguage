@@ -7,12 +7,11 @@ import hardcoded.compiler.Identifier.IdType;
 import hardcoded.compiler.constants.Printable;
 
 /**
- * A program class that contains blocks
- * 
+ * A program class that contains blocks.
  */
 public class Program implements Printable {
-	private List<Identifier> idents; // Globals, Functions
-	private List<Block> blocks;
+	private List<Identifier> idents;
+	private List<Block> blocks; // Globals, Functions
 	
 	private int function_index;
 	private int globals_index;

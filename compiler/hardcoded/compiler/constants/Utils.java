@@ -7,16 +7,13 @@ import hardcoded.compiler.Block.Function;
 import hardcoded.compiler.Statement.*;
 
 public final class Utils {
-	private Utils() {
-		
-	}
+	private Utils() {}
 	
 	@FunctionalInterface
 	public static interface Folding<T> {
 		void constantFolding(List<T> parent, int index, Function func);
 	}
 	
-	// TODO: Allow for removing and adding to the expression while preserving the execute_for_all !!
 	public static void execute_for_all_expressions(Function func, Folding<Expression> fc) {
 		getAllExpressions(func, func.body, fc);
 	}
@@ -50,13 +47,13 @@ public final class Utils {
 			}
 		}
 		
-		if(stat instanceof Variable) {
-			Variable var = (Variable)stat;
-			for(int i = 0; i < var.list.size(); i++) {
-				getAllExpressions(func, var.list.get(i), fc);
-				fc.constantFolding(var.list, i, func);
-			}
-		}
+//		if(stat instanceof Variable) {
+//			Variable var = (Variable)stat;
+//			for(int i = 0; i < var.list.size(); i++) {
+//				getAllExpressions(func, var.list.get(i), fc);
+//				fc.constantFolding(var.list, i, func);
+//			}
+//		}
 	}
 	
 	public static void getAllExpressions(Function func, Expression expr, Folding<Expression> fc) {

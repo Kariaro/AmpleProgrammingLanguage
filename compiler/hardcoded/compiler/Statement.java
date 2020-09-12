@@ -3,6 +3,7 @@ package hardcoded.compiler;
 import java.util.*;
 
 import hardcoded.compiler.constants.Printable;
+import hardcoded.compiler.types.Type;
 import hardcoded.utils.StringUtils;
 
 public interface Statement extends Printable {
@@ -193,7 +194,7 @@ public interface Statement extends Printable {
 		}
 		
 		public String asString() { return "IF"; }
-		public String toString() { return "if(" + condition() + ");"; } // TODO: Show if else?
+		public String toString() { return "if(" + condition() + ");"; }
 	}
 	
 	// public static class GotoStatement implements Statement {}
@@ -241,6 +242,54 @@ public interface Statement extends Printable {
 		public String asString() { return toString(); }
 		public Object[] asList() { return list.toArray(); }
 	}
+	
+	public static class Variable implements Statement {
+		public List<Expression> list;
+		
+		public Type type;
+		public String name;
+		
+		public boolean isArray;
+		public int arraySize;
+		
+		public Variable(Type type) {
+			this.list = new ArrayList<>();
+			this.type = type;
+		}
+		
+		public Type valueType() {
+			return type;
+		}
+		
+		public void setValue(Expression expr) {
+			if(list.size() < 1) list.add(expr);
+			else list.set(0, expr);
+		}
+		
+		public Expression value() {
+			if(list.size() < 1) return null;
+			return list.get(0);
+		}
+		
+		public boolean isInitialized() {
+			return !list.isEmpty();
+		}
+		
+		@Override
+		public String toString() {
+			if(isArray) return type + " " + name + "[" + arraySize + "];";
+			if(!isInitialized()) return type + " " + name + ";";
+			return type + " " + name + " = " + value() + ";";
+		}
+		
+		public String asString() { return toString(); }
+		public Object[] asList() {
+			if(isArray) return new Object[] { name, arraySize };
+			if(!isInitialized()) return new Object[] { name };
+			return new Object[] { name, value() };
+		}
+	}
+
 	
 	public default String asString() { return "Undefined(" + this.getClass() + ")"; }
 	public default Object[] asList() { return new Object[] {}; };
