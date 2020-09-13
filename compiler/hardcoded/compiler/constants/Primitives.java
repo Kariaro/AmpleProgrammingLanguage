@@ -5,34 +5,32 @@ import java.util.HashSet;
 import java.util.Set;
 
 import hardcoded.compiler.Expression.AtomType;
-import hardcoded.compiler.PrimitiveType;
-import hardcoded.compiler.Type;
+import hardcoded.compiler.types.PrimitiveType;
+import hardcoded.compiler.types.Type;
 
 /**
  * This is a container class for all primitive data types.
  * @author HardCoded
  */
 public final class Primitives {
-	private Primitives() {
-		
-	}
+	private Primitives() {}
 	
 	private static final Set<Type> PRIMITIVE;
 	public static final Type VOID = new PrimitiveType("void", null, 0);
-	public static final Type DOUBLE = new PrimitiveType("double", AtomType.float8, 8, true, true);
-	public static final Type FLOAT = new PrimitiveType("float", AtomType.float4, 4, true, true);
-	public static final Type LONG = new PrimitiveType("long", AtomType.int8, 8);
-	public static final Type INT = new PrimitiveType("int", AtomType.int4, 4);
-	public static final Type SHORT = new PrimitiveType("short", AtomType.int2, 2);
-	public static final Type BYTE = new PrimitiveType("byte", AtomType.int1, 1);
-	public static final Type CHAR = new PrimitiveType("char", AtomType.int1, 1);
-	public static final Type BOOL = new PrimitiveType("bool", AtomType.int1, 1);
+	// public static final Type DOUBLE = new PrimitiveType("double", AtomType.i64, 8, true, true);
+	// public static final Type FLOAT = new PrimitiveType("float", AtomType.i32, 4, true, true);
+	public static final Type LONG = new PrimitiveType("long", AtomType.i64, 8);
+	public static final Type INT = new PrimitiveType("int", AtomType.i32, 4);
+	public static final Type SHORT = new PrimitiveType("short", AtomType.i16, 2);
+	public static final Type BYTE = new PrimitiveType("byte", AtomType.i8, 1);
+	public static final Type CHAR = new PrimitiveType("char", AtomType.i8, 1);
+	public static final Type BOOL = new PrimitiveType("bool", AtomType.i8, 1);
 	
 	static {
 		Set<Type> types = new HashSet<Type>();
 		types.add(VOID);
-		types.add(DOUBLE);
-		types.add(FLOAT);
+		// types.add(DOUBLE);
+		// types.add(FLOAT);
 		types.add(LONG);
 		types.add(INT);
 		types.add(SHORT);
@@ -66,6 +64,14 @@ public final class Primitives {
 			if(t.name().equals(value)) return t;
 		}
 		
+		return null;
+	}
+	
+	public static Type getTypeFromAtom(AtomType type) {
+		if(type == AtomType.i64) return LONG;
+		if(type == AtomType.i32) return INT;
+		if(type == AtomType.i16) return SHORT;
+		if(type == AtomType.i8) return BYTE;
 		return null;
 	}
 	

@@ -7,6 +7,11 @@ import javax.swing.JComponent;
 import javax.swing.JFrame;
 
 public abstract class Visualization {
+	public static final Visualization DUMMY = new Visualization("null") {
+		public void show(Object... parameters) {}
+		public void hide() {}
+	};
+	
 	protected BufferStrategy bs;
 	protected JFrame frame;
 	

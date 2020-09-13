@@ -89,7 +89,7 @@ public class GLRParser {
 		if(rule.isItemToken()) {
 			if(state.item != null) return rule.value().equals(state.value());
 			if(state.input != null && ((ItemToken)rule.asItem()).isImported()) {
-				return rule.value().equals(state.input.getGroup());
+				return rule.value().equals(state.input.group());
 			}
 			
 			return match(rule, state.input);
@@ -316,7 +316,7 @@ public class GLRParser {
 			}
 			
 			// This was unexpected
-			throw new ParserException("Error at token: '" + token + "' (line=" + token.getLineIndex() + ", column=" + token.getColumnIndex() + ")");
+			throw new ParserException("Error at token: '" + token + "' (line=" + token.line() + ", column=" + token.column() + ")");
 		}
 		
 		System.out.println();
@@ -340,7 +340,7 @@ public class GLRParser {
 				
 				if(item.isImported()) {
 					System.out.println("Matching test. (" + rule + ") --- (" + token + ")");
-					return rule.value().equals(token.getGroup());
+					return rule.value().equals(token.group());
 				}
 				
 				for(RuleList set : item.getRules()) {

@@ -1,16 +1,26 @@
 package hardcoded;
 
 /**
- * This is the main entry point for the compiler.
+ * This is the main entry point for the compiler.<br>
+ * This compiler is a multi stage compiler.<br><br>
+ * 
+ * 
+ * Stage one is to generate a token list from a input.<br><br>
+ * 
+ * Stage two is to generate a basic parse tree.<br>
+ * State three is to optimize the parse tree.<br><br>
+ * 
+ * Stage four is to generate the reduced instruction language.<br>
+ * Stage five is to optimize the reduced instruction language.<br><br>
+ * 
+ * Stage six is to generate the assembly code.<br>
+ * Stage seven is to optimize the assembly code.
  * 
  * @author HardCoded
  */
 public class CompilerMain {
 	public static void main(String[] args) {
 		// TODO: Use the arguments to change build options.
-		
-		//int val = 204 ^ 229 * 119 ^ 75 ^ (5) - 163 + 69 + 10 * 30 * 191 | 145 * 139 + 183 * 165 * 248 * 6 & 183 * 243 ^ 11;
-		//System.out.println("val -> " + val);
 		
 		HCompiler compiler = new HCompiler();
 		compiler.setProjectPath("res/project/src/");

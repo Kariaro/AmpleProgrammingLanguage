@@ -2,33 +2,33 @@ package hardcoded.lexer;
 
 import java.util.Objects;
 
-public class Symbol {
+public class TokenizerSymbol {
 	private String value;
 	private String group;
 	private boolean discard;
 	private int line;
 	private int column;
+	private int fileOffset;
 	
-	protected Symbol(String group, boolean discard, String value, int lineIndex, int columnIndex) {
+	protected TokenizerSymbol(String group, boolean discard, String value, int lineIndex, int columnIndex, int fileOffset) {
 		this.group = group;
 		this.discard = discard;
+		this.fileOffset = fileOffset;
 		this.value = value;
 		this.line = lineIndex;
 		this.column = columnIndex;
 	}
 	
-	/**
-	 * Get the lineIndex that this symbol was read from.
-	 */
 	public int line() {
 		return line;
 	}
 	
-	/**
-	 * Get the columnIndex that this symbol was read from.
-	 */
 	public int column() {
 		return column;
+	}
+	
+	public int fileOffset() {
+		return fileOffset;
 	}
 	
 	public String group() {
@@ -39,17 +39,20 @@ public class Symbol {
 		return value;
 	}
 	
-	public boolean shouldDiscard() {
+	public boolean discard() {
 		return discard;
 	}
 	
-	public boolean groupEquals(String groupName) {
-		return Objects.equals(groupName, group());
+	public boolean groupEquals(String group) {
+		return Objects.equals(group, group());
 	}
 	
-	public boolean equals(String groupName, String value) {
-		return Objects.equals(value, this.value) &&
-			   groupEquals(groupName);
+	public boolean valueEquals(String value) {
+		return Objects.equals(value, value());
+	}
+	
+	public boolean equals(String group, String value) {
+		return groupEquals(group) && valueEquals(value);
 	}
 	
 	public String toString() {

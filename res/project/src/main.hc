@@ -18,9 +18,17 @@
 
 // An include statement will be used to link multiple
 // files together into one file.
-// %include "testing.hc";
+// @import "testing.hc";
 
 bool print(char* string);
+void fortest() {
+	*(0xf) = 5;
+	
+	for(; *(0xf) > 0; *(0xf)--) {
+		print("Loop");
+	}
+}
+
 void expr() {
 	int _ = 1 - 32 + 32 - 32 + 32; // Exptected 1
 	
@@ -47,10 +55,10 @@ void main2(int args) {
 // specify Structure {};
 // specify GLOBAL 15;
 
-//#import "test.hc";
-#set GLOBAL 15;
-#type WORD short;
-// #unset void;
+//@import "test.hc";
+@set GLOBAL 15;
+@type WORD short;
+// @unset void;
 
 /* My language will allow for functions to
  * be created outside classes and to allow
@@ -69,7 +77,7 @@ export void main(int input, int a, int b, int c) {
 	int test = 32, arg2 = 3, arg73 = "test";
 	int* test2 = &test; // Unary get pointer address to value.
 	// int test3[(204 ^ 229 * 119 ^ 75 ^ (5) - 163 + 69 + 10 * 30 * 191 | 145 * 139 + 183 * 165 * 248 * 6 & 183 * 243 ^ 11)];// + 32];
-	int i = 1 + 2 + 3 + 4 + 5.0D;
+	int i = 1 + 2 + 3 + 4 + 5;
 	int var2 = (int)(byte)1234283; // Should be 107
 	
 	WORD test3[GLOBAL];
@@ -90,10 +98,10 @@ export void main(int input, int a, int b, int c) {
 	void __1 = (short)32;
 	void __2 = (int)32;
 	void __3 = (long)32;
-	void __4 = (float)32;
-	void __5 = (double)32;
+	// void __4 = (float)32;
+	// void __5 = (double)32;
 	
-	// int test4[(1 ? 15:32)];
+	// int test44[(1 ? 15:32)];
 	if(1 || 2 || 3) print("1st");
 	if(1 && 2 && 3) print("2nd");
 	if(0 || 0 || 0) print("3rd");

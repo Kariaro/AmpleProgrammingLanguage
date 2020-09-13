@@ -7,9 +7,7 @@ import hardcoded.compiler.Block.Function;
 import hardcoded.compiler.Statement.*;
 
 public final class Utils {
-	private Utils() {
-		
-	}
+	private Utils() {}
 	
 	@FunctionalInterface
 	public static interface Folding<T> {
@@ -25,6 +23,8 @@ public final class Utils {
 	}
 	
 	public static void getAllStatements(Function func, Statement stat, Folding<Statement> fc) {
+		if(stat == null) return; // TODO: This should not be null...
+		
 		if(stat.hasStatements()) {
 			List<Statement> list = stat.getStatements();
 			for(int i = 0; i < list.size(); i++) {
@@ -35,6 +35,8 @@ public final class Utils {
 	}
 	
 	public static void getAllExpressions(Function func, Statement stat, Folding<Expression> fc) {
+		if(stat == null) return; // TODO: This should not be null...
+		
 		if(stat.hasStatements()) {
 			for(Statement s : stat.getStatements()) getAllExpressions(func, s, fc);
 		}
@@ -42,8 +44,10 @@ public final class Utils {
 		if(stat instanceof ExprStat) {
 			ExprStat es = (ExprStat)stat;
 			for(int i = 0; i < es.list.size(); i++) {
-				getAllExpressions(func, es.list.get(i), fc);
+				Expression e = es.list.get(i);
+				getAllExpressions(func, e, fc);
 				fc.constantFolding(es.list, i, func);
+				if(e != es.list.get(i)) i--;
 			}
 		}
 		
@@ -75,7 +79,7 @@ public final class Utils {
 	
 	public static String printPretty(Statement stat) {
 		StringBuilder sb = new StringBuilder();
-		if(stat == null) return "?"; // Invalid
+		if(stat == null) return "?";
 		
 		if(stat instanceof IfStat) {
 			IfStat is = (IfStat)stat;

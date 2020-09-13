@@ -4,17 +4,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
-import hardcoded.compiler.Identifier.VarIdent;
+import hardcoded.compiler.Statement.Variable;
+import hardcoded.compiler.constants.Modifiers.Modifier;
 import hardcoded.compiler.constants.Printable;
+import hardcoded.compiler.types.Type;
 
 public interface Block extends Printable {
-	public default boolean hasElements() {
-		return false;
-	}
+	public static final Block EMPTY = new Block() {
+		public String asString() { return ""; }
+		public Object[] asList() { return new Object[] { }; }
+		public boolean hasElements() { return false; }
+		public List<Statement> getElements() { return null; }
+		public String toString() { return "null"; }
+	};
 	
-	public default List<Statement> getElements() {
-		return null;
-	}
+	public boolean hasElements();
+	public List<Statement> getElements();
 	
 	public static class NestedBlock implements Block {
 		public List<Statement> list = new ArrayList<>();
@@ -33,10 +38,9 @@ public interface Block extends Printable {
 	}
 	
 	public static class ClassBlock extends NestedBlock {
-		// TODO: Variables
-		// TODO: Constructor
-		// TODO: Methods
-		// TODO: Operator overrides.
+		// TODO: Variables, Constructor, Methods, Operator overrides
+		
+		
 	}
 	
 	public static class Function implements Block {
@@ -61,12 +65,13 @@ public interface Block extends Printable {
 		
 		public Identifier add(Variable var) {
 			if(!hasIdentifier(var.name)) { // throw already defined?
-				Identifier ident = new VarIdent(var.type, var.name, var_index++);
+				Identifier ident = Identifier.createVarIdent(var.name, var_index++, var.type);
 				getScope().add(ident);
 				return ident;
 			}
 			
-			return null; // TODO: Error?
+			// TODO: Error?
+			return null;
 		}
 		
 		public boolean hasIdentifier(String name) {
@@ -94,12 +99,12 @@ public interface Block extends Printable {
 			return null;
 		}
 		
-		public VarIdent temp(Type type) {
-			VarIdent result = new VarIdent(type, "$temp" + temp_counter, temp_counter);
-			getScope().add(result);
+		public Identifier temp(Type type) {
+			Identifier ident = Identifier.createVarIdent("$temp" + temp_counter, temp_counter, type, true);
+			getScope().add(ident);
 			temp_counter++;
 			
-			return result;
+			return ident;
 		}
 		
 		public Function inc_scope() {
@@ -122,12 +127,15 @@ public interface Block extends Printable {
 			if(modifier != null) sb.append(modifier).append(" ");
 			sb.append(returnType).append(" ").append(name).append("(");
 			for(int i = 0; i < arguments.size(); i++) {
-				String str = arguments.get(i).toString();
-				sb.append(str.substring(0, str.length() - 1));
+				Identifier ident = arguments.get(i);
+				sb.append(ident.type).append(" ").append(ident);
 				if(i < arguments.size() - 1) sb.append(", ");
 			}
 			return sb.append(");").toString();
 		}
+		
+		public boolean hasElements() { return false; }
+		public List<Statement> getElements() { return null; }
 		
 		public String asString() { return "function " + name + "[" + var_index + (var_index == 1 ? " variable":" variables") + "]"; }
 		public Object[] asList() { return new Object[] { body }; }

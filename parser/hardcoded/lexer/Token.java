@@ -1,10 +1,14 @@
 package hardcoded.lexer;
 
+import java.util.Objects;
+
 /**
+ * This is a dual linked list.
  * 
  * @author HardCoded
  */
 public class Token {
+	// TODO: Maybe use the words trailing? leading?
 	protected final String value;
 	protected String group;
 	protected Token prev;
@@ -12,51 +16,48 @@ public class Token {
 	
 	protected int line;
 	protected int column;
+	protected int fileOffset;
 	
 	protected Token(String value, String group) {
 		this.value = value;
 		this.group = group;
 	}
 	
-	/**
-	 * Get the group that this token belongs to.
-	 */
-	public String getGroup() {
-		return group;
-	}
-	
-	/**
-	 * Get the line that this token was read on.
-	 */
-	public int getLineIndex() {
+	public int line() {
 		return line;
 	}
 	
-	/**
-	 * Get the column index of this token.
-	 */
-	public int getColumnIndex() {
+	public int column() {
 		return column;
 	}
 	
 	/**
-	 * Returns the next token.
+	 * Get the offset from the start of the file that this token was read from.
+	 */
+	public int fileOffset() {
+		return fileOffset;
+	}
+	
+	public String group() {
+		return group;
+	}
+	
+	public String value() {
+		return value;
+	}
+	
+	
+	/**
+	 * Get the next token.
 	 */
 	public Token next() {
 		return next;
 	}
 	
 	/**
-	 * Returns the previous token.
-	 */
-	public Token prev() {
-		return prev;
-	}
-	
-	/**
-	 * Returns the nth-next token.
+	 * Get the nth-next token.
 	 * @param count a value of one will give the same result as calling {@link #next()}
-	 * @return returns the nth-next token or null if the count was greater than the length of the chain
+	 * @return the nth-next token or null if the count was greater than the number of remaining tokens
 	 */
 	public Token next(int count) {
 		Token token = this;
@@ -68,9 +69,17 @@ public class Token {
 	}
 	
 	/**
-	 * Returns the nth-previous token.
+	 * Get the previous token.
+	 */
+	public Token prev() {
+		
+		return prev;
+	}
+	
+	/**
+	 * Get the nth-previous token.
 	 * @param count a value of one will give the same result as calling {@link #prev()}
-	 * @return returns the nth-previous token or null if the count was greater than the length of the chain
+	 * @return the nth-previous token or null if the count was greater than the length of the chain
 	 */
 	public Token prev(int count) {
 		Token token = this.prev;
@@ -82,8 +91,8 @@ public class Token {
 	}
 	
 	/**
-	 * Returns the relative index of the given token.
-	 * @return returns -1 if the token was not found in the chain
+	 * Get the relative index of the passed token to this token.
+	 * @return -1 if the token was not found in the chain
 	 */
 	public int indexOf(Token token) {
 		if(token == null) return -1;
@@ -101,7 +110,7 @@ public class Token {
 	}
 	
 	/**
-	 * Returns the remaining number of tokens in the chain.
+	 * Get the number of remaining tokens in the chain.
 	 */
 	public int remaining() {
 		Token token = this;
@@ -113,63 +122,23 @@ public class Token {
 		return index;
 	}
 	
-	/**
-	 * Checks if the string is equal to the value held by this token.
-	 */
-	public boolean equals(Object object) {
-		if(object instanceof String) {
-			return ((String)object).equals(value);
-		}
-		return this == object;
+	public boolean equals(Object obj) {
+		if(obj instanceof String) return obj.equals(value);
+		return this == obj;
 	}
 	
-	/**
-	 * Clone this token. This will not copy the next and previous values.
-	 * @deprecated This function could be removed in the future.
-	 */
-	@Deprecated
-	public Token clone() {
-		return new Token(value, group);
+	public boolean groupEquals(String group) {
+		return Objects.equals(this.group, group);
 	}
 	
-	/**
-	 * Clone this token and count tokens after this one.
-	 * @param count  a value of one will give the same result as calling {@link #clone()}
-	 * @return a cloned chain of count tokens
-	 * 
-	 * @deprecated This function could be removed in the future.
-	 */
-	@Deprecated
-	public Token clone(int count) {
-		Token start = clone();
-		Token token = start;
-		Token t = this;
-		for(int i = 0; i < count; i++) {
-			t = t.next;
-			if(t == null) return start;
-			
-			Token next = t.clone();
-			next.prev = token;
-			token.next = next;
-			token = next;
-		}
-		
-		return start;
+	public boolean valueEquals(String value) {
+		return Objects.equals(this.value, value);
 	}
 	
-	public boolean groupEquals(String name) {
-		if(name == null) return group == null;
-		return name.equals(group);
+	public boolean equals(String group, String value) {
+		return groupEquals(group) && valueEquals(value);
 	}
 	
-	@Deprecated
-	public void setGroup(String name) {
-		this.group = name;
-	}
-	
-	/**
-	 * Returns the value that this token holds.
-	 */
 	public String toString() {
 		return value;
 	}

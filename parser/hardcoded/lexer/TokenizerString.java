@@ -1,6 +1,11 @@
 package hardcoded.lexer;
 
-class TokenizerString implements CharSequence {
+/**
+ * This class is used by the Tokenizer to generate the tokens.
+ * 
+ * @author HardCoded
+ */
+final class TokenizerString implements CharSequence {
 	private byte[] bytes;
 	private int index;
 	
@@ -29,6 +34,7 @@ class TokenizerString implements CharSequence {
 	
 	int getLine() { return lineIndex; }
 	int getColumn() { return columnIndex; }
+	int getIndex() { return index; }
 	
 	void move(int index) {
 		if(index > 0) {
@@ -39,7 +45,7 @@ class TokenizerString implements CharSequence {
 					lineIndex++;
 					columnIndex = 1;
 				} else {
-					if(c == '\t') columnIndex += 3; // TODO: Only because Notepad++ counts tabs as 4 cols.
+					if(c == '\t') columnIndex += 3; // Notepad++, Eclipse counts tabs as 4 cols.
 					columnIndex++;
 				}
 			}
