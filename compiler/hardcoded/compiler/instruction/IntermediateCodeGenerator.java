@@ -13,14 +13,18 @@ import hardcoded.compiler.instruction.Instruction.Label;
 import hardcoded.compiler.instruction.Instruction.ObjectReg;
 import hardcoded.compiler.instruction.Instruction.Reg;
 
-public class HInstructionCompiler {
+/**
+ * IR is short for 'Intermediate representation'
+ * @author HardCoded
+ */
+public class IntermediateCodeGenerator {
 	
-	public HInstructionCompiler() {
+	public IntermediateCodeGenerator() {
 		
 	}
 	
-	public void compile(Program program) {
-		// Create the correct instructions for, 'if', 'while', 'switch', 'for'
+	public void generate(Program program) {
+		List<Instruction> blocks = new ArrayList<>();
 		
 		for(int i = 0; i < program.size(); i++) {
 			Block block = program.get(i);
@@ -30,10 +34,11 @@ public class HInstructionCompiler {
 			variables.clear();
 			
 			Instruction inst = compileInstructions(func, func.body).first();
+			blocks.add(inst);
 			
 			System.out.println("Instructions:\n");
-			
 			System.out.println(func);
+			
 			int count = 0;
 			while(inst != null) {
 				int idx = count++;
@@ -49,6 +54,8 @@ public class HInstructionCompiler {
 				inst = inst.next;
 			}
 		}
+		
+		// Return the blocks......
 	}
 	
 	private boolean shouldCheck(Expression e) {
@@ -60,7 +67,6 @@ public class HInstructionCompiler {
 	}
 	
 	private Map<String, Reg> variables = new HashMap<>();
-	
 	private Reg createObject(Expression e) {
 		if(e.type() == atom) {
 			AtomExpr a = (AtomExpr)e;
@@ -297,7 +303,7 @@ public class HInstructionCompiler {
 						inst = inst.append(createInstructions(func, e, reg));
 					}
 					
-					inst = inst.append(new Instruction(Insts.brz, label_end, reg));
+					inst = inst.append(new Instruction(Insts.brz, reg, label_end));
 				}
 
 				if(request != null) inst = inst.append(new Instruction(Insts.mov, request, new ObjectReg(1)));
@@ -319,7 +325,7 @@ public class HInstructionCompiler {
 						inst = inst.append(createInstructions(func, e, reg));
 					}
 					
-					inst = inst.append(new Instruction(Insts.bnz, label_end, reg));
+					inst = inst.append(new Instruction(Insts.bnz, reg, label_end));
 				}
 
 				if(request != null) inst = inst.append(new Instruction(Insts.mov, request, new ObjectReg(0)));
@@ -363,7 +369,7 @@ public class HInstructionCompiler {
 			
 			Reg temp = Instruction.temp();
 			inst = inst.append(createInstructions(func, stat.condition(), temp));
-			inst = inst.append(new Instruction(Insts.brz, label_else, temp));
+			inst = inst.append(new Instruction(Insts.brz, temp, label_else));
 			inst = inst.append(createInstructions(func, stat.body()));
 			inst = inst.append(new Instruction(Insts.br, label_end));
 			inst = inst.append(new Instruction(Insts.label, label_else));
@@ -379,7 +385,7 @@ public class HInstructionCompiler {
 
 			Reg temp = Instruction.temp();
 			inst = inst.append(createInstructions(func, stat.condition(), temp));
-			inst = inst.append(new Instruction(Insts.brz, label_end, temp));
+			inst = inst.append(new Instruction(Insts.brz, temp, label_end));
 			inst = inst.append(createInstructions(func, stat.body()));
 			inst = inst.append(new Instruction(Insts.label, label_end));
 		}
@@ -400,18 +406,89 @@ public class HInstructionCompiler {
 		// loop:
 		//   ...
 		//   ; if x has side effects jump to next...
-		//   br [loop]
+		//   br [next]
 		// end:
 		
-		Label label_end = new Label("while.end");
 		Label label_next = new Label("while.next");
 		Label label_loop = new Label("while.loop");
+		Label label_end = new Label("while.end");
 
 		inst = inst.append(new Instruction(Insts.label, label_next));
 		Reg temp = Instruction.temp();
-		inst = inst.append(createInstructions(func, stat.condition(), temp)); // Evaluate x only when there are side effects...
-		inst = inst.append(new Instruction(Insts.brz, label_end, temp));
+		inst = inst.append(createInstructions(func, stat.condition(), temp));
+		inst = inst.append(new Instruction(Insts.brz, temp, label_end));
 		inst = inst.append(new Instruction(Insts.label, label_loop));
+		inst = inst.append(createInstructions(func, stat.body()));
+		inst = inst.append(new Instruction(Insts.br, label_next));
+		inst = inst.append(new Instruction(Insts.label, label_end));
+		
+		return inst.last();
+	}
+	
+	private Instruction createForInstructions(Function func, ForStat stat) {
+		Instruction inst = new Instruction();
+		
+		Label label_next = new Label("for.next");
+		Label label_loop = new Label("for.loop");
+		Label label_end = new Label("for.end");
+		
+		if(stat.variables() != null) {
+			inst = inst.append(createInstructions(func, stat.variables()));
+		}
+		
+		if(stat.action() != null) {
+			// ============================== //
+			// for(x; y; z) { ... }
+			//   ; Define x
+			//
+			//   check = y;
+			//   brz [check], end
+			//   br loop
+			// next:
+			//   check = y;
+			//   brz [check], end
+			//   ; Calculate action
+			// loop:
+			//   ; ...
+			//   br [next]
+			// end:
+			
+			if(stat.condition() != null) {
+				Reg temp = Instruction.temp();
+				inst = inst.append(createInstructions(func, stat.condition(), temp));
+				inst = inst.append(new Instruction(Insts.brz, temp, label_end));
+				inst = inst.append(new Instruction(Insts.br, label_loop));
+			}
+			
+			inst = inst.append(new Instruction(Insts.label, label_next));
+			if(stat.condition() != null) {
+				Reg temp = Instruction.temp();
+				inst = inst.append(createInstructions(func, stat.condition(), temp));
+				inst = inst.append(new Instruction(Insts.brz, temp, label_end));
+			}
+			
+
+			inst = inst.append(createInstructions(func, stat.action()));
+			inst = inst.append(new Instruction(Insts.label, label_loop));
+		} else {
+			// ============================== //
+			// for(x; y; ) { ... }
+			//   ; Define x
+			// next:
+			//   check = y;
+			//   brz [check], [end]
+			//   ; ...
+			//   br [next]
+			// end:
+			
+			inst = inst.append(new Instruction(Insts.label, label_next));
+			if(stat.condition() != null) {
+				Reg temp = Instruction.temp();
+				inst = inst.append(createInstructions(func, stat.condition(), temp));
+				inst = inst.append(new Instruction(Insts.brz, temp, label_end));
+			}
+		}
+		
 		inst = inst.append(createInstructions(func, stat.body()));
 		inst = inst.append(new Instruction(Insts.br, label_next));
 		inst = inst.append(new Instruction(Insts.label, label_end));
@@ -442,7 +519,9 @@ public class HInstructionCompiler {
 		
 		if(stat instanceof IfStat) {
 			return createIfInstructions(func, (IfStat)stat);
-		} else if(stat instanceof WhileStat) {
+		} else if(stat instanceof ForStat) {
+			return createForInstructions(func, (ForStat)stat);
+		}else if(stat instanceof WhileStat) {
 			return createWhileInstructions(func, (WhileStat)stat);
 		} else if(stat instanceof ExprStat) {
 			return createExprInstructions(func, (ExprStat)stat);

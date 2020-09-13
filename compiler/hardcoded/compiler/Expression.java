@@ -15,10 +15,13 @@ public interface Expression extends Printable {
 		public boolean hasElements() { return false; }
 		public List<Expression> getElements() { return null; }
 		public Expression get(int index) { return null; }
+		public void set(int index, Expression e) {}
 		public int size() { return 0; }
 	};
 	
 	public static enum AtomType {
+		u64, u32, u16, u8,
+		
 		i64, i32, i16, i8,
 		string,
 		ident;
@@ -28,7 +31,8 @@ public interface Expression extends Printable {
 		 * @return true if this <code>AtomType</code> is a number type
 		 */
 		public boolean isNumber() {
-			return this == i64 || this == i32 || this == i16 || this == i8;
+			return this == i64 || this == i32 || this == i16 || this == i8
+				|| this == u64 || this == u32 || this == u16 || this == u8;
 		}
 		
 		/**
@@ -40,6 +44,12 @@ public interface Expression extends Printable {
 			if(this == i32) return 4;
 			if(this == i16) return 2;
 			if(this == i8) return 1;
+			
+			if(this == u64) return 8;
+			if(this == u32) return 4;
+			if(this == u16) return 2;
+			if(this == u8) return 1;
+			
 			return -1;
 		}
 		
@@ -66,17 +76,15 @@ public interface Expression extends Printable {
 	}
 	
 	public static enum ExprType {
-		// Memory operations
-		set,	// Move a value y into x
+		// Memory
+		set,	// x = y
 		
 		// Math
 		add,	// x + y
 		sub,	// x - y
-		
 		div,	// x / y
 		mul,	// x * y
 		mod,	// x % y
-		
 		xor,	// x ^ y
 		and,	// x & y
 		or,		// x | y
@@ -84,19 +92,17 @@ public interface Expression extends Printable {
 		shr,	// x >> y
 		
 		// Unary
-		not,	// !x  --> same as (eq == 0)
+		not,	// !x
 		nor,	// ~x
 		neg,	// -x
 		
-		// Compares
+		// Compares				[Only returns zero or one]
 		eq,		// x == y
 		neq,	// x != y
-		
-		gt,		// x > y
+		gt,		// x >  y
 		gte,	// x >= y
-		lt,		// x < y
+		lt,		// x <  y
 		lte,	// x <= y
-		
 		cor,	// x || y
 		cand,	// x && y
 		
@@ -106,14 +112,14 @@ public interface Expression extends Printable {
 		
 		// Function
 		call,	// Call
-		ret,	// Call return
+		ret,	// Return
 		nop,	// No operation
 		
 		leave,	// Break
 		loop,	// Continue
 		
-		atom,	// Atom Value
-		cast,	// Cast Type
+		atom,	// Atom
+		cast,	// Cast
 		comma,
 		invalid, // Invalid expression type
 	}
@@ -123,6 +129,7 @@ public interface Expression extends Printable {
 	public List<Expression> getElements();
 	
 	public Expression get(int index);
+	public void set(int index, Expression e);
 	public int size();
 	
 	public default Expression first() {
@@ -183,12 +190,12 @@ public interface Expression extends Printable {
 	 * 
 	 * @return
 	 */
-	public default AtomType calculateNumberSize() {
+	public default AtomType calculateNumberFromContent() {
 		AtomType curr = null;
 		
 		if(hasElements()) {
 			for(Expression expr : getElements()) {
-				AtomType type = expr.calculateNumberSize();
+				AtomType type = expr.calculateNumberFromContent();
 				if(type == null) continue;
 				
 				curr = curr == null ? type:AtomType.largest(curr, type);
@@ -232,9 +239,8 @@ public interface Expression extends Printable {
 			return this;
 		}
 		
-		public OpExpr set(int index, Expression expr) {
+		public void set(int index, Expression expr) {
 			list.set(index, expr);
-			return this;
 		}
 		
 		public Expression get(int index) {
@@ -279,6 +285,7 @@ public interface Expression extends Printable {
 		public boolean hasElements() { return true; }
 		public List<Expression> getElements() { return list; }
 		public Expression get(int index) { return null; }
+		public void set(int index, Expression e) {}
 		public int size() { return list.size(); }
 		
 		public String toString() { return "(" + type.type() + ")" + value(); }
@@ -330,10 +337,10 @@ public interface Expression extends Printable {
 				case string: s_value = value.toString(); break;
 				case ident: d_value = (Identifier)value; break;
 				
-				case i8:
+				case i8: // TODO: Signed unsigned?
 				case i16:
 				case i32:
-				case i64: i_value = ((Number)value).longValue(); break; // TODO: Signed unsigned?
+				case i64: i_value = ((Number)value).longValue(); break;
 				default: throw new RuntimeException("Invalid atom type '" + type + "'");
 			}
 		}
@@ -376,6 +383,7 @@ public interface Expression extends Printable {
 		public boolean hasElements() { return false; }
 		public int size() { return 0; }
 		public Expression get(int index) { return null; }
+		public void set(int index, Expression e) {}
 		
 		public boolean isPure() { return true; }
 		public AtomType atomType() { return atomType; }
@@ -386,6 +394,7 @@ public interface Expression extends Printable {
 			switch(atomType) { // TODO: Signed unsigned?
 				case string: return '\"' + s_value + '\"';
 				case ident: return Objects.toString(d_value);
+				
 				case i64: return Long.toString(i_value) + 'L';
 				case i32: return Integer.toString((int)i_value) + 'i';
 				case i16: return Short.toString((short)i_value) + 's';

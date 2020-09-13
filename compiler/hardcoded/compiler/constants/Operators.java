@@ -31,7 +31,7 @@ public final class Operators {
 	 * +=   -=   *=   /=
 	 * %=   &=   ^=   |=</pre>
 	 * @param value
-	 * @return true if the string value was a assignment operator.
+	 * @return true if the string value was an assignment operator.
 	 */
 	public static boolean isAssignmentOperator(String value) {
 		return ASSIGNMENT.contains(value);

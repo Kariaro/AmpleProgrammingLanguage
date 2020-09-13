@@ -17,6 +17,7 @@ public final class Keywords {
 		Set<String> keywords = new HashSet<>();
 		keywords.addAll(Arrays.asList(
 			"switch", "case", "default",
+			"signed", "unsigned",
 			"while",
 			"for",
 			"if",

@@ -1,4 +1,4 @@
-package hardcoded.compiler.optimizer;
+package hardcoded.compiler.parsetree;
 
 import static hardcoded.compiler.Expression.AtomType.*;
 import static hardcoded.compiler.Expression.ExprType.*;
@@ -213,6 +213,16 @@ public class ParseTreeOptimizer {
 					break;
 				}
 				
+				case decptr: {
+					if(e.first().type() == addptr) parent.set(index, e.first().first());
+					break;
+				}
+				
+				case addptr: {
+					if(e.first().type() == decptr) parent.set(index, e.first().first());
+					break;
+				}
+				
 				case sub: case add: {
 					List<AtomExpr> list = new ArrayList<>();
 					for(int i = 0; i < e.size(); i++) {
@@ -358,6 +368,13 @@ public class ParseTreeOptimizer {
 				case mod: {
 					Expression next = ExpressionParser.compute(e.type, e);
 					if(next != null) parent.set(index, next); break;
+				}
+				
+				case ret:
+				case call: {
+					/* There is nothing we can do here.
+					 */
+					break;
 				}
 				
 				default: {

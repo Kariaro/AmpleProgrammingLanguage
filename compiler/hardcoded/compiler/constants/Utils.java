@@ -23,6 +23,8 @@ public final class Utils {
 	}
 	
 	public static void getAllStatements(Function func, Statement stat, Folding<Statement> fc) {
+		if(stat == null) return; // TODO: This should not be null...
+		
 		if(stat.hasStatements()) {
 			List<Statement> list = stat.getStatements();
 			for(int i = 0; i < list.size(); i++) {
@@ -33,6 +35,8 @@ public final class Utils {
 	}
 	
 	public static void getAllExpressions(Function func, Statement stat, Folding<Expression> fc) {
+		if(stat == null) return; // TODO: This should not be null...
+		
 		if(stat.hasStatements()) {
 			for(Statement s : stat.getStatements()) getAllExpressions(func, s, fc);
 		}
@@ -47,13 +51,13 @@ public final class Utils {
 			}
 		}
 		
-//		if(stat instanceof Variable) {
-//			Variable var = (Variable)stat;
-//			for(int i = 0; i < var.list.size(); i++) {
-//				getAllExpressions(func, var.list.get(i), fc);
-//				fc.constantFolding(var.list, i, func);
-//			}
-//		}
+		if(stat instanceof Variable) {
+			Variable var = (Variable)stat;
+			for(int i = 0; i < var.list.size(); i++) {
+				getAllExpressions(func, var.list.get(i), fc);
+				fc.constantFolding(var.list, i, func);
+			}
+		}
 	}
 	
 	public static void getAllExpressions(Function func, Expression expr, Folding<Expression> fc) {
