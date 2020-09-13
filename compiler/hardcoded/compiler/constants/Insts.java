@@ -40,8 +40,8 @@ public enum Insts {
 	call,		// call		[R0], [LABEL]			Call label and set R0 to result
 	ret,		// ret		[R0]					Return R0
 	br,			// br		[LABEL]					Jump to [LABEL]
-	brz,		// brz		[LABEL], [R0]			Jump to [LABEL] if R0 is zero
-	bnz,		// bnz		[LABEL], [R0]			Jump to [LABEL] if R0 is not zero
+	brz,		// brz		[R0], [LABEL]			Jump to [LABEL] if R0 is zero
+	bnz,		// bnz		[R0], [LABEL]			Jump to [LABEL] if R0 is not zero
 	
 	// Misc
 	nop,		// nop								No operation

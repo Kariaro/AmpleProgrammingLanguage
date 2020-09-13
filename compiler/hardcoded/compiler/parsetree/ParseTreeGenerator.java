@@ -1,4 +1,4 @@
-package hardcoded.compiler.optimizer;
+package hardcoded.compiler.parsetree;
 
 import static hardcoded.compiler.Expression.ExprType.*;
 
@@ -122,7 +122,7 @@ public class ParseTreeGenerator {
 	}
 	
 	public Block nextBlock() {
-		if(reader.valueEquals("#")) {
+		if(reader.valueEquals("@")) {
 			reader.next();
 			parseCompiler();
 			return Block.EMPTY;
@@ -521,7 +521,12 @@ public class ParseTreeGenerator {
 				}
 			}
 			
-			Expression parse() { return skipComma ? e14():e15(); }
+			Expression parse() {
+				Expression expr = skipComma ? e14():e15();
+				System.out.println("Expr -> " + expr);
+				
+				return expr;
+			}
 			Expression e15() { return e_read_combine(",", comma, this::e14); }
 			Expression e14() { // Left associative
 				Expression lhs = e13();
@@ -585,7 +590,7 @@ public class ParseTreeGenerator {
 					 * numbers and mathimatical operations on those numbers.
 					 */
 					if(!rhs.isPure()) {
-						AtomExpr temp = new AtomExpr(current_function.temp(Primitives.getTypeFromAtom(rhs.calculateNumberSize())));
+						AtomExpr temp = new AtomExpr(current_function.temp(Primitives.getTypeFromAtom(rhs.calculateNumberFromContent())));
 						rhs = new OpExpr(comma,
 							new OpExpr(set, temp, rhs),
 							temp
@@ -613,7 +618,7 @@ public class ParseTreeGenerator {
 					Expression c = e12();
 					
 					
-					AtomExpr temp = new AtomExpr(current_function.temp(Primitives.getTypeFromAtom(AtomType.largest(b.calculateNumberSize(), c.calculateNumberSize()))));
+					AtomExpr temp = new AtomExpr(current_function.temp(Primitives.getTypeFromAtom(AtomType.largest(b.calculateNumberFromContent(), c.calculateNumberFromContent()))));
 					return new OpExpr(
 						comma,
 						new OpExpr(cor,
@@ -639,70 +644,170 @@ public class ParseTreeGenerator {
 			Expression e6() { return e_read(_s("<", "<=", ">", ">="), _e(lt, lte, gt, gte), this::e5); }
 			Expression e5() { return e_read(_s("<<", ">>"), _e(shl, shr), this::e4); }
 			Expression e4() { return e_read(_s("+", "-"), _e(add, sub), this::e3); }
-			Expression e3() { return e_read(_s("*", "/", "%"), _e(mul, div, mod), this::e2); }
+			Expression e3() { return e_read(_s("*", "/", "%"), _e(mul, div, mod), this::e2_2); }
+			
+			Expression e2_2() {
+				switch(reader.value()) {
+					case "++": case "--": {
+						ExprType dir = reader.value().equals("++") ? add:sub;
+						
+						reader.next();
+						Expression rhs = e2_3();
+						if(!acceptModification(rhs)) syntaxError(CompilerError.INVALID_MODIFICATION);
+						
+						Expression result = rhs;
+						
+						/* If the right hand side is a comma expression then the
+						 * modification should effect only the last element.
+						 * 
+						 * The expression		[ ++( ... , x ) ]
+						 * will be evaluated	[ ( ... , ++x ) ]
+						 */
+						if(result.type() == comma) rhs = rhs.last();
+						
+						if(rhs.isPure()) {
+							rhs = new OpExpr(set, rhs, new OpExpr(dir, rhs, new AtomExpr(1)));
+						} else {
+							AtomExpr ident = new AtomExpr(current_function.temp(Primitives.getTypeFromAtom(rhs.calculateNumberFromContent())));
+							
+							// TODO: Tell why a modification to a value that is not pure must be memory modification.
+							// TODO: Check that the value is a valid memory modification.
+							rhs = new OpExpr(comma,
+								new OpExpr(set, ident, new OpExpr(addptr, rhs)),
+								new OpExpr(set,
+									new OpExpr(decptr, ident),
+									new OpExpr(dir, new OpExpr(decptr, ident), new AtomExpr(1))
+								)
+							);
+						}
+						
+						if(result.type() == comma) {
+							result.set(result.size() - 1, rhs);
+							return result;
+						}
+						
+						return rhs;
+					}
+				}
+				
+				// Left hand side
+				Expression lhs = e2_3();
+				
+				switch(reader.value()) {
+					case "++": case "--": {
+						if(!acceptModification(lhs)) syntaxError(CompilerError.INVALID_MODIFICATION);
+						ExprType dir = reader.value().equals("++") ? add:sub;
+						
+						reader.next();
+						
+						// TODO: Allow for comma expressions!
+						// TODO: Use the same solution as the assignment operators.
+						
+						AtomExpr ident2 = new AtomExpr(current_function.temp(Primitives.getTypeFromAtom(lhs.calculateNumberFromContent())));
+						if(!lhs.isPure()) {
+							AtomExpr ident1 = new AtomExpr(current_function.temp(Primitives.getTypeFromAtom(lhs.calculateNumberFromContent())));
+							
+							return new OpExpr(comma,
+								new OpExpr(set, ident2, new OpExpr(addptr, lhs)),
+								new OpExpr(set, ident1, new OpExpr(decptr, ident2)),
+								new OpExpr(set, new OpExpr(decptr, ident2), new OpExpr(dir, new OpExpr(decptr, ident2), new AtomExpr(1))),
+								new OpExpr(set, lhs, new OpExpr(dir, lhs, new AtomExpr(1))),
+								ident1
+							);
+						}
+						
+						return new OpExpr(comma,
+							new OpExpr(set, ident2, lhs),
+							new OpExpr(set, lhs, new OpExpr(dir, lhs, new AtomExpr(1))),
+							ident2
+						);
+					}
+				}
+				
+				return lhs;
+			}
+			
+			Expression e2_3() {
+				Expression e1 = e2();
+				
+				for(;;) {
+					switch(reader.value()) {
+						case "[": {
+							reader.next();
+							Expression expr = e15();
+							
+							if(!reader.valueEquals("]")) syntaxError(CompilerError.UNCLOSED_ARRAY_EXPRESSION, reader);
+							reader.next();
+							
+							Expression result = e1;
+							if(result.type() == comma) e1 = e1.last();
+							e1 = new OpExpr(decptr, new OpExpr(add, e1, expr));
+							
+							if(result.type() == comma) {
+								result.set(result.size() - 1, e1);
+								e1 = result;
+							}
+							continue;
+						}
+						
+						// TODO: Later
+						// case ".": e1 = new BiExpr("MEMBER", e1, e1(symbol.next())); continue;
+						// case "->": e1 = new BiExpr("PMEMBER", e1, e1(symbol.next())); continue;
+						// case "::": e1 = new BiExpr("NMEMBER", e1, e1(symbol.next())); continue;
+						
+						case "(": {
+							if(!(e1 instanceof AtomExpr)) {
+								// Function pointer ?
+								syntaxError("Invalid call expression! %s", e1);
+								break;
+							}
+							OpExpr o = new OpExpr(call);
+							o.list.add(e1);
+							reader.next();
+							
+							AtomExpr ae = (AtomExpr)e1;
+							Function func = FUNCTIONS.get(ae.d_value.name());
+							
+							int length = func.arguments.size();
+							for(int i = 0; i < length; i++) {
+								Expression arg = e14();
+								if(arg == null) syntaxError("Invalid call argument value.");
+								o.list.add(arg);
+								
+								if(reader.valueEquals(",")) {
+									if(i == length - 1) syntaxError("Too many arguments calling function '%s' expected %s", func.name, length + (length == 1 ? " argument":"arguments"));
+									reader.next();
+									continue;
+								}
+								
+								if(i != length - 1) syntaxError("Not enough arguments to call function '%s' expected %s but got %d", func.name, length + (length == 1 ? " argument":"arguments"), i + 1);
+								
+								if(!reader.valueEquals(")")) syntaxError(CompilerError.UNCLOSED_CALL_PARENTHESES, reader);
+								reader.next();
+								break;
+							}
+							
+							e1 = o;
+							continue;
+						}
+					}
+					break;
+				}
+				
+				return e1;
+			}
 			
 			Expression e2() {
 				String value = reader.value();
 				
 				switch(value) {
-					case "&": { reader.next(); return new OpExpr(addptr, e2()); }
-					case "*": { reader.next(); return new OpExpr(decptr, e2()); }
+					case "&": { reader.next(); return new OpExpr(addptr, e1()); }
+					case "*": { reader.next(); return new OpExpr(decptr, e1()); }
 					case "+": { reader.next(); return e1(); }
 					
 					case "!": { reader.next(); return new OpExpr(not, e1()); }
 					case "~": { reader.next(); return new OpExpr(nor, e1()); }
 					case "-": { reader.next(); return new OpExpr(neg, e1()); }
-					
-					case "++": case "--": {
-						reader.next();
-						Expression rhs = e1();
-						if(!acceptModification(rhs)) syntaxError(CompilerError.INVALID_MODIFICATION);
-						
-						AtomExpr number = new AtomExpr(value.equals("++") ? 1:-1, rhs.calculateNumberSize());
-						
-						// TODO:
-//						Expression assigner = rhs;
-//						Expression comma_parent = rhs;
-//						boolean comma_assigned = false;
-//						if(rhs.type() == comma) {
-//							while(assigner.type() == comma) {
-//								comma_parent = assigner;
-//								assigner = assigner.last();
-//							}
-//							comma_assigned = true;
-//						}
-//						
-//						if(!rhs.isPure()) {
-//							AtomExpr temp = new AtomExpr(current_function.temp(Primitives.getTypeFromAtom(number.atomType())));
-//							rhs = new OpExpr(comma,
-//								new OpExpr(set, temp, assigner),
-//								new OpExpr(set, assigner assigner),
-//								temp
-//							);
-//						}
-//						
-//						if(comma_assigned) {
-//							return assigner;
-//						}
-						
-						// TODO: Use the same method as the assignment operators.
-						if(!rhs.isPure()) {
-							AtomExpr ident = new AtomExpr(current_function.temp(Primitives.getTypeFromAtom(number.atomType()))); // rhs.calculateNumberSize())));
-							
-							return new OpExpr(comma,
-								new OpExpr(set, ident, new OpExpr(addptr, rhs)),
-								new OpExpr(set,
-									new OpExpr(decptr, ident),
-									new OpExpr(add,
-										new OpExpr(decptr, ident),
-										number //new AtomExpr(direction, rhs.calculateNumberSize())
-									)
-								)
-							);
-						}
-						
-						return new OpExpr(set, rhs, new OpExpr(add, rhs, number)); //new AtomExpr(direction, rhs.calculateNumberSize())));
-					}
 					
 					case "(": {
 						if(isType(reader.next())) {
@@ -719,99 +824,9 @@ public class ParseTreeGenerator {
 							return new CastExpr(type, e2());
 						} else reader.prev();
 					}
-					
-					default: {
-						Expression e1 = e1();
-						
-						switch(reader.value()) {
-							case "++": case "--": {
-								if(!acceptModification(e1)) syntaxError(CompilerError.INVALID_MODIFICATION);
-								int direction = reader.value().equals("++") ? 1:-1;
-								reader.next();
-								
-								// TODO: Use the same solution as the assignment operators.
-								
-								AtomExpr ident2 = new AtomExpr(current_function.temp(Primitives.getTypeFromAtom(e1.calculateNumberSize())));
-								if(!e1.isPure()) {
-									AtomExpr ident1 = new AtomExpr(current_function.temp(Primitives.getTypeFromAtom(e1.calculateNumberSize())));
-									
-									return new OpExpr(comma,
-										new OpExpr(set, ident2, new OpExpr(addptr, e1)),
-										new OpExpr(set, ident1, new OpExpr(decptr, ident2)),
-										new OpExpr(set, new OpExpr(decptr, ident2), new OpExpr(add, new OpExpr(decptr, ident2), new AtomExpr(direction))),
-										new OpExpr(set, e1, new OpExpr(add, e1, new AtomExpr(direction))),
-										ident1
-									);
-								}
-								
-								return new OpExpr(comma,
-									new OpExpr(set, ident2, e1),
-									new OpExpr(set, e1, new OpExpr(add, e1, new AtomExpr(direction))),
-									ident2
-								);
-							}
-						}
-						
-						for(;;) {
-							switch(reader.value()) {
-								case "[": {
-									reader.next();
-									Expression expr = e15();
-									
-									if(!reader.valueEquals("]")) syntaxError(CompilerError.UNCLOSED_ARRAY_EXPRESSION, reader);
-									reader.next();
-									
-									e1 = new OpExpr(decptr, new OpExpr(add, e1, expr));
-									continue;
-								}
-								
-								// TODO: Later
-								// case ".": e1 = new BiExpr("MEMBER", e1, e1(symbol.next())); continue;
-								// case "->": e1 = new BiExpr("PMEMBER", e1, e1(symbol.next())); continue;
-								// case "::": e1 = new BiExpr("NMEMBER", e1, e1(symbol.next())); continue;
-								
-								case "(": {
-									if(!(e1 instanceof AtomExpr)) {
-										// Function pointer ?
-										syntaxError("Invalid call expression! %s", e1);
-										break;
-									}
-									OpExpr o = new OpExpr(call);
-									o.list.add(e1);
-									reader.next();
-									
-									AtomExpr ae = (AtomExpr)e1;
-									Function func = FUNCTIONS.get(ae.d_value.name());
-									
-									int length = func.arguments.size();
-									for(int i = 0; i < length; i++) {
-										Expression arg = e14();
-										if(arg == null) syntaxError("Invalid call argument value.");
-										o.list.add(arg);
-										
-										if(reader.valueEquals(",")) {
-											if(i == length - 1) syntaxError("Too many arguments calling function '%s' expected %s", func.name, length + (length == 1 ? " argument":"arguments"));
-											reader.next();
-											continue;
-										}
-										
-										if(i != length - 1) syntaxError("Not enough arguments to call function '%s' expected %s but got %d", func.name, length + (length == 1 ? " argument":"arguments"), i + 1);
-										
-										if(!reader.valueEquals(")")) syntaxError(CompilerError.UNCLOSED_CALL_PARENTHESES, reader);
-										reader.next();
-										break;
-									}
-									
-									e1 = o;
-									continue;
-								}
-							}
-							break;
-						}
-						
-						return e1;
-					}
 				}
+				
+				return e1();
 			}
 			
 			Expression e1() {
@@ -907,7 +922,8 @@ public class ParseTreeGenerator {
 				return acceptModification(e.last());
 			}
 			
-			return e.type == decptr;
+			return e.type == decptr
+				|| e.type == addptr;
 		}
 		
 		return false;
@@ -948,15 +964,27 @@ public class ParseTreeGenerator {
 	
 	
 	public void syntaxError(CompilerError error, Object... args) {
-		syntaxError(error.getMessage(), args);
+		StringBuilder message = new StringBuilder();
+		
+		message.append(_caller()).append("(line:").append(reader.line()).append(", col:").append(reader.column()).append(") ")
+			.append(String.format(error.getMessage(), args));
+		
+		System.err.println(message);
+		hasErrors = true;
 	}
 	
 	public void syntaxError(String format, Object... args) {
 		StringBuilder message = new StringBuilder();
-		message.append("(line:").append(reader.line()).append(", col:").append(reader.column()).append(") ")
+		
+		message.append(_caller()).append("(line:").append(reader.line()).append(", col:").append(reader.column()).append(") ")
 			.append(String.format(format, args));
 		
 		System.err.println(message);
 		hasErrors = true;
+	}
+	
+	private String _caller() {
+		StackTraceElement element = Thread.currentThread().getStackTrace()[3];
+		return "(" + element.getFileName() + ":" + element.getLineNumber() + ") ";
 	}
 }

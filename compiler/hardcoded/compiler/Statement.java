@@ -243,6 +243,7 @@ public interface Statement extends Printable {
 		public Object[] asList() { return list.toArray(); }
 	}
 	
+	// TODO: ExprStat with name and type....
 	public static class Variable implements Statement {
 		public List<Expression> list;
 		

@@ -18,17 +18,23 @@
 
 // An include statement will be used to link multiple
 // files together into one file.
-// %include "testing.hc";
+// @import "testing.hc";
 
 bool print(char* string);
+void fortest() {
+	*(0xf) = 5;
+	
+	for(; *(0xf) > 0; *(0xf)--) {
+		print("Loop");
+	}
+}
+
 void expr() {
 	int _ = 1 - 32 + 32 - 32 + 32; // Exptected 1
 	
 	if(10 != 9) {
 		print("Why?!??!?!?");
 	}
-	
-	*(0xf) = 5;
 }
 
 void main2(int args) {
@@ -49,10 +55,10 @@ void main2(int args) {
 // specify Structure {};
 // specify GLOBAL 15;
 
-//#import "test.hc";
-#set GLOBAL 15;
-#type WORD short;
-// #unset void;
+//@import "test.hc";
+@set GLOBAL 15;
+@type WORD short;
+// @unset void;
 
 /* My language will allow for functions to
  * be created outside classes and to allow

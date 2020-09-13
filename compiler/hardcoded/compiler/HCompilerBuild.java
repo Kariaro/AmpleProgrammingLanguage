@@ -4,9 +4,9 @@ import java.io.File;
 
 import hardcoded.compiler.Block.Function;
 import hardcoded.compiler.constants.Utils;
-import hardcoded.compiler.instruction.HInstructionCompiler;
-import hardcoded.compiler.optimizer.ParseTreeGenerator;
-import hardcoded.compiler.optimizer.ParseTreeOptimizer;
+import hardcoded.compiler.instruction.IntermediateCodeGenerator;
+import hardcoded.compiler.parsetree.ParseTreeGenerator;
+import hardcoded.compiler.parsetree.ParseTreeOptimizer;
 import hardcoded.errors.CompilerException;
 import hardcoded.visualization.HC2Visualization;
 
@@ -26,24 +26,26 @@ public class HCompilerBuild {
 	private ParseTreeOptimizer parse_tree_optimizer;
 	
 	/**
-	 * The instruction compiler.
+	 * The instruction generator.
 	 */
-	private HInstructionCompiler hic;
+	private IntermediateCodeGenerator hic;
 	
 	public HCompilerBuild() {
 		parse_tree_generator = new ParseTreeGenerator();
 		parse_tree_optimizer = new ParseTreeOptimizer();
-		hic = new HInstructionCompiler();
+		hic = new IntermediateCodeGenerator();
 		
 		String file = "main.hc";
 		// file = "tests/000_pointer.hc";
 		// file = "tests/001_comma.hc";
 		// file = "tests/002_invalid_assign.hc";
 		// file = "tests/003_invalid_brackets.hc";
-		file = "tests/004_cor_cand.hc";
+		// file = "tests/004_cor_cand.hc";
 		// file = "tests/005_assign_comma.hc";
 		// file = "tests/006_cast_test.hc";
 		// file = "test_syntax.hc";
+		
+		file = "tests_2/000_assign_test.hc";
 		
 		try {
 			build(file);
@@ -72,7 +74,7 @@ public class HCompilerBuild {
 		vs.show(current_program);
 		
 		parse_tree_optimizer.do_constant_folding(vs, current_program);
-		hic.compile(current_program);
+		hic.generate(current_program);
 		
 		
 		for(Block block : current_program.list()) {
