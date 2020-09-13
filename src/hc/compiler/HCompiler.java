@@ -12,11 +12,9 @@ import hardcoded.parser.GLRParser;
 import hardcoded.parser.GLRParserGenerator;
 import hardcoded.tree.AbstractSyntaxTree;
 import hardcoded.tree.ParseTree;
-import hardcoded.tree.ParseTree.PNode;
 import hardcoded.utils.FileUtils;
 import hardcoded.visualization.ASTVisualization;
 import hardcoded.visualization.PTVisualization;
-import hc.main.Main;
 
 // TODO: Try multithread this if we find multiple files to create the parse trees and syntax trees.
 public class HCompiler {
@@ -81,8 +79,6 @@ public class HCompiler {
 		}
 	}
 	
-	private SyntaxStuff stuff = new SyntaxStuff();
-	
 	// TODO: Add folders to make it look like the structure we specified..
 	// TODO: Make it so that we can change where the source and binary path are on the computer.
 	// TODO: This method does not really do much for the compiler. Make a option code instead or something similar to that.
@@ -133,7 +129,7 @@ public class HCompiler {
 			PTVisualization ptv = new PTVisualization();
 			ptv.show(parseTree);
 			
-			AbstractSyntaxTree ast = stuff.createTree(parseTree);
+			AbstractSyntaxTree ast = null;
 			ASTVisualization atv = new ASTVisualization();
 			atv.show(ast);
 			
@@ -142,38 +138,38 @@ public class HCompiler {
 		}
 	}
 	
-	private int calculate(PNode node) {
-		if(node.nodes == null || node.nodes.isEmpty()) return Integer.valueOf(node.value);
-		List<PNode> nodes = node.nodes;
-		int size = nodes.size();
-		
-		if(size == 1) return calculate(nodes.get(0));
-		else if(size == 3) {
-			PNode first = nodes.get(0);
-			PNode second = nodes.get(1);
-			PNode third = nodes.get(2);
-			if(first.value.equals("(")) return calculate(second);
-			
-			switch(second.value) {
-				case "+": return calculate(first) + calculate(third);
-				case "-": return calculate(first) - calculate(third);
-				case "/": return calculate(first) / calculate(third);
-				case "%": return calculate(first) % calculate(third);
-				case "*": return calculate(first) * calculate(third);
-				case "^": return calculate(first) ^ calculate(third);
-				case "&": return calculate(first) & calculate(third);
-				case "|": return calculate(first) | calculate(third);
-			}
-		} else if(size == 2) {
-			PNode first = nodes.get(0);
-			PNode second = nodes.get(1);
-			
-			switch(first.value) {
-				case "-": return -calculate(first);
-				case "~": return ~calculate(second);
-			}
-		}
-		
-		return 0;
-	}
+//	private int calculate(PNode node) {
+//		if(node.nodes == null || node.nodes.isEmpty()) return Integer.valueOf(node.value);
+//		List<PNode> nodes = node.nodes;
+//		int size = nodes.size();
+//		
+//		if(size == 1) return calculate(nodes.get(0));
+//		else if(size == 3) {
+//			PNode first = nodes.get(0);
+//			PNode second = nodes.get(1);
+//			PNode third = nodes.get(2);
+//			if(first.value.equals("(")) return calculate(second);
+//			
+//			switch(second.value) {
+//				case "+": return calculate(first) + calculate(third);
+//				case "-": return calculate(first) - calculate(third);
+//				case "/": return calculate(first) / calculate(third);
+//				case "%": return calculate(first) % calculate(third);
+//				case "*": return calculate(first) * calculate(third);
+//				case "^": return calculate(first) ^ calculate(third);
+//				case "&": return calculate(first) & calculate(third);
+//				case "|": return calculate(first) | calculate(third);
+//			}
+//		} else if(size == 2) {
+//			PNode first = nodes.get(0);
+//			PNode second = nodes.get(1);
+//			
+//			switch(first.value) {
+//				case "-": return -calculate(first);
+//				case "~": return ~calculate(second);
+//			}
+//		}
+//		
+//		return 0;
+//	}
 }

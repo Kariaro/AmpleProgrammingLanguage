@@ -7,12 +7,11 @@ import hardcoded.compiler.Identifier.IdType;
 import hardcoded.compiler.constants.Printable;
 
 /**
- * A program class that contains blocks
- * 
+ * A program class that contains blocks.
  */
 public class Program implements Printable {
-	private List<Identifier> idents; // Globals, Functions
-	private List<Block> blocks;
+	private List<Identifier> idents;
+	private List<Block> blocks; // Globals, Functions
 	
 	private int function_index;
 	private int globals_index;
@@ -37,9 +36,13 @@ public class Program implements Printable {
 		return blocks.size();
 	}
 	
+	public boolean contains(Block block) {
+		return blocks.contains(block);
+	}
+	
 	public Block.Function add(Block.Function block) {
 		blocks.add(block);
-		idents.add(new Identifier.FuncIdent(block.name, function_index++));
+		idents.add(Identifier.createFuncIdent(block.name, function_index++, block));
 		return block;
 	}
 	

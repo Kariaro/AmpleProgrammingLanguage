@@ -3,14 +3,12 @@ package hardcoded.compiler.constants;
 import java.util.*;
 
 /**
- * This class contains all the keywords that are used in the programminglanguage.
+ * This class contains all the keywords that are used in the programming language.
  * @author HardCoded
  */
 public final class Keywords {
 	private static final Set<String> KEYWORDS;
-	private Keywords() {
-		
-	}
+	private Keywords() {}
 	
 	// TODO: Design feature. A break statement can break out of any nested branch. if, switch, while, for
 	//       the keyword is 'lbreak' or 'lbreak <expr>' leaves <expr> branches.
@@ -19,6 +17,7 @@ public final class Keywords {
 		Set<String> keywords = new HashSet<>();
 		keywords.addAll(Arrays.asList(
 			"switch", "case", "default",
+			"signed", "unsigned",
 			"while",
 			"for",
 			"if",

@@ -321,7 +321,7 @@ public class GLRParserOld {
 			}
 			
 			// This was unexpected
-			throw new ParserException("Error at token: '" + token + "' (line=" + token.getLineIndex() + ", column=" + token.getColumnIndex() + ")");
+			throw new ParserException("Error at token: '" + token + "' (line=" + token.line() + ", column=" + token.column() + ")");
 		}
 		
 		System.out.println();

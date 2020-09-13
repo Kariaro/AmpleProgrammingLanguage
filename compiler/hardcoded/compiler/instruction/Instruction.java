@@ -1,20 +1,74 @@
-package hardcoded.compiler;
+package hardcoded.compiler.instruction;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import hardcoded.compiler.Expression.AtomType;
 import hardcoded.compiler.constants.Insts;
 import hardcoded.utils.StringUtils;
 
 /**
- * This is a dualylinked list instruction.
+ * This is a doubly linked list.
  * 
  * @author HardCoded
  */
 public class Instruction {
+	private static String createValue(int value) {
+		StringBuilder sb = new StringBuilder();
+		
+		while(true) {
+			int v = (value) % 26;
+			sb.insert(0, (char)(v + 97));
+			
+			if(value > 25) {
+				value = ((value - v) / 26) - 1;
+			} else {
+				break;
+			}
+		}
+		return sb.toString();
+	}
+	
 	public static class Reg {
 		public int index;
+		
+		public Reg() {
+			
+		}
+		
+		public Reg(int index) {
+			this.index = index;
+		}
+		
+		@Override
+		public String toString() {
+			return "$" + createValue(index);
+		}
 	}
+	
+	public static class NamedReg extends Reg {
+		public String name;
+		
+		public NamedReg(String name) {
+			this.name = name;
+		}
+		
+		public NamedReg(String name, int index) {
+			this.index = index;
+			this.name = name;
+		}
+		
+		@Override
+		public String toString() {
+			return name;
+		}
+	}
+	
+	private static final AtomicInteger atomic_reg = new AtomicInteger();
+	
+	public static Reg temp() { return new Reg(atomic_reg.getAndIncrement()); }
+	public static Reg temp(String name) { return new NamedReg(name, atomic_reg.getAndIncrement()); }
+	public static Reg temp(Reg reg) { return reg != null ? reg:temp(); }
 	
 	public static class ObjectReg extends Reg {
 		public Object obj;
@@ -40,7 +94,7 @@ public class Instruction {
 		
 		public Label(String name, boolean compiler) {
 			this.compiler = compiler;
-			this.name = (compiler ? "\0_":"") + name + (compiler ? ("_" + atomic.getAndIncrement()):"");
+			this.name = (compiler ? "_":"") + name + (compiler ? ("_" + atomic.getAndIncrement() + ""):"");
 		}
 		
 		@Override
@@ -51,6 +105,8 @@ public class Instruction {
 	
 	public Instruction next;
 	public Instruction prev;
+	public AtomType size;
+	// Size modifier
 	
 	public List<Reg> params = new ArrayList<>();
 	public Insts op;
@@ -107,10 +163,15 @@ public class Instruction {
 		return inst;
 	}
 	
+	public boolean hasNeighbours() {
+		return (next != null) || (prev != null);
+	}
+	
 	@Override
 	public String toString() {
 		if(op == Insts.label) return params.get(0) + ":";
 		if(params.isEmpty()) return Objects.toString(op);
-		return op + " [" + StringUtils.join("], [", params) + "]";
+		return op + (size != null ? (" " + size):"")
+				  + " [" + StringUtils.join("], [", params) + "]";
 	}
 }
