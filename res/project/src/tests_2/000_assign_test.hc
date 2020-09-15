@@ -24,8 +24,13 @@ void assign_comma() {
 	
 	(1, b, a)++;
 	
-	int c[1];
+	char c[1];
 	
 	--(0, a++, c)[b++];
-	// decptr(add(comma(set($temp1, a), set(a, add(a, 1i)), c), comma(set($temp2, b), set(b, add(b, 1i)), $temp2)))
+}
+
+void test() {
+	assign_value();
+	assign_array();
+	assign_comma();
 }

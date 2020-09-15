@@ -1,6 +1,7 @@
 package hardcoded.compiler;
 
 import hardcoded.compiler.Block.Function;
+import hardcoded.compiler.constants.AtomType;
 import hardcoded.compiler.types.Type;
 
 public class Identifier {
@@ -16,7 +17,8 @@ public class Identifier {
 	private int index;
 	private boolean temp;
 	public Function func;
-	public Type type;
+	private AtomType low_type;
+	private Type high_type;
 	
 	public Function func() {
 		return func;
@@ -26,8 +28,17 @@ public class Identifier {
 		return name;
 	}
 	
-	public IdType type() {
+	public IdType idtype() {
 		return id_type;
+	}
+	
+	public Type highType() {
+		return high_type;
+	}
+	
+	public AtomType atomType() {
+		if(low_type != null) return low_type;
+		return high_type == null ? null:high_type.atomType();
 	}
 	
 	public int index() {
@@ -48,32 +59,45 @@ public class Identifier {
 		ident.index = index;
 		ident.func = func;
 		ident.id_type = IdType.funct;
-		ident.type = func.returnType;
+		ident.high_type = func.returnType;
+		ident.low_type = ident.high_type.atomType();
 		return ident;
 	}
 	
-	public static Identifier createVarIdent(String name, int index, Type type) { return createVarIdent(name, index, type, false); }
-	public static Identifier createVarIdent(String name, int index, Type type, boolean temp) {
+	public static Identifier createVarIdent(String name, int index, AtomType type) { return createVarIdent(name, index, type, false); }
+	public static Identifier createVarIdent(String name, int index, AtomType type, boolean temp) {
 		Identifier ident = new Identifier();
 		ident.name = name;
 		ident.index = index;
-		ident.type = type;
+		ident.low_type = type;
 		ident.temp = temp;
 		ident.id_type = IdType.var;
 		return ident;
 	}
 	
-	public static Identifier createParamIdent(String name, int index, Type type) {
+	public static Identifier createParamIdent(String name, int index, AtomType type) {
 		Identifier ident = new Identifier();
 		ident.name = name;
 		ident.index = index;
-		ident.type = type;
+		ident.low_type = type;
 		ident.id_type = IdType.param;
 		return ident;
 	}
 	
+	public Identifier clone() {
+		Identifier a = new Identifier();
+		a.name = name;
+		a.index = index;
+		a.id_type = id_type;
+		a.low_type = low_type;
+		a.high_type = high_type;
+		a.temp = temp;
+		a.func = func;
+		return a;
+	}
+	
 	@Override
 	public String toString() {
-		return name; // + ":" + type;
+		return name + ":" + atomType();
 	}
 }

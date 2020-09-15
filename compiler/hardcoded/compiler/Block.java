@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Vector;
 
 import hardcoded.compiler.Statement.Variable;
+import hardcoded.compiler.constants.AtomType;
 import hardcoded.compiler.constants.Modifiers.Modifier;
 import hardcoded.compiler.constants.Printable;
 import hardcoded.compiler.types.Type;
@@ -65,7 +66,7 @@ public interface Block extends Printable {
 		
 		public Identifier add(Variable var) {
 			if(!hasIdentifier(var.name)) { // throw already defined?
-				Identifier ident = Identifier.createVarIdent(var.name, var_index++, var.type);
+				Identifier ident = Identifier.createVarIdent(var.name, var_index++, var.type.atomType());
 				getScope().add(ident);
 				return ident;
 			}
@@ -99,7 +100,7 @@ public interface Block extends Printable {
 			return null;
 		}
 		
-		public Identifier temp(Type type) {
+		public Identifier temp(AtomType type) {
 			Identifier ident = Identifier.createVarIdent("$temp" + temp_counter, temp_counter, type, true);
 			getScope().add(ident);
 			temp_counter++;
@@ -128,7 +129,7 @@ public interface Block extends Printable {
 			sb.append(returnType).append(" ").append(name).append("(");
 			for(int i = 0; i < arguments.size(); i++) {
 				Identifier ident = arguments.get(i);
-				sb.append(ident.type).append(" ").append(ident);
+				sb.append(ident.highType()).append(" ").append(ident);
 				if(i < arguments.size() - 1) sb.append(", ");
 			}
 			return sb.append(");").toString();

@@ -1,19 +1,28 @@
 package hardcoded.compiler.types;
 
+import hardcoded.compiler.constants.AtomType;
+
 public class PointerType extends Type {
 	private Type type;
 	public int pointerLength;
+	private AtomType ptAtomType;
 	
-	public static final int POINTER_SIZE = 8; // Type of atomType i64...
+	public static final int POINTER_SIZE = 8;
 	
 	public PointerType(Type type, int pointerLength) {
-		super(null, POINTER_SIZE);
+		super(null, type.atomType(), POINTER_SIZE);
 		this.pointerLength = pointerLength;
 		this.type = type;
+		
+		this.ptAtomType = AtomType.getPointer(type.atomType(), pointerLength);
 	}
 	
 	public String name() {
 		return type.name();
+	}
+	
+	public AtomType atomType() {
+		return ptAtomType;
 	}
 	
 	public Type type() {

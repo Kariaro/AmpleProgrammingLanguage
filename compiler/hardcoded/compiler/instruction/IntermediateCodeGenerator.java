@@ -7,24 +7,30 @@ import java.util.*;
 import hardcoded.compiler.*;
 import hardcoded.compiler.Block.Function;
 import hardcoded.compiler.Expression.AtomExpr;
+import hardcoded.compiler.Identifier.IdType;
 import hardcoded.compiler.Statement.*;
+import hardcoded.compiler.constants.AtomType;
 import hardcoded.compiler.constants.Insts;
-import hardcoded.compiler.instruction.Instruction.Label;
-import hardcoded.compiler.instruction.Instruction.ObjectReg;
-import hardcoded.compiler.instruction.Instruction.Reg;
+import hardcoded.compiler.constants.Primitives;
+import hardcoded.compiler.instruction.Instruction.*;
 
 /**
  * IR is short for 'Intermediate representation'
+ * 
  * @author HardCoded
  */
 public class IntermediateCodeGenerator {
+	// TODO: Default pointer size is always int.
 	
 	public IntermediateCodeGenerator() {
 		
 	}
 	
-	public void generate(Program program) {
-		List<Instruction> blocks = new ArrayList<>();
+	private List<InstructionBlock> blocks;
+	private InstructionBlock strings;
+	
+	public List<InstructionBlock> generate(Program program) {
+		blocks = new ArrayList<>();
 		
 		for(int i = 0; i < program.size(); i++) {
 			Block block = program.get(i);
@@ -34,28 +40,10 @@ public class IntermediateCodeGenerator {
 			variables.clear();
 			
 			Instruction inst = compileInstructions(func, func.body).first();
-			blocks.add(inst);
-			
-			System.out.println("Instructions:\n");
-			System.out.println(func);
-			
-			int count = 0;
-			while(inst != null) {
-				int idx = count++;
-				if(inst.op == Insts.nop) {
-					//inst = inst.next;
-					//continue;
-				}
-				
-				if(inst.op == Insts.label) System.out.println();
-				System.out.printf("%4d: ", idx);
-				if(inst.op != Insts.label) System.out.print("  ");
-				System.out.printf("%s\n", inst);
-				inst = inst.next;
-			}
+			blocks.add(new InstructionBlock(func, inst));
 		}
 		
-		// Return the blocks......
+		return blocks;
 	}
 	
 	private boolean shouldCheck(Expression e) {
@@ -67,22 +55,70 @@ public class IntermediateCodeGenerator {
 	}
 	
 	private Map<String, Reg> variables = new HashMap<>();
+	private Reg addString(AtomExpr a) {
+		if(strings == null) {
+			strings = new InstructionBlock(".strings", new Instruction(Insts.data, new ObjectReg(a)));
+			strings.returnType = Primitives.VOID;
+			
+			blocks.add(0, strings);
+			return new RefReg(".strings", 0);
+		}
+		
+		int counter = 0;
+		{
+			Instruction i = strings.start;
+			while(i != null) {
+				ObjectReg reg = (ObjectReg)i.params.get(0);
+				
+				if(reg.toString().equals(a.toString())) {
+					return new RefReg(".strings", counter);
+				}
+				
+				counter++;
+				i = i.next;
+			}
+		}
+		
+		strings.start.append(new Instruction(Insts.data, new ObjectReg(a)));
+		return new RefReg(".strings", counter);
+	}
+	
 	private Reg createObject(Expression e) {
 		if(e.type() == atom) {
 			AtomExpr a = (AtomExpr)e;
 			
+			if(a.isString()) {
+				return addString(a);
+			}
+			
 			if(a.isIdentifier()) {
 				Identifier ident = a.d_value;
 				String name = ident.name();
-				
+
+				// System.out.println(ident + ", " + ident.atomType());
 				if(variables.containsKey(name)) return variables.get(name);
-				Reg next = Instruction.temp(name);
+				AtomType size = e.calculateSize();
+				
+//				if(true) {
+//					NamedReg next = new NamedReg(name);
+//					next.size = size;
+//					variables.put(name, next);
+//					return next;
+//				}
+				
+				Reg next = Instruction.temp(size);
+				if(ident.idtype() == IdType.param) next.index += 10000;
 				variables.put(name, next);
 				return next;
 			}
+			
+			if(a.isNumber()) {
+				return new NumberReg(a);
+			}
 		}
 		
-		return new ObjectReg(e);
+		// System.out.println("Creating object reg ? " + e);
+		return new ObjectReg(e.clone());
 	}
 	
 	private Instruction createInstructions(Function func, Expression expr, Reg request) {
@@ -102,21 +138,21 @@ public class IntermediateCodeGenerator {
 						Expression f = a.first();
 						
 						if(shouldCheck(f)) {
-							reg_0 = Instruction.temp();
+							reg_0 = Instruction.temp(a.calculateSize());
 							inst = inst.append(createInstructions(func, a.first(), reg_0));
 						} else {
-							reg_0 = new ObjectReg(f);
+							reg_0 = createObject(f); // NOTE: new ObjectReg(f);
 						}
 						
 						pointer = true;
 					} else {
-						reg_0 = Instruction.temp();
+						reg_0 = Instruction.temp(a.calculateSize());
 						inst = inst.append(createInstructions(func, a, reg_0));
 					}
 				}
 				
 				if(shouldCheck(b)) {
-					reg_1 = Instruction.temp();
+					reg_1 = Instruction.temp(b.calculateSize());
 					inst = inst.append(createInstructions(func, b, reg_1));
 				}
 				
@@ -147,12 +183,12 @@ public class IntermediateCodeGenerator {
 				Reg reg_0 = createObject(a);
 				Reg reg_1 = createObject(b);
 				if(shouldCheck(a)) {
-					reg_0 = Instruction.temp();
+					reg_0 = Instruction.temp(reg_0.size);
 					inst = inst.append(createInstructions(func, a, reg_0));
 				}
 				
 				if(shouldCheck(b)) {
-					reg_1 = Instruction.temp();
+					reg_1 = Instruction.temp(reg_1.size);
 					inst = inst.append(createInstructions(func, b, reg_1));
 				}
 				
@@ -160,7 +196,19 @@ public class IntermediateCodeGenerator {
 				break;
 			}
 			
-			case ret:
+			case ret: {
+				Expression a = expr.first();
+				
+				Reg reg_0 = createObject(a);
+				if(shouldCheck(a)) {
+					reg_0 = Instruction.temp();
+					inst = inst.append(createInstructions(func, a, reg_0));
+				}
+				
+				inst = inst.append(new Instruction(Insts.ret, reg_0));
+				break;
+			}
+			
 			case neg:
 			case not:
 			case nor: {
@@ -196,8 +244,17 @@ public class IntermediateCodeGenerator {
 				
 				Reg reg_0 = createObject(a);
 				if(shouldCheck(a)) {
-					reg_0 = Instruction.temp();
+					reg_0 = Instruction.temp(a.calculateSize());
 					inst = inst.append(createInstructions(func, a, reg_0));
+				}
+				
+				// TODO: Reading from a Identifier should hold the primitive size and not the pointer size.
+				
+				if(request.size == null && reg_0.size != null) {
+					if(reg_0.size.isPointer())
+						request.size = AtomType.getPointer(reg_0.size, -1);
+					else
+						request.size = reg_0.size;
 				}
 				
 				inst = inst.append(new Instruction(Insts.read, Instruction.temp(request), reg_0));
@@ -228,18 +285,18 @@ public class IntermediateCodeGenerator {
 				
 				Reg reg_0 = createObject(a);
 				if(shouldCheck(a)) {
-					reg_0 = Instruction.temp();
+					reg_0 = Instruction.temp(a.calculateSize());
 					inst = inst.append(createInstructions(func, a, reg_0));
 				}
 
 				Reg reg_1 = new ObjectReg(b);
 				if(shouldCheck(b)) {
-					reg_1 = Instruction.temp();
+					reg_1 = Instruction.temp(b.calculateSize());
 					inst = inst.append(createInstructions(func, b, reg_1));
 				}
 				
 				if(expr.size() > 2) {
-					
+					// ????
 				} else {
 					inst = inst.append(new Instruction(type, Instruction.temp(request), reg_0, reg_1));
 					break;
@@ -252,7 +309,7 @@ public class IntermediateCodeGenerator {
 					b = expr.get(i);
 					reg_1 = createObject(b);
 					if(shouldCheck(b)) {
-						reg_1 = Instruction.temp();
+						reg_1 = Instruction.temp(b.calculateSize());
 						inst = inst.append(createInstructions(func, b, reg_1));
 					}
 					
@@ -260,7 +317,7 @@ public class IntermediateCodeGenerator {
 					if(i == expr.size() - 1) {
 						reg_2 = Instruction.temp(request);
 					} else {
-						reg_2 = Instruction.temp();
+						reg_2 = Instruction.temp(b.calculateSize());
 					}
 					inst = inst.append(new Instruction(type, reg_2, reg_0, reg_1));
 				}
@@ -271,7 +328,25 @@ public class IntermediateCodeGenerator {
 			case call: {
 				List<Reg> params = new ArrayList<>();
 				
-				for(int i = 0; i < expr.size(); i++) {
+				{
+					// Called function
+					Expression e = expr.first();
+					
+					if(e instanceof AtomExpr) {
+						AtomExpr a = (AtomExpr)e;
+						
+						if(a.isIdentifier()) {
+							Identifier ident = a.d_value;
+							
+
+							params.add(new Instruction.CallReg(ident.atomType(), e.toString()));
+						}
+					} else {
+						params.add(new Instruction.CallReg(null, e.toString()));
+					}
+				}
+				
+				for(int i = 1; i < expr.size(); i++) {
 					Expression e = expr.get(i);
 					Reg reg = createObject(e);
 					
@@ -283,7 +358,11 @@ public class IntermediateCodeGenerator {
 					params.add(reg);
 				}
 				
-				params.add(0, Instruction.temp(request));
+				if(request == null) {
+					params.add(0, Instruction.NONE);
+				} else {
+					params.add(0, Instruction.temp(request));
+				}
 				
 				inst = inst.append(new Instruction(Insts.call, params.toArray(new Reg[0])));
 				break;
@@ -299,7 +378,7 @@ public class IntermediateCodeGenerator {
 					Reg reg = createObject(e);
 					
 					if(shouldCheck(e)) {
-						reg = Instruction.temp();
+						reg = Instruction.temp(e.calculateSize());
 						inst = inst.append(createInstructions(func, e, reg));
 					}
 					
@@ -367,7 +446,7 @@ public class IntermediateCodeGenerator {
 			
 			Label label_else = new Label("if.else");
 			
-			Reg temp = Instruction.temp();
+			Reg temp = Instruction.temp(stat.condition().calculateSize());
 			inst = inst.append(createInstructions(func, stat.condition(), temp));
 			inst = inst.append(new Instruction(Insts.brz, temp, label_else));
 			inst = inst.append(createInstructions(func, stat.body()));
@@ -383,14 +462,13 @@ public class IntermediateCodeGenerator {
 			//    ...
 			// end:
 
-			Reg temp = Instruction.temp();
+			Reg temp = Instruction.temp(stat.condition().calculateSize());
 			inst = inst.append(createInstructions(func, stat.condition(), temp));
 			inst = inst.append(new Instruction(Insts.brz, temp, label_end));
 			inst = inst.append(createInstructions(func, stat.body()));
 			inst = inst.append(new Instruction(Insts.label, label_end));
 		}
 		
-		// 
 		return inst.last();
 	}
 	
@@ -414,7 +492,7 @@ public class IntermediateCodeGenerator {
 		Label label_end = new Label("while.end");
 
 		inst = inst.append(new Instruction(Insts.label, label_next));
-		Reg temp = Instruction.temp();
+		Reg temp = Instruction.temp(stat.condition().calculateSize());
 		inst = inst.append(createInstructions(func, stat.condition(), temp));
 		inst = inst.append(new Instruction(Insts.brz, temp, label_end));
 		inst = inst.append(new Instruction(Insts.label, label_loop));
@@ -454,7 +532,7 @@ public class IntermediateCodeGenerator {
 			// end:
 			
 			if(stat.condition() != null) {
-				Reg temp = Instruction.temp();
+				Reg temp = Instruction.temp(stat.condition().calculateSize());
 				inst = inst.append(createInstructions(func, stat.condition(), temp));
 				inst = inst.append(new Instruction(Insts.brz, temp, label_end));
 				inst = inst.append(new Instruction(Insts.br, label_loop));
@@ -462,7 +540,7 @@ public class IntermediateCodeGenerator {
 			
 			inst = inst.append(new Instruction(Insts.label, label_next));
 			if(stat.condition() != null) {
-				Reg temp = Instruction.temp();
+				Reg temp = Instruction.temp(stat.condition().calculateSize());
 				inst = inst.append(createInstructions(func, stat.condition(), temp));
 				inst = inst.append(new Instruction(Insts.brz, temp, label_end));
 			}
@@ -483,7 +561,7 @@ public class IntermediateCodeGenerator {
 			
 			inst = inst.append(new Instruction(Insts.label, label_next));
 			if(stat.condition() != null) {
-				Reg temp = Instruction.temp();
+				Reg temp = Instruction.temp(stat.condition().calculateSize());
 				inst = inst.append(createInstructions(func, stat.condition(), temp));
 				inst = inst.append(new Instruction(Insts.brz, temp, label_end));
 			}

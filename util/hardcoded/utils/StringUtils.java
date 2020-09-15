@@ -6,9 +6,7 @@ import java.util.List;
 import hardcoded.utils.error.MalformedEscapeException;
 
 public final class StringUtils {
-	private StringUtils() {
-		
-	}
+	private StringUtils() {}
 	
 	public static String join(CharSequence separator, List<?> list) {
 		if(list == null) return null;

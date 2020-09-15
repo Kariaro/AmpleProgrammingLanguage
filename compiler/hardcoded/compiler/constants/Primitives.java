@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import hardcoded.compiler.Expression.AtomType;
 import hardcoded.compiler.types.PrimitiveType;
 import hardcoded.compiler.types.Type;
 
@@ -16,14 +15,14 @@ public final class Primitives {
 	private Primitives() {}
 	
 	private static final Set<Type> PRIMITIVE;
-	public static final Type VOID = new PrimitiveType("void", null, 0);
+	public static final Type VOID = new PrimitiveType("void", null, 0); // none
 	// public static final Type DOUBLE = new PrimitiveType("double", AtomType.i64, 8, true, true);
 	// public static final Type FLOAT = new PrimitiveType("float", AtomType.i32, 4, true, true);
 	public static final Type LONG = new PrimitiveType("long", AtomType.i64, 8);
 	public static final Type INT = new PrimitiveType("int", AtomType.i32, 4);
 	public static final Type SHORT = new PrimitiveType("short", AtomType.i16, 2);
 	public static final Type BYTE = new PrimitiveType("byte", AtomType.i8, 1);
-	public static final Type CHAR = new PrimitiveType("char", AtomType.i8, 1);
+	public static final Type CHAR = new PrimitiveType("char", AtomType.i8, 1); // u8
 	public static final Type BOOL = new PrimitiveType("bool", AtomType.i8, 1);
 	
 	static {
@@ -64,14 +63,6 @@ public final class Primitives {
 			if(t.name().equals(value)) return t;
 		}
 		
-		return null;
-	}
-	
-	public static Type getTypeFromAtom(AtomType type) {
-		if(type == AtomType.i64) return LONG;
-		if(type == AtomType.i32) return INT;
-		if(type == AtomType.i16) return SHORT;
-		if(type == AtomType.i8) return BYTE;
 		return null;
 	}
 	

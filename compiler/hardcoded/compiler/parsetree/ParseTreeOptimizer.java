@@ -1,17 +1,21 @@
 package hardcoded.compiler.parsetree;
 
-import static hardcoded.compiler.Expression.AtomType.*;
 import static hardcoded.compiler.Expression.ExprType.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import hardcoded.compiler.*;
 import hardcoded.compiler.Block.Function;
-import hardcoded.compiler.Expression.*;
-import hardcoded.compiler.Statement.*;
-import hardcoded.compiler.constants.*;
+import hardcoded.compiler.Expression.AtomExpr;
+import hardcoded.compiler.Expression.ExprType;
+import hardcoded.compiler.Expression.OpExpr;
+import hardcoded.compiler.Statement.ForStat;
+import hardcoded.compiler.Statement.IfStat;
+import hardcoded.compiler.Statement.WhileStat;
+import hardcoded.compiler.constants.AtomType;
+import hardcoded.compiler.constants.Utils;
 import hardcoded.compiler.expression.ExpressionParser;
-import hardcoded.compiler.types.*;
 import hardcoded.visualization.Visualization;
 
 public class ParseTreeOptimizer {
@@ -51,7 +55,7 @@ public class ParseTreeOptimizer {
 						e.printStackTrace();
 					}
 					
-					System.out.println("[" + index + "] (" + bef + ")\n[" + index + "] (" + now + ")\n");
+					// System.out.println("[" + index + "] (" + bef + ")\n[" + index + "] (" + now + ")\n");
 				}
 			});
 			
@@ -107,32 +111,6 @@ public class ParseTreeOptimizer {
 		 * An example would be that the expression 	[ ( ... , x) += 5 ]
 		 * should become 							[ ( ... , x += 5) ]
 		 */
-
-		// TODO: Operator overrides.
-		
-		if(expr instanceof CastExpr) {
-			CastExpr e = (CastExpr)expr;
-			
-			if(e.first() instanceof AtomExpr) {
-				AtomExpr a = (AtomExpr)e.first();
-				
-				if(a.isNumber()) {
-					Type cast = e.type;
-					
-					if(cast instanceof PrimitiveType) {
-						PrimitiveType pt = (PrimitiveType)cast;
-						parent.set(index, a.convert(pt.getType()));
-					} else if(cast instanceof PointerType) {
-						// Casting into a pointer is always allowed
-						// PointerType pt = (PointerType)cast;
-						
-						// (int*)((int)(double));
-						parent.set(index, a.convert(i64));
-					}
-				}
-			}
-		}
-		
 		if(expr instanceof OpExpr) {
 			OpExpr e = (OpExpr)expr;
 			
@@ -213,13 +191,30 @@ public class ParseTreeOptimizer {
 					break;
 				}
 				
-				case decptr: {
-					if(e.first().type() == addptr) parent.set(index, e.first().first());
-					break;
-				}
-				
-				case addptr: {
-					if(e.first().type() == decptr) parent.set(index, e.first().first());
+				case addptr: case decptr: {
+					ExprType opp = e.type == decptr ? addptr:decptr;
+					
+					if(e.first().type() == opp) {
+						parent.set(index, e.first().first());
+					} else {
+						Expression ex = e.first();
+						AtomType last = ex.calculateSize();
+						// System.out.println("[" + ex + "] -> " + last + "(" + e + ": " + e.type + ")");
+						AtomType size;
+						
+						if(last != null && last.isPointer()) {
+							size = AtomType.getPointer(last, opp == decptr ? 1:-1);
+						} else {
+							size = last;
+						}
+						
+						if(ex instanceof OpExpr) {
+							((OpExpr)ex).override_size = size;
+						} else {
+							((AtomExpr)ex).override_size = size;
+						}
+					}
+					
 					break;
 				}
 				

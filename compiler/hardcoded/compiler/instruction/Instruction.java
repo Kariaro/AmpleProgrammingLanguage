@@ -3,7 +3,9 @@ package hardcoded.compiler.instruction;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import hardcoded.compiler.Expression.AtomType;
+import hardcoded.compiler.Expression;
+import hardcoded.compiler.Expression.AtomExpr;
+import hardcoded.compiler.constants.AtomType;
 import hardcoded.compiler.constants.Insts;
 import hardcoded.utils.StringUtils;
 
@@ -31,6 +33,7 @@ public class Instruction {
 	
 	public static class Reg {
 		public int index;
+		public AtomType size;
 		
 		public Reg() {
 			
@@ -40,9 +43,38 @@ public class Instruction {
 			this.index = index;
 		}
 		
+		public Reg(AtomType size, int index) {
+			this.index = index;
+			this.size = size;
+		}
+		
 		@Override
 		public String toString() {
-			return "$" + createValue(index);
+			return "$" + createValue(index).toUpperCase() + ":" + size;
+		}
+	}
+	
+	public static final Reg NONE = new Reg() {
+		{
+			size = null;
+			index = -1;
+		}
+		
+		public boolean equals(Object obj) { return false; }
+		public String toString() { return "..."; }
+	};
+	
+	public static class RefReg extends Reg {
+		public String label;
+		
+		public RefReg(String label, int index) {
+			this.label = label;
+			this.index = index;
+		}
+		
+		@Override
+		public String toString() {
+			return label + "[" + index + "]";
 		}
 	}
 	
@@ -60,6 +92,24 @@ public class Instruction {
 		
 		@Override
 		public String toString() {
+			return name + ":" + size;
+		}
+	}
+	
+	public static class CallReg extends Reg {
+		public String name;
+		
+		public CallReg(String name) {
+			this.name = name;
+		}
+		
+		public CallReg(AtomType size, String name) {
+			this.name = name;
+			this.size = size;
+		}
+		
+		@Override
+		public String toString() {
 			return name;
 		}
 	}
@@ -70,11 +120,31 @@ public class Instruction {
 	public static Reg temp(String name) { return new NamedReg(name, atomic_reg.getAndIncrement()); }
 	public static Reg temp(Reg reg) { return reg != null ? reg:temp(); }
 	
+	public static Reg temp(AtomType size) { return new Reg(size, atomic_reg.getAndIncrement()); }
+	public static Reg temp(AtomType size, Reg reg) { return reg != null ? reg:temp(size); }
+	
+	public static class NumberReg extends Reg {
+		public AtomExpr expr;
+		
+		public NumberReg(AtomExpr expr) {
+			this.expr = expr;
+			this.size = expr.calculateSize();
+		}
+		
+		public String toString() {
+			return Objects.toString(expr) + ":" + size;
+		}
+	}
+	
 	public static class ObjectReg extends Reg {
 		public Object obj;
 		
 		public ObjectReg(Object obj) {
 			this.obj = obj;
+			
+			if(obj instanceof Expression) {
+				size = ((Expression)obj).calculateSize();
+			}
 		}
 		
 		@Override
@@ -84,6 +154,10 @@ public class Instruction {
 	}
 	
 	private static final AtomicInteger atomic = new AtomicInteger();
+	/**
+	 * This is a label.
+	 * @author HardCoded
+	 */
 	public static class Label extends Reg {
 		public String name;
 		public boolean compiler;
@@ -136,6 +210,30 @@ public class Instruction {
 		return prev;
 	}
 	
+	/**
+	 * Remove this instruction from its neighbours.
+	 */
+	public Instruction remove() {
+		if(next == null) {
+			if(prev == null) {
+				return null;
+			} else {
+				prev.next = null;
+				return prev;
+			}
+		} else {
+			if(prev == null) {
+				// curr next
+				next.prev = null;
+				return next;
+			} else {
+				prev.next = next;
+				next.prev = prev;
+				return prev;
+			}
+		}
+	}
+	
 	public Instruction append(Instruction inst) {
 		if(inst == null) return last();
 		Instruction first = inst.first();
@@ -152,6 +250,17 @@ public class Instruction {
 		Instruction inst = this; // TODO: What if this gets stuck in a loop?
 		while(inst.next != null) inst = inst.next;
 		return inst;
+	}
+	
+	public int length() {
+		int result = 0;
+		Instruction inst = this;
+		while(inst.next != null) {
+			result ++;
+			inst = inst.next;
+		}
+		
+		return result;
 	}
 	
 	/**
@@ -171,7 +280,17 @@ public class Instruction {
 	public String toString() {
 		if(op == Insts.label) return params.get(0) + ":";
 		if(params.isEmpty()) return Objects.toString(op);
-		return op + (size != null ? (" " + size):"")
-				  + " [" + StringUtils.join("], [", params) + "]";
+		
+		AtomType size = params.get(0).size;
+		if(op == Insts.call) size = params.get(1).size;
+		
+		if(op == Insts.brz
+		|| op == Insts.bnz
+		|| op == Insts.br) {
+			size = null;
+		}
+		
+		return op + "\t" + (size != null ? size:"   ")
+				  + "\t\t [" + StringUtils.join("], [", params) + "]";
 	}
 }
