@@ -23,11 +23,15 @@ public enum CompilerError {
 	INVALID_CAST_TYPE("Invalid cast type. You cannot cast into a '%s'."),
 	INVALID_TYPE("Invalid type '%s'."),
 	
+	MISSING_FUNCTION_PARAMETER_SEPARATOR("Invalid function parameter separator. Expected a comma ',' but got '%s'"),
+	
+	
 	UNCLOSED_ARRAY_DEFINITION("Unclosed array definition. Expected the character ']' but got '%s'"),
 	UNCLOSED_ARRAY_EXPRESSION("Unclosed brackets. Expected the character ']' but got '%s'"),
 	
 	UNCLOSED_CURLY_BRACKETS_STATEMENT("Unclosed curly brackets. Expected the character '}' but got '%s'"),
-	
+
+	INVALID_XXX_DEFINITION_EXPECTED_OPEN_PARENTHESIS("Invalid %s definition. Expected open parenthesis '(' but got '%s'"),
 	INVALID_XXX_STATEMENT_EXPECTED_OPEN_PARENTHESIS("Invalid %s statement. Expected open parenthesis '(' but got '%s'"),
 	INVALID_XXX_STATEMENT_EXPECTED_SEMICOLON("Invalid %s statement. Expected a semicolon ';' but got '%s'"),
 	

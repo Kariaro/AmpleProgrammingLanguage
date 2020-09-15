@@ -217,33 +217,7 @@ public interface Statement extends Printable {
 		public String toString() { return StringUtils.join(" ", list); }
 	}
 	
-	public static class StatementList implements Statement {
-		public List<Statement> list;
-		
-		public StatementList() {
-			this.list = new ArrayList<>();
-		}
-		
-		public StatementList(List<? extends Statement> list) {
-			this.list = new ArrayList<>(list);
-		}
-		
-		@Override
-		public boolean hasStatements() {
-			return true;
-		}
-		
-		@Override
-		public List<Statement> getStatements() {
-			return list;
-		}
-		
-		public String toString() { return StringUtils.join("", list); }
-		public String asString() { return toString(); }
-		public Object[] asList() { return list.toArray(); }
-	}
-	
-	// TODO: ExprStat with name and type....
+	// XXX: ExprStat with name and type....
 	public static class Variable implements Statement {
 		public List<Expression> list;
 		
@@ -290,7 +264,32 @@ public interface Statement extends Printable {
 			return new Object[] { name, value() };
 		}
 	}
-
+	
+	public static class StatementList implements Statement {
+		public List<Statement> list;
+		
+		public StatementList() {
+			this.list = new ArrayList<>();
+		}
+		
+		public StatementList(List<? extends Statement> list) {
+			this.list = new ArrayList<>(list);
+		}
+		
+		@Override
+		public boolean hasStatements() {
+			return true;
+		}
+		
+		@Override
+		public List<Statement> getStatements() {
+			return list;
+		}
+		
+		public String toString() { return StringUtils.join("", list); }
+		public String asString() { return toString(); }
+		public Object[] asList() { return list.toArray(); }
+	}
 	
 	public default String asString() { return "Undefined(" + this.getClass() + ")"; }
 	public default Object[] asList() { return new Object[] {}; };

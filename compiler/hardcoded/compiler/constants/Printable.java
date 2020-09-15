@@ -2,7 +2,7 @@ package hardcoded.compiler.constants;
 
 /**
  * This is a utility interface used by some visualization
- * classes to display a node structure.
+ * classes to display node structures.
  * 
  * @author HardCoded
  */

@@ -46,6 +46,7 @@ public enum Insts {
 	// Misc
 	nop,		// nop								No operation
 	label,		// label							
+	data,		// data		[TYPE], [VALUE]			Define data of type [TYPE]
 	;
 	
 	public static final Insts convert(ExprType type) {

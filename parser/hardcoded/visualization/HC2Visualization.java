@@ -86,7 +86,7 @@ public final class HC2Visualization extends Visualization {
 	}
 	
 	public void hide() {
-		frame.setVisible(true);
+		frame.setVisible(false);
 	}
 	
 	private class PTPanel extends JPanel {

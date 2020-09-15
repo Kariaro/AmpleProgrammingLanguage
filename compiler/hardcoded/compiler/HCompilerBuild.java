@@ -1,10 +1,16 @@
 package hardcoded.compiler;
 
 import java.io.File;
+import java.util.List;
 
 import hardcoded.compiler.Block.Function;
+import hardcoded.compiler.assembler.AssemblyCodeExporter;
+import hardcoded.compiler.assembler.AssemblyCodeGenerator;
+import hardcoded.compiler.assembler.AssemblyCodeOptimizer;
 import hardcoded.compiler.constants.Utils;
+import hardcoded.compiler.instruction.InstructionBlock;
 import hardcoded.compiler.instruction.IntermediateCodeGenerator;
+import hardcoded.compiler.instruction.IntermediateCodeOptimizer;
 import hardcoded.compiler.parsetree.ParseTreeGenerator;
 import hardcoded.compiler.parsetree.ParseTreeOptimizer;
 import hardcoded.errors.CompilerException;
@@ -28,15 +34,28 @@ public class HCompilerBuild {
 	/**
 	 * The instruction generator.
 	 */
-	private IntermediateCodeGenerator hic;
+	private IntermediateCodeGenerator icg;
+	
+	/**
+	 * The instruction optimzier.
+	 */
+	private IntermediateCodeOptimizer ico;
+	
+	private AssemblyCodeGenerator acg;
+	private AssemblyCodeOptimizer aco;
+	private AssemblyCodeExporter ace;
 	
 	public HCompilerBuild() {
 		parse_tree_generator = new ParseTreeGenerator();
 		parse_tree_optimizer = new ParseTreeOptimizer();
-		hic = new IntermediateCodeGenerator();
+		icg = new IntermediateCodeGenerator();
+		ico = new IntermediateCodeOptimizer();
+		acg = new AssemblyCodeGenerator();
+		aco = new AssemblyCodeOptimizer();
+		ace = new AssemblyCodeExporter();
 		
 		String file = "main.hc";
-		// file = "tests/000_pointer.hc";
+		file = "tests/000_pointer.hc";
 		// file = "tests/001_comma.hc";
 		// file = "tests/002_invalid_assign.hc";
 		// file = "tests/003_invalid_brackets.hc";
@@ -45,7 +64,7 @@ public class HCompilerBuild {
 		// file = "tests/006_cast_test.hc";
 		// file = "test_syntax.hc";
 		
-		file = "tests_2/000_assign_test.hc";
+		// file = "tests_2/000_assign_test.hc";
 		
 		try {
 			build(file);
@@ -71,21 +90,30 @@ public class HCompilerBuild {
 		}
 
 		vs = new HC2Visualization();
-		vs.show(current_program);
+		vs.hide();
+		// vs.show(current_program);
 		
-		parse_tree_optimizer.do_constant_folding(vs, current_program);
-		hic.generate(current_program);
+		parse_tree_optimizer.do_constant_folding(/* vs, */ current_program);
 		
+		List<InstructionBlock> blocks;
+		blocks = icg.generate(current_program);
+		blocks = ico.generate(blocks);
+		acg.generate(blocks);
 		
-		for(Block block : current_program.list()) {
-			if(!(block instanceof Function)) continue;
-			
-			System.out.println("========================================================");
-			Function func = (Function)block;
-			String str = Utils.printPretty(func);
-			System.out.println(str.replace("\t", "    "));
-		}
-		
-		System.out.println("========================================================");
+//		System.out.println();
+//		System.out.println();
+//		System.out.println();
+//		System.out.println();
+//		
+//		for(Block block : current_program.list()) {
+//			if(!(block instanceof Function)) continue;
+//			
+//			System.out.println("========================================================");
+//			Function func = (Function)block;
+//			String str = Utils.printPretty(func);
+//			System.out.println(str.replace("\t", "    "));
+//		}
+//		
+//		System.out.println("========================================================");
 	}
 }

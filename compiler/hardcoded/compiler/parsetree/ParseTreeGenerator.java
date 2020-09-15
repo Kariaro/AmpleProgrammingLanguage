@@ -13,7 +13,9 @@ import hardcoded.compiler.Statement.*;
 import hardcoded.compiler.constants.*;
 import hardcoded.compiler.constants.Modifiers.Modifier;
 import hardcoded.compiler.context.Lang;
-import hardcoded.compiler.types.*;
+import hardcoded.compiler.types.PointerType;
+import hardcoded.compiler.types.PrimitiveType;
+import hardcoded.compiler.types.Type;
 import hardcoded.errors.CompilerError;
 import hardcoded.lexer.Tokenizer;
 import hardcoded.lexer.TokenizerFactory;
@@ -146,7 +148,7 @@ public class ParseTreeGenerator {
 				reader.next();
 				
 				if(defined_types.containsKey(name)) syntaxError("Type is already defined '%s'", name);
-				defined_types.put(name, new Type(name, type.size(), type.isSigned()));
+				defined_types.put(name, new Type(name, type.atomType(), type.size(), type.isSigned()));
 				
 				// System.out.println("#TYPE [" + name + "] as [" + type + "]");
 				break;
@@ -199,7 +201,7 @@ public class ParseTreeGenerator {
 		
 		Function func = new Function();
 		if(Modifiers.contains(reader.value())) func.modifier = nextFuncModifier();
-		if(!isType(reader)) syntaxError("Invalid function return type '%s'", reader);
+		if(!isType(reader)) syntaxError(CompilerError.INVALID_TYPE, reader); //"Invalid function return type '%s'", reader);
 		func.returnType = getTypeFromSymbol();
 		
 		if(!isValidName(reader)) syntaxError(CompilerError.INVALID_FUNCTION_NAME, reader); // "Invalid function name '%s'"
@@ -228,15 +230,16 @@ public class ParseTreeGenerator {
 		
 		current_function = func;
 		
-		if(!reader.next().valueEquals("(")) syntaxError("Invalid function declaration. Did you forget a open bracket here ? '%s'", reader);
+		if(!reader.next().valueEquals("(")) syntaxError(CompilerError.INVALID_XXX_DEFINITION_EXPECTED_OPEN_PARENTHESIS, "function", reader);
 		reader.next();
 		
 		while(!reader.valueEquals(")")) {
 			Variable arg = nextFuncArgument();
-			func.arguments.add(Identifier.createParamIdent(arg.name, func.arguments.size(), arg.type));
+			func.arguments.add(Identifier.createParamIdent(arg.name, func.arguments.size(), arg.type.atomType()));
+			
 			if(!reader.valueEquals(",")) {
 				if(reader.valueEquals(")")) break;
-				syntaxError("Invalid function argument separator '%s' did you forget a comma ? ','", reader);
+				syntaxError(CompilerError.MISSING_FUNCTION_PARAMETER_SEPARATOR, reader);
 			} else reader.next();
 		}
 		
@@ -302,12 +305,10 @@ public class ParseTreeGenerator {
 			return new ExprStat(new OpExpr(loop));
 		} else if(reader.valueEquals("return")) {
 			OpExpr expr = new OpExpr(ret);
-			
 			reader.next();
 			if(!reader.valueEquals(";")) expr.add(nextExpression());
 			if(!reader.valueEquals(";")) syntaxError(CompilerError.INVALID_XXX_STATEMENT_EXPECTED_SEMICOLON, "return", reader);
 			reader.nextClear();
-			
 			return new ExprStat(expr);
 		}
 		
@@ -406,6 +407,15 @@ public class ParseTreeGenerator {
 				}
 				var.isArray = true;
 				
+				{
+					int pointerLength = 1;
+					if(var.type instanceof PointerType) {
+						pointerLength = ((PointerType)var.type).pointerLength + 1;
+					}
+					
+					var.type = new PointerType(type, pointerLength);
+				}
+				
 				if(!reader.valueEquals("]")) syntaxError(CompilerError.UNCLOSED_ARRAY_DEFINITION, reader);
 				if(!reader.next().valueEquals(";")) syntaxError(CompilerError.UNCLOSED_VARIABLE_DECLARATION);
 				reader.nextClear();
@@ -422,15 +432,17 @@ public class ParseTreeGenerator {
 				if(reader.valueEquals(";")) {
 					reader.nextClear();
 					break;
-				} else if(!reader.valueEquals(",")) {
-					syntaxError("Invalid variable definition. Expected a comma or semicolon but got '%s'", reader);
 				}
-				
+			}
+			
+			if(!reader.valueEquals(",")) {
+				syntaxError("Invalid variable definition. Expected a comma or semicolon but got '%s'", reader);
+			} else {
 				reader.next();
-				continue;
 			}
 		} while(true);
-		
+
+		System.out.println(reader + " -> ?" + list);
 		return new StatementList(list);
 	}
 	
@@ -523,7 +535,7 @@ public class ParseTreeGenerator {
 			
 			Expression parse() {
 				Expression expr = skipComma ? e14():e15();
-				System.out.println("Expr -> " + expr);
+				// System.out.println("Expr -> " + expr);
 				
 				return expr;
 			}
@@ -590,7 +602,7 @@ public class ParseTreeGenerator {
 					 * numbers and mathimatical operations on those numbers.
 					 */
 					if(!rhs.isPure()) {
-						AtomExpr temp = new AtomExpr(current_function.temp(Primitives.getTypeFromAtom(rhs.calculateNumberFromContent())));
+						AtomExpr temp = new AtomExpr(current_function.temp(rhs.calculateSize()));
 						rhs = new OpExpr(comma,
 							new OpExpr(set, temp, rhs),
 							temp
@@ -618,7 +630,7 @@ public class ParseTreeGenerator {
 					Expression c = e12();
 					
 					
-					AtomExpr temp = new AtomExpr(current_function.temp(Primitives.getTypeFromAtom(AtomType.largest(b.calculateNumberFromContent(), c.calculateNumberFromContent()))));
+					AtomExpr temp = new AtomExpr(current_function.temp(AtomType.largest(b.calculateSize(), c.calculateSize())));
 					return new OpExpr(
 						comma,
 						new OpExpr(cor,
@@ -668,7 +680,7 @@ public class ParseTreeGenerator {
 						if(rhs.isPure()) {
 							rhs = new OpExpr(set, rhs, new OpExpr(dir, rhs, new AtomExpr(1)));
 						} else {
-							AtomExpr ident = new AtomExpr(current_function.temp(Primitives.getTypeFromAtom(rhs.calculateNumberFromContent())));
+							AtomExpr ident = new AtomExpr(current_function.temp(rhs.calculateSize()));
 							
 							// TODO: Tell why a modification to a value that is not pure must be memory modification.
 							// TODO: Check that the value is a valid memory modification.
@@ -703,17 +715,33 @@ public class ParseTreeGenerator {
 						// TODO: Allow for comma expressions!
 						// TODO: Use the same solution as the assignment operators.
 						
-						AtomExpr ident2 = new AtomExpr(current_function.temp(Primitives.getTypeFromAtom(lhs.calculateNumberFromContent())));
+						// XXX: Remove 'Primitives.getTypeFromAtom'
+						
+						AtomExpr ident2 = new AtomExpr(current_function.temp(lhs.calculateSize()));
+						// System.out.println("Comma expr -> " + ident2 + ", [" + lhs + "]");
 						if(!lhs.isPure()) {
-							AtomExpr ident1 = new AtomExpr(current_function.temp(Primitives.getTypeFromAtom(lhs.calculateNumberFromContent())));
+							AtomExpr ident1 = new AtomExpr(current_function.temp(lhs.calculateSize()));
+							
+							// ( ... ) ++
+							
+							// For this to be not pure it must be a pointer.
 							
 							return new OpExpr(comma,
+								// Calculate inside of lhs...
 								new OpExpr(set, ident2, new OpExpr(addptr, lhs)),
 								new OpExpr(set, ident1, new OpExpr(decptr, ident2)),
 								new OpExpr(set, new OpExpr(decptr, ident2), new OpExpr(dir, new OpExpr(decptr, ident2), new AtomExpr(1))),
 								new OpExpr(set, lhs, new OpExpr(dir, lhs, new AtomExpr(1))),
 								ident1
 							);
+							
+//							return new OpExpr(comma,
+//								new OpExpr(set, ident2, new OpExpr(addptr, lhs)),
+//								new OpExpr(set, ident1, new OpExpr(decptr, ident2)),
+//								new OpExpr(set, new OpExpr(decptr, ident2), new OpExpr(dir, new OpExpr(decptr, ident2), new AtomExpr(1))),
+//								new OpExpr(set, lhs, new OpExpr(dir, lhs, new AtomExpr(1))),
+//								ident1
+//							);
 						}
 						
 						return new OpExpr(comma,
@@ -741,12 +769,16 @@ public class ParseTreeGenerator {
 							
 							Expression result = e1;
 							if(result.type() == comma) e1 = e1.last();
+							
+							AtomType type = e1.calculateSize();
+							expr = new OpExpr(mul, expr, new AtomExpr(type.size()));
 							e1 = new OpExpr(decptr, new OpExpr(add, e1, expr));
 							
 							if(result.type() == comma) {
 								result.set(result.size() - 1, e1);
 								e1 = result;
 							}
+							
 							continue;
 						}
 						
@@ -768,6 +800,8 @@ public class ParseTreeGenerator {
 							AtomExpr ae = (AtomExpr)e1;
 							Function func = FUNCTIONS.get(ae.d_value.name());
 							
+							boolean closed = false;
+							
 							int length = func.arguments.size();
 							for(int i = 0; i < length; i++) {
 								Expression arg = e14();
@@ -783,8 +817,14 @@ public class ParseTreeGenerator {
 								if(i != length - 1) syntaxError("Not enough arguments to call function '%s' expected %s but got %d", func.name, length + (length == 1 ? " argument":"arguments"), i + 1);
 								
 								if(!reader.valueEquals(")")) syntaxError(CompilerError.UNCLOSED_CALL_PARENTHESES, reader);
+								closed = true;
 								reader.next();
 								break;
+							}
+							
+							if(!closed) {
+								if(!reader.valueEquals(")")) syntaxError(CompilerError.UNCLOSED_CALL_PARENTHESES, reader);
+								else reader.next();
 							}
 							
 							e1 = o;
@@ -813,15 +853,26 @@ public class ParseTreeGenerator {
 						if(isType(reader.next())) {
 							Type type = getTypeFromSymbol();
 							if(type instanceof PrimitiveType) {
-								PrimitiveType pt = (PrimitiveType)type;
-								if(pt.getType() == null) syntaxError(CompilerError.INVALID_CAST_TYPE, pt.getType());
+								if(type.atomType() == null) syntaxError(CompilerError.INVALID_CAST_TYPE, type.atomType());
 							}
 							
 							// TODO: Change the type of the value to a 'i64' if the value is a class object.
 							
 							if(!reader.valueEquals(")")) syntaxError(CompilerError.UNCLOSED_CAST_PARENTHESES, reader);
 							reader.next();
-							return new CastExpr(type, e2());
+							Expression rhs = e2();
+							
+							if(rhs instanceof AtomExpr) {
+								AtomExpr a = (AtomExpr)rhs;
+								
+								if(a.isNumber()) {
+									return a.convert(type.atomType());
+								}
+							}
+							
+							OpExpr expr = new OpExpr(cast, rhs);
+							expr.override_size = type.atomType();
+							return expr;
 						} else reader.prev();
 					}
 				}
@@ -887,8 +938,10 @@ public class ParseTreeGenerator {
 			}
 		}.parse();
 		
+		// We clone the expression becuse we want to make all branches
+		// unique meaning that they wont share any references.
 		reader.resetMarked();
-		return expr;
+		return expr.clone();
 	}
 	
 	public Variable nextFuncArgument() {
@@ -946,9 +999,9 @@ public class ParseTreeGenerator {
 				reader.next();
 			}
 			
-			return new PointerType(type, size);
+			type = new PointerType(type, size);
 		}
-		
+
 		return type;
 	}
 	

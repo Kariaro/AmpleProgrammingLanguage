@@ -2,8 +2,8 @@ package hardcoded.compiler;
 
 import java.util.*;
 
+import hardcoded.compiler.constants.AtomType;
 import hardcoded.compiler.constants.Printable;
-import hardcoded.compiler.types.Type;
 import hardcoded.utils.StringUtils;
 
 public interface Expression extends Printable {
@@ -16,64 +16,9 @@ public interface Expression extends Printable {
 		public List<Expression> getElements() { return null; }
 		public Expression get(int index) { return null; }
 		public void set(int index, Expression e) {}
+		public Expression clone() { return this; }
 		public int size() { return 0; }
 	};
-	
-	public static enum AtomType {
-		u64, u32, u16, u8,
-		
-		i64, i32, i16, i8,
-		string,
-		ident;
-		
-		/**
-		 * Check if this <code>AtomType</code> is one of the types <code>i64, i32, i16, i8</code>.
-		 * @return true if this <code>AtomType</code> is a number type
-		 */
-		public boolean isNumber() {
-			return this == i64 || this == i32 || this == i16 || this == i8
-				|| this == u64 || this == u32 || this == u16 || this == u8;
-		}
-		
-		/**
-		 * Get the size of this <code>AtomType</code> in bytes.
-		 * @return -1 if there is no constant size
-		 */
-		public int size() {
-			if(this == i64) return 8;
-			if(this == i32) return 4;
-			if(this == i16) return 2;
-			if(this == i8) return 1;
-			
-			if(this == u64) return 8;
-			if(this == u32) return 4;
-			if(this == u16) return 2;
-			if(this == u8) return 1;
-			
-			return -1;
-		}
-		
-		/**
-		 * Get the <code>AtomType</code> with the largest size.
-		 * @param a
-		 * @param b
-		 * @return
-		 */
-		public static AtomType largest(AtomType a, AtomType b) {
-			if(a == null) {
-				if(b == null) return null;
-				return b.isNumber() ? b:null;
-			} else if(b == null) {
-				return a.isNumber() ? a:null;
-			}
-			
-			if(a.isNumber() && b.isNumber()) {
-				return a.size() > b.size() ? a:b;
-			}
-			
-			return null; // Invalid combination
-		}
-	}
 	
 	public static enum ExprType {
 		// Memory
@@ -131,6 +76,10 @@ public interface Expression extends Printable {
 	public Expression get(int index);
 	public void set(int index, Expression e);
 	public int size();
+	
+	public default Expression clone() {
+		return null;
+	}
 	
 	public default Expression first() {
 		if(!hasElements() || size() < 1) return null;
@@ -190,12 +139,12 @@ public interface Expression extends Printable {
 	 * 
 	 * @return
 	 */
-	public default AtomType calculateNumberFromContent() {
+	public default AtomType calculateSize() {
 		AtomType curr = null;
 		
 		if(hasElements()) {
 			for(Expression expr : getElements()) {
-				AtomType type = expr.calculateNumberFromContent();
+				AtomType type = expr.calculateSize();
 				if(type == null) continue;
 				
 				curr = curr == null ? type:AtomType.largest(curr, type);
@@ -207,13 +156,7 @@ public interface Expression extends Printable {
 				Identifier ident = a.d_value;
 				
 				if(ident.hasType()) {
-					int size = ident.type.size();
-					
-					if(size == 8) return AtomType.i64;
-					if(size == 4) return AtomType.i32;
-					if(size == 2) return AtomType.i16;
-					if(size == 1) return AtomType.i8;
-					return null;
+					return ident.atomType();
 				}
 			}
 			
@@ -251,6 +194,22 @@ public interface Expression extends Printable {
 			return list.size();
 		}
 		
+		public AtomType override_size;
+		public AtomType calculateSize() {
+			if(type == ExprType.cast) {
+				return override_size;
+			}
+			
+			return Expression.super.calculateSize();
+		}
+		
+		public OpExpr clone() {
+			OpExpr expr = new OpExpr(type);
+			expr.override_size = override_size;
+			for(Expression e : list) expr.add(e.clone());
+			return expr;
+		}
+		
 		public ExprType type() { return type; }
 		public boolean hasElements() { return true; }
 		public List<Expression> getElements() { return list; }
@@ -259,38 +218,8 @@ public interface Expression extends Printable {
 		public Object[] asList() { return list.toArray(); }
 		
 		public String toString() {
-			return type + "(" + StringUtils.join(", ", list) + ")";
+			return type + "(" + StringUtils.join(", ", list) + ")" + ":" + this.calculateSize();
 		}
-	}
-
-	public static class CastExpr implements Expression {
-		public List<Expression> list = new ArrayList<>();
-		public Type type;
-		
-		public CastExpr(Type type, Expression a) {
-			list.add(a);
-			this.type = type;
-		}
-		
-		public void setValue(Expression expr) {
-			list.set(0, expr);
-		}
-		
-		public Expression value() {
-			return list.get(0);
-		}
-		
-		public ExprType type() { return ExprType.cast; }
-		
-		public boolean hasElements() { return true; }
-		public List<Expression> getElements() { return list; }
-		public Expression get(int index) { return null; }
-		public void set(int index, Expression e) {}
-		public int size() { return list.size(); }
-		
-		public String toString() { return "(" + type.type() + ")" + value(); }
-		public String asString() { return "CAST"; }
-		public Object[] asList() { return new Object[] { type, value() }; };
 	}
 	
 	public static class AtomExpr implements Expression {
@@ -333,15 +262,16 @@ public interface Expression extends Printable {
 		public AtomExpr(Object value, AtomType type) {
 			this.atomType = type;
 			
-			switch(type) {
-				case string: s_value = value.toString(); break;
-				case ident: d_value = (Identifier)value; break;
+			if(type == AtomType.string) {
+				s_value = value.toString();
+			} else if(type == AtomType.ident) {
+				d_value = (Identifier)value;
+			} else if(type.isNumber()) {
 				
-				case i8: // TODO: Signed unsigned?
-				case i16:
-				case i32:
-				case i64: i_value = ((Number)value).longValue(); break;
-				default: throw new RuntimeException("Invalid atom type '" + type + "'");
+				// TODO: Signed unsigned?
+				i_value = ((Number)value).longValue();
+			} else {
+				throw new RuntimeException("Invalid atom type '" + type + "'");
 			}
 		}
 		
@@ -359,6 +289,12 @@ public interface Expression extends Printable {
 		
 		public AtomExpr convert(AtomType type) {
 			if(!isNumber()) return null; // Invalid
+			
+			if(type.isPointer()) {
+				AtomExpr expr = new AtomExpr((long)i_value);
+				expr.override_size = type;
+				return expr;
+			}
 			
 			// TODO: Signed unsigned?
 			if(type == AtomType.i64) return new AtomExpr((long)i_value);
@@ -389,18 +325,47 @@ public interface Expression extends Printable {
 		public AtomType atomType() { return atomType; }
 		public ExprType type() { return ExprType.atom; }
 		
+		public AtomType override_size;
+		public AtomType calculateSize() {
+			if(override_size != null) {
+				return override_size;
+			}
+			
+			return Expression.super.calculateSize();
+		}
+		
+		public AtomExpr clone() {
+			AtomExpr expr = new AtomExpr(0);
+			expr.atomType = atomType;
+			expr.override_size = override_size;
+			if(isIdentifier()) {
+				expr.d_value = d_value.clone();
+				
+			}
+			expr.i_value = i_value;
+			expr.s_value = s_value;
+			return expr;
+		}
+		
 		public String asString() { return toString() + ":" + atomType(); }
 		public String toString() {
-			switch(atomType) { // TODO: Signed unsigned?
-				case string: return '\"' + s_value + '\"';
-				case ident: return Objects.toString(d_value);
+			if(atomType == AtomType.string) return '\"' + s_value + '\"';
+			if(atomType == AtomType.ident)  return Objects.toString(d_value);
+			
+			// TODO: Signed unsigned?
+			if(atomType.isNumber()) {
+				String postfix = (atomType.isSigned() ? "":"u");
 				
-				case i64: return Long.toString(i_value) + 'L';
-				case i32: return Integer.toString((int)i_value) + 'i';
-				case i16: return Short.toString((short)i_value) + 's';
-				case i8: return Byte.toString((byte)i_value) + 'b';
-				default: throw new RuntimeException("Invalid atom type '" + atomType + "'");
+				// TODO: Print unsigned values correctly.
+				switch(atomType.size()) {
+					case 8: return Long.toString(i_value) + postfix + 'L';
+					case 4: return Integer.toString((int)i_value) + postfix + 'i';
+					case 2: return Short.toString((short)i_value) + postfix + 's';
+					case 1: return Byte.toString((byte)i_value) + postfix + 'b';
+				}
 			}
+			
+			throw new RuntimeException("Invalid atom type '" + atomType + "'");
 		}
 	}
 	

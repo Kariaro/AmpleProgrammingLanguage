@@ -22,9 +22,9 @@
 
 bool print(char* string);
 void fortest() {
-	*(0xf) = 5;
+	*((char*)0xf) = 5;
 	
-	for(; *(0xf) > 0; *(0xf)--) {
+	for(; *((int*)0xf) > 0; *((int*)0xf)--) {
 		print("Loop");
 	}
 }
@@ -108,7 +108,7 @@ export void main(int input, int a, int b, int c) {
 	if(1 && 2 && 0) print("4th");
 	
 	// if((1 + 2) && (0, += 32) && 1) continue;
-	if(test3[3][2][1] == 0) break;
+	if(test3[3] == 0) break; // [2][1]
 	
 	if(a > b) {
 		while(1 > 0) {

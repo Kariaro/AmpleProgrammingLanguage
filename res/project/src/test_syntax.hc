@@ -1,4 +1,4 @@
-#type size_t long;
+@type size_t long;
 
 void main() {
 	int _a = (

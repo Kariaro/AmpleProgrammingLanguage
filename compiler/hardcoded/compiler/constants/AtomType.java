@@ -1,18 +1,22 @@
 package hardcoded.compiler.constants;
 
-class AtomType {
-	public static final int NUMBER_FLAG = (1 << 0);
-	public static final int SIGNED_FLAG = (1 << 1);
+public class AtomType {
+	public static final int NUMBER_FLAG		= (1 << 0);
+	public static final int SIGNED_FLAG		= (1 << 1);
+	public static final int POINTER_FLAG	= (1 << 2);
+	public static final int NOP_FLAG		= (1 << 10);
+	
+	private static final int POINTER_MASK = 255 * POINTER_FLAG;
 	
 	
 	public static final AtomType string = new AtomType("string", -1); // Always pointer
 	public static final AtomType ident = new AtomType("ident", -1);   // Always pointer
 	
-	// Unsigned
-	public static final AtomType u64 = new AtomType("u64", 8, NUMBER_FLAG),
-								 u32 = new AtomType("u32", 4, NUMBER_FLAG),
-								 u16 = new AtomType("u16", 2, NUMBER_FLAG),
-								 u8  = new AtomType("u8",  1, NUMBER_FLAG);
+	// TODO: Unsigned
+//	public static final AtomType u64 = new AtomType("u64", 8, NUMBER_FLAG),
+//								 u32 = new AtomType("u32", 4, NUMBER_FLAG),
+//								 u16 = new AtomType("u16", 2, NUMBER_FLAG),
+//								 u8  = new AtomType("u8",  1, NUMBER_FLAG);
 	
 	// Signed
 	public static final AtomType i64 = new AtomType("i64", 8, NUMBER_FLAG | SIGNED_FLAG),
@@ -24,6 +28,13 @@ class AtomType {
 	private final boolean isSigned;
 	private final boolean isNumber;
 	private final String name;
+	
+	/**
+	 * If this atomType is a pointer type this will be its size.
+	 * The maximum allowed size is 255 after that it needs to be
+	 * casted.
+	 */
+	private final int pointer;
 	private final int size;
 	
 	private AtomType(String name, int size) {
@@ -31,17 +42,23 @@ class AtomType {
 	}
 	
 	private AtomType(String name, int size, int flags) {
-		this.name = name;
 		this.size = size;
 		this.isNumber = (flags & NUMBER_FLAG) != 0;
 		this.isSigned = (flags & SIGNED_FLAG) != 0;
+		this.pointer = (flags & POINTER_MASK) / POINTER_FLAG;
+		
+		StringBuilder sb = new StringBuilder();
+		for(int i = 0; i < pointer; i++) sb.append('*');
+		this.name = name + sb.toString();
 	}
 	
 	public boolean isSigned() { return isSigned; }
 	public boolean isNumber() { return isNumber; }
+	public boolean isPointer() { return pointer != 0; }
 	
 	public String name() { return name; }
 	public int size() { return size; }
+	public int pointerDepth() { return pointer; }
 	
 	/**
 	 * Get the <code>AtomType</code> with the largest size.
@@ -58,6 +75,18 @@ class AtomType {
 		// largest( [unsigned int] , [long] ) == [unsigned long]
 		
 		if(a.isNumber && b.isNumber) {
+			if(a.isPointer()) {
+				if(b.isPointer()) {
+					return a.size > b.size ? a:b;
+				}
+				
+				return a;
+			}
+			
+			if(b.isPointer()) {
+				return b;
+			}
+			
 			return a.size > b.size ? a:b;
 		}
 		
@@ -71,6 +100,19 @@ class AtomType {
 		}
 		
 		return a.isNumber ? a:null;
+	}
+	
+	public static AtomType getPointer(AtomType type, int length) {
+		length = type.pointer + length;
+		if(length > 255) throw new RuntimeException("Pointer type to deep (" + length + ").");
+		if(length < 0) throw new RuntimeException("Pointer length cannot be negative.");
+		
+		int flags = (type.isNumber ? NUMBER_FLAG:0) |
+					(type.isSigned ? SIGNED_FLAG:0) |
+					(length * POINTER_FLAG);
+		
+		// TODO: Remove the replace here.
+		return new AtomType(type.name.replace("*", ""), type.size, flags);
 	}
 	
 	public String toString() {
