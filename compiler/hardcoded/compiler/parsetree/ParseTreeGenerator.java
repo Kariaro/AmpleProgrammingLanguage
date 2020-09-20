@@ -403,6 +403,7 @@ public class ParseTreeGenerator {
 					
 					// TODO: Negative numbers
 					
+					var.list.add(Expression.EMPTY); // TODO: Fix array variables.....
 					var.arraySize = (int)number.i_value;
 				}
 				var.isArray = true;
@@ -442,7 +443,7 @@ public class ParseTreeGenerator {
 			}
 		} while(true);
 
-		System.out.println(reader + " -> ?" + list);
+		// System.out.println(reader + " -> ?" + list);
 		return new StatementList(list);
 	}
 	

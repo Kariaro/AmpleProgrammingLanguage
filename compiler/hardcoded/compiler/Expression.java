@@ -140,6 +140,8 @@ public interface Expression extends Printable {
 	 * @return
 	 */
 	public default AtomType calculateSize() {
+		if(this == EMPTY) return null;
+		
 		AtomType curr = null;
 		
 		if(hasElements()) {
