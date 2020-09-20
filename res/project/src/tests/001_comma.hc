@@ -1,3 +1,5 @@
+// TODO: Function should be optimized to the constant 10
+
 int comma() {
 	int a = 4;
 	(a += 3, 4, 5, a) += 3;

@@ -7,6 +7,7 @@ public class InstructionBlock {
 	public Instruction start;
 	public Type returnType;
 	public String name;
+	public String extra;
 	
 	public InstructionBlock(String name, Instruction inst) {
 		this.name = name;
