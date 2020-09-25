@@ -3,19 +3,23 @@ package hardcoded.compiler.assembler;
 import java.util.ArrayList;
 import java.util.List;
 
+import hardcoded.compiler.assembler.operator.Register;
+
 public class AsmOpr {
 	private final List<Part> parts = new ArrayList<>();
-	private final boolean isMemory; // TODO get size of the memory ptr
+	private final boolean isMemory;
+	private final int ptr_size;
 	
-	
-	private AsmOpr(List<Part> parts, boolean isMemory) {
+	private AsmOpr(List<Part> parts, boolean isMemory, int ptr_size) {
 		this.isMemory = isMemory;
+		this.ptr_size = ptr_size;
 		this.parts.addAll(parts);
 	}
 	
-	public AsmOpr(AsmReg reg) {
+	public AsmOpr(Register reg) {
 		parts.add(new Part.Reg(reg));
 		isMemory = false;
+		ptr_size = -1;
 	}
 	
 	public boolean isRegister() {
@@ -40,11 +44,18 @@ public class AsmOpr {
 		return parts.get(index);
 	}
 	
+	public Object getObject(int index) {
+		return parts.get(index).get();
+	}
+	
+	public int getSize() {
+		if(isMemory) return ptr_size;
+		return getPart(0).size();
+	}
+	
 	
 	@Override
 	public String toString() {
-		// TODO: ModR/M
-		
 		StringBuilder sb = new StringBuilder();
 		
 		for(Part p : parts) {
@@ -54,30 +65,30 @@ public class AsmOpr {
 		String string = sb.toString().trim();
 		
 		if(isMemory) {
+			if(ptr_size == 8) return "byte [" + string + "]";
+			if(ptr_size == 16) return "word [" + string + "]";
+			if(ptr_size == 32) return "dword [" + string + "]";
+			if(ptr_size == 64) return "qword [" + string + "]";
 			return "[" + string + "]";
 		}
 		
 		return string;
 	}
 	
-	public static AsmOpr plus(AsmReg r0, AsmReg r1) {
-		return null;
-	}
-	
-	public static AsmOpr plus(AsmReg r0, AsmReg r1, Object disp) {
-		return null;
-	}
-	
 	public static abstract class Part {
 		public static class Reg extends Part {
-			private final AsmReg reg;
+			private final Register reg;
 			
-			public Reg(AsmReg reg) {
+			public Reg(Register reg) {
 				this.reg = reg;
 			}
 			
 			public Object get() {
 				return reg;
+			}
+			
+			public int size() {
+				return reg.bits;
 			}
 			
 			public String toString() {
@@ -87,9 +98,9 @@ public class AsmOpr {
 		
 		public static class Disp extends Part {
 			public final int bits;
-			public final long value;
+			public final Number value;
 			
-			public Disp(int bits, long value) {
+			public Disp(int bits, Number value) {
 				this.bits = bits;
 				this.value = value;
 			}
@@ -98,26 +109,34 @@ public class AsmOpr {
 				return value;
 			}
 			
+			public int size() {
+				return bits;
+			}
+			
 			public String toString() {
-				return "disp" + bits + "=0x" + Long.toHexString(value);
+				return String.format("disp%d=0x%0" + (bits / 4) + "x", bits, value);
 			}
 		}
 		
 		public static class Imm extends Part {
 			public final int bits;
-			public final long value;
+			public final Number value;
 			
-			public Imm(int bits, long value) {
+			public Imm(int bits, Number value) {
 				this.bits = bits;
 				this.value = value;
 			}
 			
 			public Object get() {
-				return null;
+				return value;
+			}
+			
+			public int size() {
+				return bits;
 			}
 			
 			public String toString() {
-				return "imm" + bits + "=0x" + Long.toHexString(value);
+				return String.format("imm%d=0x%0" + (bits / 4) + "x", bits, value);
 			}
 		}
 		
@@ -130,6 +149,10 @@ public class AsmOpr {
 			
 			public Object get() {
 				return type;
+			}
+			
+			public int size() {
+				return -1;
 			}
 			
 			public String toString() {
@@ -153,18 +176,23 @@ public class AsmOpr {
 				return value;
 			}
 			
+			public int size() {
+				return -1;
+			}
+			
 			public String toString() {
 				return "0x" + Long.toHexString(value);
 			}
 		}
 		
 		public abstract Object get();
+		public abstract int size();
 	}
 	
 	public static class OprBuilder {
 		public List<Part> parts = new ArrayList<>();
 		
-		public OprBuilder reg(AsmReg reg) {
+		public OprBuilder reg(Register reg) {
 			parts.add(new Part.Reg(reg));
 			return this;
 		}
@@ -185,42 +213,59 @@ public class AsmOpr {
 		}
 		
 		public OprBuilder disp8(long value) {
-			parts.add(new Part.Disp(8, value));
+			if(value < Byte.MIN_VALUE || value > Byte.MAX_VALUE)
+				throw new RuntimeException("Disp value is outside range for 8 bits. (" + value + ")");
+			
+			parts.add(new Part.Disp(8, (byte)value));
 			return this;
 		}
 		
 		public OprBuilder disp16(long value) {
-			parts.add(new Part.Disp(16, value));
+			if(value < Short.MIN_VALUE || value > Short.MAX_VALUE)
+				throw new RuntimeException("Disp value is outside range for 16 bits. (" + value + ")");
+
+			parts.add(new Part.Disp(8, (byte)value));
 			return this;
 		}
 		
 		public OprBuilder disp32(long value) {
-			parts.add(new Part.Disp(32, value));
+			if(value < Integer.MIN_VALUE || value > Integer.MAX_VALUE)
+				throw new RuntimeException("Disp value is outside range for 32 bits. (" + value + ")");
+
+			parts.add(new Part.Disp(8, (byte)value));
 			return this;
 		}
 		
 		public OprBuilder imm8(long value) {
-			parts.add(new Part.Imm(8, value));
+			if(value < Byte.MIN_VALUE || value > Byte.MAX_VALUE)
+				throw new RuntimeException("Immediate value is outside range for 8 bits. (" + value + ")");
+			
+			parts.add(new Part.Imm(8, (byte)value));
 			return this;
 		}
 		
 		public OprBuilder imm16(long value) {
-			parts.add(new Part.Imm(16, value));
+			if(value < Short.MIN_VALUE || value > Short.MAX_VALUE)
+				throw new RuntimeException("Immediate value is outside range for 16 bits. (" + value + ")");
+			
+			parts.add(new Part.Imm(16, (short)value));
 			return this;
 		}
 		
 		public OprBuilder imm32(long value) {
-			parts.add(new Part.Imm(32, value));
+			if(value < Integer.MIN_VALUE || value > Integer.MAX_VALUE)
+				throw new RuntimeException("Immediate value is outside range for 32 bits. (" + value + ")");
+			
+			parts.add(new Part.Imm(32, (int)value));
 			return this;
 		}
 		
-		public AsmOpr getMemory() {
-			return new AsmOpr(parts, true);
-		}
-		
-		public AsmOpr get() {
-			return new AsmOpr(parts, false);
-		}
+		public AsmOpr ptrByte() { return new AsmOpr(parts, true, 8); }
+		public AsmOpr ptrWord() { return new AsmOpr(parts, true, 16); }
+		public AsmOpr ptrDword() { return new AsmOpr(parts, true, 32); }
+		public AsmOpr ptrQword() { return new AsmOpr(parts, true, 64); }
+		public AsmOpr ptr() { return new AsmOpr(parts, true, -1); }
+		public AsmOpr get() { return new AsmOpr(parts, false, -1); }
 	}
 	
 //	public static void main(String[] args) {

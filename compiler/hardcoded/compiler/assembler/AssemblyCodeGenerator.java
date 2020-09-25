@@ -3,6 +3,7 @@ package hardcoded.compiler.assembler;
 import java.util.List;
 
 import hardcoded.compiler.assembler.AssemblyConsts.AsmOp;
+import hardcoded.compiler.assembler.operator.Register;
 import hardcoded.compiler.constants.Insts;
 import hardcoded.compiler.instruction.Instruction;
 import hardcoded.compiler.instruction.InstructionBlock;
@@ -19,15 +20,22 @@ public class AssemblyCodeGenerator {
 	public static void main(String[] args) {
 		// AsmInst inst = new AsmInst(AsmMnm.ADD, AsmReg.AX, new AsmOpr.OprBuilder().imm16(0x1122).get());
 		// AsmInst inst = new AsmInst(AsmMnm.ADD, AsmReg.ESP, new AsmOpr.OprBuilder().imm8(0x8).get());
-		AsmInst inst = new AsmInst(AsmMnm.MOV, AsmReg.ECX, AsmReg.ESI);
+		// AsmInst inst = new AsmInst(AsmMnm.MOV, AsmReg.ECX, AsmReg.ESI);
+		AsmInst inst = new AsmInst(AsmMnm.MOV, $->Register.ECX, $->$.reg(Register.EDX).add().disp32(32).ptr());
+		
+		
 		
 		List<AsmOp> list = Assembly.lookup(inst);
 		
-		for(AsmOp op : list) {
-			System.out.println("Matching instruction -> " + op.toComplexString());
+		if(!list.isEmpty()) {
+			AsmOp first = list.get(0);
+			for(AsmOp op : list) {
+				if(op != first)
+					System.out.println("      :> " + op.toComplexString());
+			}
+			System.out.println("Using :> " + first.toComplexString() + "\n");
 		}
 		
-		System.out.println();
 		System.out.println();
 		System.out.println();
 		System.out.println(inst);

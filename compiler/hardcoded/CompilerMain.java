@@ -1,5 +1,9 @@
 package hardcoded;
 
+import java.util.regex.Pattern;
+
+import hardcoded.utils.StringUtils;
+
 /**
  * This is the main entry point for the compiler.<br>
  * This compiler is a multi stage compiler.<br><br>
@@ -25,5 +29,6 @@ public class CompilerMain {
 		HCompiler compiler = new HCompiler();
 		compiler.setProjectPath("res/project/src/");
 		compiler.build();
+		
 	}
 }

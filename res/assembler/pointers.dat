@@ -1,0 +1,54 @@
+# Allowed ModR/M and SIB values
+
+
+# ModR/M
+
+[RAX]
+[RCX]
+[RDX]
+[RBX]
+
+[RAX]
+[RCX]
+[RDX]
+[RBX]
+
+[RAX + disp32]
+[RCX + disp32]
+[RDX + disp32]
+[RBX + disp32]
+
+RAX		EAX
+RCX		ECX
+RDX		EDX
+RBX		EBX
+
+
+
+[RSP]
+[RBP]
+[RSI]
+[RDI]
+
+[RSP]
+[RBP]
+[RSI]
+[RDI]
+
+[RAX]
+[RCX]
+[RDX]
+[RBX]
+[RSP]
+[RBP]
+[RSI]
+[RDI]
+
+[RAX]
+[RCX]
+[RDX]
+[RBX]
+[RSP]
+[RBP]
+[RSI]
+[RDI]
