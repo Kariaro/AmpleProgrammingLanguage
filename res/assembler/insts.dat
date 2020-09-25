@@ -1,0 +1,39 @@
+# Instruction file for the x86-64 compiler
+
+
+
+# Mnemonic			Opcode				Flags				Registers
+ADD					[ 00 ]				Lr					Eb			Gb
+ADD					[ 01 ]				Lr					Evqp		Gvqp
+ADD					[ 02 ]				r					Gb			Eb
+ADD					[ 03 ]				r					Gvqp		Evqp
+ADD					[ 04 ]				-					AL			Ib
+ADD					[ 05 ]				-					rAX			Ivds
+
+
+OR					[ 08 ]				Lr					Eb			Gb
+OR					[ 09 ]				Lr					Evqp		Gvqp
+OR					[ 0A ]				r					Gb			Eb
+OR					[ 0B ]				r					Gvqp		Evqp
+OR					[ 0C ]				-					AL			Ib
+OR					[ 0D ]				-					rAX			Ivds
+
+
+ADC					[ 10 rm ]			Lr					Eb			Gb
+ADC					[ 11 rm ]			Lr					Evqp		Gvqp
+ADC					[ 12 rm ]			r					Gb			Eb
+ADC					[ 13 rm ]			r					Gvqp		Evqp
+ADC					[ 14 .. ]			-					AL			Ib
+ADC					[ 15 .. ]			-					rAX			Ivds
+
+
+# ....
+
+
+
+SUB					[ 28 rm ]			Lr					Eb			Gb
+SUB					[ 29 rm ]			Lr					Evqp		Gvqp
+SUB					[ 2A rm ]			r					Gb			Eb
+SUB					[ 2B rm ]			r					Gvqp		Evqp
+SUB					[ 2C .. ]			-					AL			Ib
+SUB					[ 2D .. ]			-					rAX			Ivds

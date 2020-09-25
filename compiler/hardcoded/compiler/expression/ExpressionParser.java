@@ -35,8 +35,9 @@ public final class ExpressionParser {
 	
 	// Unsigned > Signed
 	
-	private static final BiFnc ADD = (a, b) -> { return new AtomExpr(a + b); };
-	private static final BiFnc SUB = (a, b) -> { return new AtomExpr(a - b); };
+	/* unsigned safe */ private static final BiFnc ADD = (a, b) -> { return new AtomExpr(a + b); };
+	/* unsigned safe */ private static final BiFnc SUB = (a, b) -> { return new AtomExpr(a - b); };
+	
 	private static final BiFnc MUL = (a, b) -> { return new AtomExpr(a * b); };
 	private static final BiFnc DIV = (a, b) -> { return new AtomExpr(a / b); };
 	private static final BiFnc MOD = (a, b) -> { return new AtomExpr(a % b); };

@@ -408,7 +408,10 @@ public final class AssemblyConsts {
 		}
 	}
 	
-	// Prefix
+	public static AsmPf prf(String mnemonic, int[] opcode) {
+		return new AsmPf(mnemonic, opcode, 0);
+	}
+	
 	public static AsmPf prf(String mnemonic, int[] opcode, int flags) {
 		return new AsmPf(mnemonic, opcode, flags);
 	}
@@ -417,37 +420,38 @@ public final class AssemblyConsts {
 		return new AsmOp(mnemonic, opcode, flags, operators);
 	}
 	
+	public static AsmOp opr(String mnemonic, int[] opcode, OprTy... operators) {
+		return new AsmOp(mnemonic, opcode, 0, operators);
+	}
+	
 	@Deprecated public static AsmOp dopr(String mnemonic, int[] opcode, int flags, OprTy... operators) { return opr(mnemonic, opcode, flags, operators); }
 	
 	
 	public static int[] opcode(int... array) { return array; }
 	
 	/** {@code L} */	public static final int ALLOW_LOCK		= (1 << 0);
-	/** {@code S} */	public static final int ALLOW_SIZE		= (1 << 1);
-	/** {@code Z} */	public static final int OPCODE_REG		= (1 << 2);
-	/** {@code e.} */	public static final int USES_MODRM		= (1 << 3);
-	public static final int RM_EXT_OFFSET	= (1 << 4);
+	/** {@code e.} */	public static final int USES_MODRM		= (1 << 1);
+	/** {@code e.} */	public static final int NEED_RMEXT		= (1 << 2);
+	public static final int RM_EXT_OFFSET	= (1 << 3);
 	public static final int RM_EXT_MASK		= 7 * RM_EXT_OFFSET;
 	
-	/** {@code l.} */	public static final int RING_LEVEL		= (1 << 7);
-	public static final int RL_OFFSET		= (1 << 8);
+	/** {@code l.} */	public static final int RING_LEVEL		= (1 << 6);
+	public static final int RL_OFFSET		= (1 << 7);
 	public static final int RL_MASK			= 3 * RL_OFFSET;
 	
 	public static int flags(
 			boolean allow_lock,
-			boolean allow_size,
-			boolean opcode_reg,
 			boolean uses_modrm,
+			boolean need_rmext,
 			int rm_ext_value,
 			int ring_level
 	) {
 		int mask = 0;
 		if(allow_lock) mask |= ALLOW_LOCK;
-		if(allow_size) mask |= ALLOW_SIZE;
-		if(opcode_reg) mask |= OPCODE_REG;
+		if(uses_modrm) mask |= USES_MODRM;
 		
-		if(uses_modrm) {
-			mask |= USES_MODRM;
+		if(need_rmext) {
+			mask |= NEED_RMEXT;
 			mask |= ((rm_ext_value * RM_EXT_OFFSET) & RM_EXT_MASK);
 		}
 		
@@ -463,9 +467,8 @@ public final class AssemblyConsts {
 	 * Calculate the flags from a string.<br>
 	 *<pre>
 	 *[ L  ] Allow LOCK prefix
-	 *[ S  ] Allow operand-size prefix
-	 *[ Z  ] The instruction has no <i>ModR/M</i>
-	 *       The last three bits of the opcode encode the the register
+	 *[ r  ] Uses both the rm and reg field of <i>ModR/M</i> to
+	 *       encode the operands
 	 *[ e. ] The instruction uses <i>ModR/M</i> and '.' represents
 	 *       the extension a number
 	 *[ l. ] The instruction can only be called in ring '.'
@@ -476,10 +479,8 @@ public final class AssemblyConsts {
 	 */
 	public static int flags(String string) {
 		boolean allow_lock = false;
-		boolean allow_size = false;
-		boolean opcode_reg = false;
-		
-		boolean modrm_ext = false;
+		boolean uses_modrm = false;
+		boolean need_rmext = false;
 		int modrm_val = 0;
 		int ring_level = -1;
 		
@@ -488,11 +489,10 @@ public final class AssemblyConsts {
 			char next = (i + 1 < string.length() ? string.charAt(i + 1):'\0');
 			
 			if(c == 'L') allow_lock = true;
-			if(c == 'S') allow_size = true;
-			if(c == 'Z') opcode_reg = true;
+			if(c == 'r') uses_modrm = true;
 			if(c == 'e') {
 				modrm_val = next - '0';
-				modrm_ext = true;
+				need_rmext = true;
 				i++;
 				continue;
 			}
@@ -505,9 +505,8 @@ public final class AssemblyConsts {
 		
 		return flags(
 			allow_lock,
-			allow_size,
-			opcode_reg,
-			modrm_ext,
+			uses_modrm,
+			need_rmext,
 			modrm_val,
 			ring_level
 		);
