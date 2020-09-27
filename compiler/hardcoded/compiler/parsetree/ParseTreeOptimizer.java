@@ -20,8 +20,6 @@ import hardcoded.visualization.Visualization;
 
 public class ParseTreeOptimizer {
 	
-	// TODO: Figure out a better name than 'do_constant_folding'
-	// TODO: Convert strings into decptr(<ptr to string>);
 	// TODO: Only if string is const otherwise stack....
 	// TODO: cor and cand has problems with some or operations...
 	

@@ -14,7 +14,7 @@ import hardcoded.compiler.instruction.IntermediateCodeOptimizer;
 import hardcoded.compiler.parsetree.ParseTreeGenerator;
 import hardcoded.compiler.parsetree.ParseTreeOptimizer;
 import hardcoded.errors.CompilerException;
-import hardcoded.visualization.HC2Visualization;
+import hardcoded.visualization.HCVisualization;
 
 public class HCompilerBuild {
 	private File projectPath = new File("res/project/src/");
@@ -73,7 +73,7 @@ public class HCompilerBuild {
 		}
 	}
 	
-	private HC2Visualization vs;
+	private HCVisualization vs;
 	
 	/**
 	 * Build the project.
@@ -89,7 +89,7 @@ public class HCompilerBuild {
 			throw new CompilerException("Compiler errors.");
 		}
 
-		vs = new HC2Visualization();
+		vs = new HCVisualization();
 		vs.hide();
 		// vs.show(current_program);
 		

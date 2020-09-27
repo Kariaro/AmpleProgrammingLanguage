@@ -5,7 +5,8 @@ import static hardcoded.compiler.assembler.AssemblyConsts.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import hardcoded.compiler.assembler.AsmOpr.Part;
+import hardcoded.assembly.impl.AsmInst;
+import hardcoded.assembly.x86.AsmOpr;
 import hardcoded.compiler.assembler.AssemblyConsts.AsmOp;
 import hardcoded.compiler.assembler.AssemblyConsts.OprTy;
 
@@ -239,8 +240,8 @@ public final class Assembly {
 // 0xC5
 		opr("MOV", opcode(0xC6), flags("e0"), OprTy.Eb, OprTy.Ib),					// MOV			r/m8			, imm8
 		opr("MOV", opcode(0xC7), flags("e0"), OprTy.Evqp, OprTy.Ivds),				// MOV			r/m16/32/64		, imm16/32
-// 0xC8 TODO
-// 0xC9 TODO
+// 0xC8 NOTE: implement opcode
+// 0xC9 NOTE: implement opcode
 		opr("RETF", opcode(0xCA), OprTy.Iw),										// RETF			imm16
 		opr("RETF", opcode(0xCB)),													// RETF
 //		opr("INT", opcode(0xCC), OprTy.Fv),											// INT			3				, flags16/32
@@ -254,11 +255,11 @@ public final class Assembly {
 		opr("IN", opcode(0xED), OprTy.eAX, OprTy.DX),								// IN			eAX				, DX
 		opr("OUT", opcode(0xEE), OprTy.DX, OprTy.AL),								// OUT			DX				, AL
 		opr("OUT", opcode(0xEF), OprTy.DX, OprTy.eAX),								// OUT			DX				, eAX
-// 0xF1 TODO
-// 0xF2 TODO
-// 0xF3 TODO
+// 0xF1 NOTE: implement opcode
+// 0xF2 NOTE: implement opcode
+// 0xF3 NOTE: implement opcode
 		opr("HLT", opcode(0xF4), flags("l0")),										// HLT
-// 0xF5 TODO
+// 0xF5 NOTE: implement opcode
 		opr("TEST", opcode(0xF6), flags("e0"), OprTy.Eb, OprTy.Ib),					// TEST			r/m8			, imm8
 //	   dopr("TEST", opcode(0xF6), flags("e1"), OprTy.Eb, OprTy.Ib),					// TEST			r/m8			, imm8
 		opr("NOT",  opcode(0xF6), flags("Le2"), OprTy.Eb),							// NOT			r/m8
@@ -340,7 +341,7 @@ public final class Assembly {
 			boolean matches = true;
 			for(int j = 0; j < ops; j++) {
 				OprTy type = op.getOperand(j);
-				AsmOpr opr = inst.getOperand(j);
+				AsmOpr opr = inst.getOperator(j);
 				if(!matches(type, opr)) {
 					matches = false;
 					break;

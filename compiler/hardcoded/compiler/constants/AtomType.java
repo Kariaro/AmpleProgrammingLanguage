@@ -12,7 +12,7 @@ public class AtomType {
 	public static final AtomType string = new AtomType("string", -1); // Always pointer
 	public static final AtomType ident = new AtomType("ident", -1);   // Always pointer
 	
-	// TODO: Unsigned
+	// TODO: Implement unsigned atom TYPES.
 //	public static final AtomType u64 = new AtomType("u64", 8, NUMBER_FLAG),
 //								 u32 = new AtomType("u32", 4, NUMBER_FLAG),
 //								 u16 = new AtomType("u16", 2, NUMBER_FLAG),
@@ -111,7 +111,7 @@ public class AtomType {
 					(type.isSigned ? SIGNED_FLAG:0) |
 					(length * POINTER_FLAG);
 		
-		// TODO: Remove the replace here.
+		// TODO: AtomType.name.replace("*", "") should be replaced by something more official
 		return new AtomType(type.name.replace("*", ""), type.size, flags);
 	}
 	

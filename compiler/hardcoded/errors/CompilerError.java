@@ -1,19 +1,6 @@
 package hardcoded.errors;
 
 public enum CompilerError {
-//	FUNCTION_ALREADY_DEFINED("The function '{0}' was already defined."),
-//	TOO_MANY_CALL_ARGUMENTS("Too many calling arguments to the function '{0}'"),
-//	NOT_ENOUGH_ARGUMENTS("Not enough arguments to call function '{0}'. Expected '{1}' argument but got '{2}'"),
-//	
-//	UNINITIALIZED_VARIABLE("The variable '{0}' was uninitialized."),
-//	VARIABLE_NOT_FOUND_IN_CURRENT_SCOPE("The variable '{0}' was not found in the current scope."),
-//	REDECLARATION_OF_LOCAL_VARIABLE("Redeclaration of a local variable '{0}'"),
-//	
-//	INVALID_RETURN_TYPE("Invalid return type. Expected a '{0}' but got '{1}'"),
-//	REDECLARATION_OF_A_TYPE_NAME("The type '{0}' has already been defined."),
-//	UNSET_PRIMITIVE("You cannot unset the primitive type '{0}'"),
-	
-	
 	INVALID_UNARY_EXPRESSION_OPERATION("Invalid use of a unary expression. The value you are trying to modify is not modifiable."),
 	INVALID_MODIFICATION("The value you are trying to modify is not modifiable."),
 	

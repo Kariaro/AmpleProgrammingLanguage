@@ -23,7 +23,7 @@ import hardcoded.lexer.TokenizerOld;
 import hardcoded.utils.FileUtils;
 import hardcoded.utils.StringUtils;
 
-// TODO: Try unrolling recursion.
+// NOTE: Try unrolling parsetree recursion.
 public class ParseTreeGenerator {
 	private static final Tokenizer LEXER;
 	
@@ -57,7 +57,6 @@ public class ParseTreeGenerator {
 		
 		this.current_program = new Program();
 		this.source_path = source_path;
-		
 		importFile(filename);
 		
 		return this.current_program;
@@ -201,10 +200,10 @@ public class ParseTreeGenerator {
 		
 		Function func = new Function();
 		if(Modifiers.contains(reader.value())) func.modifier = nextFuncModifier();
-		if(!isType(reader)) syntaxError(CompilerError.INVALID_TYPE, reader); //"Invalid function return type '%s'", reader);
+		if(!isType(reader)) syntaxError(CompilerError.INVALID_TYPE, reader);
 		func.returnType = getTypeFromSymbol();
 		
-		if(!isValidName(reader)) syntaxError(CompilerError.INVALID_FUNCTION_NAME, reader); // "Invalid function name '%s'"
+		if(!isValidName(reader)) syntaxError(CompilerError.INVALID_FUNCTION_NAME, reader);
 		
 		boolean needsBody = false;
 		if(FUNCTIONS.containsKey(reader.value())) {
@@ -385,7 +384,7 @@ public class ParseTreeGenerator {
 			Variable var = new Variable(type);
 			list.add(var);
 			
-			if(!isValidName(reader)) syntaxError(CompilerError.INVALID_VARIABLE_NAME, reader); // "Invalid local variable name '%s'", reader);
+			if(!isValidName(reader)) syntaxError(CompilerError.INVALID_VARIABLE_NAME, reader);
 			if(current_function.hasIdentifier(reader.value())) syntaxError("Redeclaration of a local variable '%s'", reader);
 			var.name = reader.value();
 			reader.next();
@@ -401,9 +400,9 @@ public class ParseTreeGenerator {
 						syntaxError("Invalid array variable definition. Expected a integer expression. But got '%s'", expr);
 					}
 					
-					// TODO: Negative numbers
+					// TODO: What should we do if the array has a negative length?
 					
-					var.list.add(Expression.EMPTY); // TODO: Fix array variables.....
+					var.list.add(Expression.EMPTY);
 					var.arraySize = (int)number.i_value;
 				}
 				var.isArray = true;
@@ -716,8 +715,6 @@ public class ParseTreeGenerator {
 						// TODO: Allow for comma expressions!
 						// TODO: Use the same solution as the assignment operators.
 						
-						// XXX: Remove 'Primitives.getTypeFromAtom'
-						
 						AtomExpr ident2 = new AtomExpr(current_function.temp(lhs.calculateSize()));
 						// System.out.println("Comma expr -> " + ident2 + ", [" + lhs + "]");
 						if(!lhs.isPure()) {
@@ -783,7 +780,7 @@ public class ParseTreeGenerator {
 							continue;
 						}
 						
-						// TODO: Later
+						// NOTE: Implement class structures later
 						// case ".": e1 = new BiExpr("MEMBER", e1, e1(symbol.next())); continue;
 						// case "->": e1 = new BiExpr("PMEMBER", e1, e1(symbol.next())); continue;
 						// case "::": e1 = new BiExpr("NMEMBER", e1, e1(symbol.next())); continue;
@@ -858,7 +855,6 @@ public class ParseTreeGenerator {
 							}
 							
 							// TODO: Change the type of the value to a 'i64' if the value is a class object.
-							
 							if(!reader.valueEquals(")")) syntaxError(CompilerError.UNCLOSED_CAST_PARENTHESES, reader);
 							reader.next();
 							Expression rhs = e2();
@@ -887,7 +883,7 @@ public class ParseTreeGenerator {
 				if(reader.groupEquals("INT")) { String value = reader.value(); reader.next(); return new AtomExpr(parseInteger(value)); }
 				if(reader.groupEquals("STRING")) { String value = reader.value(); reader.next(); return new AtomExpr(value.substring(1, value.length() - 1)); } // TODO: Unicode ?
 				
-				if(reader.groupEquals("CHAR")) { // TODO: Unicode
+				if(reader.groupEquals("CHAR")) { // TODO: Unicode ?
 					String value = StringUtils.unescapeString(reader.value().substring(1, reader.value().length() - 1));
 					if(value.length() != 1) syntaxError(CompilerError.INVALID_CHAR_LITERAL_SIZE);
 					reader.next();

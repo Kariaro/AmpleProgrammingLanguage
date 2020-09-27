@@ -7,8 +7,8 @@ import java.util.Vector;
 import hardcoded.compiler.Statement.Variable;
 import hardcoded.compiler.constants.AtomType;
 import hardcoded.compiler.constants.Modifiers.Modifier;
-import hardcoded.compiler.constants.Printable;
 import hardcoded.compiler.types.Type;
+import hardcoded.visualization.Printable;
 
 public interface Block extends Printable {
 	public static final Block EMPTY = new Block() {
@@ -65,13 +65,13 @@ public interface Block extends Printable {
 		}
 		
 		public Identifier add(Variable var) {
-			if(!hasIdentifier(var.name)) { // throw already defined?
+			if(!hasIdentifier(var.name)) {
 				Identifier ident = Identifier.createVarIdent(var.name, var_index++, var.type.atomType());
 				getScope().add(ident);
 				return ident;
 			}
 			
-			// TODO: Error?
+			// TODO: Throw error if we add a identifier that already exists?
 			return null;
 		}
 		
