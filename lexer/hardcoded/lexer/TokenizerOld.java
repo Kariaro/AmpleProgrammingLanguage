@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 // TODO: Rename the file 'TokenizerOld.java'
-public class TokenizerOld {
+public final class TokenizerOld {
 	private static final Tokenizer LEXER;
 	
 	static {
@@ -21,9 +21,7 @@ public class TokenizerOld {
 		lexer.setDefaultGroup("TOKEN");
 	}
 	
-	private TokenizerOld() {
-		
-	}
+	private TokenizerOld() {}
 	
 	public static Token generateTokenChain(byte[] bytes) {
 		return generateTokenChain(LEXER, bytes);

@@ -19,12 +19,10 @@ final class TokenizerString implements CharSequence {
 		this.bytes = bytes.clone();
 	}
 	
-	@Override
 	public char charAt(int index) {
 		return (char)Byte.toUnsignedInt(bytes[this.index + index]);
 	}
 	
-	@Override
 	public int length() {
 		return bytes.length - index;
 	}
@@ -54,14 +52,12 @@ final class TokenizerString implements CharSequence {
 		this.index += index;
 	}
 	
-	@Override
 	public CharSequence subSequence(int start, int end) {
 		byte[] next = new byte[end - start];
 		System.arraycopy(bytes, index + start, next, 0, next.length);
 		return new TokenizerString(next);
 	}
 	
-	@Override
 	public String toString() {
 		return new String(bytes, index, length());
 	}

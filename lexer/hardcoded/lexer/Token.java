@@ -8,7 +8,7 @@ import java.util.Objects;
  * @author HardCoded
  */
 public class Token {
-	// T ODO: Maybe use the words trailing? leading?
+	// TODO: Maybe use the words trailing? leading?
 	protected final String value;
 	protected String group;
 	protected Token prev;

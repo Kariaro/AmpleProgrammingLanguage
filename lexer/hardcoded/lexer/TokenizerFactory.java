@@ -7,7 +7,7 @@ import java.util.List;
 
 import hardcoded.lexer.Tokenizer.SymbolGroup;
 
-public class TokenizerFactory {
+public final class TokenizerFactory {
 	private static final Tokenizer READER;
 	
 	static {
@@ -24,9 +24,7 @@ public class TokenizerFactory {
 		);
 	}
 	
-	private TokenizerFactory() {
-		
-	}
+	private TokenizerFactory() {}
 	
 	/**
 	 * Create a new instance of a tokenizer.
