@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import hardcoded.compiler.Identifier.IdType;
-import hardcoded.compiler.constants.Printable;
+import hardcoded.visualization.Printable;
 
 /**
  * A program class that contains blocks.

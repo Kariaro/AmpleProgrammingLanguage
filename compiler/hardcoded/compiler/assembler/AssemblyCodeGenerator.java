@@ -2,29 +2,33 @@ package hardcoded.compiler.assembler;
 
 import java.util.List;
 
+import hardcoded.assembly.impl.AsmFactory;
+import hardcoded.assembly.impl.AsmInst;
+import hardcoded.assembly.x86.AsmMnm;
+import hardcoded.assembly.x86.OprBuilder;
+import hardcoded.assembly.x86.RegisterX86;
 import hardcoded.compiler.assembler.AssemblyConsts.AsmOp;
-import hardcoded.compiler.assembler.operator.Register;
-import hardcoded.compiler.constants.Insts;
-import hardcoded.compiler.instruction.Instruction;
+import hardcoded.compiler.constants.IRInsts;
+import hardcoded.compiler.instruction.IRInstruction;
 import hardcoded.compiler.instruction.InstructionBlock;
 
 public class AssemblyCodeGenerator {
 	// This will use the x86 instruction set..
 	
-	// 16 instructions where only 12 will be used
-	// Reserved for other use: RSP, RBP, RSI, RDI
-	// RAX, RCX, RDX, RBX, R15, R14, R13, R12
-	// R11, R10, R9,  R8
-	
-	
 	public static void main(String[] args) {
 		// AsmInst inst = new AsmInst(AsmMnm.ADD, AsmReg.AX, new AsmOpr.OprBuilder().imm16(0x1122).get());
 		// AsmInst inst = new AsmInst(AsmMnm.ADD, AsmReg.ESP, new AsmOpr.OprBuilder().imm8(0x8).get());
 		// AsmInst inst = new AsmInst(AsmMnm.MOV, AsmReg.ECX, AsmReg.ESI);
-		AsmInst inst = new AsmInst(AsmMnm.MOV, $->Register.ECX, $->$.reg(Register.EDX).add().disp32(32).ptr());
 		
+		System.out.println(new OprBuilder().fromString("byte [RAX + EAX + EIP * 0x9]"));
 		
+		// AsmInst inst = AsmFactory.getInstruction(AsmMnm.MOV, $->RegisterX86.ECX, $->RegisterX86.EAX);
+		AsmInst inst = AsmFactory.getInstruction(AsmMnm.MOV, $->$.fromString("byte [RAX]"), $->RegisterX86.EAX);
+		// AsmInst inst = AsmFactory.getInstruction("MOV byte [RAX], EAX");
 		
+		// $->$.fromString("byte [RAX + EAX + EIP]")
+		// $->$.fromString("EAX")
+		// $->RegisterX86.EAX
 		List<AsmOp> list = Assembly.lookup(inst);
 		
 		if(!list.isEmpty()) {
@@ -47,17 +51,17 @@ public class AssemblyCodeGenerator {
 	
 	public void generate(List<InstructionBlock> blocks) {
 		for(InstructionBlock block : blocks) {
-			Instruction inst = block.start;
+			IRInstruction inst = block.start;
 			
 			System.out.println("\n" + block.returnType + ", " + block.name + (block.extra != null ? (", " + block.extra):""));
 			
 			int count = 0;
 			while(inst != null) {
 				int idx = count++;
-				if(inst.op == Insts.label) System.out.println();
+				if(inst.op == IRInsts.label) System.out.println();
 				System.out.printf("%4d: ", idx);
 				
-				if(inst.op != Insts.label) System.out.print("  ");
+				if(inst.op != IRInsts.label) System.out.print("  ");
 				
 				System.out.printf("%s\n", inst);
 				inst = inst.next();

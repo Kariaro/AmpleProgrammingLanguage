@@ -19,21 +19,21 @@ OR					[ 0C ]				-					AL			Ib
 OR					[ 0D ]				-					rAX			Ivds
 
 
-ADC					[ 10 rm ]			Lr					Eb			Gb
-ADC					[ 11 rm ]			Lr					Evqp		Gvqp
-ADC					[ 12 rm ]			r					Gb			Eb
-ADC					[ 13 rm ]			r					Gvqp		Evqp
-ADC					[ 14 .. ]			-					AL			Ib
-ADC					[ 15 .. ]			-					rAX			Ivds
+ADC					[ 10 ]				Lr					Eb			Gb
+ADC					[ 11 ]				Lr					Evqp		Gvqp
+ADC					[ 12 ]				r					Gb			Eb
+ADC					[ 13 ]				r					Gvqp		Evqp
+ADC					[ 14 ]				-					AL			Ib
+ADC					[ 15 ]				-					rAX			Ivds
 
 
 # ....
 
 
 
-SUB					[ 28 rm ]			Lr					Eb			Gb
-SUB					[ 29 rm ]			Lr					Evqp		Gvqp
-SUB					[ 2A rm ]			r					Gb			Eb
-SUB					[ 2B rm ]			r					Gvqp		Evqp
-SUB					[ 2C .. ]			-					AL			Ib
-SUB					[ 2D .. ]			-					rAX			Ivds
+SUB					[ 28 ]				Lr					Eb			Gb
+SUB					[ 29 ]				Lr					Evqp		Gvqp
+SUB					[ 2A ]				r					Gb			Eb
+SUB					[ 2B ]				r					Gvqp		Evqp
+SUB					[ 2C ]				-					AL			Ib
+SUB					[ 2D ]				-					rAX			Ivds

@@ -2,9 +2,9 @@ package hardcoded.compiler;
 
 import java.util.*;
 
-import hardcoded.compiler.constants.Printable;
 import hardcoded.compiler.types.Type;
 import hardcoded.utils.StringUtils;
+import hardcoded.visualization.Printable;
 
 public interface Statement extends Printable {
 	public static final Statement EMPTY = new Statement() {
@@ -70,7 +70,7 @@ public interface Statement extends Printable {
 	}
 	
 	public static class SwitchStat extends NestedStat {
-		// TODO: Implement
+		// TODO: Implement switch statements
 	}
 	
 	public static class WhileStat extends NestedStat {
@@ -217,7 +217,6 @@ public interface Statement extends Printable {
 		public String toString() { return StringUtils.join(" ", list); }
 	}
 	
-	// XXX: ExprStat with name and type....
 	public static class Variable implements Statement {
 		public List<Expression> list;
 		

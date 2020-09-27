@@ -4,28 +4,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import hardcoded.compiler.constants.Insts;
-import hardcoded.compiler.instruction.Instruction.NumberReg;
-import hardcoded.compiler.instruction.Instruction.Reg;
+import hardcoded.compiler.constants.IRInsts;
+import hardcoded.compiler.instruction.IRInstruction.NumberReg;
+import hardcoded.compiler.instruction.IRInstruction.Reg;
 
 public class IntermediateCodeOptimizer {
-//	public static void main(String[] args) {
-//		IntermediateCodeOptimizer opt = new IntermediateCodeOptimizer();
-//		
-//		Instruction inst = new Instruction(Insts.nop);
-//		inst = inst.append(new Instruction(Insts.add));
-//		inst = inst.append(new Instruction(Insts.sub));
-//		inst = inst.append(new Instruction(Insts.nop));
-//		inst = inst.append(new Instruction(Insts.add));
-//		inst = inst.append(new Instruction(Insts.sub));
-//		inst = inst.append(new Instruction(Insts.nop));
-//		inst = inst.append(new Instruction(Insts.add));
-//		inst = inst.append(new Instruction(Insts.sub));
-//		inst = inst.append(new Instruction(Insts.nop));
-//		
-//		opt.generate(java.util.Arrays.asList(new InstructionBlock("test", hardcoded.compiler.constants.Primitives.VOID, inst.first())));
-//	}
-	
 	public IntermediateCodeOptimizer() {
 		
 	}
@@ -58,11 +41,11 @@ public class IntermediateCodeOptimizer {
 	 * @param	block	the instruction block to optimize
 	 */
 	private void remove_nops(InstructionBlock block) {
-		Instruction first = null;
-		Instruction inst = block.start;
+		IRInstruction first = null;
+		IRInstruction inst = block.start;
 		
 		do {
-			if(inst.op == Insts.nop) {
+			if(inst.op == IRInsts.nop) {
 				inst = inst.remove();
 			} else {
 				if(first == null) first = inst;
@@ -111,18 +94,18 @@ public class IntermediateCodeOptimizer {
 	 * @param	block	the instruction block to optimize
 	 */
 	private void eq_bnz_optimization(InstructionBlock block) {
-		Instruction inst = block.start;
+		IRInstruction inst = block.start;
 		
 		do {
 			// Check if the type was the positive equality 'eq'
-			boolean peq = inst.type() == Insts.eq;
+			boolean peq = inst.type() == IRInsts.eq;
 			
-			if(peq || inst.type() == Insts.neq) {
-				Instruction next = inst.next();
+			if(peq || inst.type() == IRInsts.neq) {
+				IRInstruction next = inst.next();
 				if(next == null) break;
 				
 				// Check if the type was the positive branch 'brz'
-				boolean pbr = next.type() == Insts.brz;
+				boolean pbr = next.type() == IRInsts.brz;
 				
 				// Check if the last element is a zero
 				Reg reg = inst.getLastParam();
@@ -131,7 +114,7 @@ public class IntermediateCodeOptimizer {
 					int refs = getReferences(block, inst.getParam(0));
 					if(refs < 3) inst.remove(); // Remove the instruction...
 					next.params.set(0, inst.getParam(1));
-					next.op = (pbr == peq) ? Insts.bnz:Insts.brz;
+					next.op = (pbr == peq) ? IRInsts.bnz:IRInsts.brz;
 				}
 			}
 			
@@ -150,7 +133,7 @@ public class IntermediateCodeOptimizer {
 		Map<Integer, Reg> map = new HashMap<>();
 		int index = 0;
 		
-		Instruction inst = block.start;
+		IRInstruction inst = block.start;
 		
 		do {
 			for(int i = 0; i < inst.params.size(); i++) {
@@ -172,11 +155,11 @@ public class IntermediateCodeOptimizer {
 	}
 	
 	private void flow_optimization(InstructionBlock block) {
-		Instruction flow = block.start;
+		IRInstruction flow = block.start;
 		if(flow == null) return;
 		
-		Instruction start = flow;
-		Instruction inst = flow;
+		IRInstruction start = flow;
+		IRInstruction inst = flow;
 		
 		while(inst != null) {
 			// add [a], [b], [c]
@@ -189,7 +172,7 @@ public class IntermediateCodeOptimizer {
 				// Should become
 				//    ... [z], [b], [c]
 				//    If z was zero before.
-				if(inst.next().op == Insts.mov && canReduce(inst.op)) {
+				if(inst.next().op == IRInsts.mov && canReduce(inst.op)) {
 					Reg reg = inst.params.get(0);
 					Reg wnt = inst.next().params.get(1);
 					
@@ -227,7 +210,7 @@ public class IntermediateCodeOptimizer {
 		block.start = start.last().first();
 	}
 	
-	private Instruction simplify(InstructionBlock block) {
+	private IRInstruction simplify(InstructionBlock block) {
 		// if(true) return block.start;
 		// TODO: Find a way to check if any changes has been made to the instruction block
 		
@@ -248,11 +231,11 @@ public class IntermediateCodeOptimizer {
 	}
 	
 	private int getReferences(InstructionBlock block, Reg reg) { return getReferences(block.start, reg); }
-	private int getReferences(Instruction in, Reg reg) {
+	private int getReferences(IRInstruction in, Reg reg) {
 		in = in.first();
 		int references = 0;
 		
-		for(Instruction inst : in) {
+		for(IRInstruction inst : in) {
 			for(Reg r : inst.params) {
 				if(reg.equals(r)) references++;
 			}
@@ -261,7 +244,7 @@ public class IntermediateCodeOptimizer {
 		return references;
 	}
 	
-	private boolean keepIfNotReferences(Insts type) {
+	private boolean keepIfNotReferences(IRInsts type) {
 		switch(type) {
 			case call:
 			case write:
@@ -272,7 +255,7 @@ public class IntermediateCodeOptimizer {
 		}
 	}
 	
-	private boolean canReduce(Insts type) {
+	private boolean canReduce(IRInsts type) {
 		switch(type) {
 			case bnz:
 			case brz:

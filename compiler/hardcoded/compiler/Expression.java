@@ -3,8 +3,8 @@ package hardcoded.compiler;
 import java.util.*;
 
 import hardcoded.compiler.constants.AtomType;
-import hardcoded.compiler.constants.Printable;
 import hardcoded.utils.StringUtils;
+import hardcoded.visualization.Printable;
 
 public interface Expression extends Printable {
 	public static final Expression EMPTY = new Expression() {

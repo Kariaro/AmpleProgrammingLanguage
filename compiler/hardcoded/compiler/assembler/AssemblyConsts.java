@@ -3,11 +3,6 @@ package hardcoded.compiler.assembler;
 public final class AssemblyConsts {
 	private AssemblyConsts() {}
 	
-	// Opperand values offset
-	private static final int OPR_OFFSET = (1 << 8);
-	
-	
-	/** Error flags */
 	public static final int OF = (1 << 0);
 	public static final int DF = (1 << 1);
 	public static final int IF = (1 << 2);
@@ -18,144 +13,14 @@ public final class AssemblyConsts {
 	public static final int PF = (1 << 7);
 	public static final int CF = (1 << 8);
 	
-	
-	
-	/** X.REG prefix */
-	public static final int X_REG_0000 = 0; // AL		AX		EAX		RAX		ST0		MMX0	XMM0	YMM0	ES	CR0		DR0
-	public static final int X_REG_0001 = 1; // CL		CX		ECX		RCX		ST1		MMX1	XMM1	YMM1	CS	CR1		DR1
-	public static final int X_REG_0010 = 2; // DL		DX		EDX		RDX		ST2		MMX2	XMM2	YMM2	SS	CR2		DR2
-	public static final int X_REG_0011 = 3; // BL		BX		EBX		RBX		ST3		MMX3	XMM3	YMM3	DS	CR3		DR3
-	public static final int X_REG_0100 = 4; // AH, SPL	SP		ESP		RSP		ST4		MMX4	XMM4	YMM4	FS	CR4		DR4
-	public static final int X_REG_0101 = 5; // CH, BPL	BP		EBP		RBP		ST5		MMX5	XMM5	YMM5	GS	CR5		DR5
-	public static final int X_REG_0110 = 6; // DH, SIL	SI		ESI		RSI		ST6		MMX6	XMM6	YMM6	-	CR6		DR6
-	public static final int X_REG_0111 = 7; // BH, DIL	DI		EDI		RDI		ST7		MMX7	XMM7	YMM7	-	CR7		DR7
-	public static final int X_REG_1000 = 8; // R8L		R8W		R8D		R8		-		MMX0	XMM8	YMM8	ES	CR8		DR8
-	public static final int X_REG_1001 = 9; // R9L 		R9W		R9D		R9		-		MMX1	XMM9	YMM9	CS	CR9		DR9
-	public static final int X_REG_1010 =10; // R10L		R10W	R10D	R10		-		MMX2	XMM10	YMM10	SS	CR10	DR10
-	public static final int X_REG_1011 =11; // R11L		R11W	R11D	R11		-		MMX3	XMM11	YMM11	DS	CR11	DR11
-	public static final int X_REG_1100 =12; // R12L		R12W	R12D	R12		-		MMX4	XMM12	YMM12	FS	CR12	DR12
-	public static final int X_REG_1101 =13; // R13L		R13W	R13D	R13		-		MMX5	XMM13	YMM13	GS	CR13	DR13
-	public static final int X_REG_1110 =14; // R14L		R14W	R14D	R14		-		MMX6	XMM14	YMM14	-	CR14	DR14
-	public static final int X_REG_1111 =15; // R15L		R15W	R15D	R15		-		MMX7	XMM15	YMM15	-	CR15	DR15
-	
-	
-	private static int decode_octal(int octal_binary) {
-		return (((octal_binary &    07) != 0) ? 1:0)
-			 | (((octal_binary &   070) != 0) ? 2:0)
-			 | (((octal_binary &  0700) != 0) ? 4:0)
-			 | (((octal_binary & 07000) != 0) ? 8:0);
-	}
-	
-	/**
-	 * 
-	 *<pre>  7   6   5   4   3   2   1   0
-	 *+---+---+---+---+---+---+---+---+
-	 *|  mod  |    reg    |    rm     |
-	 *+---+---+---+---+---+---+---+---+</pre>
-	 *
-	 *<a href="https://wiki.osdev.org/X86-64_Instruction_Encoding#ModR.2FM">ModR/M</a>
-	 */
-	public static final Object $MODRM = null;
-	
-	/**
-	 * Used for linking opcodes with their operand types.
-	 *
-	 * @author HardCoded
-	 */
-	public static enum OperandType {
-		/** Using a register operand */
-		REG,
-		/** Using a ModR/M operand */
-		MRM,
-		/** Using a Immediate value operand */
-		IMM,
-		
-		;
-		
-		public final int id;
-		private OperandType() {
-			id = ordinal();
-		}
-		
-		/**
-		 * Create a new mask that tells the assembler
-		 * what input a instruction is expecting.
-		 * 
-		 * @param	octal_binary
-		 * 			the bit inputs written as a octal binary value.
-		 *			<br><code>01234</code> is treated the same as
-		 *			calling <code>get(1, 2, 3, 4)</code>
-		 * 
-		 * @return	the constructed bit mask
-		 * 
-		 * @see #get(int, int, int, int)
-		 */
-		public int get(int octal_binary) {
-			return get(
-				octal_binary &    07,
-				octal_binary &   070,
-				octal_binary &  0700,
-				octal_binary & 07000
-			);
-		}
-		
-		/**
-		 * Create a new mask that tells the assembler
-		 * what input a instruction is expecting.
-		 * 
-		 * @param	r8	enable 8 bit wide input
-		 * @param	r16	enable 16 bit wide input
-		 * @param	r32	enable 32 bit wide input
-		 * @param	r64	enable 64 bit wide input
-		 * 
-		 * @return	the constructed bit mask
-		 */
-		public int get(int r8, int r16, int r32, int r64) {
-			int mask = ((r8 != 0) ? 1:0)
-					| ((r16 != 0) ? 2:0)
-					| ((r32 != 0) ? 4:0)
-					| ((r64 != 0) ? 8:0);
-			
-			return (mask * OPR_OFFSET) | id;
-		}
-	}
+//	private static int decode_octal(int octal_binary) {
+//		return (((octal_binary &    07) != 0) ? 1:0)
+//			 | (((octal_binary &   070) != 0) ? 2:0)
+//			 | (((octal_binary &  0700) != 0) ? 4:0)
+//			 | (((octal_binary & 07000) != 0) ? 8:0);
+//	}
 	
 	public static enum OprTy {
-		rel8			(1, 0, 0, 0),
-		rel16_32		(0, 1, 1, 0),
-		
-		r8				(1, 0, 0, 0),
-		r16				(0, 1, 0, 0),
-		r32				(0, 0, 1, 0),
-		r64				(0, 0, 0, 1),
-		r16_32			(0, 1, 1, 0),
-		r32_64			(0, 0, 1, 1),
-		r64_16			(0, 1, 0, 1),
-		r16_32_64		(0, 1, 1, 1),
-		
-		rm8				(1, 0, 0, 0),
-		rm16			(0, 1, 0, 0),
-		rm32			(0, 0, 1, 0),
-		rm64			(0, 0, 0, 1),
-		rm16_32			(0, 1, 1, 0),
-		rm64_16			(1, 0, 0, 1),
-		rm16_32_64		(0, 1, 1, 1),
-		
-		imm8			(1, 0, 0, 0),
-		imm16			(0, 1, 0, 0),
-		imm16_32		(0, 1, 1, 0),
-		imm16_32_64		(0, 1, 1, 1),
-		
-		m8				(1, 0, 0, 0),
-		m16				(0, 1, 0, 0),
-		m32				(0, 0, 1, 0),
-		m64				(0, 0, 0, 1),
-		m16_32			(0, 1, 1, 0),
-		m16_32_64		(0, 1, 1, 1),
-		
-		moffs8			(1, 0, 0, 0),
-		moffs16_32_64	(0, 1, 1, 1),
-		
 		Sreg			(0, 0, 0, 0),
 		CRn				(0, 0, 0, 0), // Control register
 		DRn				(0, 0, 0, 0), // Debug register
@@ -254,8 +119,8 @@ public final class AssemblyConsts {
 			} else {
 				String size = str.substring(1);
 				
-				if(size.equals("bss")) size = "8"; // TODO
-				if(size.equals("bs")) size = "8"; // TODO
+				if(size.equals("bss")) size = "8"; // TODO: What is the correct size for 'bss'
+				if(size.equals("bs")) size = "8/16";
 				if(size.equals("b")) size = "8";
 				
 				if(size.equals("w")) size = "16";
@@ -321,8 +186,6 @@ public final class AssemblyConsts {
 			if(size == 64) return hasQword();
 			return false;
 		}
-		
-		
 		
 		public boolean hasData() {
 			return encodes_data;
@@ -408,26 +271,13 @@ public final class AssemblyConsts {
 		}
 	}
 	
-	public static AsmPf prf(String mnemonic, int[] opcode) {
-		return new AsmPf(mnemonic, opcode, 0);
-	}
-	
-	public static AsmPf prf(String mnemonic, int[] opcode, int flags) {
-		return new AsmPf(mnemonic, opcode, flags);
-	}
-	
-	public static AsmOp opr(String mnemonic, int[] opcode, int flags, OprTy... operators) {
-		return new AsmOp(mnemonic, opcode, flags, operators);
-	}
-	
-	public static AsmOp opr(String mnemonic, int[] opcode, OprTy... operators) {
-		return new AsmOp(mnemonic, opcode, 0, operators);
-	}
-	
-	@Deprecated public static AsmOp dopr(String mnemonic, int[] opcode, int flags, OprTy... operators) { return opr(mnemonic, opcode, flags, operators); }
-	
-	
 	public static int[] opcode(int... array) { return array; }
+	
+	public static AsmPf prf(String mnemonic, int[] opcode) { return new AsmPf(mnemonic, opcode, 0); }
+	public static AsmPf prf(String mnemonic, int[] opcode, int flags) { return new AsmPf(mnemonic, opcode, flags); }
+	public static AsmOp opr(String mnemonic, int[] opcode, OprTy... operators) { return new AsmOp(mnemonic, opcode, 0, operators); }
+	public static AsmOp opr(String mnemonic, int[] opcode, int flags, OprTy... operators) { return new AsmOp(mnemonic, opcode, flags, operators); }
+	@Deprecated public static AsmOp dopr(String mnemonic, int[] opcode, int flags, OprTy... operators) { return opr(mnemonic, opcode, flags, operators); }
 	
 	/** {@code L} */	public static final int ALLOW_LOCK		= (1 << 0);
 	/** {@code e.} */	public static final int USES_MODRM		= (1 << 1);
@@ -512,70 +362,63 @@ public final class AssemblyConsts {
 		);
 	}
 	
-	/**
-	 * Calculate the flags from a string.<br>
-	 *<pre>
-	 *[ b  ] BYTE size regardless of operand-size attribute
-	 *[ w  ] WORD size regardless of operand-size attribute
-	 *[ d  ] DWORD size regardless of operand-size attribute
-	 *[ q  ] QWORD size regardless of operand-size attribute
-	 *[ r  ] First operand byte uses <i>ModR/M</i>
-	 *[ e. ] The instruction uses <i>ModR/M</i> and '.' represents a number
-	 *</pre>
-	 *
-	 * @param string
-	 * @return
-	 */
-	public static int operand(String string) {
-		// TODO: Complete a list of all flags.
-		// b  - BYTE
-		// w  - WORD
-		// d  - DWORD
-		// q  - QWORD
-		// v  - WORD or DWORD depending on size operand-size attribute
-		// vq - QWORD or WORD depending on size operand-size attribute
-		// vs - WORD or DWORD depending on size operand-size attribute
-		boolean uses_modrm = false;
-		boolean reg_opcode = false;
-		
-
-		boolean reg_value = false;	// r
-		boolean imm_value = false;	// I
-		boolean rm_value = false;	// G, H
-		boolean rel_value = false;	// J
-		
-		boolean has_rm_extension = false;
-		int rm_ext_value = 0;
-		
-		for(int i = 0; i < string.length(); i++) {
-			char c = string.charAt(i);
-			char next = (i + 1 < string.length() ? string.charAt(i + 1):'\0');
-			
-			if(c == 'Z') reg_opcode = true;
-			if(c == 'E'); // Modifier
-			if(c == 'r') uses_modrm = true;
-			
-			if(c == 'e') {
-				rm_ext_value = next - '0';
-				uses_modrm = true;
-				has_rm_extension = true;
-				i++;
-				continue;
-			}
-			
-			if(c == 'm') {
-				// Mode of operation, R E S A
-				i++;
-				continue;
-			}
-		}
-		
-		return 0;
-	}
-	
-	
-//	public static void main(String[] args) {
-//		System.out.println(opr1("PUSH", opcode(0x68), flags(""), OprTy.imm16_32).toComplexString());
-//		System.out.println(opr1("PUSH", opcode(0xFF), flags(""), OprTy.imm16_32).toComplexString());
+//	/**
+//	 * Calculate the flags from a string.<br>
+//	 *<pre>
+//	 *[ b  ] BYTE size regardless of operand-size attribute
+//	 *[ w  ] WORD size regardless of operand-size attribute
+//	 *[ d  ] DWORD size regardless of operand-size attribute
+//	 *[ q  ] QWORD size regardless of operand-size attribute
+//	 *[ r  ] First operand byte uses <i>ModR/M</i>
+//	 *[ e. ] The instruction uses <i>ModR/M</i> and '.' represents a number
+//	 *</pre>
+//	 *
+//	 * @param string
+//	 * @return
+//	 */
+//	public static int operand(String string) {
+//		// b  - BYTE
+//		// w  - WORD
+//		// d  - DWORD
+//		// q  - QWORD
+//		// v  - WORD or DWORD depending on size operand-size attribute
+//		// vq - QWORD or WORD depending on size operand-size attribute
+//		// vs - WORD or DWORD depending on size operand-size attribute
+//		boolean uses_modrm = false;
+//		boolean reg_opcode = false;
+//		
+//
+//		boolean reg_value = false;	// r
+//		boolean imm_value = false;	// I
+//		boolean rm_value = false;	// G, H
+//		boolean rel_value = false;	// J
+//		
+//		boolean has_rm_extension = false;
+//		int rm_ext_value = 0;
+//		
+//		for(int i = 0; i < string.length(); i++) {
+//			char c = string.charAt(i);
+//			char next = (i + 1 < string.length() ? string.charAt(i + 1):'\0');
+//			
+//			if(c == 'Z') reg_opcode = true;
+//			if(c == 'E'); // Modifier
+//			if(c == 'r') uses_modrm = true;
+//			
+//			if(c == 'e') {
+//				rm_ext_value = next - '0';
+//				uses_modrm = true;
+//				has_rm_extension = true;
+//				i++;
+//				continue;
+//			}
+//			
+//			if(c == 'm') {
+//				// Mode of operation, R E S A
+//				i++;
+//				continue;
+//			}
+//		}
+//		
+//		return 0;
 //	}
 }

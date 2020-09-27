@@ -104,7 +104,6 @@ public class Lang {
 		return token.column();
 	}
 	
-	@Override
 	public String toString() {
 		return value();
 	}

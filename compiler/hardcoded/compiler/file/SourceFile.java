@@ -5,12 +5,14 @@ import java.io.IOException;
 
 import hardcoded.utils.FileUtils;
 
+
 /**
  * This is a wrapper class for a source file.
  * 
  * @author HardCoded
  */
-public final class SourceFile {
+@Deprecated
+public final class SourceFile { // FIXME: Remove the file 'SourceFile.java'
 	private final File file;
 	
 	/**
