@@ -5,30 +5,11 @@ import java.util.List;
 
 import hardcoded.utils.StringUtils;
 
+// TODO: Allow subtraction and print correctly
 class OprStringBuilder {
 	OprStringBuilder() {}
 	
-	private static final String VALID_CHARACTERS = " []()*+0123456789ABCDEFGHILMPRSTWYXabcdefmoqrtwxy";
 	private static final String DELIMITERS = " []()*+";
-	
-	/**
-	 * Validate a input string depending on the valid characters.
-	 * 
-	 * @param	value	the string to validate
-	 * @return {@code true} if the string contains correct characters
-	 */
-	static boolean validateString(String value) {
-		if(value.length() > 255) return false;
-		
-		for(int i = 0; i < value.length(); i++) {
-			if(VALID_CHARACTERS.indexOf(value.charAt(i)) < 0) {
-				System.out.println();
-				return false;
-			}
-		}
-		
-		return true;
-	}
 	
 	/**
 	 * Split the input string into parts.
@@ -49,7 +30,7 @@ class OprStringBuilder {
 				if(!buffer.isEmpty())
 					list.add(buffer);
 				
-				if(!Character.isWhitespace(c))
+				if(c != ' ')
 					list.add(String.valueOf(c));
 				
 				buffer = "";
@@ -76,11 +57,7 @@ class OprStringBuilder {
 	}
 	
 	static AsmOpr fromString(OprBuilder builder, String value) {
-		// Remove leading spaces.
-		value = value.replaceAll("\\s+", " ").trim();
-		
-		if(!validateString(value))
-			throw new AssertionError("Operator contains a invalid number or register \"" + value + "\"");
+		value = value.replaceAll("\\s+", " ").trim().toLowerCase();
 		
 		String[] parts = splitString(value);
 		
@@ -102,13 +79,14 @@ class OprStringBuilder {
 		if(parts.length < 3)
 			throw new AssertionError("Expected a address but got \"" + input + "\"");
 		
-		int i = (size > 0 ? 2:0);
+		int i = (size > 0 ? 2:1);
 		
 		if(!parts[i - 1].equals("["))
 			throw new AssertionError("Expected opening bracket '[' \"" + input + "\"");
 		
 		boolean closed = false;
 		boolean expect_object = true;
+		boolean has_negnumber = false;
 		
 		int parenthesis = 0;
 		for(; i < parts.length; i++) {
@@ -125,6 +103,7 @@ class OprStringBuilder {
 			
 			boolean expected_object = expect_object;
 			boolean has_object = false;
+			boolean nxt_negnumber = false;
 			
 			if(part.equals("(")) {
 				parenthesis++;
@@ -141,6 +120,10 @@ class OprStringBuilder {
 			} else if(part.equals("+")) {
 				builder.add();
 				expect_object = true;
+			} else if(part.equals("-")) {
+				builder.add();
+				nxt_negnumber = true;
+				expect_object = true;
 			} else if(part.equals("*")) {
 				
 				if(parts[i - 1].equals(")") || builder.parts.isEmpty() || !(builder.parts.get(builder.parts.size() - 1) instanceof OprPart.Reg))
@@ -149,11 +132,12 @@ class OprStringBuilder {
 				builder.mul();
 				expect_object = true;
 			} else if(isNumber(part)) {
-				builder.num(readNumber(part));
+				builder.num(readNumber(part) * (has_negnumber ? -1:1));
 				expect_object = false;
 				has_object = true;
+				has_negnumber = false;
 			} else {
-				builder.reg(RegisterX86.valueOf(part));
+				builder.reg(RegisterX86.valueOf(part.toUpperCase()));
 				expect_object = false;
 				has_object = true;
 			}
@@ -164,6 +148,12 @@ class OprStringBuilder {
 			if(expected_object != has_object) {
 				throw new AssertionError("Invalid placement of character '" + part + "' \"" + input + "\"");
 			}
+			
+			if(has_negnumber) {
+				throw new AssertionError("Expected number but got '" + part + "' \"" + input + "\"");
+			}
+			
+			has_negnumber = nxt_negnumber;
 		}
 		
 
@@ -177,6 +167,8 @@ class OprStringBuilder {
 	}
 	
 	static boolean isNumber(String value) {
+		if(value.startsWith("-")) value = value.substring(1);
+		
 		if(value.startsWith("0x"))
 			return value.substring(2).replaceAll("[0-9a-zA-Z]", "").isEmpty();
 		
@@ -184,10 +176,16 @@ class OprStringBuilder {
 	}
 	
 	static long readNumber(String value) {
+		long mul = 1;
+		if(value.startsWith("-")) {
+			mul = -1;
+			value = value.substring(1);
+		}
+	
 		if(value.startsWith("0x"))
-			return Long.parseLong(value.substring(2), 16);
+			return Long.parseLong(value.substring(2), 16) * mul;
 		
-		return Long.parseLong(value);
+		return Long.parseLong(value) * mul;
 	}
 	
 	static AsmOpr readRegister(OprBuilder builder, String[] parts) {
@@ -197,7 +195,7 @@ class OprStringBuilder {
 		if(isNumber(parts[0]))
 			return builder.imm(readNumber(parts[0]));
 		
-		RegisterX86 reg = RegisterX86.valueOf(parts[0]);
+		RegisterX86 reg = RegisterX86.valueOf(parts[0].toUpperCase());
 		if(reg == null)
 			throw new AssertionError("Expected a register but got \"" + StringUtils.join(" ", parts) + "\"");
 		

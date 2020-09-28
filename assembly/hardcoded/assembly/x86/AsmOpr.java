@@ -20,19 +20,27 @@ public class AsmOpr {
 	}
 	
 	// Get the operator part at the specified index
-	public
-	OprPart getPart(int index) {
+	public OprPart getPart(int index) {
 		return parts.get(index);
 	}
 	
 	// Get the value of an operator part at the specified index
-	public
-	Object getObject(int index) {
+	public Object getObject(int index) {
 		return getPart(index).value();
 	}
 	
-	public
-	int length() {
+	/**
+	 * Returns the register at the {@code index} if a register exist otherwise {@code null}.
+	 * @param	index	the index of the register operand
+	 * @return	the register at the specified {@code index}
+	 */
+	public RegisterX86 getRegister(int index) {
+		Object obj = getObject(index);
+		if(obj instanceof RegisterX86) return (RegisterX86) obj;
+		return null;
+	}
+	
+	public int length() {
 		return parts.size();
 	}
 	
@@ -51,7 +59,7 @@ public class AsmOpr {
 	 */
 	public boolean isImmediate() {
 		if(isAddress || parts.size() != 1) return false;
-		return getPart(0) instanceof OprPart.Imm;
+		return getPart(0) instanceof OprPart.Num;
 	}
 	
 	/**
@@ -87,7 +95,7 @@ public class AsmOpr {
 			sb.append(part).append(' ');
 		}
 		
-		String value = sb.toString().trim();
+		String value = sb.toString().trim().replace("+ -", "- ");
 		
 		if(isAddress) {
 			if(address_size > 0) return AsmFactory.getSizeString(address_size) + " [" + value + "]";

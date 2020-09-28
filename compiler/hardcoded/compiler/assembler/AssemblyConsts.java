@@ -77,6 +77,7 @@ public final class AssemblyConsts {
 		
 		M				(0, 0, 0, 0), //	m
 		Mw				(0, 1, 0, 0), //	m16
+		
 		Sw				(0, 1, 0, 0), //	seg16
 		Rvqp			(0, 1, 1, 1), //	r16/32/64
 		
@@ -141,11 +142,11 @@ public final class AssemblyConsts {
 					case 'O': nmn = "moffs"; break;
 					case 'J': nmn = "rel"; break;
 					case 'R':
+					case 'G':
 					case 'Z': nmn = "r"; break;
 					case 'F': nmn = "flags"; break;
 					case 'A': nmn = "ptr"; break;
 					case 'S': nmn = "seg"; break;
-					case 'G': nmn = "r"; break;
 					case 'E': nmn = "r/m"; break;
 					
 					case 'M':
@@ -161,6 +162,20 @@ public final class AssemblyConsts {
 					encodes_data = false;
 				}
 			}
+		}
+		
+		public boolean isImmediate() {
+			char c = type();
+			return c == 'I' || c == 'J';
+		}
+		
+		public boolean isRegister() {
+			char c = type();
+			return c == 'R' || c == 'G' || c == 'Z';
+		}
+		
+		public char type() {
+			return name().charAt(0);
 		}
 		
 		public boolean hasByte() {
@@ -228,6 +243,10 @@ public final class AssemblyConsts {
 			return operand_types.length;
 		}
 		
+		public int[] getOpcode() {
+			return opcode.clone();
+		}
+		
 		public String getOpcodeString() {
 			StringBuilder sb = new StringBuilder();
 			
@@ -269,6 +288,22 @@ public final class AssemblyConsts {
 			
 			return sb.toString().trim();
 		}
+		
+		public String toStringPlain() {
+			if(getNumOperands() < 1) return mnemonic;
+			
+			StringBuilder sb = new StringBuilder();
+			sb.append(String.format("%s ", mnemonic));
+			
+			for(OprTy t : operand_types) {
+				sb.append(String.format("%s", t)).append(", ");
+			}
+			
+			sb.deleteCharAt(sb.length() - 1);
+			sb.deleteCharAt(sb.length() - 1);
+			
+			return sb.toString().trim();
+		}
 	}
 	
 	public static int[] opcode(int... array) { return array; }
@@ -280,7 +315,7 @@ public final class AssemblyConsts {
 	@Deprecated public static AsmOp dopr(String mnemonic, int[] opcode, int flags, OprTy... operators) { return opr(mnemonic, opcode, flags, operators); }
 	
 	/** {@code L} */	public static final int ALLOW_LOCK		= (1 << 0);
-	/** {@code e.} */	public static final int USES_MODRM		= (1 << 1);
+	/** {@code r} */	public static final int USES_MODRM		= (1 << 1);
 	/** {@code e.} */	public static final int NEED_RMEXT		= (1 << 2);
 	public static final int RM_EXT_OFFSET	= (1 << 3);
 	public static final int RM_EXT_MASK		= 7 * RM_EXT_OFFSET;

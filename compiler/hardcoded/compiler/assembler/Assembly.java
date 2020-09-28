@@ -327,7 +327,7 @@ public final class Assembly {
 		}
 		
 		if(list.isEmpty()) return null;
-		int ops = inst.getNumOperators();
+		int ops = inst.getNumOperands();
 		
 		for(int i = 0; i < list.size(); i++) {
 			AsmOp op = list.get(i);
@@ -341,7 +341,7 @@ public final class Assembly {
 			boolean matches = true;
 			for(int j = 0; j < ops; j++) {
 				OprTy type = op.getOperand(j);
-				AsmOpr opr = inst.getOperator(j);
+				AsmOpr opr = inst.getOperand(j);
 				if(!matches(type, opr)) {
 					matches = false;
 					break;
@@ -368,10 +368,9 @@ public final class Assembly {
 			
 			char c = type.name().charAt(0);
 			
-			
 			switch(c) {
 				case 'J':
-				case 'O':
+				// case 'O':
 				case 'I': {
 					return opr.isImmediate() && sizeMatches;
 				}
@@ -385,6 +384,10 @@ public final class Assembly {
 				case 'G':
 				case 'Z':
 				case 'R': return opr.isRegister() && sizeMatches;
+				
+				case 'O': // TODO: Do not allow moffs for now.
+				case 'S': // TODO: Do not allow segments for now.
+				default: return false;
 			}
 		} else {
 			if(!opr.isRegister()) return false;
@@ -401,8 +404,6 @@ public final class Assembly {
 			return opr.toString().equals(type.name())
 				&& sizeMatches;
 		}
-		
-		return true;
 	}
 	
 	

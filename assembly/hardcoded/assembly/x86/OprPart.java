@@ -1,5 +1,7 @@
 package hardcoded.assembly.x86;
 
+import hardcoded.utils.NumberUtils;
+
 /**
  * This class defines all objects used to define assembly operators.
  * 
@@ -9,9 +11,6 @@ package hardcoded.assembly.x86;
  *   
  *   <dt>{@link Reg}</dt>
  *   <dd>Used when referencing a register.</dd>
- *   
- *   <dt>{@link Imm}</dt>
- *   <dd>Used when creating a immediate value.</dd>
  *   
  *   <dt>{@link Num}</dt>
  *   <dd>Used when defining numbers.</dd>
@@ -71,50 +70,17 @@ abstract class OprPart {
 		}
 	}
 	
-	// TODO: Remove Imm and replace with Num.. A number is a Immediate value if it's the only part of a register and is not a pointer.
-	/**
-	 * Used to define a immediate value inside an assembly operator.
-	 * 
-	 * @see OprPart
-	 */
-	static class Imm extends OprPart {
-		private final int bits;
-		private final Number value;
-		
-		Imm(int bits, Number value) {
-			this.bits = bits;
-			this.value = value;
-		}
-
-		int size() {
-			return bits;
-		}
-		
-		Object value() {
-			return value;
-		}
-		
-		public String toString() {
-			return String.format("imm%d=0x%0" + (bits / 4) + "x", bits, value);
-		}
-	}
-	
 	/**
 	 * Used to define a number value inside an assembly operator.
 	 * 
 	 * @see OprPart
 	 */
 	static class Num extends OprPart {
-		private final Number value;
+		private final long value;
 		private final int bits;
 		
-		Num(int bits, Number value) {
-			this.bits = bits;
-			if(bits < 9) value = value.byteValue();
-			else if(bits < 17) value = value.shortValue();
-			else if(bits < 33) value = value.intValue();
-			else if(bits < 65) value = value.longValue();
-			
+		Num(long value) {
+			this.bits = NumberUtils.getBitsSize(value);
 			this.value = value;
 		}
 
@@ -127,7 +93,7 @@ abstract class OprPart {
 		}
 		
 		public String toString() {
-			// return String.format("num0x%0" + (bits / 4) + "x", value);
+			if(value < 0) return String.format("-0x%01x", -value);
 			return String.format("0x%01x", value);
 		}
 	}

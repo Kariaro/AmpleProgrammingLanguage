@@ -4,40 +4,57 @@ import hardcoded.assembly.x86.*;
 
 public final class AsmInst {
 	private final AsmMnm mnemonic;
-	private final AsmOpr[] operators;
+	private final AsmOpr[] operands;
 	
 	AsmInst(AsmMnm mnemonic) {
 		this.mnemonic = mnemonic;
-		this.operators = new AsmOpr[0];
+		this.operands = new AsmOpr[0];
 	}
 	
-	AsmInst(AsmMnm mnemonic, AsmOpr... operators) {
+	AsmInst(AsmMnm mnemonic, AsmOpr... operands) {
 		this.mnemonic = mnemonic;
-		this.operators = operators.clone();
+		this.operands = operands.clone();
 	}
 	
 	public AsmMnm getMnemonic() {
 		return mnemonic;
 	}
 	
-	public int getNumOperators() {
-		return operators.length;
+	public int getNumOperands() {
+		return operands.length;
 	}
 	
-	public AsmOpr getOperator(int index) {
-		return operators[index];
+	public AsmOpr getOperand(int index) {
+		return operands[index];
 	}
 	
 	public String toString() {
-		if(getNumOperators() < 1) {
+		if(getNumOperands() < 1) {
 			return mnemonic.toString();
 		}
 		
 		StringBuilder sb = new StringBuilder();
 		sb.append(String.format("%-16s", mnemonic));
 		
-		for(AsmOpr o : operators) {
+		for(AsmOpr o : operands) {
 			sb.append(String.format("%-16s", o)).append(", ");
+		}
+		
+		sb.deleteCharAt(sb.length() - 2);
+		
+		return sb.toString().trim();
+	}
+
+	public String toPlainString() {
+		if(getNumOperands() < 1) {
+			return mnemonic.toString();
+		}
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append(String.format("%s ", mnemonic));
+		
+		for(AsmOpr o : operands) {
+			sb.append(String.format("%s, ", o));
 		}
 		
 		sb.deleteCharAt(sb.length() - 2);
