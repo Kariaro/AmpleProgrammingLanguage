@@ -46,17 +46,7 @@ public final class OprBuilder {
 	 * @return the next builder to continue
 	 */
 	public OprBuilder num(long value) {
-		return num(32, value);
-	}
-	
-	/**
-	 * Returns the next builder to continue.
-	 * @param	bits	the size of the number
-	 * @param	value	the value of the number
-	 * @return the next builder to continue
-	 */
-	public OprBuilder num(int bits, long value) {
-		parts.add(new OprPart.Num(((bits + 7) / 8) * 8, value));
+		parts.add(new OprPart.Num(value));
 		return this;
 	}
 	
@@ -66,7 +56,7 @@ public final class OprBuilder {
 	 * @return the next builder to continue
 	 */
 	public AsmOpr imm(long value) {
-		return new AsmOpr(Arrays.asList(new OprPart.Imm(64, value)));
+		return new AsmOpr(Arrays.asList(new OprPart.Num(value)));
 	}
 	
 	/**
@@ -74,7 +64,7 @@ public final class OprBuilder {
 	 * @return the next builder to continue
 	 */
 	public OprBuilder scalar(int value) {
-		parts.add(new OprPart.Num(8, value));
+		parts.add(new OprPart.Num((byte)value));
 		return this;
 	}
 	
@@ -112,41 +102,31 @@ public final class OprBuilder {
 	 * Returns a new {@code AsmOperator} as a byte pointer.
 	 * @return a new {@code AsmOperator} as a byte pointer
 	 */
-	public AsmOpr ptrByte() {
-		return new AsmOpr(parts, 8, true);
-	}
+	public AsmOpr ptrByte() { return ptr(8); }
 	
 	/**
 	 * Returns a new {@code AsmOperator} as a word pointer.
 	 * @return a new {@code AsmOperator} as a word pointer
 	 */
-	public AsmOpr ptrWord() { 
-		return new AsmOpr(parts, 16, true);
-	}
+	public AsmOpr ptrWord() { return ptr(16); }
 	
 	/**
 	 * Returns a new {@code AsmOperator} as a dword pointer.
 	 * @return a new {@code AsmOperator} as a dword pointer
 	 */
-	public AsmOpr ptrDword() {
-		return new AsmOpr(parts, 32, true);
-	}
+	public AsmOpr ptrDword() { return ptr(32); }
 	
 	/**
 	 * Returns a new {@code AsmOperator} as a qword pointer.
 	 * @return a new {@code AsmOperator} as a qword pointer
 	 */
-	public AsmOpr ptrQword() {
-		return new AsmOpr(parts, 64, true);
-	}
+	public AsmOpr ptrQword() { return ptr(64); }
 	
 	/**
 	 * Returns a new {@code AsmOperator} as a pointer.
 	 * @return a new {@code AsmOperator} as a pointer
 	 */
-	public AsmOpr ptr() {
-		return new AsmOpr(parts, 0, true);
-	}
+	public AsmOpr ptr() { return ptr(0); }
 	
 	/**
 	 * Returns a new {@code AsmOperator} as a pointer with a specified size.

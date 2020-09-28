@@ -20,7 +20,7 @@ import hardcoded.compiler.instruction.IRInstruction.*;
  * @author HardCoded
  */
 public class IntermediateCodeGenerator {
-	// TODO: Default pointer size is always int.
+	// TODO: Default pointer size is always long.
 	
 	public IntermediateCodeGenerator() {
 		

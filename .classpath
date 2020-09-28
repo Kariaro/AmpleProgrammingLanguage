@@ -3,6 +3,7 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jdk1.8.0_181"/>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="lexer"/>
+	<classpathentry kind="src" path="files"/>
 	<classpathentry kind="src" path="compiler"/>
 	<classpathentry kind="src" path="editor"/>
 	<classpathentry kind="src" path="assembly"/>

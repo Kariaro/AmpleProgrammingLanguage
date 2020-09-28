@@ -1,4 +1,4 @@
-package hardcoded.compiler.file;
+package hardcoded.file;
 
 import java.io.File;
 import java.io.IOException;

@@ -207,4 +207,15 @@ public final class StringUtils {
 		if(length < 1) throw new IllegalArgumentException("The minimum length of the returned string cannot be less than one.");
 		return String.format("%0" + length + "x", value);
 	}
+	
+	public static String printHexString(CharSequence separator, int[] array) {
+		if(array == null || array.length == 0) return "";
+		StringBuilder sb = new StringBuilder();
+		// TODO: Byte array????
+		for(int i : array) {
+			sb.append(separator).append(String.format("%02x", i & 0xff));
+		}
+		
+		return sb.toString().substring(separator.length()).trim();
+	}
 }

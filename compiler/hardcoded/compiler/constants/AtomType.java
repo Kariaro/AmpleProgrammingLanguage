@@ -12,7 +12,7 @@ public class AtomType {
 	public static final AtomType string = new AtomType("string", -1); // Always pointer
 	public static final AtomType ident = new AtomType("ident", -1);   // Always pointer
 	
-	// TODO: Implement unsigned atom TYPES.
+	// TODO: Implement unsigned atom types.
 //	public static final AtomType u64 = new AtomType("u64", 8, NUMBER_FLAG),
 //								 u32 = new AtomType("u32", 4, NUMBER_FLAG),
 //								 u16 = new AtomType("u16", 2, NUMBER_FLAG),

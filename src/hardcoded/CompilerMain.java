@@ -56,8 +56,8 @@ public class CompilerMain {
 	public static void main(String[] args) throws Exception {
 		// TODO: Use the arguments to change build options.
 		
-//		HCompiler compiler = new HCompiler();
-//		compiler.setProjectPath("res/project/src/");
-//		compiler.build();
+		HCompiler compiler = new HCompiler();
+		compiler.setProjectPath("res/project/src/");
+		compiler.build();
 	}
 }
