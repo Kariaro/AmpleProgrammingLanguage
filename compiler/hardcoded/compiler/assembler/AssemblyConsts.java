@@ -174,6 +174,17 @@ public final class AssemblyConsts {
 			return c == 'R' || c == 'G' || c == 'Z';
 		}
 		
+		public boolean isMemory() {
+			char c = type();
+			return c == 'M' || c == 'X' || c == 'Y';
+		}
+		
+		public boolean isModrm() {
+			char c = type();
+			return c == 'E';
+		}
+		
+		
 		public char type() {
 			return name().charAt(0);
 		}

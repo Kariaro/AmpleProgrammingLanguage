@@ -122,6 +122,10 @@ public final class Assembly {
 // 0x60
 // 0x61
 // 0x62
+// 0x64 [FS segment override prefix]
+// 0x65 [GS segment override prefix]
+// 0x66 [Operand size override prefix]
+// 0x67 [Address size override prefix]
 		opr("PUSH", opcode(0x68), OprTy.Ivs),										// PUSH			imm16/32
 		opr("IMUL", opcode(0x69), flags("r"), OprTy.Gvqp, OprTy.Evqp, OprTy.Ivds),	// IMUL			r16/32/64		, r/m16/32/64	, imm16/32
 		opr("PUSH", opcode(0x6A), OprTy.Ibss),										// PUSH			imm8
@@ -133,22 +137,22 @@ public final class Assembly {
 		opr("OUTSW", opcode(0x6F), OprTy.DX, OprTy.Xwo),							// OUTSW		DX				, m16		TODO: COMBINE
 		opr("OUTSD", opcode(0x6F), OprTy.DX, OprTy.Xdo),							// OUTSD		DX				, m32
 		
-		opr("JO", opcode(0x70), OprTy.Jbs),											// JO			rel8/16						Jump if (OF=1)
+		opr("JO",  opcode(0x70), OprTy.Jbs),										// JO			rel8/16						Jump if (OF=1)
 		opr("JNO", opcode(0x71), OprTy.Jbs),										// JNO			rel8/16						Jump if (OF=0)
-		opr("JC", opcode(0x72), OprTy.Jbs),											// JC			rel8/16						Jump if (CF=1)
+		opr("JC",  opcode(0x72), OprTy.Jbs),										// JC			rel8/16						Jump if (CF=1)
 		opr("JNC", opcode(0x73), OprTy.Jbs),										// JNC			rel8/16						Jump if (CF=0)
-		opr("JZ", opcode(0x74), OprTy.Jbs),											// JZ			rel8/16						Jump if (ZF=1)
+		opr("JZ",  opcode(0x74), OprTy.Jbs),										// JZ			rel8/16						Jump if (ZF=1)
 		opr("JNZ", opcode(0x75), OprTy.Jbs),										// JNZ			rel8/16						Jump if (ZF=0)
 		opr("JNA", opcode(0x76), OprTy.Jbs),										// JNA			rel8/16						Jump if (CF=1 OR  ZF=1)
-		opr("JA", opcode(0x77), OprTy.Jbs),											// JA			rel8/16						Jump if (CF=0 AND ZF=0)
-		opr("JS", opcode(0x78), OprTy.Jbs),											// JS			rel8/16						Jump if (SF=1)
+		opr("JA",  opcode(0x77), OprTy.Jbs),										// JA			rel8/16						Jump if (CF=0 AND ZF=0)
+		opr("JS",  opcode(0x78), OprTy.Jbs),										// JS			rel8/16						Jump if (SF=1)
 		opr("JNS", opcode(0x79), OprTy.Jbs),										// JNS			rel8/16						Jump if (SF=0)
-		opr("JP", opcode(0x7A), OprTy.Jbs),											// JP			rel8/16						Jump if (PF=1)
+		opr("JP",  opcode(0x7A), OprTy.Jbs),										// JP			rel8/16						Jump if (PF=1)
 		opr("JNP", opcode(0x7B), OprTy.Jbs),										// JNP			rel8/16						Jump if (PF=0)
-		opr("JL", opcode(0x7C), OprTy.Jbs),											// JL			rel8/16						Jump if (SF != OF)
+		opr("JL",  opcode(0x7C), OprTy.Jbs),										// JL			rel8/16						Jump if (SF != OF)
 		opr("JNL", opcode(0x7D), OprTy.Jbs),										// JNL			rel8/16						Jump if (SF == OF)
 		opr("JNG", opcode(0x7E), OprTy.Jbs),										// JNG			rel8/16						Jump if (ZF=1 OR  SF != OF)
-		opr("JG", opcode(0x7F), OprTy.Jbs),											// JG			rel8/16						Jump if (ZF=0 AND SF == OF)
+		opr("JG",  opcode(0x7F), OprTy.Jbs),										// JG			rel8/16						Jump if (ZF=0 AND SF == OF)
 		
 		opr("ADD", opcode(0x80), flags("Le0"), OprTy.Eb, OprTy.Ib),					// ADD			r/m8			, imm8
 		opr("OR",  opcode(0x80), flags("Le1"), OprTy.Eb, OprTy.Ib),					// OR			r/m8			, imm8
@@ -167,7 +171,7 @@ public final class Assembly {
 		opr("SUB", opcode(0x81), flags("Le5"), OprTy.Evqp, OprTy.Ivds),				// SUB			r/m16/32/64		, imm16/32
 		opr("XOR", opcode(0x81), flags("Le6"), OprTy.Evqp, OprTy.Ivds),				// XOR			r/m16/32/64		, imm16/32
 		opr("CMP", opcode(0x81), flags("e7"), OprTy.Evqp, OprTy.Ivds),				// CMP			r/m16/32/64		, imm16/32
-// 0x82
+// 0x82 [Invalid]
 		opr("ADD", opcode(0x83), flags("Le0"), OprTy.Evqp, OprTy.Ibs),				// ADD		 	r/m16/32/64		, imm8
 		opr("OR",  opcode(0x83), flags("Le1"), OprTy.Evqp, OprTy.Ibs),				// OR			r/m16/32/64		, imm8
 		opr("ADC", opcode(0x83), flags("Le2"), OprTy.Evqp, OprTy.Ibs),				// ADC			r/m16/32/64		, imm8
@@ -192,18 +196,29 @@ public final class Assembly {
 		
 		opr("LEA", opcode(0x8D), flags("r"), OprTy.Gvqp, OprTy.M),					// LEA			r16/32/64		, m
 		opr("MOV", opcode(0x8E), flags("r"), OprTy.Sw, OprTy.Ew),					// MOV			s16				, r/m16
-		opr("MOV", opcode(0x8F), flags("e0"), OprTy.Evq),							// POP			r/m64/16
+		opr("POP", opcode(0x8F), flags("e0"), OprTy.Ev),							// POP			r/m16/32
+		opr("POP", opcode(0x8F), flags("e0"), OprTy.Evq),							// POP			r/m64/16
 		
 		opr("XCHR", opcode(0x90), OprTy.Zvqp, OprTy.rAX),							// LEA			r16/32/64		, rAX
 		opr("NOP", opcode(0x90)),													// NOP
 		
 		// Controlled by size attribute
-		opr("CBW", opcode(0x98), OprTy.AX, OprTy.AL),								// CBW			AX				, AL
+		opr("CBW",  opcode(0x98), OprTy.AX, OprTy.AL),								// CBW			AX				, AL
 		opr("CWDE", opcode(0x98), OprTy.EAX, OprTy.AX),								// CWDE			EAX				, AX
 		opr("CDQE", opcode(0x98), OprTy.RAX, OprTy.EAX),							// CDEQ			RAX				, EAX
-// 0x99
 		
-		opr("CALLF", opcode(0x9A), OprTy.Ap),										// CALLF		ptr32/48
+		opr("CBW",  opcode(0x99), OprTy.DX, OprTy.AX),								// CWD			DX				, AX
+		opr("CWDE", opcode(0x99), OprTy.EDX, OprTy.EAX),							// CDQ			EDX				, EAX
+		opr("CDQE", opcode(0x99), OprTy.RDX, OprTy.RAX),							// CQO			RDX				, RAX
+// 0x9A [Invalid]
+//		opr("CALLF", opcode(0x9A), OprTy.Ap),										// CALLF		ptr32/48
+// 0x9B [Wait prefix x87fpu]
+//		opr("PUSHF",  opcode(0x9C), OprTy.Fws),										// PUSHF
+//		opr("PUSHFQ", opcode(0x9C), OprTy.Fqs),										// PUSHFQ
+//		opr("POPF",  opcode(0x9D), OprTy.Fws),										// POPF
+//		opr("POPFQ", opcode(0x9D), OprTy.Fqs),										// POPFQ
+		opr("SAHF", opcode(0x9E)),													// SAHF
+		opr("LAHF", opcode(0x9F)),													// LAHF
 // ....
 		opr("MOV", opcode(0xA0), OprTy.AL, OprTy.Ob),								// MOV			AL				, moffs8
 		opr("MOV", opcode(0xA1), OprTy.RAX, OprTy.Ovqp),							// MOV			RAX				, moffs16/32/64
@@ -301,19 +316,6 @@ public final class Assembly {
 		
 		null
 	);
-	
-//	public static final Assembly MOV = new Assembly(
-//		opr("MOV", opcode(0x0F, 0x20), flags("Erl0"), OprTy.r64, OprTy.CRn),		// MOV			r64				, CRn
-//		opr("MOV", opcode(0x0F, 0x21), flags("Erl0"), OprTy.r64, OprTy.DRn),		// MOV			r64				, DRn
-//		opr("MOV", opcode(0x0F, 0x22), flags("Erl0"), OprTy.CRn, OprTy.r64),		// MOV			CRn				, r64
-//		opr("MOV", opcode(0x0F, 0x23), flags("Erl0"), OprTy.DRn, OprTy.r64)			// MOV			DRn				, r64
-//	);
-//	
-//	// DONE
-//	public static final Assembly PUSH = new Assembly(
-//		opr("PUSH", opcode(0x0F, 0xA0), OprTy.FS),									// PUSH			FS
-//		opr("PUSH", opcode(0x0F, 0xA8), OprTy.GS)									// PUSH			GS
-//	);
 	
 	public static List<AsmOp> lookup(AsmInst inst) {
 		List<AsmOp> list = new ArrayList<>();

@@ -3,37 +3,289 @@
 
 
 # Mnemonic			Opcode				Flags				Registers
-ADD					[ 00 ]				Lr					Eb			Gb
-ADD					[ 01 ]				Lr					Evqp		Gvqp
-ADD					[ 02 ]				r					Gb			Eb
-ADD					[ 03 ]				r					Gvqp		Evqp
-ADD					[ 04 ]				-					AL			Ib
-ADD					[ 05 ]				-					rAX			Ivds
+		ADD			[ 00 ]				Lr					Eb, Gb
+		ADD			[ 01 ]				Lr					Evqp, Gvqp
+		ADD			[ 02 ]				r					Gb, Eb
+		ADD			[ 03 ]				r					Gvqp, Evqp
+		ADD			[ 04 ]				-					AL, Ib
+		ADD			[ 05 ]				-					rAX, Ivds
+# 06	[Invalid]
+# 07	[Invalid]
+		OR			[ 08 ]				Lr					Eb, Gb
+		OR			[ 09 ]				Lr					Evqp, Gvqp
+		OR			[ 0A ]				r					Gb, Eb
+		OR			[ 0B ]				r					Gvqp, Evqp
+		OR			[ 0C ]				-					AL, Ib
+		OR			[ 0D ]				-					rAX, Ivds
+# 0E	[Invalid]
+# 0F	[Two byte opcodes]
+		ADC			[ 10 ]				Lr					Eb, Gb
+		ADC			[ 11 ]				Lr					Evqp, Gvqp
+		ADC			[ 12 ]				r					Gb, Eb
+		ADC			[ 13 ]				r					Gvqp, Evqp
+		ADC			[ 14 ]				-					AL, Ib
+		ADC			[ 15 ]				-					rAX, Ivds
+# 16	[Invalid]
+# 17	[Invalid]
+		SBB			[ 18 ]				Lr					Eb, Gb
+		SBB			[ 19 ]				Lr					Evqp, Gvqp
+		SBB			[ 1A ]				r					Gb, Eb
+		SBB			[ 1B ]				r					Gvqp, Evqp
+		SBB			[ 1C ]				-					AL, Ib
+		SBB			[ 1D ]				-					rAX, Ivds
+# 1E	[Invalid]
+# 1F	[Invalid]
+		AND			[ 20 ]				Lr					Eb, Gb
+		AND			[ 21 ]				Lr					Evqp, Gvqp
+		AND			[ 22 ]				r					Gb, Eb
+		AND			[ 23 ]				r					Gvqp, Evqp
+		AND			[ 24 ]				-					AL, Ib
+		AND			[ 25 ]				-					rAX, Ivds
+# 26	[Invalid]
+# 27	[Invalid]
+		SUB			[ 28 ]				Lr					Eb, Gb
+		SUB			[ 29 ]				Lr					Evqp, Gvqp
+		SUB			[ 2A ]				r					Gb, Eb
+		SUB			[ 2B ]				r					Gvqp, Evqp
+		SUB			[ 2C ]				-					AL, Ib
+		SUB			[ 2D ]				-					rAX, Ivds
+# 2E	[Invalid]
+# 2F	[Invalid]
+		XOR			[ 30 ]				Lr					Eb, Gb
+		XOR			[ 31 ]				Lr					Evqp, Gvqp
+		XOR			[ 32 ]				r					Gb, Eb
+		XOR			[ 33 ]				r					Gvqp, Evqp
+		XOR			[ 34 ]				-					AL, Ib
+		XOR			[ 35 ]				-					rAX, Ivds
+# 36	[Invalid]
+# 37	[Invalid]
+		CMP			[ 38 ]				r					Eb, Gb
+		CMP			[ 39 ]				r					Evqp, Gvqp
+		CMP			[ 3A ]				r					Gb, Eb
+		CMP			[ 3B ]				r					Gvqp, Evqp
+		CMP			[ 3C ]				-					AL, Ib
+		CMP			[ 3D ]				-					rAX, Ivds
+# 3E	[Invalid]
+# 3F	[Invalid]
+		INC			[ 40 ]				-					Zv
+		DEC			[ 48 ]				-					Zv
+		PUSH		[ 50 ]				-					Zv
+		PUSH		[ 50 ]				E					Zvq
+		POP			[ 58 ]				-					Zv
+		POP			[ 58 ]				E					Zvq
+# 60	[Invalid]
+# 61	[Invalid]
+# 62	[Invalid]
+# 63	....
+# 64	[FS segment override prefix]
+# 65	[GS segment override prefix]
+# 66	[Operand size override prefix]
+# 67	[Address size override prefix]
+		
+		PUSH		[ 68 ]				-					Ivs
+		IMUL		[ 69 ]				r					Gvqp, Evqp, Ivds
+		PUSH		[ 6A ]				-					Ibss
+		IMUL		[ 6B ]				r					Gvqp, Evqp, Ibs
+		INSB		[ 6C ]				-					Yb, DX
+		INSW		[ 6D ]				-					Ywo, DX
+		INTD		[ 6D ]				-					Ydo, DX
+		OUTSB		[ 6E ]				-					DX, Xb
+		OUTSW		[ 6F ]				-					DX, Xwo
+		OUTSD		[ 6F ]				-					DX, Xdo
+		JO			[ 70 ]				-					Jbs
+		JNO			[ 71 ]				-					Jbs
+		JC			[ 72 ]				-					Jbs
+		JNC			[ 73 ]				-					Jbs
+		JZ			[ 74 ]				-					Jbs
+		JNZ			[ 75 ]				-					Jbs
+		JNA			[ 76 ]				-					Jbs
+		JA			[ 77 ]				-					Jbs
+		JS			[ 78 ]				-					Jbs
+		JNS			[ 79 ]				-					Jbs
+		JP			[ 7A ]				-					Jbs
+		JNP			[ 7B ]				-					Jbs
+		JL			[ 7C ]				-					Jbs
+		JNL			[ 7D ]				-					Jbs
+		JNG			[ 7E ]				-					Jbs
+		JG			[ 7F ]				-					Jbs
+		ADD			[ 80 ]				Le0					Eb, Ib
+		OR			[ 80 ]				Le1					Eb, Ib
+		ADC			[ 80 ]				Le2					Eb, Ib
+		SBB			[ 80 ]				Le3					Eb, Ib
+		AND			[ 80 ]				Le4					Eb, Ib
+		SUB			[ 80 ]				Le5					Eb, Ib
+		XOR			[ 80 ]				Le6					Eb, Ib
+		CMP			[ 80 ]				e7					Eb, Ib
+		ADD			[ 81 ]				Le0					Evqp, Ivds
+		OR			[ 81 ]				Le1					Evqp, Ivds
+		ADC			[ 81 ]				Le2					Evqp, Ivds
+		SBB			[ 81 ]				Le3					Evqp, Ivds
+		AND			[ 81 ]				Le4					Evqp, Ivds
+		SUB			[ 81 ]				Le5					Evqp, Ivds
+		XOR			[ 81 ]				Le6					Evqp, Ivds
+		CMP			[ 81 ]				e7					Evqp, Ivds
+# 82	[Invalid]
+		ADD			[ 83 ]				Le0					Evqp, Ibs
+		OR			[ 83 ]				Le1					Evqp, Ibs
+		ADC			[ 83 ]				Le2					Evqp, Ibs
+		SBB			[ 83 ]				Le3					Evqp, Ibs
+		AND			[ 83 ]				Le4					Evqp, Ibs
+		SUB			[ 83 ]				Le5					Evqp, Ibs
+		XOR			[ 83 ]				Le6					Evqp, Ibs
+		CMP			[ 83 ]				e7					Evqp, Ibs
+		TEST		[ 84 ]				r					Eb, Gb
+		TEST		[ 85 ]				r					Evqp, Gvqp
+		XCHG		[ 86 ]				Lr					Gb, Eb
+		XCHG		[ 87 ]				Lr					Gvqp, Evqp
+		MOV			[ 88 ]				r					Eb, Gb
+		MOV			[ 89 ]				r					Evqp, Gvqp
+		MOV			[ 8A ]				r					Gb, Eb
+		MOV			[ 8B ]				r					Gvqp, Evqp
+		MOV			[ 8C ]				r					Mw, Sw
+		MOV			[ 8C ]				r					Rvqp, Sw
+		LEA			[ 8D ]				r					Gvqp, M
+		MOV			[ 8E ]				r					Sw, Ew
+		POP			[ 8F ]				e0					Ev
+		POP			[ 8F ]				e0					Evq
+		XCHR		[ 90 ]				-					Zvqp, rAX
+		NOP			[ 90 ]				-
+		
+		CBW			[ 98 ]				-					AX, AL
+		CWDE		[ 98 ]				-					EAX, AX
+		CDQE		[ 98 ]				-					RAX, EAX
+		CBW			[ 99 ]				-					DX, AX
+		CWDE		[ 99 ]				-					EDX, EAX
+		CDQE		[ 99 ]				-					RDX, RAX
+# 9A	[Invalid]
+# 9B	[Wait prefix x87fpu]
+		PUSHF		[ 9C ]				-					Fws
+		PUSHFQ		[ 9C ]				-					Fqs
+		POPF		[ 9D ]				-					Fws
+		POPFQ		[ 9D ]				-					Fqs
+		SAHF		[ 9E ]				-
+		LAHF		[ 9F ]				-
+		MOV			[ A0 ]				-					AL, Ob
+		MOV			[ A1 ]				-					RAX, Ovqp
+		MOV			[ A2 ]				-					Ob, AL
+		MOV			[ A3 ]				-					Ovqp, rAX
+# A4	....
+# A5	....
+# A6	....
+# A7	....
+		TEST		[ A8 ]				-					AL, Ib
+		TEST		[ A9 ]				-					rAX, Ivds
+# AA	....
+# AB	....
+# AC	....
+# AD	....
+# AE	....
+# AF	....
+		MOV			[ B0 ]				-					Zb, Ib
+		MOV			[ B8 ]				-					Zvqp, Ivqp
+		ROL			[ C0 ]				e0					Eb, Ib
+		ROR			[ C0 ]				e1					Eb, Ib
+		RCL			[ C0 ]				e2					Eb, Ib
+		RCR			[ C0 ]				e3					Eb, Ib
+		SHL			[ C0 ]				e4					Eb, Ib
+		SHR			[ C0 ]				e5					Eb, Ib
+		SAL			[ C0 ]				e6					Eb, Ib
+		SAR			[ C0 ]				e7					Eb, Ib
+		
+		ROL			[ C1 ]				e0					Evqp, Ib
+		ROR			[ C1 ]				e1					Evqp, Ib
+		RCL			[ C1 ]				e2					Evqp, Ib
+		RCR			[ C1 ]				e3					Evqp, Ib
+		SHL			[ C1 ]				e4					Evqp, Ib
+		SHR			[ C1 ]				e5					Evqp, Ib
+		SAL			[ C1 ]				e6					Evqp, Ib
+		SAR			[ C1 ]				e7					Evqp, Ib
+		
+		RETN		[ C2 ]				-					Iw
+		RETN		[ C3 ]				-
+# C4	[Invalid]
+# C5	[Invalid]
+		MOV			[ C6 ]				e0					Eb, Ib
+		MOV			[ C7 ]				e0					Evqp, Ivds
+# C8	....
+# C9	....
+		RETF		[ CA ]				-					Iw
+		RETF		[ CB ]				-
+		INT3		[ CC ]				-					Fv
+		INT			[ CD ]				-					Ib, Fv
+# CE	....
+# CF	....
+# D0	....
+# D1	....
+# D2	....
+# D3	....
+# D4	[Invalid]
+# D5	[Invalid]
+# D6	[Invalid]
+# D7	....
+# D8	....
+# D9	....
+# DA	....
+# DB	....
+# DC	....
+# DD	....
+# DE	....
+# DF	....
+# E0	....
+# E1	....
+# E2	....
+# E3	....
+		IN			[ E4 ]				-					AL, Ib
+		IN			[ E5 ]				-					eAX, Ib
+		OUT			[ E6 ]				-					Ib, AL
+		OUT			[ E7 ]				-					Ib, eAX
+		CALL		[ E8 ]				-					Jvds
+		JMP			[ E9 ]				-					Jvds
+# EA	[Invalid]
 
-
-OR					[ 08 ]				Lr					Eb			Gb
-OR					[ 09 ]				Lr					Evqp		Gvqp
-OR					[ 0A ]				r					Gb			Eb
-OR					[ 0B ]				r					Gvqp		Evqp
-OR					[ 0C ]				-					AL			Ib
-OR					[ 0D ]				-					rAX			Ivds
-
-
-ADC					[ 10 ]				Lr					Eb			Gb
-ADC					[ 11 ]				Lr					Evqp		Gvqp
-ADC					[ 12 ]				r					Gb			Eb
-ADC					[ 13 ]				r					Gvqp		Evqp
-ADC					[ 14 ]				-					AL			Ib
-ADC					[ 15 ]				-					rAX			Ivds
-
-
-# ....
-
-
-
-SUB					[ 28 ]				Lr					Eb			Gb
-SUB					[ 29 ]				Lr					Evqp		Gvqp
-SUB					[ 2A ]				r					Gb			Eb
-SUB					[ 2B ]				r					Gvqp		Evqp
-SUB					[ 2C ]				-					AL			Ib
-SUB					[ 2D ]				-					rAX			Ivds
+		JMP			[ EB ]				-					Jbs
+		IN			[ EC ]				-					AL, DX
+		IN			[ ED ]				-					eAX, DX
+		OUT			[ EE ]				-					DX, AL
+		OUT			[ EF ]				-					DX, eAX
+# F1	....
+# F2	....
+# F3	....
+		HLT			[ F4 ]				l0
+# F5	....
+		TEST		[ F6 ]				e0					Eb, Ib
+#		TEST		[ F6 ]				e1					Eb, Ib
+		NOT			[ F6 ]				Le2					Eb
+		NEG			[ F6 ]				Le3					Eb
+		MUL			[ F6 ]				e4					AX, AL, Eb
+		IMUL		[ F6 ]				e5					AX, AL, Eb
+		DIV			[ F6 ]				e6					AL, AH, AX, Eb
+		IDIV		[ F6 ]				e7					AL, AH, AX, Eb
+		TEST		[ F7 ]				e0					Evqp, Ivds
+#		TEST		[ F7 ]				e1					Evqp, Ivds
+		
+		NOT			[ F7 ]				Le2					Evqp
+		NEG			[ F7 ]				Le3					Evqp
+		MUL			[ F7 ]				e4					rDX, rAX, Evqp
+		IMUL		[ F7 ]				e5					rDX, rAX, Evqp
+		DIV			[ F7 ]				e6					rDX, rAX, Evqp
+		IDIV		[ F7 ]				e7					rDX, rAX, Evqp
+		
+		CLC			[ F8 ]				-
+		STC			[ F9 ]				-
+		CLI			[ FA ]				-
+		STI			[ FB ]				-
+		CLD			[ FC ]				-
+		STD			[ FD ]				-
+		INC			[ FE ]				e0					Eb
+		DEC			[ FE ]				e1					Eb
+		INC			[ FF ]				e0					Evqp
+		DEC			[ FF ]				e1					Evqp
+		
+		CALL		[ FF ]				e2					Ev
+		CALL		[ FF ]				Ee2					Eq
+		CALLF		[ FF ]				e3					Evqp
+		JMP			[ FF ]				e4					Ev
+		JMP			[ FF ]				Ee4					Eq
+#		JMPF		[ FF ]				e5					Evqp
+		PUSH		[ FF ]				e6					Ev
+		PUSH		[ FF ]				Ee6					Evq

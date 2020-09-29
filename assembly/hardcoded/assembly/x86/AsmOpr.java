@@ -95,7 +95,7 @@ public class AsmOpr {
 			sb.append(part).append(' ');
 		}
 		
-		String value = sb.toString().trim().replace("+ -", "- ");
+		String value = sb.toString().trim().replace("+ -", "- ").toLowerCase();
 		
 		if(isAddress) {
 			if(address_size > 0) return AsmFactory.getSizeString(address_size) + " [" + value + "]";

@@ -9,7 +9,7 @@ import hardcoded.utils.StringUtils;
 class OprStringBuilder {
 	OprStringBuilder() {}
 	
-	private static final String DELIMITERS = " []()*+";
+	private static final String DELIMITERS = " []()+*";
 	
 	/**
 	 * Split the input string into parts.
@@ -57,17 +57,12 @@ class OprStringBuilder {
 	}
 	
 	static AsmOpr fromString(OprBuilder builder, String value) {
-		value = value.replaceAll("\\s+", " ").trim().toLowerCase();
-		
+		value = value.toLowerCase()
+			.replaceAll("\\s+", " ")
+			.replaceAll("- ", "+ -").trim();
 		String[] parts = splitString(value);
 		
-		/**
-		 *-1: Register
-		 * 0: Pointer
-		 * x: Pointer has size
-		 */
 		int pointerSize = getPointerSize(parts);
-		
 		if(pointerSize < 0) {
 			return readRegister(builder, parts);
 		} else {
@@ -75,100 +70,82 @@ class OprStringBuilder {
 		}
 	}
 	
-	static AsmOpr readMemory(OprBuilder builder, String[] parts, String input, int size) {
-		if(parts.length < 3)
-			throw new AssertionError("Expected a address but got \"" + input + "\"");
+	static int readNextPart(OprBuilder builder, String[] parts, String input, int index) {
+		String part = parts[index];
 		
-		int i = (size > 0 ? 2:1);
-		
-		if(!parts[i - 1].equals("["))
-			throw new AssertionError("Expected opening bracket '[' \"" + input + "\"");
-		
-		boolean closed = false;
-		boolean expect_object = true;
-		boolean has_negnumber = false;
-		
-		int parenthesis = 0;
-		for(; i < parts.length; i++) {
-			String part = parts[i];
+		if(isNumber(part)) {
+			long value = readNumber(part);
 			
-			if(part.equals("[")) throw new AssertionError("Invalid placement of bracket '[' \"" + input + "\"");
-			if(part.equals("]")) {
-				if(i + 1 != parts.length)
-					throw new AssertionError("Closing bracket ']' was not end of input \"" + input + "\"");
+			if(parts[index + 1].equals("*")) {
+				if(Long.bitCount(value) != 1 || ((value & 15) == 0))
+					throw new AssertionError(String.format("Invalid scalar value %s0x%1x. Only 1,2,4,8 allowed. \"%s\"", (value < 0 ? "-":""), (value < 0 ? -value:value), input));
 				
-				closed = true;
-				break;
+				builder.reg(RegisterX86.valueOf(parts[index + 2].toUpperCase())).mul().num(value);
+				return index + 3;
 			}
 			
-			boolean expected_object = expect_object;
-			boolean has_object = false;
-			boolean nxt_negnumber = false;
-			
-			if(part.equals("(")) {
-				parenthesis++;
-				if(parenthesis > 1)
-					throw new AssertionError("Invalid placement of parenthesis \"" + input + "\"");
-				expect_object = true;
-				has_object = true;
-			} else if(part.equals(")")) {
-				parenthesis--;
-				if(parenthesis < 0)
-					throw new AssertionError("Invalid placement of parenthesis \"" + input + "\"");
-				
-				expect_object = false;
-			} else if(part.equals("+")) {
-				builder.add();
-				expect_object = true;
-			} else if(part.equals("-")) {
-				builder.add();
-				nxt_negnumber = true;
-				expect_object = true;
-			} else if(part.equals("*")) {
-				
-				if(parts[i - 1].equals(")") || builder.parts.isEmpty() || !(builder.parts.get(builder.parts.size() - 1) instanceof OprPart.Reg))
-					throw new AssertionError("Invalid placement of multiplication sign \"" + input + "\"");
-
-				builder.mul();
-				expect_object = true;
-			} else if(isNumber(part)) {
-				builder.num(readNumber(part) * (has_negnumber ? -1:1));
-				expect_object = false;
-				has_object = true;
-				has_negnumber = false;
-			} else {
-				builder.reg(RegisterX86.valueOf(part.toUpperCase()));
-				expect_object = false;
-				has_object = true;
-			}
-			
-			if(parenthesis < 0 || parenthesis > 1)
-				throw new AssertionError("Invalid placement of parenthesis \"" + input + "\"");
-			
-			if(expected_object != has_object) {
-				throw new AssertionError("Invalid placement of character '" + part + "' \"" + input + "\"");
-			}
-			
-			if(has_negnumber) {
-				throw new AssertionError("Expected number but got '" + part + "' \"" + input + "\"");
-			}
-			
-			has_negnumber = nxt_negnumber;
+			builder.num(value);
+			return index + 1;
 		}
 		
-
-		if(parenthesis != 0)
-			throw new AssertionError("Parenthesis was never closed \"" + input + "\"");
+		RegisterX86 reg = RegisterX86.valueOf(part.toUpperCase());
+		if(parts[index + 1].equals("*")) {
+			long value = readNumber(parts[index + 2], "Expected number but got '" + parts[index + 2] + "' \"" + input + "\"");
+			if(Long.bitCount(value) != 1 || ((value & 15) == 0))
+				throw new AssertionError(String.format("Invalid scalar value %s0x%1x. Only 1,2,4,8 allowed. \"%s\"", (value < 0 ? "-":""), (value < 0 ? -value:value), input));
+			
+			builder.reg(reg).mul().num(value);
+			return index + 3;
+		}
 		
-		if(!closed)
-			throw new AssertionError("Bracket was never closed \"" + input + "\"");
+		builder.reg(reg);
+		return index + 1;
+	}
+	
+	static AsmOpr readMemory(OprBuilder builder, String[] parts, String input, int size) {
+		int i = (size > 0 ? 2:1);
 		
+		if(!parts[parts.length - 1].equals("]"))
+			throw new AssertionError("Missing address closing bracket ']' \"" + input + "\"");
+		
+		if(!parts[i - 1].equals("["))
+			throw new AssertionError("Missing address opening bracket '[' \"" + input + "\"");
+		
+		if(parts.length < i + 2)
+			throw new AssertionError("Missing address body. \"" + input + "\"");
+		
+		parts[i - 1] = "+";
+		for(; i < parts.length - 1; i++) {
+			String part = parts[i - 1];
+			
+			if(part.equals("+")) {
+				builder.add();
+				String next = parts[i];
+				
+				if(next.equals("(")) {
+					i = readNextPart(builder, parts, input, i + 1);
+					if(!(builder.parts.get(builder.parts.size() - 1) instanceof OprPart.Num)) {
+						builder.mul().num(0x1);
+					}
+					
+					if(!parts[i].equals(")"))
+						throw new AssertionError("Missing closing parenthesis ')' \"" + input + "\"");
+					
+					i++;
+				} else {
+					i = readNextPart(builder, parts, input, i);
+				}
+			} else {
+				throw new AssertionError("Invalid syntax '" + part + "' \"" + input + "\"");
+			}
+		}
+		
+		builder.parts.remove(0);
 		return builder.ptr(size);
 	}
 	
 	static boolean isNumber(String value) {
 		if(value.startsWith("-")) value = value.substring(1);
-		
 		if(value.startsWith("0x"))
 			return value.substring(2).replaceAll("[0-9a-zA-Z]", "").isEmpty();
 		
@@ -176,16 +153,23 @@ class OprStringBuilder {
 	}
 	
 	static long readNumber(String value) {
+		return readNumber(value, null);
+	}
+	static long readNumber(String value, String errorMessage) {
 		long mul = 1;
 		if(value.startsWith("-")) {
 			mul = -1;
 			value = value.substring(1);
 		}
-	
-		if(value.startsWith("0x"))
-			return Long.parseLong(value.substring(2), 16) * mul;
 		
-		return Long.parseLong(value) * mul;
+		try {
+			if(value.startsWith("0x"))
+				return Long.parseLong(value.substring(2), 16) * mul;
+			
+			return Long.parseLong(value) * mul;
+		} catch(NumberFormatException exception) {
+			throw new NumberFormatException(errorMessage);
+		}
 	}
 	
 	static AsmOpr readRegister(OprBuilder builder, String[] parts) {
