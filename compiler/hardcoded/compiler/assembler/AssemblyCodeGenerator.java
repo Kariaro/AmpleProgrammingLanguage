@@ -9,14 +9,12 @@ import hardcoded.compiler.instruction.InstructionBlock;
 
 public class AssemblyCodeGenerator {
 	public static void main(String[] args) {
-		// AsmInst inst = AsmFactory.getInstruction(AsmMnm.MOV, $->RegisterX86.ECX, $->RegisterX86.EAX);
-		// AsmInst inst = AsmFactory.getInstruction(AsmMnm.MOV, $->$.fromString("byte [RAX + -0x3232]"), $->RegisterX86.EAX);
-		
 		// $->$.fromString("byte [RAX + EAX + EIP]")
 		// $->$.fromString("EAX")
 		// $->RegisterX86.EAX
 		
 		AsmFactory.compile(AsmFactory.getInstruction("mov r15, qword [edx - 0x7f]"));
+		AsmFactory.compile(AsmFactory.getInstruction("mov r15, qword [ebp - 0x7f]"));
 		AsmFactory.compile(AsmFactory.getInstruction("xor rcx, 0x7f"));
 		AsmFactory.compile(AsmFactory.getInstruction("push -0x80"));
 	}

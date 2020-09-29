@@ -47,11 +47,11 @@ public final class AsmInst {
 
 	public String toPlainString() {
 		if(getNumOperands() < 1) {
-			return mnemonic.toString();
+			return mnemonic.toString().toLowerCase();
 		}
 		
 		StringBuilder sb = new StringBuilder();
-		sb.append(String.format("%s ", mnemonic));
+		sb.append(String.format("%s ", mnemonic).toLowerCase());
 		
 		for(AsmOpr o : operands) {
 			sb.append(String.format("%s, ", o));

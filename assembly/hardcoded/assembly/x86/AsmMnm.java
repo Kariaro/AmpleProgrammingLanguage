@@ -146,4 +146,6 @@ public enum AsmMnm {
 	CLD,
 	STD,
 	JUMPF,
+	
+	;
 }

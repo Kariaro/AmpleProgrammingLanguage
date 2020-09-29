@@ -44,10 +44,9 @@ public final class AsmCompiler {
 			if(line.isEmpty() || line.startsWith("#")) continue;
 			
 			Pat pat = new Pat(line);
-			// System.out.println(pat);
+			System.out.println(pat);
 			
 			// compile(pat, new OperatorBuilder().reg(Register.EDI).get(), new OperatorBuilder().reg(Register.EAX).get());
-			compile(pat, new OprBuilder().reg(RegisterX86.AH).ptrByte(), new OprBuilder().reg(RegisterX86.AL).get());
 		}
 	}
 	
@@ -78,7 +77,8 @@ public final class AsmCompiler {
 			
 			list.clear();
 			for(int i = flagsIndex + 1; i < parts.length; i++) {
-				list.add(parts[i]);
+				if(parts[i].trim().equals(",")) continue;
+				list.add(parts[i].replace(",", ""));
 			}
 			
 			this.operands = list.toArray(new String[0]);

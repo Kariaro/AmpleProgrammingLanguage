@@ -1,4 +1,4 @@
-package hardcoded.utils;
+package hardcoded.utils.buffer;
 
 /**
  * Because the standard java library does not include
@@ -24,6 +24,11 @@ public final class IntBuffer {
 	
 	public void write(long value) {
 		array[index++] = (int)(value & 0xffffffff);
+	}
+	
+	public void write(IntBuffer buffer) {
+		for(int i = 0; i < buffer.index; i++)
+			array[index++] = buffer.array[i];
 	}
 	
 	public void writeOffset(long value, int offset) {
