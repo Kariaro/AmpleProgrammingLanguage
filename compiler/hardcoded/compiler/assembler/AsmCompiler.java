@@ -73,6 +73,12 @@ public final class AsmCompiler {
 			}
 			
 			this.opcode = list.toArray(new String[0]);
+			if(flagsIndex >= parts.length) {
+				flags = "";
+				operands = new String[0];
+				return;
+			}
+			
 			this.flags = parts[flagsIndex];
 			
 			list.clear();
