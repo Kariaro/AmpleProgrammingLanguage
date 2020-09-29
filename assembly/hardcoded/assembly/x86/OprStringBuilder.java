@@ -125,6 +125,8 @@ class OprStringBuilder {
 				if(next.equals("(")) {
 					i = readNextPart(builder, parts, input, i + 1);
 					if(!(builder.parts.get(builder.parts.size() - 1) instanceof OprPart.Num)) {
+						// TODO: Throw a error because empty parentheses should not be encoded
+						//       this way.
 						builder.mul().num(0x1);
 					}
 					
@@ -155,6 +157,7 @@ class OprStringBuilder {
 	static long readNumber(String value) {
 		return readNumber(value, null);
 	}
+	
 	static long readNumber(String value, String errorMessage) {
 		long mul = 1;
 		if(value.startsWith("-")) {
