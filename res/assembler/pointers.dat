@@ -2,6 +2,16 @@
 
 
 # ModR/M
+# No less than 32 bit
+
+# AX:R8
+# BX:R9
+# CX:R10
+# DX:R11
+# SP:R12
+# BP:R13
+# SI:R14
+# DI:R15
 
 [RAX]
 [RCX]

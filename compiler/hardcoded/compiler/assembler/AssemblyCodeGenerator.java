@@ -13,10 +13,11 @@ public class AssemblyCodeGenerator {
 		// $->$.fromString("EAX")
 		// $->RegisterX86.EAX
 		
-		AsmFactory.compile(AsmFactory.getInstruction("mov r15, qword [edx - 0x7f]"));
-		AsmFactory.compile(AsmFactory.getInstruction("mov r15, qword [ebp - 0x7f]"));
-		AsmFactory.compile(AsmFactory.getInstruction("xor rcx, 0x7f"));
-		AsmFactory.compile(AsmFactory.getInstruction("push -0x80"));
+//		AsmFactory.compile(AsmFactory.getInstruction("mov r15, qword [edx - 0x7f]"));
+//		AsmFactory.compile(AsmFactory.getInstruction("mov r15, qword [ebp - 0x7f]"));
+//		AsmFactory.compile(AsmFactory.getInstruction("xor rcx, 0x7f"));
+//		AsmFactory.compile(AsmFactory.getInstruction("push -0x80"));
+		AsmFactory.compile(AsmFactory.getInstruction("mov eax, 1"));
 	}
 	
 	public AssemblyCodeGenerator() {

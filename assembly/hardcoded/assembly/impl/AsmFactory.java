@@ -92,28 +92,45 @@ public final class AsmFactory {
 	
 	public static int[] compile(AsmInst inst) {
 		List<AsmOp> list = Assembly.lookup(inst);
-		if(list.isEmpty()) return null; // TODO: Throw exception?
+		if(list == null || list.isEmpty()) return null; // TODO: Throw exception?
 		
-		AsmOp first = list.get(0);
-//		for(AsmOp op : list) {
-//			if(op != first) {
-//				System.out.println("      :> " + op.toComplexString());
-//				int length = first.getNumOperands();
-//				if(length == 1) _compile_1(first, inst);
-//				if(length == 2) _compile_2(first, inst);
-//			}
-//		}
-		
+
 		System.out.println("-------------------------------");
-		System.out.println("Using :> " + first.toComplexString() + "\n");
 		
-		int length = first.getNumOperands();
+		int[] opcode = new int[32];
+		AsmOp using = null;
+		for(AsmOp op : list) {
+			int[] array = _compile(op, inst);
+			System.out.printf("%-6s : %s\n", op.getOpcodeString(), StringUtils.printHexString(" ", array));
+			
+			if(array == null) continue;
+			
+			if(array.length < opcode.length) {
+				opcode = array;
+				using = op;
+			}
+		}
 		
-		if(length == 0) return first.getOpcode();
-		if(length == 1) return _compile_1(first, inst);
-		if(length == 2) return _compile_2(first, inst);
+		if(using != null) {
+			System.out.println();
+			System.out.println("Using :> " + using.toComplexString());
+			System.out.println("string = " + inst.toPlainString());
+			System.out.println("opcode = " + StringUtils.printHexString(" ", opcode));
+			
+			return opcode;
+		}
 		
-		throw new UnsupportedOperationException("Can't compile " + length + " argument instructions");
+		return null;
+		// throw new UnsupportedOperationException("Can't compile " + length + " argument instructions");
+	}
+	
+	private static int[] _compile(AsmOp op, AsmInst inst) {
+		int length = op.getNumOperands();
+		if(length == 0) return op.getOpcode();
+		if(length == 1) return _compile_1(op, inst);
+		if(length == 2) return _compile_2(op, inst);
+		
+		return null;
 	}
 	
 	private static int[] _compile_1(AsmOp op, AsmInst inst) {
@@ -152,10 +169,7 @@ public final class AsmFactory {
 			}
 		}
 		
-		int[] array = buffer.toArray();
-
-		System.out.println("opcode = " + StringUtils.printHexString(" ", array));
-		return array;
+		return buffer.toArray();
 	}
 	
 	private static int[] _compile_2(AsmOp op, AsmInst inst) {
@@ -179,10 +193,7 @@ public final class AsmFactory {
 		
 		buffer.write(op.getOpcode());
 		buffer.write(generate_modrm(op, inst));
-		
-		int[] array = buffer.toArray();
-		System.out.println("opcode = " + StringUtils.printHexString(" ", array));
-		return array;
+		return buffer.toArray();
 	}
 	
 	// Encodes two operand ModR/M opcodes
@@ -219,11 +230,7 @@ public final class AsmFactory {
 		
 		
 		apply_modrm_rm(opcode, op, inst);
-		
-		int[] array = opcode.build();
-		System.out.println("string = " + inst.toPlainString());
-		System.out.println("opcode = " + StringUtils.printHexString(" ", array));
-		return array;
+		return opcode.build();
 	}
 	
 	/**

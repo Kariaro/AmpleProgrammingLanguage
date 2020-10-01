@@ -70,6 +70,7 @@ class OprStringBuilder {
 		}
 	}
 	
+	// Some registers can have segment values ..... AHHHHHHHHHHH
 	static int readNextPart(OprBuilder builder, String[] parts, String input, int index) {
 		String part = parts[index];
 		
