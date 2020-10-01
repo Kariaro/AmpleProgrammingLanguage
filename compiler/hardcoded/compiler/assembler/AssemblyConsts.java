@@ -21,10 +21,33 @@ public final class AssemblyConsts {
 //	}
 	
 	public static enum OprTy {
-		Sreg			(0, 0, 0, 0),
-		CRn				(0, 0, 0, 0), // Control register
-		DRn				(0, 0, 0, 0), // Debug register
+		Sreg			(0, 1, 0, 0), // Segment register
+		CRn				(0, 0, 1, 0), // Control register
+		DRn				(0, 0, 1, 0), // Debug register
 		
+		// M -> mem
+		// R -> reg
+		// T -> reg/mem
+		// F -> flags
+		// S -> segment
+		// I -> immediate value
+		// Z -> reg encoded opcode
+		
+		
+		// TODO: How to resolve if they are change because of operand size or address size prefix?
+		// NOTE: Depending on the order we have different
+		// b -> byte
+		// w -> word
+		// d -> dword
+		// q -> qword
+		// x -> xmmword
+		// y -> ymmword
+		
+		// qw -> qword default otherwise word
+		
+		
+		// 
+		// v			16/32		Depending on operand size.
 		
 		AL				(1, 0, 0, 0),
 		AH				(1, 0, 0, 0),
@@ -32,13 +55,15 @@ public final class AssemblyConsts {
 		EAX				(0, 0, 1, 0),
 		RAX				(0, 0, 0, 1),
 		
+		ECX				(0, 0, 1, 0),
+		RCX				(0, 0, 0, 1),
+		
 		rAX				(0, 1, 1, 1), //	RAX, EAX, AX
 		eAX				(1, 1, 1, 0), //	EAX, AX, AL
+		rCX				(0, 1, 1, 1), //	RCX, ECX, CX
 		rDX				(0, 1, 1, 1), //	RDX, EDX, DX
+		rBP				(0, 1, 1, 1), //	RBP, EBP, BP
 		
-		//ECX				(0, 0, 1, 0),
-		//RCX				(0, 0, 0, 1),
-
 		DX				(0, 1, 0, 0),
 		EDX				(0, 0, 1, 0),
 		RDX				(0, 0, 0, 1),
@@ -46,8 +71,14 @@ public final class AssemblyConsts {
 		FS				(0, 0, 0, 0),
 		GS				(0, 0, 0, 0),
 		
-
+		
 		Fv				(0, 1, 1, 0), //	flags16/32
+		Fwo				(0, 1, 0, 0), //	flags16				WORD  depending on operand size.
+		Fws				(0, 1, 0, 0), //	flags16				WORD  depending on address size.
+		Fdo				(0, 0, 1, 0), //	flags32				DWORD depending on operand size.
+		Fqs				(0, 0, 0, 1), //	flags64				QWORD depending on address size.
+		Fqp				(0, 0, 0, 1), //	flags64				64 bit if REX.W
+		
 		Ap				(0, 0, 1, 1), //	ptr32/64			32 or 48 bit
 		Ob				(1, 0, 0, 0), //	moffs8
 		Ovqp			(0, 1, 1, 1), //	moffs16/32/64
@@ -59,24 +90,33 @@ public final class AssemblyConsts {
 		
 		Eb				(1, 0, 0, 0), //	r/m8
 		Ew				(0, 1, 0, 0), //	r/m16
+		Ed				(0, 0, 1, 0), // 	r/m32
 		Eq				(0, 0, 0, 1), //	r/m64
 		Ev				(0, 1, 1, 0), //	r/m16/32
 		Evq				(0, 1, 0, 1), //	r/m64/16			QWORD default otherwise WORD
 		Evqp			(0, 1, 1, 1), //	r/m16/32/64
 		
 		Gb				(1, 0, 0, 0), //	r8
+		Gdqp			(0, 0, 1, 1), //	r32/64
 		Gvqp			(0, 1, 1, 1), //	r16/32/64
 		
 		Yb				(1, 0, 0, 0), //	m8					memory addressed by the ES:eDI
+		Yv				(0, 1, 1, 0), //	m16/32
 		Ywo				(0, 1, 0, 0), //	m16
 		Ydo				(0, 0, 1, 0), //	m32
+		Yqp				(0, 0, 0, 1), //	m64					64 bit if REX.W
+		Yvqp			(0, 1, 1, 1), //	m16/32/64
 		
 		Xb				(1, 0, 0, 0), //	m8					memory addressed by the DS:eSI
+		Xv				(0, 1, 1, 0), //	m16/32
 		Xwo				(0, 1, 0, 0), //	m16
 		Xdo				(0, 0, 1, 0), //	m32
+		Xqp				(0, 0, 0, 1), //	m64					64 bit if REX.W
+		Xvqp			(0, 1, 1, 1), //	m16/32/64
 		
 		M				(0, 0, 0, 0), //	m
 		Mw				(0, 1, 0, 0), //	m16
+		Mptp			(0, 0, 1, 0), //	m16:16/32/64
 		
 		Sw				(0, 1, 0, 0), //	seg16
 		Rvqp			(0, 1, 1, 1), //	r16/32/64
@@ -105,28 +145,26 @@ public final class AssemblyConsts {
 				| ((r32 != 0) ? 4:0)
 				| ((r64 != 0) ? 8:0);
 			
-			String str = name()
-				.replace('_', '/');
+			String str = name();
 			
-			if(str.startsWith("rm")) {
-				string = "r/m" + str.substring(2);
-				encodes_data = false;
-			} else if(
-				str.equals("GS") || str.equals("AX") || str.equals("AL")
-			|| str.equals("AH") || str.equals("EAX") || str.equals("RAX")
-			|| str.equals("RDX")) {
+			if(str.length() > 1 && (str.matches("[A-Z]+") || str.matches("[a-z][A-Z]+") || str.equals("CRn") || str.equals("DRn"))) {
 				string = str;
 				encodes_data = false;
 			} else {
 				String size = str.substring(1);
 				
+				// TODO: Replace this with a switch case or make the code give the correct value from the beginning.
 				if(size.equals("bss")) size = "8"; // TODO: What is the correct size for 'bss'
 				if(size.equals("bs")) size = "8/16";
 				if(size.equals("b")) size = "8";
+				if(size.equals("ptp")) size = "16:16/32/64";
 				
 				if(size.equals("w")) size = "16";
 				if(size.equals("wo")) size = "16/32";
+				if(size.equals("ws")) size = "16/32";
 				if(size.equals("do")) size = "32/64";
+				if(size.equals("d")) size = "32";
+				if(size.equals("dqp")) size = "32/64";
 				if(size.equals("vqp")) size = "16/32/64";
 				if(size.equals("vds")) size = "16/32";
 				if(size.equals("vq")) size = "64/16";
@@ -134,6 +172,8 @@ public final class AssemblyConsts {
 				if(size.equals("v")) size = "16/32";
 				
 				if(size.equals("p")) size = "32/48";
+				if(size.equals("qp")) size = "64";
+				if(size.equals("qs")) size = "16/32";
 				if(size.equals("q")) size = "64";
 				
 				String nmn = null;
@@ -141,26 +181,22 @@ public final class AssemblyConsts {
 					case 'I': nmn = "imm"; break;
 					case 'O': nmn = "moffs"; break;
 					case 'J': nmn = "rel"; break;
-					case 'R':
-					case 'G':
-					case 'Z': nmn = "r"; break;
 					case 'F': nmn = "flags"; break;
 					case 'A': nmn = "ptr"; break;
 					case 'S': nmn = "seg"; break;
 					case 'E': nmn = "r/m"; break;
+					
+					case 'R':
+					case 'G':
+					case 'Z': nmn = "r"; break;
 					
 					case 'M':
 					case 'X':
 					case 'Y': nmn = "m"; break;
 				}
 				
-				if(nmn != null) {
-					string = nmn + size;
-					encodes_data = true;
-				} else {
-					string = str;
-					encodes_data = false;
-				}
+				encodes_data = true;
+				string = nmn + size;
 			}
 		}
 		
@@ -300,7 +336,7 @@ public final class AssemblyConsts {
 			return sb.toString().trim();
 		}
 		
-		public String toStringPlain() {
+		public String toPlainString() {
 			if(getNumOperands() < 1) return mnemonic;
 			
 			StringBuilder sb = new StringBuilder();
@@ -310,8 +346,7 @@ public final class AssemblyConsts {
 				sb.append(String.format("%s", t)).append(", ");
 			}
 			
-			sb.deleteCharAt(sb.length() - 1);
-			sb.deleteCharAt(sb.length() - 1);
+			sb.deleteCharAt(sb.length() - 2);
 			
 			return sb.toString().trim();
 		}
