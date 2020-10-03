@@ -11,7 +11,6 @@ import hardcoded.utils.buffer.IntBuffer;
 public final class AsmLoader {
 	private AsmLoader() {}
 	
-	// "/assembler/insts.dat"
 	public static Unit[] load(String path) throws IOException {
 		byte[] bytes = FileUtils.readInputStream(AsmLoader.class.getResourceAsStream(path));
 		String[] lines = new String(bytes).split("(\r\n|\n|\r)");
@@ -87,7 +86,7 @@ public final class AsmLoader {
 		public String toString() {
 			return String.format("%-20s%-20s%-20s%s",
 				mnemonic,
-				"[ " + StringUtils.join(", ", opcode) + " ]",
+				"[ " + StringUtils.printHexString(" ", opcode) + " ]",
 				flags,
 				StringUtils.join(", ", operands)
 			);

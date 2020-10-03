@@ -83,22 +83,22 @@ CMP					[ 3D ]				-					rAX, Iz
 # 4D    [REX.WRB]
 # 4E    [REX.WRX]
 # 4F    [REX.WRXB]
-PUSH				[ 50 ]				Zd					rAX/r8
-PUSH				[ 51 ]				Zd					rCX/r9
-PUSH				[ 52 ]				Zd					rDX/r10
-PUSH				[ 53 ]				Zd					rBX/r11
-PUSH				[ 54 ]				Zd					rSP/r12
-PUSH				[ 55 ]				Zd					rBP/r13
-PUSH				[ 56 ]				Zd					rSI/r14
-PUSH				[ 57 ]				Zd					rDI/r15
-POP					[ 58 ]				Zd					rAX/r8
-POP					[ 59 ]				Zd					rCX/r9
-POP					[ 5A ]				Zd					rDX/r10
-POP					[ 5B ]				Zd					rBX/r11
-POP					[ 5C ]				Zd					rSP/r12
-POP					[ 5D ]				Zd					rBP/r13
-POP					[ 5E ]				Zd					rSI/r14
-POP					[ 5F ]				Zd					rDI/r15
+PUSH				[ 50 ]				d					rAX/r8
+PUSH				[ 51 ]				d					rCX/r9
+PUSH				[ 52 ]				d					rDX/r10
+PUSH				[ 53 ]				d					rBX/r11
+PUSH				[ 54 ]				d					rSP/r12
+PUSH				[ 55 ]				d					rBP/r13
+PUSH				[ 56 ]				d					rSI/r14
+PUSH				[ 57 ]				d					rDI/r15
+POP					[ 58 ]				d					rAX/r8
+POP					[ 59 ]				d					rCX/r9
+POP					[ 5A ]				d					rDX/r10
+POP					[ 5B ]				d					rBX/r11
+POP					[ 5C ]				d					rSP/r12
+POP					[ 5D ]				d					rBP/r13
+POP					[ 5E ]				d					rSI/r14
+POP					[ 5F ]				d					rDI/r15
 # 60	[Invalid]
 # 61	[Invalid]
 # 62	[Invalid]
@@ -114,13 +114,13 @@ IMUL				[ 6B ]				r					Gv, Ev, Ib
 INS					[ 6C ]				-					Yb, DX
 INSB				[ 6C ]				-					Yb, DX
 INS					[ 6D ]				-					Yz, DX
-INSW				[ 6D ]				-					Yz, DX
-INSD				[ 6D ]				-					Yz, DX
+INSW				[ 66 6D ]			-					Yw, DX
+INSD				[ 6D ]				-					Yd, DX
 OUTS				[ 6E ]				-					DX, Xb
 OUTSB				[ 6E ]				-					DX, Xb
 OUTS				[ 6F ]				-					DX, Xz
-OUTSW				[ 6F ]				-					DX, Xz
-OUTSD				[ 6F ]				-					DX, Xz
+OUTSW				[ 66 6F ]			-					DX, Xw
+OUTSD				[ 6F ]				-					DX, Xd
 JO					[ 70 ]				-					Jb
 JNO					[ 71 ]				-					Jb
 JB					[ 72 ]				-					Jb
@@ -189,14 +189,14 @@ LEA					[ 8D ]				r					Gv, M
 MOV					[ 8E ]				r					Sw, Ew
 POP					[ 8F ]				de0					Ev
 NOP					[ 90 ]
-XCHR				[ 90 ]				.					rAX/r8
-XCHR				[ 91 ]				.					rCX/r9
-XCHR				[ 92 ]				.					rDX/r10
-XCHR				[ 93 ]				.					rBX/r11
-XCHR				[ 94 ]				.					rSP/r12
-XCHR				[ 95 ]				.					rBP/r13
-XCHR				[ 96 ]				.					rSI/r14
-XCHR				[ 97 ]				.					rDI/r15
+XCHR				[ 90 ]				.					rAX/r8, rAX
+XCHR				[ 91 ]				.					rCX/r9, rAX
+XCHR				[ 92 ]				.					rDX/r10, rAX
+XCHR				[ 93 ]				.					rBX/r11, rAX
+XCHR				[ 94 ]				.					rSP/r12, rAX
+XCHR				[ 95 ]				.					rBP/r13, rAX
+XCHR				[ 96 ]				.					rSI/r14, rAX
+XCHR				[ 97 ]				.					rDI/r15, rAX
 CBW					[ 66 98 ]
 CWDE				[ 98 ]
 CDQE				[ 48 98 ]
@@ -205,18 +205,25 @@ CWDE				[ 99 ]
 CDQE				[ 48 99 ]
 # 9A	[Invalid]
 FWAIT				[ 9B ]
-WAIT				[ 9B ]
 # 9B	[Wait prefix x87fpu]
-PUSHF				[ 9C ]				d					Fv
-PUSHFW				[ 66 9C ]			d					Fw
-POPF				[ 9D ]				d					Fv
-POPFW				[ 66 9D ]			d					Fw
+PUSHF				[ 9C ]
+PUSHFW				[ 66 9C ]
+POPF				[ 9D ]
+POPFW				[ 66 9D ]
 SAHF				[ 9E ]
 LAHF				[ 9F ]
-MOV					[ A0 ]				-					AL, Ob
-MOV					[ A1 ]				-					rAX, Ov
-MOV					[ A2 ]				-					Ob, AL
-MOV					[ A3 ]				-					Ov, rAX
+MOVABS				[ A0 ]				-					AL, Oq
+MOV					[ 67 A0 ]			-					AL, Od
+MOVABS				[ A1 ]				-					rAX, Oq
+MOV					[ 66 67 A1 ]		-					AX, Od
+MOV					[ 67 A1 ]			-					EAX, Od
+MOV					[ 67 48 A1 ]		-					RAX, Od
+MOVABS				[ A2 ]				-					Oq, AL
+MOV					[ 67 A2 ]			-					Od, AL
+MOVABS				[ A3 ]				-					Oq, rAX
+MOV					[ 66 67 A3 ]		-					Od, AX
+MOV					[ 67 A3 ]			-					Od, EAX
+MOV					[ 67 48 A3 ]		-					Od, RAX
 MOVS				[ A4 ]				-					Yb, Xb
 MOVSB				[ A4 ]				-					Yb, Xb
 MOVS				[ A5 ]				-					Yv, Xv
@@ -254,9 +261,9 @@ MOV					[ B1 ]				Z					CL/R9B, Ib
 MOV					[ B2 ]				Z					DL/R10B, Ib
 MOV					[ B3 ]				Z					BL/R11B, Ib
 MOV					[ B4 ]				Z					AH/R12B, Ib
-MOV					[ B5 ]				Z					CL/R13B, Ib
-MOV					[ B6 ]				Z					DL/R14B, Ib
-MOV					[ B7 ]				Z					BL/R15B, Ib
+MOV					[ B5 ]				Z					CH/R13B, Ib
+MOV					[ B6 ]				Z					DH/R14B, Ib
+MOV					[ B7 ]				Z					BH/R15B, Ib
 MOV					[ B8 ]				Z					rAX/r8, Iv
 MOV					[ B9 ]				Z					rCX/r9, Iv
 MOV					[ BA ]				Z					rDX/r10, Iv
@@ -295,8 +302,7 @@ INT3				[ CC ]
 INT					[ CD ]				-					Ib
 # CE	[Invalid]
 IRET				[ CF ]
-IRETD				[ CF ]
-IRETQ				[ CF ]
+IRETW				[ 66 CF ]
 # D0	....
 # D1	....
 # D2	....
@@ -333,7 +339,7 @@ IN					[ ED ]				-					eAX, DX
 OUT					[ EE ]				-					DX, AL
 OUT					[ EF ]				-					DX, eAX
 # F0	[Lock prefix]
-INT1				[ F1 ]
+ICEBP				[ F1 ]
 # F2	[REPNE prefix]
 # F3	[REP/REPE prefix]
 HLT					[ F4 ]
@@ -378,10 +384,10 @@ PUSH				[ FF ]				de6					Ev
 # Two byte instructions
 UD2					[ 0F 0B ]
 
-MOV					[ 0F 20 ]			-					Rd, Cd
-MOV					[ 0F 21 ]			-					Rd, Cd
-MOV					[ 0F 22 ]			-					Cd, Rd
-MOV					[ 0F 23 ]			-					Cd, Rd
+MOV					[ 0F 20 ]			-					Rq, Cq
+MOV					[ 0F 21 ]			-					Rq, Dq
+MOV					[ 0F 22 ]			-					Cq, Rq
+MOV					[ 0F 23 ]			-					Dq, Rq
 
 WRMSR				[ 0F 30 ]
 RDTSC				[ 0F 31 ]
@@ -421,7 +427,6 @@ CMOVLE				[ 0F 4E ]			-					Gv, Ev
 CMOVNG				[ 0F 4E ]			-					Gv, Ev
 CMOVNLE				[ 0F 4F ]			-					Gv, Ev
 CMOVG				[ 0F 4F ]			-					Gv, Ev
-
 JO					[ 0F 80 ]			-					Jz
 JNO					[ 0F 81 ]			-					Jz
 JB					[ 0F 82 ]			-					Jz

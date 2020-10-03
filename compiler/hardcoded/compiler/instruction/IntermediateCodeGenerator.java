@@ -176,7 +176,7 @@ public class IntermediateCodeGenerator {
 							reg_0 = IRInstruction.temp(a.calculateSize());
 							inst.append(compileInstructions(func, a.first(), reg_0));
 						} else {
-							reg_0 = createObject(f); // NOTE: new ObjectReg(f);
+							reg_0 = createObject(f);
 						}
 						
 						pointer = true;
@@ -324,7 +324,7 @@ public class IntermediateCodeGenerator {
 					inst.append(compileInstructions(func, a, reg_0));
 				}
 
-				Reg reg_1 = new ObjectReg(b);
+				Reg reg_1 = createObject(b);
 				if(shouldCheck(b)) {
 					reg_1 = IRInstruction.temp(b.calculateSize());
 					inst.append(compileInstructions(func, b, reg_1));
@@ -406,7 +406,7 @@ public class IntermediateCodeGenerator {
 			
 			case cand: {
 				Label label_end = new Label("cand.end");
-				if(request != null) inst.append(new IRInstruction(IRInsts.mov, request, new ObjectReg(0)));
+				if(request != null) inst.append(new IRInstruction(IRInsts.mov, request, new NumberReg(0)));
 				
 				for(int i = 0; i < expr.size(); i++) {
 					Expression e = expr.get(i);
@@ -420,14 +420,14 @@ public class IntermediateCodeGenerator {
 					inst.append(new IRInstruction(IRInsts.brz, reg, label_end));
 				}
 
-				if(request != null) inst.append(new IRInstruction(IRInsts.mov, request, new ObjectReg(1)));
+				if(request != null) inst.append(new IRInstruction(IRInsts.mov, request, new NumberReg(1)));
 				inst.append(new IRInstruction(IRInsts.label, label_end));
 				break;
 			}
 			
 			case cor: {
 				Label label_end = new Label("cor.end");
-				if(request != null) inst.append(new IRInstruction(IRInsts.mov, request, new ObjectReg(1)));
+				if(request != null) inst.append(new IRInstruction(IRInsts.mov, request, new NumberReg(1)));
 				
 				for(int i = 0; i < expr.size(); i++) {
 					Expression e = expr.get(i);
@@ -441,7 +441,7 @@ public class IntermediateCodeGenerator {
 					inst.append(new IRInstruction(IRInsts.bnz, reg, label_end));
 				}
 
-				if(request != null) inst.append(new IRInstruction(IRInsts.mov, request, new ObjectReg(0)));
+				if(request != null) inst.append(new IRInstruction(IRInsts.mov, request, new NumberReg(0)));
 				inst.append(new IRInstruction(IRInsts.label, label_end));
 				break;
 			}

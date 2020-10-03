@@ -19,12 +19,17 @@ public class AsmOpr {
 		this.isAddress = isAddress;
 	}
 	
-	// Get the operator part at the specified index
-	public OprPart getPart(int index) {
+	// TODO: Only return OprPart.reg/num from this method
+	//       and return the combining operations '+'/'*'
+	//       in a separate method!
+	
+	
+	// Get the operand part at the specified index
+	private OprPart getPart(int index) {
 		return parts.get(index);
 	}
 	
-	// Get the value of an operator part at the specified index
+	// Get the value of an operand part at the specified index
 	public Object getObject(int index) {
 		return getPart(index).value();
 	}
@@ -35,9 +40,16 @@ public class AsmOpr {
 	 * @return	the register at the specified {@code index}
 	 */
 	public RegisterX86 getRegister(int index) {
-		Object obj = getObject(index);
-		if(obj instanceof RegisterX86) return (RegisterX86) obj;
-		return null;
+		return (RegisterX86)getObject(index);
+	}
+	
+	/**
+	 * Returns the immediate value located at the given position.
+	 * @param	index	the index of the element
+	 * @return	the register at the specified {@code index}
+	 */
+	public long getImmediate(int index) {
+		return (long)getObject(index);
 	}
 	
 	public int length() {
@@ -45,8 +57,8 @@ public class AsmOpr {
 	}
 	
 	/**
-	 * Returns the size of this assembly operator.
-	 * @return the size of this assembly operator
+	 * Returns the size of this assembly operand.
+	 * @return the size of this assembly operand
 	 */
 	public int getSize() {
 		if(isAddress) return address_size;
@@ -54,8 +66,8 @@ public class AsmOpr {
 	}
 	
 	/**
-	 * Returns {@code true} if this operator is a immediate value.
-	 * @return {@code true} if this operator is a immediate value
+	 * Returns {@code true} if this operand is a immediate value.
+	 * @return {@code true} if this operand is a immediate value
 	 */
 	public boolean isImmediate() {
 		if(isAddress || parts.size() != 1) return false;
@@ -63,8 +75,17 @@ public class AsmOpr {
 	}
 	
 	/**
-	 * Returns {@code true} if this operator is a register.
-	 * @return {@code true} if this operator is a register
+	 * Returns {@code true} if this operand at the position was a immediate value.
+	 * @param index the position of the element to check
+	 * @return {@code true} if this operand at the position was a immediate value
+	 */
+	public boolean hasImmediateAt(int index) {
+		return getPart(index) instanceof OprPart.Num;
+	}
+	
+	/**
+	 * Returns {@code true} if this operand is a register.
+	 * @return {@code true} if this operand is a register
 	 */
 	public boolean isRegister() {
 		if(isAddress || parts.size() != 1) return false;
@@ -72,8 +93,17 @@ public class AsmOpr {
 	}
 	
 	/**
-	 * Returns {@code true} if this operator is a memory pointer.
-	 * @return {@code true} if this operator is a memory pointer
+	 * Returns {@code true} if this operand at the position was a register.
+	 * @param index the position of the element to check
+	 * @return {@code true} if this operand at the position was a register
+	 */
+	public boolean hasRegisterAt(int index) {
+		return getPart(index) instanceof OprPart.Reg;
+	}
+	
+	/**
+	 * Returns {@code true} if this operand is a memory pointer.
+	 * @return {@code true} if this operand is a memory pointer
 	 */
 	public boolean isMemory() {
 		return isAddress;

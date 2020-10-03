@@ -19,9 +19,7 @@ public enum RegisterType {
 	
 	/**
 	 * This type is used for declaring special or custom registers.<p>
-	 * 
-	 * Exampes of special registers are {@code RIP}, {@code EIP}
-	 * and custom defined registers.
+	 * Exampes of special registers are custom defined registers.
 	 */
 	special(0),
 	;

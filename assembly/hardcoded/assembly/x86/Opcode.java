@@ -32,9 +32,18 @@ public class Opcode {
 	/** 1 bit extension to ModRm.rm */
 	public Opcode setRexB() { return setRex(rexval | 1); }
 	
+
+	/** Use a 64 bit operand size. */
+	public Opcode unsetRexW() { return setRex(rexval & 7); }
+	/** 1 bit extension to ModRm.reg */
+	public Opcode unsetRexR() { return setRex(rexval & 11); }
+	/** 1 bit extension to Sib.index */
+	public Opcode unsetRexX() { return setRex(rexval & 13); }
+	/** 1 bit extension to ModRm.rm */
+	public Opcode unsetRexB() { return setRex(rexval & 14); }
+	
 	public Opcode setRex(int mask) {
 		rexval = mask & 0xf;
-		if(mask != 0) addrex = true;
 		return this;
 	}
 	
@@ -47,6 +56,10 @@ public class Opcode {
 		 opsize = enable;
 		 return this;
 	}
+	
+	public boolean hasOperandSize() { return opsize; }
+	public boolean hasAddressSize() { return adsize; }
+	public boolean hasRexW() { return (rexval & 8) != 0; }
 	
 	public Opcode setOpcodeRegister(int value) {
 		regval = value & 7;
@@ -64,6 +77,8 @@ public class Opcode {
 	}
 	
 	public int[] build() {
+		if(opcode.length == 0) return null;
+		
 		IntBuffer buffer = new IntBuffer(15);
 		
 		if(rexval != 0) addrex = true;
