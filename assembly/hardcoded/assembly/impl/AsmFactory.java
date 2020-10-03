@@ -80,31 +80,54 @@ public final class AsmFactory {
 		if(!opr.isMemory()) return 0;
 		
 		for(int i = 0; i < opr.length(); i++) {
-			RegisterX86 reg = opr.getRegister(i);
+			Object obj = opr.getObject(i);
 			
-			if(reg != null) {
-				return reg.bits;
+			if(obj instanceof RegisterX86) {
+				RegisterX86 reg = opr.getRegister(i);
+				
+				if(reg != null) {
+					return reg.bits;
+				}
 			}
 		}
 		
 		return 0;
 	}
 	
+	private static boolean mustUseRex(AsmInst inst) {
+		for(int i = 0; i < inst.getNumOperands(); i++) {
+			AsmOpr opr = inst.getOperand(i);
+			
+			for(int j = 0; j < opr.length(); j++) {
+				Object obj = opr.getObject(j);
+				
+				if(obj instanceof RegisterX86) {
+					RegisterX86 reg = (RegisterX86)obj;
+					
+					if(reg.index > 7 || reg.matchesAny(RegisterX86.SPL, RegisterX86.BPL, RegisterX86.SIL, RegisterX86.DIL)) return true;
+				}
+			}
+		}
+		
+		return false;
+	}
+	
 	public static int[] compile(AsmInst inst) {
 		List<AsmOp> list = Assembly.lookup(inst);
-		if(list == null || list.isEmpty()) return null; // TODO: Throw exception?
+//		System.out.println("-----------------------------------------------------");
+		if(list.isEmpty()) {
+			System.out.println("Instruction could not be encoded");
+			return null; // TODO: Throw exception?
+		}
 		
-
-		System.out.println("-------------------------------");
 		
 		int[] opcode = new int[32];
 		AsmOp using = null;
 		for(AsmOp op : list) {
-			int[] array = _compile(op, inst);
-			System.out.printf("%-6s : %s\n", op.getOpcodeString(), StringUtils.printHexString(" ", array));
+			int[] array = try_compile(op, inst);
+//			System.out.printf("%-6s : %-30s %s\n", op.getOpcodeString(), StringUtils.printHexString(" ", array), op.toPlainString());
 			
 			if(array == null) continue;
-			
 			if(array.length < opcode.length) {
 				opcode = array;
 				using = op;
@@ -112,88 +135,163 @@ public final class AsmFactory {
 		}
 		
 		if(using != null) {
-			System.out.println();
-			System.out.println("Using :> " + using.toComplexString());
-			System.out.println("string = " + inst.toPlainString());
-			System.out.println("opcode = " + StringUtils.printHexString(" ", opcode));
+//			System.out.println();
+//			System.out.println("Using :> " + using.toComplexString());
+//			System.out.println("string = " + inst.toPlainString());
+//			System.out.println("opcode = " + StringUtils.printHexString(" ", opcode));
 			
 			return opcode;
 		}
 		
 		return null;
-		// throw new UnsupportedOperationException("Can't compile " + length + " argument instructions");
 	}
 	
-	private static int[] _compile(AsmOp op, AsmInst inst) {
+	/**
+	 * Try compile a instruction with a selected {@code AsmOp}.
+	 * 
+	 * @param op
+	 * @param inst
+	 * @return
+	 */
+	private static int[] try_compile(AsmOp op, AsmInst inst) {
 		int length = op.getNumOperands();
-		if(length == 0) return op.getOpcode();
-		if(length == 1) return _compile_1(op, inst);
-		if(length == 2) return _compile_2(op, inst);
+		if(length == 0) return op.getOpcode(); // Fully Done
+		if(length == 1) return _compile_1(op, inst); // Done except ModR/M memory with SIB bytes
+		
+		if(length == 2) {
+			return _compile_2(op, inst);
+		}
 		
 		return null;
 	}
 	
 	private static int[] _compile_1(AsmOp op, AsmInst inst) {
-		IntBuffer buffer = new IntBuffer(15);
+		Opcode opcode = new Opcode();
+		opcode.setOpcode(op.getOpcode());
 		
 		OprTy ty0 = op.getOperand(0);
 		AsmOpr op0 = inst.getOperand(0);
 		
-		boolean opsize = false; // Change operator to 16 bit. [0x66]
-		
-		int imm_size = 0;
-		long imm_val = 0;
-		
-		if(ty0.isImmediate()) {
-			Object obj = op0.getObject(0);
-			if(obj instanceof Long) {
-				// Could be a scalar.....
+		switch(ty0.type()) {
+			case 'K': {
+				RegisterX86 reg = op0.getRegister(0);
 				
-				imm_val = (long)obj;
-				imm_size = NumberUtils.getBitsSize(imm_val);
+				String typeName = ty0.name();
+				if(Character.isLowerCase(typeName.charAt(0))) {
+					if(reg.bits == 16) opcode.setOperandSize(true);
+					if(!op.has64bitFlag() && reg.bits == 64) opcode.setRexW();
+					break;
+				}
 				
-				if(imm_size == 16) opsize = true;
+				// Register is already encoded
+				break;
 			}
-		}
-		
-		if(opsize) buffer.write(0x66);
-		
-		buffer.write(op.getOpcode());
-		if(ty0.type() == 'Z') {
-			// TODO:
-		}
-		
-		if(imm_size != 0) {
-			for(long i = 0; i < imm_size; i += 8) {
-				buffer.write((imm_val >>> i) & 0xff);
+			
+			case 'M':
+			case 'E': {
+				apply_modrm_rm(opcode, op, ty0, op0);
+				break;
 			}
+			
+			
+			case 'J':
+			case 'I': {
+				int size = ty0.getSizeAboveOrEqual(op0.getSize());
+				apply_immediate(opcode, (long)op0.getObject(0), size);
+				
+				if(size == 16) opcode.setOperandSize(true);
+			}
+			
+			// These are never encoded for single operand instructions
+			case 'O': case 'R': case 'C': case 'D':
+			case 'S': case 'F': case 'X': case 'Y':
+				break;
 		}
 		
-		return buffer.toArray();
+		// TODO: This line should not be necessary.
+		if(op.has64bitFlag()) opcode.unsetRexW(); // Is already 64 bit
+		if(mustUseRex(inst)) opcode.setRex(true);
+		
+		return opcode.build();
 	}
 	
 	private static int[] _compile_2(AsmOp op, AsmInst inst) {
-		if((op.getFlags() & AssemblyConsts.USES_MODRM) != 0) return _compile_2_rm(op, inst);
-		if((op.getFlags() & AssemblyConsts.NEED_RMEXT) != 0) return _compile_2_rmext(op, inst);
-
-		return null;
-	}
-	
-	private static int[] _compile_2_rmext(AsmOp op, AsmInst inst) {
+		// if((op.getFlags() & AssemblyConsts.USES_MODRM) != 0) return _compile_2_rm(op, inst);
 		OprTy ty0 = op.getOperand(0);
 		OprTy ty1 = op.getOperand(1);
 		AsmOpr op0 = inst.getOperand(0);
 		AsmOpr op1 = inst.getOperand(1);
 		
-		IntBuffer buffer = new IntBuffer(15);
+		// Instruction is ModR/M if it contains a 'r/m' register 'E' type operand.
+		Opcode opcode = new Opcode();
+		opcode.setOpcode(op.getOpcode());
 		
-		if(ty1.isImmediate()) {
+		if(ty0.isModrm() || ty1.isModrm()) {
+			// X, Y, E, M, R
 			
+			apply_modrm_rm(opcode, op, inst);
+		} else {
+			switch(ty0.type()) {
+				case 'K': {
+					// The register is already encoded in the register
+					// 64 bit must add [ 48 ]
+					// 16 bit must add [ 66 ]
+					
+					if(ty0.isVarying()) {
+						if(op0.getSize() == 16) opcode.setOperandSize(true);
+						if(!op.has64bitFlag() && op0.getSize() == 64) opcode.setRexW();
+					}
+					
+					
+					break;
+				}
+				
+				case 'I': { // ENTER uses two imm values...
+					int size;
+					switch(ty1.postfix()) {
+						case 'z': {
+							size = (op0.getSize() > 16) ? 32:16;
+							break;
+						}
+						case 'v': {
+							size = ty1.getSizeAboveOrEqual(op0.getSize());
+							break;
+						}
+						default: {
+							size = op1.getSize();
+						}
+					}
+					
+					apply_immediate(opcode, (long)op1.getObject(0), size);
+				}
+			}
 		}
 		
-		buffer.write(op.getOpcode());
-		buffer.write(generate_modrm(op, inst));
-		return buffer.toArray();
+		switch(ty1.type()) {
+			case 'J': // Relative and immediate values can be encoded outside.
+			case 'I': {
+				int size;
+				switch(ty1.postfix()) {
+					case 'z': {
+						size = (op0.getSize() > 16) ? 32:16;
+						break;
+					}
+					case 'v': {
+						size = ty1.getSizeAboveOrEqual(op0.getSize());
+						break;
+					}
+					default: {
+						size = op1.getSize();
+					}
+				}
+				
+				apply_immediate(opcode, (long)op1.getObject(0), size);
+			}
+		}
+		
+		if(mustUseRex(inst)) opcode.setRex(true);
+		
+		return opcode.build();
 	}
 	
 	// Encodes two operand ModR/M opcodes
@@ -233,6 +331,13 @@ public final class AsmFactory {
 		return opcode.build();
 	}
 	
+	private static void apply_immediate(Opcode opcode, long value, long bits) {
+		IntBuffer buffer = opcode.getPostfix();
+		for(long i = 0; i < bits; i += 8) {
+			buffer.write((value >>> i) & 0xff);
+		}
+	}
+	
 	/**
 	 *<pre>
 	 *array[ 0   ] == mod index
@@ -253,14 +358,13 @@ public final class AsmFactory {
 		int mod = 3;
 		int idx = 0;
 		
-		// Checking the last field of the operator. If a number it belongs in mod 00, 01, 10
+		// If the length of the operand is ONE then it is either a number or a register.
 		if(opr.length() == 1) {
-			// Either disp or register
-			Object obj = opr.getObject(0);
-			
 			mod = 0;
-			if(obj instanceof RegisterX86) {
-				RegisterX86 reg = (RegisterX86)obj;
+			
+			if(opr.hasRegisterAt(0)) {
+				RegisterX86 reg = opr.getRegister(0);
+				
 				if((reg.index & 7) == 5) {
 					// Change to [bp + 0x0]
 					buffer.write(0);
@@ -268,7 +372,6 @@ public final class AsmFactory {
 						buffer.write(0);
 						buffer.write(0);
 						buffer.write(0);
-						mod = 0;
 					} else {
 						mod = 1;
 					}
@@ -280,21 +383,29 @@ public final class AsmFactory {
 				}
 				
 				idx = reg.index;
+				
+				if(reg.bits == 32) {
+					opcode.setAddressSize(true);
+				}
 			} else {
+				long imm = opr.getImmediate(0);
+				
 				// SIB,    scale, index, base
+				mod = 0;
 				idx = 4; // [SIB]
 				buffer.write(0b100101);
-				long disp_val = (long)obj;
 				
 				// Only 32 bits are allowed
 				for(long i = 0; i < 32; i += 8) {
-					buffer.write((disp_val >>> i) & 0xff);
+					buffer.write((imm >>> i) & 0xff);
 				}
 			}
 		}
 		
-		// 'obj' '+' 'obj'
-		if(opr.length() == 3) {
+		if(opr.length() == 3) { // TODO: This is not fully done yet. Fix SIB bytes.
+			// R/M:  'reg' '+' 'imm'
+			// SIB:  'base' '*' 'index'
+			
 			// Test
 			// r/m + disp8
 			// r/m + disp32
@@ -302,7 +413,7 @@ public final class AsmFactory {
 			// Otherwise there are no.. And this should only
 			//   should be used for [RBP/EBP + disp8]
 			//   should be used for [RSP/ESP + disp8]
-
+			
 			// Base will always be register
 			RegisterX86 reg = opr.getRegister(0);
 			
@@ -328,15 +439,58 @@ public final class AsmFactory {
 			}
 		}
 		
-		// TODO: SIB bytes
-		
 		int[] array = buffer.toArray();
 		array[0] = mod;
 		array[1] = idx;
 		return array;
 	}
 	
+	private static void apply_modrm_rm(Opcode opcode, AsmOp op, OprTy ty, AsmOpr opr) {
+		int mod = 3, reg = 0, rm = 0;
+		int[] array = null;
+		
+		if(!op.has64bitFlag() && opr.getSize() == 64) opcode.setRexW();
+		if(opr.getSize() == 16) opcode.setOperandSize(true);
+		
+		if(opr.isMemory()) {
+			array = encode_modrm_memory(opcode, ty, opr);
+			mod = array[0];
+			rm = array[1];
+			
+			if(getMemorySize(opr) == 32) opcode.setAddressSize(true);
+		} else if(opr.isRegister()) {
+			rm = opr.getRegister(0).index;
+		}
+		
+		if(op.hasRMEXFlag()) {
+			reg = op.getRMEX();
+		} else {
+			if(reg > 7) opcode.setRexR();
+		}
+		
+		if(rm  > 7) opcode.setRexB();
+		
+		IntBuffer buffer = opcode.getPostfix();
+		buffer.write(
+			((mod & 3) << 6) |
+			((reg & 7) << 3) |
+			((rm  & 7) << 0)
+		);
+		
+		if(array != null) {
+			// note: Extra data is array[2+]
+			for(int i = 2; i < array.length; i++) {
+				buffer.write(array[i]);
+			}
+		}
+	}
+	
 	private static void apply_modrm_rm(Opcode opcode, AsmOp op, AsmInst inst) {
+		if(op.getNumOperands() == 1) {
+			apply_modrm_rm(opcode, op, op.getOperand(0), inst.getOperand(0));
+			return;
+		}
+		
 		IntBuffer buffer = opcode.getPostfix();
 		OprTy ty0 = op.getOperand(0);
 		OprTy ty1 = op.getOperand(1);
@@ -350,49 +504,57 @@ public final class AsmFactory {
 		int reg = 0;
 		int rm  = 0;
 		
-		if(ty0.isModrm()) {
-			// NOTE: The only exception to values is BP, R13 gives [RIP/EIP + disp32]
+		if(ty1.isModrm()) {
+			OprTy tmp0 = ty0;
+			ty0 = ty1;
+			ty1 = tmp0;
 			
-			// Destination is reg/mem
-			// Operand 0 encodes 'reg'
+			AsmOpr tmp1 = op0;
+			op0 = op1;
+			op1 = tmp1;
+		}
+		
+		
+		// NOTE: The only exception to values is BP, R13 gives [RIP/EIP + disp32]
+		
+		if(op1.isRegister()) {
 			reg = op1.getRegister(0).index;
 			
-			if(op0.isRegister()) {
-				rm = op0.getRegister(0).index;
-			} else {
-				int[] array = encode_modrm_memory(opcode, ty0, op0);
-				mod = array[0];
-				rm = array[1];
-				extra_data = array;
+			if(ty1.isVarying()) {
+				if(!op.has64bitFlag() && op1.getSize() == 64) opcode.setRexW();
+				if(op1.getSize() == 16) opcode.setOperandSize(true);
 			}
 			
-			// The source must be a register
-			// Operand 1 encodes 'rm'
+		} else if(op1.isImmediate()) {
+			// do nothing..
+		}
+		
+		
+		if(op0.isRegister()) {
+			rm = op0.getRegister(0).index;
 			
+			if(ty0.isVarying()) {
+				if(!op.has64bitFlag() && op0.getSize() == 64) opcode.setRexW();
+				if(op0.getSize() == 16) opcode.setOperandSize(true);
+			}
 		} else {
-			// Destination is a reg
-			reg = op0.getRegister(0).index;
+			int[] array = encode_modrm_memory(opcode, ty0, op0);
+			mod = array[0];
+			rm = array[1];
+			extra_data = array;
 			
-			// ty1 must be modrm
-			if(op1.isRegister()) {
-				rm = op1.getRegister(0).index;
-			} else {
-				int[] array = encode_modrm_memory(opcode, ty1, op1);
-				mod = array[0];
-				rm = array[1];
-				extra_data = array;
+			if(getMemorySize(op0) == 32) opcode.setAddressSize(true);
+			
+			if(ty0.isVarying()) {
+				if(!op.has64bitFlag() && op0.getSize() == 64) opcode.setRexW();
+				if(op0.getSize() == 16) opcode.setOperandSize(true);
 			}
 		}
 		
-//		TODO: Implement RMEXT soon.
-//		if((op.getFlags() & AssemblyConsts.NEED_RMEXT) != 0) {
-//			rm = reg;
-//			reg = (op.getFlags() & AssemblyConsts.RM_EXT_MASK) / AssemblyConsts.RM_EXT_OFFSET;
-//		}
+		if(op.hasRMEXFlag()) {
+			reg = op.getRMEX();
+		}
 		
-		// reg can either be a opcode extension 
-		// reg is the destination register
-		// if modrm then reg is the destination and rm is the source.
 		if(rm  > 7) opcode.setRexB();
 		if(reg > 7) opcode.setRexR();
 		
@@ -408,91 +570,5 @@ public final class AsmFactory {
 				buffer.write(extra_data[i]);
 			}
 		}
-	}
-
-	// TODO: This should give the prefixes and modrm
-	private static int[] generate_modrm(AsmOp op, AsmInst inst) {
-		IntBuffer buffer = new IntBuffer(32);
-		OprTy ty0 = op.getOperand(0);
-		OprTy ty1 = op.getOperand(1);
-		
-		AsmOpr op0 = inst.getOperand(0);
-		AsmOpr op1 = inst.getOperand(1);
-		
-		// NOTE: The only exception to values is BP, R13 gives [RIP/EIP + disp32]
-		int disp_size = 0;
-		long disp_val = 0;
-		
-		boolean use_regrm = true;
-		int mod = 0b11;
-		int reg = 0;
-		int rm  = 0;
-		
-		if(ty0.type() == 'Z') use_regrm = false;
-		
-		if(op0.isRegister()) {
-			reg = op0.getRegister(0).index;
-			
-			if(op1.isRegister()) {
-				rm  = op1.getRegister(0).index;
-			} else if(op1.isMemory()) {
-				// Check for SIB has * inside it .....
-				
-				// Memory.... size does not matter... Disp size does....
-				// TODO: Just get memory working and you'll be done.......
-				
-				// Check last part and get if it's a immediate value
-				Object obj = op1.getObject(op1.length() - 1);
-				if(obj instanceof Long) {
-					// Could be a scalar.....
-					
-					disp_val = (long)obj;
-					disp_size = NumberUtils.getBitsSize(disp_val);
-					
-					// Only 8, 32 allowed
-					if(disp_size == 16) disp_size = 32;
-					if(disp_size == 64); // FIXME: Invalid
-					
-					if(disp_size ==  8) mod = 0b01;
-					if(disp_size == 32) mod = 0b10;
-				}
-				
-				// Only index 5 encodes SIB
-				// System.out.println(" -> " + op1);
-			} else {
-				disp_val = (long)op1.getObject(0);
-				disp_size = NumberUtils.getBitsSize(disp_val);
-				
-				// TODO: Expand value to a size that is allowed.
-				if(!ty1.hasSize(disp_size)) {
-					if(disp_size == 8) {
-						disp_size = 16;
-					}
-				}
-			}
-		} else {
-			// This can never be Immediate
-		}
-		
-		if((op.getFlags() & AssemblyConsts.NEED_RMEXT) != 0) {
-			rm = reg;
-			reg = (op.getFlags() & AssemblyConsts.RM_EXT_MASK) / AssemblyConsts.RM_EXT_OFFSET;
-		}
-		
-		if(use_regrm) {
-			buffer.write(
-				((mod & 0x3) << 6) |
-				((reg & 0xf) << 3) |
-				((rm  & 0xf) << 0)
-			);
-		}
-		
-		if(disp_size != 0) {
-			for(long i = 0; i < disp_size; i += 8) {
-				buffer.write((disp_val >>> i) & 0xff);
-			}
-		}
-		
-		return buffer.toArray();
 	}
 }

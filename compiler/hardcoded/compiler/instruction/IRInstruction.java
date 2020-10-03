@@ -61,7 +61,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	 * @return the length of the list
 	 */
 	public int length() {
-		int size = 0;
+		int size = 1;
 		IRInstruction curr = next;
 		while(curr != null) {
 			size ++;
@@ -151,7 +151,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	public IRInstruction get(int index) {
 		IRInstruction curr = this;
 		if(index == 0) return this;
-		for(int i = 1; i < index; i++) {
+		for(int i = 1; i <= index; i++) {
 			curr = curr.next;
 			if(curr == null) throw new ArrayIndexOutOfBoundsException(i);
 			
@@ -350,15 +350,25 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	}
 	
 	public static class NumberReg extends Reg {
-		public AtomExpr expr;
+		// TODO: NumberReg should use a long instead of AtomExpr.
+		public long value;
 		
 		public NumberReg(AtomExpr expr) {
-			this.expr = expr;
 			this.size = expr.calculateSize();
+			this.value = expr.i_value;
+		}
+		
+		public NumberReg(long value) {
+			this.size = null;
+			this.value = value;
+		}
+		
+		public long value() {
+			return value;
 		}
 		
 		public String toString() {
-			return Objects.toString(expr) + (DEBUG_SIZE ? (":" + size):"");
+			return value + (DEBUG_SIZE ? (":" + size):"");
 		}
 	}
 	
@@ -433,6 +443,21 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	
 	public boolean hasNeighbours() {
 		return (next != null) || (prev != null);
+	}
+	
+	public AtomType calculateSize() {
+		if(params.isEmpty()) return null;
+		
+		AtomType size = params.get(0).size;
+		if(op == IRInsts.call) size = params.get(1).size;
+		
+		if(op == IRInsts.brz
+		|| op == IRInsts.bnz
+		|| op == IRInsts.br) {
+			size = null;
+		}
+		
+		return size;
 	}
 	
 	@Override

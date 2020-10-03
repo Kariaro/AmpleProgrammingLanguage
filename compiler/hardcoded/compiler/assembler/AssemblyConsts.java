@@ -3,16 +3,6 @@ package hardcoded.compiler.assembler;
 public final class AssemblyConsts {
 	private AssemblyConsts() {}
 	
-	public static final int OF = (1 << 0);
-	public static final int DF = (1 << 1);
-	public static final int IF = (1 << 2);
-	public static final int TF = (1 << 3);
-	public static final int SF = (1 << 4);
-	public static final int ZF = (1 << 5);
-	public static final int AF = (1 << 6);
-	public static final int PF = (1 << 7);
-	public static final int CF = (1 << 8);
-	
 //	private static int decode_octal(int octal_binary) {
 //		return (((octal_binary &    07) != 0) ? 1:0)
 //			 | (((octal_binary &   070) != 0) ? 2:0)
@@ -21,239 +11,269 @@ public final class AssemblyConsts {
 //	}
 	
 	public static enum OprTy {
-		Sreg			(0, 1, 0, 0), // Segment register
-		CRn				(0, 0, 1, 0), // Control register
-		DRn				(0, 0, 1, 0), // Debug register
+		// [ rXX ] is a register that can have either 16/32 or 64 bit sizes.
+		rAX				("rAX", 0, 1, 1, 1),
+		rCX				("rCX", 0, 1, 1, 1),
+		rDX				("rDX", 0, 1, 1, 1),
+		rBX				("rBX", 0, 1, 1, 1),
+		rSP				("rSP", 0, 1, 1, 1),
+		rBP				("rBP", 0, 1, 1, 1),
+		rSI				("rSI", 0, 1, 1, 1),
+		rDI				("rDI", 0, 1, 1, 1),
+		r8				("r8" , 0, 1, 1, 1),
+		r9				("r9" , 0, 1, 1, 1),
+		r10				("r10", 0, 1, 1, 1),
+		r11				("r11", 0, 1, 1, 1),
+		r12				("r12", 0, 1, 1, 1),
+		r13				("r13", 0, 1, 1, 1),
+		r14				("r14", 0, 1, 1, 1),
+		r15				("r15", 0, 1, 1, 1),
 		
-		// M -> mem
-		// R -> reg
-		// T -> reg/mem
-		// F -> flags
-		// S -> segment
-		// I -> immediate value
-		// Z -> reg encoded opcode
+		// [ eXX ] is a register that can have either 16 or 32 bit sizes.
+		eAX				("eAX", 0, 1, 1, 0),
+		eCX				("eCX", 0, 1, 1, 0),
+		eDX				("eDX", 0, 1, 1, 0),
+		eBX				("eBX", 0, 1, 1, 0),
+		eSP				("eSP", 0, 1, 1, 0),
+		eBP				("eBP", 0, 1, 1, 0),
+		eSI				("eSI", 0, 1, 1, 0),
+		eDI				("eDI", 0, 1, 1, 0),
+		
+		AL				("AL" , 1, 0, 0, 0),
+		CL				("CL" , 1, 0, 0, 0),
+		DL				("DL" , 1, 0, 0, 0),
+		BL				("BL" , 1, 0, 0, 0),
+		AH				("AH" , 1, 0, 0, 0),
+		CH				("CH" , 1, 0, 0, 0),
+		DH				("DH" , 1, 0, 0, 0),
+		BH				("BH" , 1, 0, 0, 0),
+		
+		R8B				("R8B" , 1, 0, 0, 0),
+		R9B				("R9B" , 1, 0, 0, 0),
+		R10B			("R10B", 1, 0, 0, 0),
+		R11B			("R11B", 1, 0, 0, 0),
+		R12B			("R12B", 1, 0, 0, 0),
+		R13B			("R13B", 1, 0, 0, 0),
+		R14B			("R14B", 1, 0, 0, 0),
+		R15B			("R15B", 1, 0, 0, 0),
+
+		DX				("DX" , 0, 1, 0, 0),
+		AX				("AX" , 0, 1, 0, 0),
+		EAX				("EAX", 0, 0, 1, 0),
+		RAX				("RAX", 0, 0, 0, 1),
 		
 		
-		// TODO: How to resolve if they are change because of operand size or address size prefix?
-		// NOTE: Depending on the order we have different
-		// b -> byte
-		// w -> word
-		// d -> dword
-		// q -> qword
-		// x -> xmmword
-		// y -> ymmword
-		
-		// qw -> qword default otherwise word
+		FS				("FS" , 0, 1, 0, 0),
+		GS				("GS" , 0, 1, 0, 0),
 		
 		
-		// 
-		// v			16/32		Depending on operand size.
+		// ModR/M but 'r/m' cannot point to memory
+		Rd				(0, 0, 1, 0),
+		Rq				(0, 0, 0, 1),
 		
-		AL				(1, 0, 0, 0),
-		AH				(1, 0, 0, 0),
-		AX				(0, 1, 0, 0),
-		EAX				(0, 0, 1, 0),
-		RAX				(0, 0, 0, 1),
+		// Control register
+		Cd				(0, 0, 1, 0),
+		Cq				(0, 0, 0, 1),
 		
-		ECX				(0, 0, 1, 0),
-		RCX				(0, 0, 0, 1),
+		// Debug register
+		Dd				(0, 0, 1, 0),
+		Dq				(0, 0, 0, 1),
 		
-		rAX				(0, 1, 1, 1), //	RAX, EAX, AX
-		eAX				(1, 1, 1, 0), //	EAX, AX, AL
-		rCX				(0, 1, 1, 1), //	RCX, ECX, CX
-		rDX				(0, 1, 1, 1), //	RDX, EDX, DX
-		rBP				(0, 1, 1, 1), //	RBP, EBP, BP
+		// General register
+		Gb				(1, 0, 0, 0),
+		Gw				(0, 1, 0, 0),
+		Gd				(0, 0, 1, 0),
+		Gq				(0, 0, 0, 1),
+		Gv				(0, 1, 1, 1),
 		
-		DX				(0, 1, 0, 0),
-		EDX				(0, 0, 1, 0),
-		RDX				(0, 0, 0, 1),
+		// ModR/M register
+		Eb				(1, 0, 0, 0),
+		Ew				(0, 1, 0, 0),
+		Ed				(0, 0, 1, 0),
+		Eq				(0, 0, 0, 1),
+		Ev				(0, 1, 1, 1),
+		Ep				(0, 1, 1, 1),	// 16:16/32/64 bit pointer
 		
-		FS				(0, 0, 0, 0),
-		GS				(0, 0, 0, 0),
+		// Memory pointer
+		M				(1, 1, 1, 1),
+		Mb				(1, 0, 0, 0),
+		Mw				(0, 1, 0, 0),
+		Md				(0, 0, 1, 0),
+		Mq				(0, 0, 0, 1),
+		Mv				(0, 1, 1, 1),
+		Mp				(0, 1, 1, 1),	// 16:16/32/64 bit pointer
 		
+		// Immediate value
+		Ib				(1, 0, 0, 0),
+		Iw				(0, 1, 0, 0),
+		Id				(0, 0, 1, 0),
+		Iq				(0, 0, 0, 1),
+		Iv				(0, 1, 1, 1),
+		Iz				(0, 1, 1, 0),	// WORD for 16 bit operand-size, otherwise (DWORD for 32/64 bit)
 		
-		Fv				(0, 1, 1, 0), //	flags16/32
-		Fwo				(0, 1, 0, 0), //	flags16				WORD  depending on operand size.
-		Fws				(0, 1, 0, 0), //	flags16				WORD  depending on address size.
-		Fdo				(0, 0, 1, 0), //	flags32				DWORD depending on operand size.
-		Fqs				(0, 0, 0, 1), //	flags64				QWORD depending on address size.
-		Fqp				(0, 0, 0, 1), //	flags64				64 bit if REX.W
+		// Relative offset
+		Jb				(1, 0, 0, 0),
+		Jz				(0, 1, 1, 0),
 		
-		Ap				(0, 0, 1, 1), //	ptr32/64			32 or 48 bit
-		Ob				(1, 0, 0, 0), //	moffs8
-		Ovqp			(0, 1, 1, 1), //	moffs16/32/64
+		// Memory addressed by the ES:eDI
+		Yb				(1, 0, 0, 0),
+		Yw				(0, 1, 0, 0),
+		Yd				(0, 0, 1, 0),
+		Yq				(0, 0, 0, 1),
+		Yv				(0, 1, 1, 1),
+		Yz				(0, 1, 1, 0),
 		
-		Zb				(1, 0, 0, 0), //	r8
-		Zv				(0, 1, 1, 0), //	r16/32
-		Zvq				(0, 1, 0, 1), //	r64/16				QWORD default otherwise WORD
-		Zvqp			(0, 1, 1, 1), //	r16/32/64
+		// Memory addressed by the DS:eSI
+		Xb				(1, 0, 0, 0),
+		Xw				(0, 1, 0, 0),
+		Xd				(0, 0, 1, 0),
+		Xq				(0, 0, 0, 1),
+		Xv				(0, 1, 1, 1),
+		Xz				(0, 1, 1, 0),
 		
-		Eb				(1, 0, 0, 0), //	r/m8
-		Ew				(0, 1, 0, 0), //	r/m16
-		Ed				(0, 0, 1, 0), // 	r/m32
-		Eq				(0, 0, 0, 1), //	r/m64
-		Ev				(0, 1, 1, 0), //	r/m16/32
-		Evq				(0, 1, 0, 1), //	r/m64/16			QWORD default otherwise WORD
-		Evqp			(0, 1, 1, 1), //	r/m16/32/64
+		// Segment
+		Sw				(0, 1, 0, 0),
 		
-		Gb				(1, 0, 0, 0), //	r8
-		Gdqp			(0, 0, 1, 1), //	r32/64
-		Gvqp			(0, 1, 1, 1), //	r16/32/64
+		// Flags
+		Fw				(0, 1, 0, 0),
+		Fv				(0, 1, 1, 1),
 		
-		Yb				(1, 0, 0, 0), //	m8					memory addressed by the ES:eDI
-		Yv				(0, 1, 1, 0), //	m16/32
-		Ywo				(0, 1, 0, 0), //	m16
-		Ydo				(0, 0, 1, 0), //	m32
-		Yqp				(0, 0, 0, 1), //	m64					64 bit if REX.W
-		Yvqp			(0, 1, 1, 1), //	m16/32/64
-		
-		Xb				(1, 0, 0, 0), //	m8					memory addressed by the DS:eSI
-		Xv				(0, 1, 1, 0), //	m16/32
-		Xwo				(0, 1, 0, 0), //	m16
-		Xdo				(0, 0, 1, 0), //	m32
-		Xqp				(0, 0, 0, 1), //	m64					64 bit if REX.W
-		Xvqp			(0, 1, 1, 1), //	m16/32/64
-		
-		M				(0, 0, 0, 0), //	m
-		Mw				(0, 1, 0, 0), //	m16
-		Mptp			(0, 0, 1, 0), //	m16:16/32/64
-		
-		Sw				(0, 1, 0, 0), //	seg16
-		Rvqp			(0, 1, 1, 1), //	r16/32/64
-		
-		Jbs				(1, 0, 0, 0), //	rel8				sign-extended to the size of the dest oprerand
-		Jvds			(0, 1, 1, 0), //	rel16/32			sign-extended to 64 bits for 64-bit operand size
-		
-		Ib				(1, 0, 0, 0), //	imm8
-		Iw				(0, 1, 0, 0), //	imm16
-		Ibs				(1, 0, 0, 0), //	imm8				sign-extended to the size of the dest oprerand
-		Ibss			(1, 0, 0, 0), //	imm8				sign-extended to the size of the stack pointer
-		Ivs				(0, 1, 1, 0), //	imm16/32
-		Ivds			(0, 1, 1, 0), //	imm16/32			sign-extended to 64 bits for 64-bit operand size
-		Ivqp			(0, 1, 1, 1), //	imm16/32/64
+		// The instruction has no ModR/M byte.
+		Ob				(1, 0, 0, 0),
+		Od				(0, 0, 1, 0),
+		Oq				(0, 0, 1, 0),
+		Ov				(0, 1, 1, 1),
 		
 		;
 		
-		// How this will will be printed using toString();
 		private final String string;
-		private final boolean encodes_data;
+		private final char type;
+		private final boolean hasByte;
+		private final boolean hasWord;
+		private final boolean hasDword;
+		private final boolean hasQword;
 		
-		public final int mask;
 		private OprTy(int r8, int r16, int r32, int r64) {
-			mask = ((r8 != 0) ? 1:0)
-				| ((r16 != 0) ? 2:0)
-				| ((r32 != 0) ? 4:0)
-				| ((r64 != 0) ? 8:0);
+			this(null, r8, r16, r32, r64);
+		}
+		
+		private OprTy(String string, int r8, int r16, int r32, int r64) {
+			this.hasByte = (r8 != 0);
+			this.hasWord = (r16 != 0);
+			this.hasDword = (r32 != 0);
+			this.hasQword = (r64 != 0);
 			
-			String str = name();
-			
-			if(str.length() > 1 && (str.matches("[A-Z]+") || str.matches("[a-z][A-Z]+") || str.equals("CRn") || str.equals("DRn"))) {
-				string = str;
-				encodes_data = false;
-			} else {
-				String size = str.substring(1);
+			if(string == null) {
+				// The type has more data than visible.
 				
-				// TODO: Replace this with a switch case or make the code give the correct value from the beginning.
-				if(size.equals("bss")) size = "8"; // TODO: What is the correct size for 'bss'
-				if(size.equals("bs")) size = "8/16";
-				if(size.equals("b")) size = "8";
-				if(size.equals("ptp")) size = "16:16/32/64";
+				this.type = name().charAt(0);
+				String size = name().substring(1);
+				String mnemonic = null;
 				
-				if(size.equals("w")) size = "16";
-				if(size.equals("wo")) size = "16/32";
-				if(size.equals("ws")) size = "16/32";
-				if(size.equals("do")) size = "32/64";
-				if(size.equals("d")) size = "32";
-				if(size.equals("dqp")) size = "32/64";
-				if(size.equals("vqp")) size = "16/32/64";
-				if(size.equals("vds")) size = "16/32";
-				if(size.equals("vq")) size = "64/16";
-				if(size.equals("vs")) size = "16/32";
-				if(size.equals("v")) size = "16/32";
-				
-				if(size.equals("p")) size = "32/48";
-				if(size.equals("qp")) size = "64";
-				if(size.equals("qs")) size = "16/32";
-				if(size.equals("q")) size = "64";
-				
-				String nmn = null;
-				switch(str.charAt(0)) {
-					case 'I': nmn = "imm"; break;
-					case 'O': nmn = "moffs"; break;
-					case 'J': nmn = "rel"; break;
-					case 'F': nmn = "flags"; break;
-					case 'A': nmn = "ptr"; break;
-					case 'S': nmn = "seg"; break;
-					case 'E': nmn = "r/m"; break;
-					
-					case 'R':
-					case 'G':
-					case 'Z': nmn = "r"; break;
-					
+				switch(type) {
+					case 'G': mnemonic = "r"; break;
 					case 'M':
 					case 'X':
-					case 'Y': nmn = "m"; break;
+					case 'Y': mnemonic = "m"; break;
+					case 'R':
+					case 'E': mnemonic = "r/m"; break;
+					case 'O': mnemonic = "moffs"; break;
+					case 'I': mnemonic = "imm"; break;
+					case 'F': mnemonic = "flag"; break;
+					case 'J': mnemonic = "rel"; break;
+					case 'S': mnemonic = "seg"; break;
+					case 'C': mnemonic = "control"; break;
+					case 'D': mnemonic = "debug"; break;
+					default: mnemonic = name();
 				}
 				
-				encodes_data = true;
-				string = nmn + size;
+				switch(size) {
+					case "b": size = "8"; break;
+					case "w": size = "16"; break;
+					case "d": size = "32"; break;
+					case "q": size = "64"; break;
+					case "v": size = "16/32/64"; break;
+					case "p": size = "16:16/32/64"; break;
+					case "z": size = "16/32"; break;
+					case "": size = ""; break;
+					default: size = "????";
+				}
+				
+				this.string = mnemonic + size;
+			} else {
+				this.string = string;
+				this.type = 'K';
 			}
 		}
 		
-		public boolean isImmediate() {
-			char c = type();
-			return c == 'I' || c == 'J';
+		/**
+		 * Returns a character specifying the type of this operator.
+		 *<pre>
+		 *C    : Control register
+		 *D    : Debug register
+		 *E    : ModR/M register
+		 *F    : Flags register
+		 *G    : General purpose register
+		 *I    : Immediate value
+		 *J    : Relative offset value
+		 *K    : <b>[Encodes a rXX/eXX register or is a direct register]</b>
+		 *M    : Memory pointer
+		 *O    : Operator encoded register
+		 *R    : ModR/M register but 'r/m' cannot be memory
+		 *S    : Segment register
+		 *X    : Memory pointer by DS:eSI
+		 *Y    : Memory pointer by ES:eDI
+		 *</pre>
+		 * @return a character specifying the type of this operator
+		 */
+		public char type() { return type; }
+		
+		public char postfix() {
+			if(type == 'K' || name().length() != 2) return 0;
+			return name().charAt(1);
 		}
 		
-		public boolean isRegister() {
-			char c = type();
-			return c == 'R' || c == 'G' || c == 'Z';
+		// TODO: Classify the types into smaller groups.
+		//       ModR/M, Register, Immediate, Memory ...
+		public boolean isModrm() { return type == 'R' || type == 'E' || type == 'M'; }
+		public boolean isMemory() { return type == 'X' || type == 'Y' || type == 'M'; }
+		public boolean isRegister() { return type == 'C' || type == 'D' || type == 'E' || type == 'R' || type == 'K'; }
+		public boolean isImmediate() { return type == 'I' || type == 'J'; }
+		
+		public boolean hasByte() { return hasByte; }
+		public boolean hasWord() { return hasWord; }
+		public boolean hasDword() { return hasDword; }
+		public boolean hasQword() { return hasQword; }
+		
+		public boolean isVarying() {
+			return ((hasByte ? 1:0)
+				  + (hasWord ? 1:0)
+				  + (hasDword ? 1:0)
+				  + (hasQword ? 1:0)) > 1;
 		}
 		
-		public boolean isMemory() {
-			char c = type();
-			return c == 'M' || c == 'X' || c == 'Y';
+		public int getSizeAboveOrEqual(int bits) {
+			if(bits <  9 && hasByte)  return 8;
+			if(bits < 17 && hasWord)  return 16;
+			if(bits < 33 && hasDword) return 32;
+			if(bits < 65 && hasQword) return 64;
+			return -1;
 		}
 		
-		public boolean isModrm() {
-			char c = type();
-			return c == 'E';
+		public boolean hasSizeAboveOrEqual(int bits) {
+			return (bits < 9 && hasByte)
+				|| (bits < 17 && hasWord)
+				|| (bits < 33 && hasDword)
+				|| (bits < 65 && hasQword);
 		}
 		
-		
-		public char type() {
-			return name().charAt(0);
+		public boolean hasSize(int bits) {
+			return (bits ==  8 && hasByte)
+				|| (bits == 16 && hasWord)
+				|| (bits == 32 && hasDword)
+				|| (bits == 64 && hasQword);
 		}
 		
-		public boolean hasByte() {
-			return (mask & 1) != 0;
-		}
-		
-		public boolean hasWord() {
-			return (mask & 2) != 0;
-		}
-		
-		public boolean hasDword() {
-			return (mask & 4) != 0;
-		}
-		
-		public boolean hasQword() {
-			return (mask & 8) != 0;
-		}
-		
-		public boolean hasSize(int size) {
-			if(size == 8) return hasByte();
-			if(size == 16) return hasWord();
-			if(size == 32) return hasDword();
-			if(size == 64) return hasQword();
-			return false;
-		}
-		
-		public boolean hasData() {
-			return encodes_data;
-		}
-		
-		@Override
 		public String toString() {
 			return string;
 		}
@@ -308,6 +328,15 @@ public final class AssemblyConsts {
 			return operand_types[index];
 		}
 		
+		public boolean hasLockFlag() { return (flags & ALLOW_LOCK) != 0; }
+		public boolean hasRMEXFlag() { return (flags & NEED_RMEXT) != 0; }
+		public boolean has64bitFlag() { return (flags & DEFAULT_64) != 0; }
+		
+		public int getRMEX() {
+			return (flags & RM_EXT_MASK) / RM_EXT_OFFSET;
+		}
+		
+		
 		public String toComplexString() { return toComplexString(16); }
 		public String toComplexString(int opcode_padding) {
 			if(opcode_padding < 3 || opcode_padding > 1024) {
@@ -330,8 +359,7 @@ public final class AssemblyConsts {
 				sb.append(String.format("%-16s", t)).append(", ");
 			}
 			
-			sb.deleteCharAt(sb.length() - 1);
-			sb.deleteCharAt(sb.length() - 1);
+			sb.deleteCharAt(sb.length() - 2);
 			
 			return sb.toString().trim();
 		}
@@ -352,43 +380,29 @@ public final class AssemblyConsts {
 		}
 	}
 	
-	public static int[] opcode(int... array) { return array; }
-	
-	public static AsmPf prf(String mnemonic, int[] opcode) { return new AsmPf(mnemonic, opcode, 0); }
-	public static AsmPf prf(String mnemonic, int[] opcode, int flags) { return new AsmPf(mnemonic, opcode, flags); }
-	public static AsmOp opr(String mnemonic, int[] opcode, OprTy... operators) { return new AsmOp(mnemonic, opcode, 0, operators); }
-	public static AsmOp opr(String mnemonic, int[] opcode, int flags, OprTy... operators) { return new AsmOp(mnemonic, opcode, flags, operators); }
-	@Deprecated public static AsmOp dopr(String mnemonic, int[] opcode, int flags, OprTy... operators) { return opr(mnemonic, opcode, flags, operators); }
-	
 	/** {@code L} */	public static final int ALLOW_LOCK		= (1 << 0);
 	/** {@code r} */	public static final int USES_MODRM		= (1 << 1);
 	/** {@code e.} */	public static final int NEED_RMEXT		= (1 << 2);
 	public static final int RM_EXT_OFFSET	= (1 << 3);
 	public static final int RM_EXT_MASK		= 7 * RM_EXT_OFFSET;
 	
-	/** {@code l.} */	public static final int RING_LEVEL		= (1 << 6);
-	public static final int RL_OFFSET		= (1 << 7);
-	public static final int RL_MASK			= 3 * RL_OFFSET;
+	/** {@code d} */	public static final int DEFAULT_64		= (1 << 6);
 	
 	public static int flags(
 			boolean allow_lock,
 			boolean uses_modrm,
 			boolean need_rmext,
-			int rm_ext_value,
-			int ring_level
+			boolean default_64,
+			int rm_ext_value
 	) {
 		int mask = 0;
 		if(allow_lock) mask |= ALLOW_LOCK;
 		if(uses_modrm) mask |= USES_MODRM;
+		if(default_64) mask |= DEFAULT_64;
 		
 		if(need_rmext) {
 			mask |= NEED_RMEXT;
 			mask |= ((rm_ext_value * RM_EXT_OFFSET) & RM_EXT_MASK);
-		}
-		
-		if(ring_level != -1) {
-			mask |= RING_LEVEL;
-			mask |= ((rm_ext_value * RL_OFFSET) & RL_MASK);
 		}
 		
 		return mask;
@@ -402,7 +416,7 @@ public final class AssemblyConsts {
 	 *       encode the operands
 	 *[ e. ] The instruction uses <i>ModR/M</i> and '.' represents
 	 *       the extension a number
-	 *[ l. ] The instruction can only be called in ring '.'
+	 *[ d  ] The instruction is default 64 bit and cannot encode 32 bit values
 	 *</pre>
 	 *
 	 * @param string
@@ -412,8 +426,8 @@ public final class AssemblyConsts {
 		boolean allow_lock = false;
 		boolean uses_modrm = false;
 		boolean need_rmext = false;
+		boolean default_64 = false;
 		int modrm_val = 0;
-		int ring_level = -1;
 		
 		for(int i = 0; i < string.length(); i++) {
 			char c = string.charAt(i);
@@ -421,14 +435,10 @@ public final class AssemblyConsts {
 			
 			if(c == 'L') allow_lock = true;
 			if(c == 'r') uses_modrm = true;
+			if(c == 'd') default_64 = true;
 			if(c == 'e') {
 				modrm_val = next - '0';
 				need_rmext = true;
-				i++;
-				continue;
-			}
-			if(c == 'l') {
-				ring_level = next - '0';
 				i++;
 				continue;
 			}
@@ -438,68 +448,8 @@ public final class AssemblyConsts {
 			allow_lock,
 			uses_modrm,
 			need_rmext,
-			modrm_val,
-			ring_level
+			default_64,
+			modrm_val
 		);
 	}
-	
-//	/**
-//	 * Calculate the flags from a string.<br>
-//	 *<pre>
-//	 *[ b  ] BYTE size regardless of operand-size attribute
-//	 *[ w  ] WORD size regardless of operand-size attribute
-//	 *[ d  ] DWORD size regardless of operand-size attribute
-//	 *[ q  ] QWORD size regardless of operand-size attribute
-//	 *[ r  ] First operand byte uses <i>ModR/M</i>
-//	 *[ e. ] The instruction uses <i>ModR/M</i> and '.' represents a number
-//	 *</pre>
-//	 *
-//	 * @param string
-//	 * @return
-//	 */
-//	public static int operand(String string) {
-//		// b  - BYTE
-//		// w  - WORD
-//		// d  - DWORD
-//		// q  - QWORD
-//		// v  - WORD or DWORD depending on size operand-size attribute
-//		// vq - QWORD or WORD depending on size operand-size attribute
-//		// vs - WORD or DWORD depending on size operand-size attribute
-//		boolean uses_modrm = false;
-//		boolean reg_opcode = false;
-//		
-//
-//		boolean reg_value = false;	// r
-//		boolean imm_value = false;	// I
-//		boolean rm_value = false;	// G, H
-//		boolean rel_value = false;	// J
-//		
-//		boolean has_rm_extension = false;
-//		int rm_ext_value = 0;
-//		
-//		for(int i = 0; i < string.length(); i++) {
-//			char c = string.charAt(i);
-//			char next = (i + 1 < string.length() ? string.charAt(i + 1):'\0');
-//			
-//			if(c == 'Z') reg_opcode = true;
-//			if(c == 'E'); // Modifier
-//			if(c == 'r') uses_modrm = true;
-//			
-//			if(c == 'e') {
-//				rm_ext_value = next - '0';
-//				uses_modrm = true;
-//				has_rm_extension = true;
-//				i++;
-//				continue;
-//			}
-//			
-//			if(c == 'm') {
-//				// Mode of operation, R E S A
-//				i++;
-//				continue;
-//			}
-//		}
-//		
-//		return 0;
-//	}
 }

@@ -109,7 +109,7 @@ public class IntermediateCodeOptimizer {
 				
 				// Check if the last element is a zero
 				Reg reg = inst.getLastParam();
-				if(reg instanceof NumberReg && ((NumberReg)reg).expr.isZero()) {
+				if(reg instanceof NumberReg && ((NumberReg)reg).value == 0) {
 					// Check if the equality result is referenced
 					int refs = getReferences(block, inst.getParam(0));
 					if(refs < 3) inst.remove(); // Remove the instruction...
