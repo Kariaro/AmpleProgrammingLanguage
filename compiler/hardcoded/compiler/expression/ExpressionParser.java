@@ -1,10 +1,7 @@
 package hardcoded.compiler.expression;
 
-import hardcoded.compiler.Expression;
-import hardcoded.compiler.Expression.AtomExpr;
-import hardcoded.compiler.Expression.ExprType;
-import hardcoded.compiler.Expression.OpExpr;
 import hardcoded.compiler.constants.AtomType;
+import hardcoded.compiler.constants.ExprType;
 
 // TODO: Signed unsigned?
 public final class ExpressionParser {

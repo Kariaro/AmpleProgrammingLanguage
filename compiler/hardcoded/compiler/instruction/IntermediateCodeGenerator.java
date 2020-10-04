@@ -1,18 +1,21 @@
 package hardcoded.compiler.instruction;
 
-import static hardcoded.compiler.Expression.ExprType.*;
+import static hardcoded.compiler.constants.ExprType.*;
 
 import java.util.*;
 
-import hardcoded.compiler.*;
+import hardcoded.compiler.Block;
 import hardcoded.compiler.Block.Function;
-import hardcoded.compiler.Expression.AtomExpr;
+import hardcoded.compiler.Identifier;
 import hardcoded.compiler.Identifier.IdType;
-import hardcoded.compiler.Statement.*;
+import hardcoded.compiler.Program;
 import hardcoded.compiler.constants.AtomType;
 import hardcoded.compiler.constants.IRInsts;
 import hardcoded.compiler.constants.Primitives;
+import hardcoded.compiler.expression.AtomExpr;
+import hardcoded.compiler.expression.Expression;
 import hardcoded.compiler.instruction.IRInstruction.*;
+import hardcoded.compiler.statement.*;
 
 /**
  * IR is short for 'Intermediate representation'
@@ -48,7 +51,6 @@ public class IntermediateCodeGenerator {
 				for(int j = 0; j < func.arguments.size(); j++) {
 					Identifier id = func.arguments.get(j);
 					str += ", " + id.atomType();
-					
 				}
 				
 				if(!str.isEmpty()) {
@@ -76,7 +78,7 @@ public class IntermediateCodeGenerator {
 //				inst = inst.next();
 //			}
 //		}
-//		
+		
 		return blocks;
 	}
 	
@@ -84,35 +86,36 @@ public class IntermediateCodeGenerator {
 		return !(e instanceof AtomExpr);
 	}
 	
-	private Map<String, Reg> variables = new HashMap<>();
-	private Reg addString(AtomExpr a) {
+	private Map<String, Param> variables = new HashMap<>();
+	private Param addString(AtomExpr a) {
 		if(strings == null) {
-			strings = new InstructionBlock(".strings", new IRInstruction(IRInsts.data, new ObjectReg(a)));
+			strings = new InstructionBlock(".consts", new IRInstruction(IRInsts.data, new DataParam(a.s_value, 0)));
 			strings.returnType = Primitives.VOID;
+			// strings.start.append(new IRInstruction(IRInsts.label, new IRInstruction.Label("const", true)));
 			
 			blocks.add(0, strings);
-			return new RefReg(".strings", 0);
+			return new RefReg(".consts", 0);
 		}
 		
 		int counter = 0;
 		{
 			IRInstruction inst = strings.start;
 			for(IRInstruction i : inst) {
-				ObjectReg reg = (ObjectReg)i.params.get(0);
+				DataParam data = (DataParam)i.getParam(0);
 				
-				if(reg.toString().equals(a.toString())) {
-					return new RefReg(".strings", counter);
+				if(data.toString().equals(a.toString())) {
+					return new RefReg(".consts", counter);
 				}
 				
 				counter++;
 			}
 		}
 		
-		strings.start.append(new IRInstruction(IRInsts.data, new ObjectReg(a)));
-		return new RefReg(".strings", counter);
+		strings.start.append(new IRInstruction(IRInsts.data, new DataParam(a.s_value, counter)));
+		return new RefReg(".consts", counter);
 	}
 	
-	private Reg createObject(Expression e) {
+	private Param createObject(Expression e) {
 		if(e.type() == atom) {
 			AtomExpr a = (AtomExpr)e;
 			
@@ -135,10 +138,9 @@ public class IntermediateCodeGenerator {
 //					return next;
 //				}
 				
-				Reg next;
+				Param next;
 				if(ident.idtype() == IdType.param) {
-					next = new NamedReg("@" + ident.name());
-					next.size = ident.atomType();
+					next = new Reg(ident.name(), ident.atomType(), ident.index());
 				} else {
 					next = IRInstruction.temp(size);
 				}
@@ -152,19 +154,20 @@ public class IntermediateCodeGenerator {
 			}
 		}
 		
-		// System.out.println("Creating object reg ? " + e);
-		return new ObjectReg(e.clone());
+		System.out.println("Creating object reg ? " + e);
+		//throw new NullPointerException("Failed to create parameter for expression '" + e +"'");
+		return new DebugParam(e.clone());
 	}
 	
-	private IRInstruction createInstructions(Function func, Expression expr, Reg request) {
-		IRInstruction inst = new IRInstruction(IRInsts.nop, new ObjectReg(expr.toString()));
+	private IRInstruction createInstructions(Function func, Expression expr, Param request) {
+		IRInstruction inst = new IRInstruction(IRInsts.nop, new DebugParam(expr.toString()));
 		
 		switch(expr.type()) {
 			case set: {
 				Expression a = expr.first(), b = expr.last();
 				
-				Reg reg_0 = createObject(a);
-				Reg reg_1 = createObject(b);
+				Param reg_0 = createObject(a);
+				Param reg_1 = createObject(b);
 				boolean pointer = false;
 				if(shouldCheck(a)) {
 					if(a.type() == decptr) {
@@ -215,15 +218,15 @@ public class IntermediateCodeGenerator {
 			case xor: {
 				Expression a = expr.first(), b = expr.last();
 				
-				Reg reg_0 = createObject(a);
-				Reg reg_1 = createObject(b);
+				Param reg_0 = createObject(a);
+				Param reg_1 = createObject(b);
 				if(shouldCheck(a)) {
-					reg_0 = IRInstruction.temp(reg_0.size);
+					reg_0 = IRInstruction.temp(reg_0.getSize());
 					inst.append(compileInstructions(func, a, reg_0));
 				}
 				
 				if(shouldCheck(b)) {
-					reg_1 = IRInstruction.temp(reg_1.size);
+					reg_1 = IRInstruction.temp(reg_1.getSize());
 					inst.append(compileInstructions(func, b, reg_1));
 				}
 				
@@ -234,9 +237,9 @@ public class IntermediateCodeGenerator {
 			case ret: {
 				Expression a = expr.first();
 				
-				Reg reg_0 = createObject(a);
+				Param reg_0 = createObject(a);
 				if(shouldCheck(a)) {
-					reg_0 = IRInstruction.temp();
+					reg_0 = IRInstruction.temp(reg_0.getSize());
 					inst.append(compileInstructions(func, a, reg_0));
 				}
 				
@@ -249,9 +252,9 @@ public class IntermediateCodeGenerator {
 			case nor: {
 				Expression a = expr.first();
 				
-				Reg reg_0 = createObject(a);
+				Param reg_0 = createObject(a);
 				if(shouldCheck(a)) {
-					reg_0 = IRInstruction.temp();
+					reg_0 = IRInstruction.temp(reg_0.getSize());
 					inst.append(compileInstructions(func, a, reg_0));
 				}
 				
@@ -264,9 +267,9 @@ public class IntermediateCodeGenerator {
 				
 				Expression a = expr.first();
 				
-				Reg reg_0 = createObject(a);
+				Param reg_0 = createObject(a);
 				if(shouldCheck(a)) {
-					reg_0 = IRInstruction.temp();
+					reg_0 = IRInstruction.temp(reg_0.getSize());
 					inst.append(compileInstructions(func, a, reg_0));
 				}
 				
@@ -277,7 +280,7 @@ public class IntermediateCodeGenerator {
 			case decptr: {
 				Expression a = expr.first();
 				
-				Reg reg_0 = createObject(a);
+				Param reg_0 = createObject(a);
 				if(shouldCheck(a)) {
 					reg_0 = IRInstruction.temp(a.calculateSize());
 					inst.append(compileInstructions(func, a, reg_0));
@@ -285,12 +288,13 @@ public class IntermediateCodeGenerator {
 				
 				// TODO: Reading from a Identifier should hold the primitive size and not the pointer size.
 				
-				if(request.size == null && reg_0.size != null) {
-					if(reg_0.size.isPointer())
-						request.size = AtomType.getPointer(reg_0.size, -1);
-					else
-						request.size = reg_0.size;
-				}
+				// FIXME
+//				if(request.size == null && reg_0.size != null) {
+//					if(reg_0.size.isPointer())
+//						request.size = AtomType.getPointer(reg_0.size, -1);
+//					else
+//						request.size = reg_0.size;
+//				}
 				
 				inst.append(new IRInstruction(IRInsts.read, IRInstruction.temp(request), reg_0));
 				break;
@@ -318,13 +322,13 @@ public class IntermediateCodeGenerator {
 				IRInsts type = IRInsts.convert(expr.type());
 				Expression a = expr.get(0), b = expr.get(1);
 				
-				Reg reg_0 = createObject(a);
+				Param reg_0 = createObject(a);
 				if(shouldCheck(a)) {
 					reg_0 = IRInstruction.temp(a.calculateSize());
 					inst.append(compileInstructions(func, a, reg_0));
 				}
 
-				Reg reg_1 = createObject(b);
+				Param reg_1 = createObject(b);
 				if(shouldCheck(b)) {
 					reg_1 = IRInstruction.temp(b.calculateSize());
 					inst.append(compileInstructions(func, b, reg_1));
@@ -337,7 +341,7 @@ public class IntermediateCodeGenerator {
 					break;
 				}
 				
-				Reg reg_2 = IRInstruction.temp();
+				Param reg_2 = IRInstruction.temp(reg_0.getSize());
 				inst.append(new IRInstruction(type, reg_2, reg_0, reg_1));
 				
 				for(int i = 2; i < expr.size(); i++) {
@@ -362,7 +366,7 @@ public class IntermediateCodeGenerator {
 			}
 			
 			case call: {
-				List<Reg> params = new ArrayList<>();
+				List<Param> params = new ArrayList<>();
 				
 				{
 					// Called function
@@ -372,22 +376,20 @@ public class IntermediateCodeGenerator {
 						AtomExpr a = (AtomExpr)e;
 						
 						if(a.isIdentifier()) {
-							Identifier ident = a.d_value;
-							
-
-							params.add(new IRInstruction.CallReg(ident.atomType(), e.toString()));
+							params.add(new IRInstruction.FunctionLabel(a.d_value));
 						}
 					} else {
-						params.add(new IRInstruction.CallReg(null, e.toString()));
+						params.add(new IRInstruction.LabelParam(e.toString()));
 					}
 				}
 				
 				for(int i = 1; i < expr.size(); i++) {
 					Expression e = expr.get(i);
-					Reg reg = createObject(e);
+					Param reg = createObject(e);
 					
 					if(shouldCheck(e)) {
-						reg = IRInstruction.temp();
+						// reg should be the size of the parameter for that function...
+						reg = IRInstruction.temp(reg.getSize());
 						inst.append(compileInstructions(func, e, reg));
 					}
 					
@@ -400,17 +402,17 @@ public class IntermediateCodeGenerator {
 					params.add(0, IRInstruction.temp(request));
 				}
 				
-				inst.append(new IRInstruction(IRInsts.call, params.toArray(new Reg[0])));
+				inst.append(new IRInstruction(IRInsts.call, params.toArray(new Param[0])));
 				break;
 			}
 			
 			case cand: {
-				Label label_end = new Label("cand.end");
-				if(request != null) inst.append(new IRInstruction(IRInsts.mov, request, new NumberReg(0)));
+				LabelParam label_end = new LabelParam("cand.end");
+				if(request != null) inst.append(new IRInstruction(IRInsts.mov, request, new NumberReg(0, request.getSize())));
 				
 				for(int i = 0; i < expr.size(); i++) {
 					Expression e = expr.get(i);
-					Reg reg = createObject(e);
+					Param reg = createObject(e);
 					
 					if(shouldCheck(e)) {
 						reg = IRInstruction.temp(e.calculateSize());
@@ -420,28 +422,28 @@ public class IntermediateCodeGenerator {
 					inst.append(new IRInstruction(IRInsts.brz, reg, label_end));
 				}
 
-				if(request != null) inst.append(new IRInstruction(IRInsts.mov, request, new NumberReg(1)));
+				if(request != null) inst.append(new IRInstruction(IRInsts.mov, request, new NumberReg(1, request.getSize())));
 				inst.append(new IRInstruction(IRInsts.label, label_end));
 				break;
 			}
 			
 			case cor: {
-				Label label_end = new Label("cor.end");
-				if(request != null) inst.append(new IRInstruction(IRInsts.mov, request, new NumberReg(1)));
+				LabelParam label_end = new LabelParam("cor.end");
+				if(request != null) inst.append(new IRInstruction(IRInsts.mov, request, new NumberReg(1, request.getSize())));
 				
 				for(int i = 0; i < expr.size(); i++) {
 					Expression e = expr.get(i);
-					Reg reg = createObject(e);
+					Param reg = createObject(e);
 					
 					if(shouldCheck(e)) {
-						reg = IRInstruction.temp();
+						reg = IRInstruction.temp(reg.getSize());
 						inst.append(compileInstructions(func, e, reg));
 					}
 					
 					inst.append(new IRInstruction(IRInsts.bnz, reg, label_end));
 				}
 
-				if(request != null) inst.append(new IRInstruction(IRInsts.mov, request, new NumberReg(0)));
+				if(request != null) inst.append(new IRInstruction(IRInsts.mov, request, new NumberReg(0, request.getSize())));
 				inst.append(new IRInstruction(IRInsts.label, label_end));
 				break;
 			}
@@ -466,7 +468,7 @@ public class IntermediateCodeGenerator {
 	private IRInstruction createIfInstructions(Function func, IfStat stat) {
 		IRInstruction inst;
 		
-		Label label_end = new Label("if.end");
+		LabelParam label_end = new LabelParam("if.end");
 		
 		if(stat.hasElseBody()) {
 			// ============================== //
@@ -479,15 +481,15 @@ public class IntermediateCodeGenerator {
 			//    ...
 			// end:
 			
-			Label label_else = new Label("if.else");
+			LabelParam label_else = new LabelParam("if.else");
 			
-			Reg temp = IRInstruction.temp(stat.condition().calculateSize());
-			inst = compileInstructions(func, stat.condition(), temp);
+			Param temp = IRInstruction.temp(stat.getCondition().calculateSize());
+			inst = compileInstructions(func, stat.getCondition(), temp);
 			inst.append(new IRInstruction(IRInsts.brz, temp, label_else));
-			inst.append(compileInstructions(func, stat.body()));
+			inst.append(compileInstructions(func, stat.getBody()));
 			inst.append(new IRInstruction(IRInsts.br, label_end));
 			inst.append(new IRInstruction(IRInsts.label, label_else));
-			inst.append(compileInstructions(func, stat.elseBody()));
+			inst.append(compileInstructions(func, stat.getElseBody()));
 			inst.append(new IRInstruction(IRInsts.label, label_end));
 		} else {
 			// ============================== //
@@ -497,10 +499,10 @@ public class IntermediateCodeGenerator {
 			//    ...
 			// end:
 
-			Reg temp = IRInstruction.temp(stat.condition().calculateSize());
-			inst = compileInstructions(func, stat.condition(), temp);
+			Param temp = IRInstruction.temp(stat.getCondition().calculateSize());
+			inst = compileInstructions(func, stat.getCondition(), temp);
 			inst.append(new IRInstruction(IRInsts.brz, temp, label_end));
-			inst.append(compileInstructions(func, stat.body()));
+			inst.append(compileInstructions(func, stat.getBody()));
 			inst.append(new IRInstruction(IRInsts.label, label_end));
 		}
 		
@@ -520,16 +522,16 @@ public class IntermediateCodeGenerator {
 		//   br [next]
 		// end:
 		
-		Label label_next = new Label("while.next");
-		Label label_loop = new Label("while.loop");
-		Label label_end = new Label("while.end");
+		LabelParam label_next = new LabelParam("while.next");
+		LabelParam label_loop = new LabelParam("while.loop");
+		LabelParam label_end = new LabelParam("while.end");
 
 		IRInstruction inst = new IRInstruction(IRInsts.label, label_next);
-		Reg temp = IRInstruction.temp(stat.condition().calculateSize());
-		inst.append(compileInstructions(func, stat.condition(), temp));
+		Param temp = IRInstruction.temp(stat.getCondition().calculateSize());
+		inst.append(compileInstructions(func, stat.getCondition(), temp));
 		inst.append(new IRInstruction(IRInsts.brz, temp, label_end));
 		inst.append(new IRInstruction(IRInsts.label, label_loop));
-		inst.append(compileInstructions(func, stat.body()));
+		inst.append(compileInstructions(func, stat.getBody()));
 		inst.append(new IRInstruction(IRInsts.br, label_next));
 		inst.append(new IRInstruction(IRInsts.label, label_end));
 		
@@ -539,15 +541,15 @@ public class IntermediateCodeGenerator {
 	private IRInstruction createForInstructions(Function func, ForStat stat) {
 		IRInstruction inst = new IRInstruction();
 		
-		Label label_next = new Label("for.next");
-		Label label_loop = new Label("for.loop");
-		Label label_end = new Label("for.end");
+		LabelParam label_next = new LabelParam("for.next");
+		LabelParam label_loop = new LabelParam("for.loop");
+		LabelParam label_end = new LabelParam("for.end");
 		
-		if(stat.variables() != null) {
-			inst.append(compileInstructions(func, stat.variables()));
+		if(stat.getVariables() != null) {
+			inst.append(compileInstructions(func, stat.getVariables()));
 		}
 		
-		if(stat.action() != null) {
+		if(stat.getAction() != null) {
 			// ============================== //
 			// for(x; y; z) { ... }
 			//   ; Define x
@@ -564,22 +566,22 @@ public class IntermediateCodeGenerator {
 			//   br [next]
 			// end:
 			
-			if(stat.condition() != null) {
-				Reg temp = IRInstruction.temp(stat.condition().calculateSize());
-				inst.append(compileInstructions(func, stat.condition(), temp));
+			if(stat.getCondition() != null) {
+				Param temp = IRInstruction.temp(stat.getCondition().calculateSize());
+				inst.append(compileInstructions(func, stat.getCondition(), temp));
 				inst.append(new IRInstruction(IRInsts.brz, temp, label_end));
 				inst.append(new IRInstruction(IRInsts.br, label_loop));
 			}
 			
 			inst.append(new IRInstruction(IRInsts.label, label_next));
-			if(stat.condition() != null) {
-				Reg temp = IRInstruction.temp(stat.condition().calculateSize());
-				inst.append(compileInstructions(func, stat.condition(), temp));
+			if(stat.getCondition() != null) {
+				Param temp = IRInstruction.temp(stat.getCondition().calculateSize());
+				inst.append(compileInstructions(func, stat.getCondition(), temp));
 				inst.append(new IRInstruction(IRInsts.brz, temp, label_end));
 			}
 			
 
-			inst.append(compileInstructions(func, stat.action()));
+			inst.append(compileInstructions(func, stat.getAction()));
 			inst.append(new IRInstruction(IRInsts.label, label_loop));
 		} else {
 			// ============================== //
@@ -593,14 +595,14 @@ public class IntermediateCodeGenerator {
 			// end:
 			
 			inst.append(new IRInstruction(IRInsts.label, label_next));
-			if(stat.condition() != null) {
-				Reg temp = IRInstruction.temp(stat.condition().calculateSize());
-				inst.append(compileInstructions(func, stat.condition(), temp));
+			if(stat.getCondition() != null) {
+				Param temp = IRInstruction.temp(stat.getCondition().calculateSize());
+				inst.append(compileInstructions(func, stat.getCondition(), temp));
 				inst.append(new IRInstruction(IRInsts.brz, temp, label_end));
 			}
 		}
 		
-		inst.append(compileInstructions(func, stat.body()));
+		inst.append(compileInstructions(func, stat.getBody()));
 		inst.append(new IRInstruction(IRInsts.br, label_next));
 		inst.append(new IRInstruction(IRInsts.label, label_end));
 		
@@ -620,7 +622,7 @@ public class IntermediateCodeGenerator {
 		return inst;
 	}
 	
-	private IRInstruction compileInstructions(Function func, Expression expr, Reg request) {
+	private IRInstruction compileInstructions(Function func, Expression expr, Param request) {
 		IRInstruction inst = createInstructions(func, expr, request);
 		return inst == null ? new IRInstruction():inst;
 	}
@@ -648,7 +650,7 @@ public class IntermediateCodeGenerator {
 			return createExprInstructions(func, (ExprStat)stat);
 		}
 		
-		IRInstruction inst = new IRInstruction(IRInsts.nop, new ObjectReg(stat.toString()));
+		IRInstruction inst = new IRInstruction(IRInsts.nop, new DebugParam(stat.toString()));
 		
 		if(stat.hasStatements()) {
 			IRInstruction point = null;

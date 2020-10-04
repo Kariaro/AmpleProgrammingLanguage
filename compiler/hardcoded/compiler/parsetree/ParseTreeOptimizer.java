@@ -1,27 +1,25 @@
 package hardcoded.compiler.parsetree;
 
-import static hardcoded.compiler.Expression.ExprType.*;
+import static hardcoded.compiler.constants.ExprType.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import hardcoded.compiler.*;
+import hardcoded.compiler.Block;
 import hardcoded.compiler.Block.Function;
-import hardcoded.compiler.Expression.AtomExpr;
-import hardcoded.compiler.Expression.ExprType;
-import hardcoded.compiler.Expression.OpExpr;
-import hardcoded.compiler.Statement.ForStat;
-import hardcoded.compiler.Statement.IfStat;
-import hardcoded.compiler.Statement.WhileStat;
+import hardcoded.compiler.Program;
 import hardcoded.compiler.constants.AtomType;
+import hardcoded.compiler.constants.ExprType;
 import hardcoded.compiler.constants.Utils;
-import hardcoded.compiler.expression.ExpressionParser;
+import hardcoded.compiler.expression.*;
+import hardcoded.compiler.statement.*;
 import hardcoded.visualization.Visualization;
 
 public class ParseTreeOptimizer {
 	
 	// TODO: Only if string is const otherwise stack....
 	// TODO: cor and cand has problems with some or operations...
+	// TODO: Check that all comma expressions are working correctly...
 	
 	public ParseTreeOptimizer() {
 		
@@ -61,7 +59,7 @@ public class ParseTreeOptimizer {
 				Statement stat = parent.get(index);
 				
 				if(stat instanceof ForStat) {
-					Expression c = ((ForStat)stat).condition();
+					Expression c = ((ForStat)stat).getCondition();
 					if(c instanceof AtomExpr) {
 						AtomExpr a = (AtomExpr)c;
 						if(a.isNumber() && a.isZero()) parent.set(index, Statement.EMPTY);
@@ -69,7 +67,7 @@ public class ParseTreeOptimizer {
 				}
 				
 				if(stat instanceof WhileStat) {
-					Expression c = ((WhileStat)stat).condition();
+					Expression c = ((WhileStat)stat).getCondition();
 					if(c instanceof AtomExpr) {
 						AtomExpr a = (AtomExpr)c;
 						if(a.isNumber() && a.isZero()) parent.set(index, Statement.EMPTY);
@@ -78,18 +76,18 @@ public class ParseTreeOptimizer {
 				
 				if(stat instanceof IfStat) {
 					IfStat is = (IfStat)stat;
-					Expression c = is.condition();
+					Expression c = is.getCondition();
 					if(c instanceof AtomExpr) {
 						AtomExpr a = (AtomExpr)c;
 						if(a.isNumber()) {
 							if(a.isZero()) {
-								if(is.elseBody() == null) {
+								if(is.getElseBody() == null) {
 									parent.set(index, Statement.EMPTY);
 								} else {
-									parent.set(index, is.elseBody());
+									parent.set(index, is.getElseBody());
 								}
 							} else {
-								parent.set(index, is.body());
+								parent.set(index, is.getBody());
 							}
 						}
 					}

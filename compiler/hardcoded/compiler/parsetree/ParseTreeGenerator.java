@@ -1,18 +1,22 @@
 package hardcoded.compiler.parsetree;
 
-import static hardcoded.compiler.Expression.ExprType.*;
+import static hardcoded.compiler.constants.ExprType.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-import hardcoded.compiler.*;
+import hardcoded.compiler.Block;
 import hardcoded.compiler.Block.Function;
-import hardcoded.compiler.Expression.*;
-import hardcoded.compiler.Statement.*;
+import hardcoded.compiler.Identifier;
+import hardcoded.compiler.Program;
 import hardcoded.compiler.constants.*;
 import hardcoded.compiler.constants.Modifiers.Modifier;
 import hardcoded.compiler.context.Lang;
+import hardcoded.compiler.expression.AtomExpr;
+import hardcoded.compiler.expression.Expression;
+import hardcoded.compiler.expression.OpExpr;
+import hardcoded.compiler.statement.*;
 import hardcoded.compiler.types.PointerType;
 import hardcoded.compiler.types.PrimitiveType;
 import hardcoded.compiler.types.Type;
@@ -39,7 +43,7 @@ public class ParseTreeGenerator {
 		LEXER = lexer.getImmutableTokenizer();
 	}
 	
-
+	
 	private Map<String, Function> FUNCTIONS = new LinkedHashMap<>();
 	private Map<String, Expression> GLOBAL = new LinkedHashMap<>();
 	private Map<String, Type> defined_types = new HashMap<>();

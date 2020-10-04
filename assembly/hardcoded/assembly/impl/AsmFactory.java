@@ -5,15 +5,34 @@ import java.util.List;
 
 import hardcoded.assembly.x86.*;
 import hardcoded.compiler.assembler.Assembly;
-import hardcoded.compiler.assembler.AssemblyConsts;
 import hardcoded.compiler.assembler.AssemblyConsts.AsmOp;
 import hardcoded.compiler.assembler.AssemblyConsts.OprTy;
 import hardcoded.utils.NumberUtils;
-import hardcoded.utils.StringUtils;
 import hardcoded.utils.buffer.IntBuffer;
 
 public final class AsmFactory {
 	private AsmFactory() {}
+	
+//	public static void main(String[] args) {
+//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jz 0x7f"))));
+//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jz 0x7ff"))));
+//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jz 0x7fff"))));
+//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jz 0x7ffff"))));
+//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jz 0x7fffff"))));
+//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jz 0x7ffffff"))));
+//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jz 0x7fffffff"))));
+//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jz 0x7ffffffff"))));
+//		
+//		System.out.println();
+//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jmp 0x7f"))));
+//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jmp 0x7ff"))));
+//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jmp 0x7fff"))));
+//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jmp 0x7ffff"))));
+//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jmp 0x7fffff"))));
+//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jmp 0x7ffffff"))));
+//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jmp 0x7fffffff"))));
+//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jmp 0x7ffffffff"))));
+//	}
 	
 	public static AsmInst getInstruction(AsmMnm mnemonic, AsmOpr... operators) {
 		return new AsmInst(mnemonic, operators);
@@ -56,24 +75,6 @@ public final class AsmFactory {
 			.toArray(AsmOpr[]::new);
 		
 		return new AsmInst(mnemonic, operators);
-	}
-	
-	/**
-	 * Convert a size type into a string.
-	 * 
-	 * @param	bits	the size
-	 * @return a serialized version of a size type.
-	 */
-	public static String getSizeString(int bits) {
-		switch(bits) {
-			case 8: return "byte";
-			case 16: return "word";
-			case 32: return "dword";
-			case 64: return "qword";
-			case 128: return "xmmword";
-			case 256: return "ymmword";
-			default: return "???";
-		}
 	}
 	
 	private static int getMemorySize(AsmOpr opr) {
@@ -291,43 +292,6 @@ public final class AsmFactory {
 		
 		if(mustUseRex(inst)) opcode.setRex(true);
 		
-		return opcode.build();
-	}
-	
-	// Encodes two operand ModR/M opcodes
-	private static int[] _compile_2_rm(AsmOp op, AsmInst inst) {
-		AsmOpr op0 = inst.getOperand(0);
-		AsmOpr op1 = inst.getOperand(1);
-		
-		AsmOpr mem;
-		AsmOpr reg;
-		
-		boolean mem_first = op0.isMemory();
-		if(mem_first) {
-			mem = op0;
-			reg = op1;
-		} else {
-			mem = op1;
-			reg = op0;
-		}
-		
-		// FIXME: 'lea' instruction does not care about size....
-//		if(reg.getSize() != mem.getSize())
-//			return null;
-		
-		
-		Opcode opcode = new Opcode();
-		opcode.setOpcode(op.getOpcode());
-		
-		
-		if(reg.getSize() == 64) opcode.setRexW(); // W: Change operand size to 64 bit.
-		/* SIB index */
-		
-		if(getMemorySize(mem) == 32) opcode.setAddressSize(true); // Change address size to 32 bit. [0x67]
-		if(reg.getSize() == 16)      opcode.setOperandSize(true); // Change operand size to 16 bit. [0x66]
-		
-		
-		apply_modrm_rm(opcode, op, inst);
 		return opcode.build();
 	}
 	
