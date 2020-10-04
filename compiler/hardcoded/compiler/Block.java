@@ -4,9 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
-import hardcoded.compiler.Statement.Variable;
 import hardcoded.compiler.constants.AtomType;
 import hardcoded.compiler.constants.Modifiers.Modifier;
+import hardcoded.compiler.statement.Statement;
+import hardcoded.compiler.statement.Variable;
 import hardcoded.compiler.types.Type;
 import hardcoded.visualization.Printable;
 

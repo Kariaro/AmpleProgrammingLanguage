@@ -1,6 +1,6 @@
 package hardcoded.compiler.constants;
 
-import hardcoded.compiler.Expression.ExprType;
+import hardcoded.compiler.constants.ExprType;
 
 /**
  * This is the full instruction set for the ir part of the compiler.
@@ -61,7 +61,7 @@ public enum IRInsts {
 	// Misc
 	nop,		// nop											No operation
 	label,		// label										Define a label
-	data,		// data			[TYPE], [VALUE]					Define data of type [TYPE]
+	data,		// data			[LABEL], [VALUE]				Define data of type [TYPE]
 	;
 	
 	

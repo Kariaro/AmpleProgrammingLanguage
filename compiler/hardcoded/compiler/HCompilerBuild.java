@@ -55,7 +55,7 @@ public class HCompilerBuild {
 		ace = new AssemblyCodeExporter();
 		
 		String file = "main.hc";
-		file = "tests/000_pointer.hc";
+		// file = "tests/000_pointer.hc";
 		// file = "tests/001_comma.hc";
 		// file = "tests/002_invalid_assign.hc";
 		// file = "tests/003_invalid_brackets.hc";

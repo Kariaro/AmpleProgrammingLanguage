@@ -3,10 +3,10 @@ package hardcoded.compiler.instruction;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import hardcoded.compiler.Expression;
-import hardcoded.compiler.Expression.AtomExpr;
+import hardcoded.compiler.Identifier;
 import hardcoded.compiler.constants.AtomType;
 import hardcoded.compiler.constants.IRInsts;
+import hardcoded.compiler.expression.AtomExpr;
 import hardcoded.utils.StringUtils;
 
 /**
@@ -26,7 +26,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	private IRInstruction prev;
 	private IRInstruction next;
 	
-	public List<Reg> params = new ArrayList<>();
+	public List<Param> params = new ArrayList<>();
 	public IRInsts op = IRInsts.nop;
 	private AtomType size;
 	
@@ -251,20 +251,21 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	// ==================== NON LIST METHODS ==================== //
 	private static final AtomicInteger atomic_reg = new AtomicInteger();
 	private static final AtomicInteger atomic = new AtomicInteger();
+	
 	public static void reset_counter() { atomic_reg.set(0); }
-	public static Reg temp() { return new Reg(atomic_reg.getAndIncrement()); }
-	public static Reg temp(String name) { return new NamedReg(name, atomic_reg.getAndIncrement()); }
-	public static Reg temp(Reg reg) { return reg != null ? reg:temp(); }
-	public static Reg temp(AtomType size) { return new Reg(size, atomic_reg.getAndIncrement()); }
-	public static Reg temp(AtomType size, Reg reg) { return reg != null ? reg:temp(size); }
-	public static final Reg NONE = new Reg() {
-		{
-			size = null;
-			index = -1;
-		}
-		
+	public static Param temp(String name, int size) { return new Reg(name, size, atomic_reg.getAndIncrement()); }
+	public static Param temp(Param reg) { return reg != null ? reg:new Reg(null, 0, atomic_reg.getAndIncrement()); }
+	public static Param temp(AtomType size) { return new Reg(size, atomic_reg.getAndIncrement()); }
+	public static Param temp(int size) { return new Reg(size, atomic_reg.getAndIncrement()); }
+	
+	public static Param temp(AtomType size, Param reg) { return reg != null ? reg:temp(size); }
+	
+	public static final Param NONE = new Param() {
 		public boolean equals(Object obj) { return false; }
 		public String toString() { return "..."; }
+		public String getName() { return null; }
+		public int getIndex() { return -1; }
+		public AtomType getSize() { return null; }
 	};
 	
 	private static final boolean DEBUG_SIZE = false;
@@ -283,31 +284,119 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		return sb.toString();
 	}
 	
-	public static class Reg {
+	public static interface Param {
+		/**
+		 * Returns the name of this register.
+		 * @return the name of this register
+		 */
+		public String getName();
+		
+		/**
+		 * Returns the index of a register or {@code -1} if the register is a variable register.
+		 * @return
+		 */
+		public int getIndex();
+		
+		/**
+		 * Returns the size of this register.
+		 * @return the size of this register
+		 */
+		public AtomType getSize();
+	}
+	
+	/**
+	 * This is a parameter used for debuging the code and will never be outputed to the end user.
+	 * 
+	 * @author HardCoded
+	 */
+	public static class DebugParam implements Param {
+		private final Object object;
+		
+		public DebugParam(Object object) {
+			this.object = object;
+		}
+		
+		public AtomType getSize() { return null; }
+		public int getIndex() { return -1; }
+		public String getName() { return null; }
+		public String toString() { return Objects.toString(object); }
+	}
+	
+	public static class Reg implements Param {
+		public String name;
 		public int index;
 		public AtomType size;
 		
-		public Reg() {}
-		public Reg(int index) {
-			this.index = index;
+		/**
+		 * There are two types of register. Either they are generated or
+		 * they are given by the coder.
+		 */
+		public boolean isGenerated;
+		
+		public Reg(AtomType type, int index) {
+			this(null, type, index);
 		}
 		
-		public Reg(AtomType size, int index) {
+		public Reg(int size, int index) {
+			this(null, AtomType.getNumberType(size), index);
+		}
+		
+		public Reg(String name, int size, int index) {
+			this(name, AtomType.getNumberType(size), index);
+		}
+		
+		public Reg(String name, AtomType size, int index) {
 			this.index = index;
+			this.name = name;
 			this.size = size;
+			
+			if(name == null)
+				isGenerated = true;
+		}
+		
+		public AtomType getSize() {
+			return size;
+		}
+		
+		public String getName() {
+			return name;
+		}
+		
+		public int getIndex() {
+			return index;
 		}
 		
 		public String toString() {
-			return "$" + createValue(index).toUpperCase() + (DEBUG_SIZE ? (":" + size):"");
+			if(isGenerated) {
+				return "$" + createValue(index).toUpperCase() + (DEBUG_SIZE ? (":" + size):"");
+			}
+			
+			return "@" + name + (DEBUG_SIZE ? (":" + size):"");
 		}
 	}
 	
-	public static class RefReg extends Reg {
+	// Reference to a label
+	// TODO: Fix this class.
+	public static class RefReg implements Param {
 		public String label;
+		public int index;
 		
 		public RefReg(String label, int index) {
 			this.label = label;
 			this.index = index;
+		}
+		
+		public String getName() {
+			return label;
+		}
+		
+		// TODO: We need to get the size of a reference register.
+		public AtomType getSize() {
+			return null;
+		}
+		
+		public int getIndex() {
+			return index;
 		}
 		
 		public String toString() {
@@ -315,90 +404,96 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		}
 	}
 	
-	public static class NamedReg extends Reg {
-		public String name;
+	public static class NumberReg implements Param {
+		public long value;
+		public AtomType size;
 		
-		public NamedReg(String name) {
-			this.name = name;
+		public NumberReg(AtomExpr expr) {
+			this(expr.i_value, expr.atomType);
 		}
 		
-		public NamedReg(String name, int index) {
-			this.index = index;
-			this.name = name;
-		}
-		
-		public String toString() {
-			return name + (DEBUG_SIZE ? (":" + size):"");
-		}
-	}
-	
-	public static class CallReg extends Reg {
-		public String name;
-		
-		public CallReg(String name) {
-			this.name = name;
-		}
-		
-		public CallReg(AtomType size, String name) {
-			this.name = name;
+		public NumberReg(long value, AtomType size) {
+			this.value = value;
 			this.size = size;
 		}
 		
-		public String toString() {
-			return name;
-		}
-	}
-	
-	public static class NumberReg extends Reg {
-		// TODO: NumberReg should use a long instead of AtomExpr.
-		public long value;
-		
-		public NumberReg(AtomExpr expr) {
-			this.size = expr.calculateSize();
-			this.value = expr.i_value;
-		}
-		
-		public NumberReg(long value) {
-			this.size = null;
+		public NumberReg(long value, int size) {
 			this.value = value;
+			this.size = AtomType.getNumberType(size);
 		}
 		
 		public long value() {
 			return value;
 		}
 		
+		public AtomType getSize() {
+			return size;
+		}
+		
+		public String getName() {
+			return null;
+		}
+		
+		public int getIndex() {
+			return -1;
+		}
+		
 		public String toString() {
-			return value + (DEBUG_SIZE ? (":" + size):"");
+			return Long.toString(value);
 		}
 	}
 	
-	public static class ObjectReg extends Reg {
+	public static class DataParam implements Param {
 		public Object obj;
+		public int index;
 		
-		public ObjectReg(Object obj) {
+		// FIXME: Remove the Object and replace with the type [ String ]
+		public DataParam(Object obj, int index) {
+			this.index = index;
 			this.obj = obj;
-			
-			if(obj instanceof Expression) {
-				size = ((Expression)obj).calculateSize();
-			}
+		}
+		
+		public AtomType getSize() {
+			return null;
+		}
+		
+		public String getName() {
+			return null;
+		}
+		
+		public int getIndex() {
+			return -1;
 		}
 		
 		public String toString() {
-			return Objects.toString(obj);
+			return "[" + index + "] = '" + Objects.toString(obj) + "'";
 		}
 	}
 	
-	public static class Label extends Reg {
+	// Used for functions. Data and more.
+	public static class LabelParam implements Param {
 		public String name;
 		public boolean compiler;
 		
-		public Label(String name) {
+		public LabelParam(String name) {
 			this(name, true);
 		}
 		
-		public Label(String name, boolean compiler) {
+		public LabelParam(String name, boolean compiler) {
 			this.compiler = compiler;
 			this.name = (compiler ? "_":"") + name + (compiler ? ("_" + atomic.getAndIncrement() + ""):"");
+		}
+		
+		public AtomType getSize() {
+			return null;
+		}
+		
+		public String getName() {
+			return name;
+		}
+		
+		public int getIndex() {
+			return -1;
 		}
 		
 		public String toString() {
@@ -406,12 +501,21 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		}
 	}
 	
+	public static class FunctionLabel extends LabelParam {
+		public Identifier ident;
+		
+		public FunctionLabel(Identifier ident) {
+			super(ident.toString(), true);
+			this.ident = ident;
+		}
+	}
 	
-	public Reg getParam(int index) {
+	
+	public Param getParam(int index) {
 		return params.get(index);
 	}
 	
-	public Reg getLastParam() {
+	public Param getLastParam() {
 		return params.get(params.size() - 1);
 	}
 	
@@ -420,7 +524,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		this.op = op;
 	}
 	
-	public IRInstruction(IRInsts op, Reg... regs) {
+	public IRInstruction(IRInsts op, Param... regs) {
 		this.op = op;
 		this.params.addAll(Arrays.asList(regs));
 	}
@@ -448,16 +552,15 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	public AtomType calculateSize() {
 		if(params.isEmpty()) return null;
 		
-		AtomType size = params.get(0).size;
-		if(op == IRInsts.call) size = params.get(1).size;
+		if(op == IRInsts.call) return params.get(1).getSize();
 		
 		if(op == IRInsts.brz
 		|| op == IRInsts.bnz
 		|| op == IRInsts.br) {
-			size = null;
+			return null;
 		}
 		
-		return size;
+		return params.get(0).getSize();
 	}
 	
 	@Override
@@ -465,15 +568,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		if(op == IRInsts.label) return params.get(0) + ":";
 		if(params.isEmpty()) return Objects.toString(op);
 		
-		AtomType size = params.get(0).size;
-		if(op == IRInsts.call) size = params.get(1).size;
-		
-		if(op == IRInsts.brz
-		|| op == IRInsts.bnz
-		|| op == IRInsts.br) {
-			size = null;
-		}
-		
-		return String.format("%-8s%-8s         [%s]", op, (size != null ? size:""), StringUtils.join("], [", params));
+		AtomType size = calculateSize();
+		return String.format("%-8s%-8s         [%s]", op, (size == null ? "":size), StringUtils.join("], [", params));
 	}
 }

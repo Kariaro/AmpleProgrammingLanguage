@@ -2,9 +2,9 @@ package hardcoded.compiler.constants;
 
 import java.util.List;
 
-import hardcoded.compiler.*;
 import hardcoded.compiler.Block.Function;
-import hardcoded.compiler.Statement.*;
+import hardcoded.compiler.expression.Expression;
+import hardcoded.compiler.statement.*;
 
 public final class Utils {
 	private Utils() {}
@@ -84,16 +84,24 @@ public final class Utils {
 		if(stat instanceof IfStat) {
 			IfStat is = (IfStat)stat;
 			String str = is.toString();
-			sb.append(str.substring(0, str.length() - 1)).append(" {").append(printPretty(is.body())).append("\n}");
-			if(is.elseBody() != null) sb.append(" else {").append(printPretty(is.elseBody())).append("\n}");
+			sb.append(str.substring(0, str.length() - 1)).append(" {").append(printPretty(is.getBody())).append("\n}");
+			if(is.getElseBody() != null) sb.append(" else {").append(printPretty(is.getElseBody())).append("\n}");
 			return sb.toString();
 		}
 		
-		if(stat instanceof WhileStat || stat instanceof ForStat) {
-			NestedStat ns = (NestedStat)stat;
-			String str = ns.toString();
-			return sb.append(str.substring(0, str.length() - 1)).append(" {").append(printPretty(ns.body())).append("\n}").toString();
+		if(stat instanceof WhileStat) {
+			WhileStat ws = (WhileStat)stat;
+			String str = ws.toString();
+			return sb.append(str.substring(0, str.length() - 1)).append(" {").append(printPretty(ws.getBody())).append("\n}").toString();
 		}
+		
+		if(stat instanceof ForStat) {
+			ForStat fs = (ForStat)stat;
+			String str = fs.toString();
+			return sb.append(str.substring(0, str.length() - 1)).append(" {").append(printPretty(fs.getBody())).append("\n}").toString();
+		}
+		
+		// TODO: Switch statements
 		
 		if(stat.hasStatements()) {
 			for(Statement s : stat.getStatements()) {

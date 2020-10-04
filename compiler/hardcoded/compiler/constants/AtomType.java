@@ -115,6 +115,22 @@ public class AtomType {
 		return new AtomType(type.name.replace("*", ""), type.size, flags);
 	}
 	
+	@Deprecated
+	public static AtomType get(int size, int pointerDepth) {
+		return new AtomType("i" + size, size);
+	}
+	
+	public static AtomType getNumberType(int size) {
+		switch(size) {
+			case 8: return i8;
+			case 16: return i16;
+			case 32: return i32;
+			case 64: return i64;
+		}
+		
+		throw new RuntimeException("Invalid number type size '" + size + "'");
+	}
+	
 	public String toString() {
 		return name;
 	}

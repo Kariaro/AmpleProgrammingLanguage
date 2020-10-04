@@ -2,8 +2,6 @@ package hardcoded.assembly.x86;
 
 import java.util.List;
 
-import hardcoded.assembly.impl.AsmFactory;
-
 public class AsmOpr {
 	private final List<OprPart> parts;
 	private final boolean isAddress;
@@ -128,7 +126,10 @@ public class AsmOpr {
 		String value = sb.toString().trim().replace("+ -", "- ").toLowerCase();
 		
 		if(isAddress) {
-			if(address_size > 0) return AsmFactory.getSizeString(address_size) + " [" + value + "]";
+			if(address_size == 8) return "byte [" + value + "]";
+			if(address_size == 16) return "word [" + value + "]";
+			if(address_size == 32) return "dword [" + value + "]";
+			if(address_size == 64) return "qword [" + value + "]";
 			return "[" + value + "]";
 		}
 		

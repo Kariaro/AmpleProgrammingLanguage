@@ -5,8 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import hardcoded.compiler.constants.IRInsts;
-import hardcoded.compiler.instruction.IRInstruction.NumberReg;
-import hardcoded.compiler.instruction.IRInstruction.Reg;
+import hardcoded.compiler.instruction.IRInstruction.*;
 
 public class IntermediateCodeOptimizer {
 	public IntermediateCodeOptimizer() {
@@ -108,7 +107,7 @@ public class IntermediateCodeOptimizer {
 				boolean pbr = next.type() == IRInsts.brz;
 				
 				// Check if the last element is a zero
-				Reg reg = inst.getLastParam();
+				Param reg = inst.getLastParam();
 				if(reg instanceof NumberReg && ((NumberReg)reg).value == 0) {
 					// Check if the equality result is referenced
 					int refs = getReferences(block, inst.getParam(0));
@@ -130,20 +129,20 @@ public class IntermediateCodeOptimizer {
 	 * @param	block	the instruction block to optimize
 	 */
 	private void counter_optimization(InstructionBlock block) {
-		Map<Integer, Reg> map = new HashMap<>();
+		Map<Integer, Param> map = new HashMap<>();
 		int index = 0;
 		
 		IRInstruction inst = block.start;
 		
 		do {
 			for(int i = 0; i < inst.params.size(); i++) {
-				Reg reg = inst.getParam(i);
+				Param reg = inst.getParam(i);
 				
-				if(reg.getClass() == Reg.class) {
-					Reg next = map.get(reg.index);
+				if(reg.getClass() == Param.class) {
+					Param next = map.get(reg.getIndex());
 					if(next == null) {
-						next = new Reg(reg.size, index++);
-						map.put(reg.index, next);
+						next = new Reg(reg.getSize(), index++);
+						map.put(reg.getIndex(), next);
 					}
 					
 					inst.params.set(i, next);
@@ -173,8 +172,8 @@ public class IntermediateCodeOptimizer {
 				//    ... [z], [b], [c]
 				//    If z was zero before.
 				if(inst.next().op == IRInsts.mov && canReduce(inst.op)) {
-					Reg reg = inst.params.get(0);
-					Reg wnt = inst.next().params.get(1);
+					Param reg = inst.params.get(0);
+					Param wnt = inst.next().params.get(1);
 					
 					if(getReferences(start, reg) == 2 && wnt == reg) {
 						inst.params.set(0, inst.next().params.get(0));
@@ -188,7 +187,7 @@ public class IntermediateCodeOptimizer {
 			//    read [x], [y]
 			
 			if(!inst.params.isEmpty()) {
-				Reg reg = inst.params.get(0);
+				Param reg = inst.params.get(0);
 				int num = getReferences(start, reg);
 				
 				// Only remove temporary variables.
@@ -230,13 +229,13 @@ public class IntermediateCodeOptimizer {
 		return block.start;
 	}
 	
-	private int getReferences(InstructionBlock block, Reg reg) { return getReferences(block.start, reg); }
-	private int getReferences(IRInstruction in, Reg reg) {
+	private int getReferences(InstructionBlock block, Param reg) { return getReferences(block.start, reg); }
+	private int getReferences(IRInstruction in, Param reg) {
 		in = in.first();
 		int references = 0;
 		
 		for(IRInstruction inst : in) {
-			for(Reg r : inst.params) {
+			for(Param r : inst.params) {
 				if(reg.equals(r)) references++;
 			}
 		}
