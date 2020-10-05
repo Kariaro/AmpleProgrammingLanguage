@@ -19,55 +19,61 @@ public final class ExpressionParser {
 	
 	@FunctionalInterface
 	private static interface BiFnc {
-		public default AtomExpr run(AtomExpr a, AtomExpr b) { return o(a.i_value, b.i_value).convert(AtomType.largest(a.atomType, b.atomType)); }
-		AtomExpr o(long a, long b);
+		public default AtomExpr run(AtomExpr a, AtomExpr b) {
+			boolean sign = !a.atomType.isSigned()
+						|| !b.atomType.isSigned();
+			
+			return new AtomExpr(o(sign, a.i_value, b.i_value)).convert(AtomType.largest(a.atomType, b.atomType));
+		}
+		
+		long o(boolean unsigned, long a, long b);
 	}
 	
 	@FunctionalInterface
 	private static interface UnFnc {
-		public default AtomExpr run(AtomExpr a) { return o(a.i_value).convert(a.atomType); }
-		AtomExpr o(long a);
+		public default AtomExpr run(AtomExpr a) { return new AtomExpr(o(!a.atomType.isSigned(), a.i_value)).convert(a.atomType); }
+		long o(boolean unsigned, long a);
 	}
 	
 	
 	// Unsigned > Signed
 	
-	/* unsigned safe */ private static final BiFnc ADD = (a, b) -> { return new AtomExpr(a + b); };
-	/* unsigned safe */ private static final BiFnc SUB = (a, b) -> { return new AtomExpr(a - b); };
+	@UnsignedSafe private static final BiFnc ADD = ($, a, b) -> (a + b);
+	@UnsignedSafe private static final BiFnc SUB = ($, a, b) -> (a - b);
 	
-	private static final BiFnc MUL = (a, b) -> { return new AtomExpr(a * b); };
-	private static final BiFnc DIV = (a, b) -> { return new AtomExpr(a / b); };
-	private static final BiFnc MOD = (a, b) -> { return new AtomExpr(a % b); };
+	private static final BiFnc MUL = (unsigned, a, b) -> {
+		if(unsigned) {
+			// calculate a * b with overflow
+		}
+		
+		return a * b;
+	};
+	private static final BiFnc DIV = (sign, a, b) -> (a / b);
+	private static final BiFnc MOD = (sign, a, b) -> (a % b);
 	
-	/* unsigned safe */ private static final BiFnc XOR = (a, b) -> { return new AtomExpr(a ^ b); };
-	/* unsigned safe */ private static final BiFnc AND = (a, b) -> { return new AtomExpr(a & b); };
-	/* unsigned safe */ private static final BiFnc OR = (a, b) -> { return new AtomExpr(a | b); };
+	@UnsignedSafe private static final BiFnc XOR = ($, a, b) -> (a ^ b);
+	@UnsignedSafe private static final BiFnc AND = ($, a, b) -> (a & b);
+	@UnsignedSafe private static final BiFnc OR = ($, a, b) -> (a | b);
 	
-	private static final BiFnc SHR = (a, b) -> { return new AtomExpr(a >>> b); };
-	private static final BiFnc SHL = (a, b) -> { return new AtomExpr(a << b); };
+	private static final BiFnc SHR = (sign, a, b) -> (a >>> b);
+	private static final BiFnc SHL = (sign, a, b) -> (a << b);
 	
-	/* unsigned safe */ private static final BiFnc EQ = (a, b) -> { return new AtomExpr(a == b ? 1:0); };
-	/* unsigned safe */ private static final BiFnc NEQ = (a, b) -> { return new AtomExpr(a != b ? 1:0); };
+	@UnsignedSafe private static final BiFnc EQ = ($, a, b) -> (a == b ? 1:0);
+	@UnsignedSafe private static final BiFnc NEQ = ($, a, b) -> (a != b ? 1:0);
 	
-	private static final BiFnc LT = (a, b) -> { return new AtomExpr(a < b ? 1:0); };
-	private static final BiFnc LTE = (a, b) -> { return new AtomExpr(a <= b ? 1:0); };
-	private static final BiFnc GT = (a, b) -> { return new AtomExpr(a > b ? 1:0); };
-	private static final BiFnc GTE = (a, b) -> { return new AtomExpr(a >= b ? 1:0); };
+	private static final BiFnc LT = (sign, a, b) -> (a < b ? 1:0);
+	private static final BiFnc LTE = (sign, a, b) -> (a <= b ? 1:0);
+	private static final BiFnc GT = (sign, a, b) -> (a > b ? 1:0);
+	private static final BiFnc GTE = (sign, a, b) -> (a >= b ? 1:0);
 	
-	/* unsigned safe */
-	@SuppressWarnings("unused") private static final BiFnc CAND = (a, b) -> { return new AtomExpr(((a != 0) && (b != 0)) ? 1:0); };
-	@SuppressWarnings("unused") private static final BiFnc COR = (a, b) -> { return new AtomExpr(((a != 0) || (b != 0)) ? 1:0); };
+	@UnsignedSafe private static final BiFnc CAND = ($, a, b) -> (((a != 0) && (b != 0)) ? 1:0);
+	@UnsignedSafe private static final BiFnc COR = ($, a, b) -> (((a != 0) || (b != 0)) ? 1:0);
 	
-	/* unsigned safe */ private static final UnFnc NOR = (a) -> { return new AtomExpr(~a); };
-	/* unsigned safe */ private static final UnFnc NOT = (a) -> { return new AtomExpr(a == 0 ? 1:0); };
+	@UnsignedSafe private static final UnFnc NOR = ($, a) -> (~a);
+	@UnsignedSafe private static final UnFnc NOT = ($, a) -> (a == 0 ? 1:0);
 	
 	// Does not change unsigned values.
-	/* Should throw error becuase other wise the coder could mistake the expression.
-	 * [(3 - -(unsigned)4)] as 7.
-	 * 
-	 * This is complicated....
-	 */
-	private static final UnFnc NEG = (a) -> { return new AtomExpr(-a); };
+	private static final UnFnc NEG = (sign, a) -> (-a);
 	
 	
 	
@@ -111,3 +117,6 @@ public final class ExpressionParser {
 		}
 	}
 }
+
+/** Temporary interface to tell the dev that this operation is unsigned safe meaning that the operation wont change depending on sign */
+@interface UnsignedSafe {}

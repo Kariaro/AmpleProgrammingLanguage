@@ -18,8 +18,9 @@ public interface Expression extends Printable {
 		public List<Expression> getElements() { return null; }
 		public Expression get(int index) { return null; }
 		public void set(int index, Expression e) {}
+		public void remove(int index) {}
 		public Expression clone() { return this; }
-		public int size() { return 0; }
+		public int length() { return 0; }
 	};
 	
 	/**
@@ -55,10 +56,16 @@ public interface Expression extends Printable {
 	public void set(int index, Expression expr);
 	
 	/**
+	 * Removes the child node at the specified position.
+	 * @param	index	the index of the child node to be removed
+	 */
+	public void remove(int index);
+	
+	/**
 	 * Returns the number of child nodes in this list.
 	 * @return the number of child nodes in this list
 	 */
-	public int size();
+	public int length();
 	
 	
 	public default Expression clone() {
@@ -66,13 +73,13 @@ public interface Expression extends Printable {
 	}
 	
 	public default Expression first() {
-		if(!hasElements() || size() < 1) return null;
+		if(!hasElements() || length() < 1) return null;
 		return getElements().get(0);
 	}
 	
 	public default Expression last() {
-		if(!hasElements() || size() < 1) return null;
-		return getElements().get(size() - 1);
+		if(!hasElements() || length() < 1) return null;
+		return getElements().get(length() - 1);
 	}
 	
 	/** This is true if the expression can be reduced while compiling. */

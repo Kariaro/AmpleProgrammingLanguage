@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import hardcoded.compiler.constants.IRInsts;
 import hardcoded.compiler.instruction.IRInstruction.*;
 
 public class IntermediateCodeOptimizer {
@@ -44,7 +43,7 @@ public class IntermediateCodeOptimizer {
 		IRInstruction inst = block.start;
 		
 		do {
-			if(inst.op == IRInsts.nop) {
+			if(inst.op == IRType.nop) {
 				inst = inst.remove();
 			} else {
 				if(first == null) first = inst;
@@ -97,14 +96,14 @@ public class IntermediateCodeOptimizer {
 		
 		do {
 			// Check if the type was the positive equality 'eq'
-			boolean peq = inst.type() == IRInsts.eq;
+			boolean peq = inst.type() == IRType.eq;
 			
-			if(peq || inst.type() == IRInsts.neq) {
+			if(peq || inst.type() == IRType.neq) {
 				IRInstruction next = inst.next();
 				if(next == null) break;
 				
 				// Check if the type was the positive branch 'brz'
-				boolean pbr = next.type() == IRInsts.brz;
+				boolean pbr = next.type() == IRType.brz;
 				
 				// Check if the last element is a zero
 				Param reg = inst.getLastParam();
@@ -113,7 +112,7 @@ public class IntermediateCodeOptimizer {
 					int refs = getReferences(block, inst.getParam(0));
 					if(refs < 3) inst.remove(); // Remove the instruction...
 					next.params.set(0, inst.getParam(1));
-					next.op = (pbr == peq) ? IRInsts.bnz:IRInsts.brz;
+					next.op = (pbr == peq) ? IRType.bnz:IRType.brz;
 				}
 			}
 			
@@ -171,7 +170,7 @@ public class IntermediateCodeOptimizer {
 				// Should become
 				//    ... [z], [b], [c]
 				//    If z was zero before.
-				if(inst.next().op == IRInsts.mov && canReduce(inst.op)) {
+				if(inst.next().op == IRType.mov && canReduce(inst.op)) {
 					Param reg = inst.params.get(0);
 					Param wnt = inst.next().params.get(1);
 					
@@ -243,7 +242,7 @@ public class IntermediateCodeOptimizer {
 		return references;
 	}
 	
-	private boolean keepIfNotReferences(IRInsts type) {
+	private boolean keepIfNotReferences(IRType type) {
 		switch(type) {
 			case call:
 			case write:
@@ -254,7 +253,7 @@ public class IntermediateCodeOptimizer {
 		}
 	}
 	
-	private boolean canReduce(IRInsts type) {
+	private boolean canReduce(IRType type) {
 		switch(type) {
 			case bnz:
 			case brz:

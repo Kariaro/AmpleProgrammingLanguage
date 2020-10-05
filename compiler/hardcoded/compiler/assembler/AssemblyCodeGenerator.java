@@ -7,8 +7,8 @@ import hardcoded.assembly.impl.AsmFactory;
 import hardcoded.assembly.impl.AsmInst;
 import hardcoded.assembly.x86.*;
 import hardcoded.compiler.constants.AtomType;
-import hardcoded.compiler.constants.IRInsts;
 import hardcoded.compiler.instruction.IRInstruction;
+import hardcoded.compiler.instruction.IRType;
 import hardcoded.compiler.instruction.IRInstruction.*;
 import hardcoded.compiler.instruction.InstructionBlock;
 import hardcoded.compiler.types.PointerType;
@@ -62,7 +62,7 @@ public class AssemblyCodeGenerator {
 			System.out.println("========================");
 			System.out.println("Name -> " + block.name);
 			for(IRInstruction inst : block.start) {
-				if(inst.type() == IRInsts.label) {
+				if(inst.type() == IRType.label) {
 					System.out.println(" " + inst);
 				} else {
 					System.out.println("    " + inst);
@@ -317,7 +317,7 @@ public class AssemblyCodeGenerator {
 		// Smallest is 2 bytes.
 		
 		IRInstruction inst = block.list.get(0);
-		IRInsts type = inst.type();
+		IRType type = inst.type();
 		
 		LabelParam label = (LabelParam)inst.getLastParam();
 		int idx = findLabelIndex(container, label);
@@ -440,7 +440,7 @@ public class AssemblyCodeGenerator {
 				Param src = inst.getParam(1);
 				
 				int size = calculateBits(inst);
-				if(inst.type() == IRInsts.write) {
+				if(inst.type() == IRType.write) {
 					size = 4 << inst.calculateSize().size();
 				}
 				
@@ -473,7 +473,7 @@ public class AssemblyCodeGenerator {
 		}
 	}
 	
-	private AsmMnm convertType(IRInsts type) {
+	private AsmMnm convertType(IRType type) {
 		switch(type) {
 			case add: return AsmMnm.ADD;
 			case sub: return AsmMnm.SUB;

@@ -7,6 +7,13 @@ public class IfStat extends NestedStat {
 		super(3);
 	}
 	
+	public IfStat(Expression condition, Statement body, Statement elseBody) {
+		super(3);
+		set(0, new ExprStat(condition));
+		set(1, body);
+		set(2, elseBody);
+	}
+	
 	public Expression getCondition() {
 		ExprStat stat = get(0);
 		return stat == null ? null:(stat.expr());
@@ -18,18 +25,6 @@ public class IfStat extends NestedStat {
 	
 	public Statement getElseBody() {
 		return get(2);
-	}
-	
-	public void setCondition(Expression expr) {
-		set(0, new ExprStat(expr));
-	}
-	
-	public Statement setBody(Statement stat) {
-		return set(1, stat);
-	}
-	
-	public Statement setElseBody(Statement stat) {
-		return set(2, (stat == null ? Statement.EMPTY:stat));
 	}
 	
 	public boolean hasElseBody() {

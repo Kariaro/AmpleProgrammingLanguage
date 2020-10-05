@@ -1,4 +1,4 @@
-package hardcoded.compiler.constants;
+package hardcoded.compiler.instruction;
 
 import hardcoded.compiler.constants.ExprType;
 
@@ -7,7 +7,7 @@ import hardcoded.compiler.constants.ExprType;
  * 
  * @author HardCoded
  */
-public enum IRInsts {
+public enum IRType {
 	// Memory instructions
 	mov,		// mov			[R0], [R1]						R0 = R1
 	write,		// write		[R0], [R1]						mem[R0] = R1
@@ -65,7 +65,7 @@ public enum IRInsts {
 	;
 	
 	
-	public static final IRInsts convert(ExprType type) {
+	public static final IRType convert(ExprType type) {
 		switch(type) {
 			case nop: return nop;
 			

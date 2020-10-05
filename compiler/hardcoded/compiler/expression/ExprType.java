@@ -1,4 +1,4 @@
-package hardcoded.compiler.constants;
+package hardcoded.compiler.expression;
 
 public enum ExprType {
 	// Memory
@@ -40,14 +40,11 @@ public enum ExprType {
 	ret,	// Return
 	nop,	// No operation
 	
-	// Expression keywords
-	loop,	// Continue
 	leave,	// Break
-	label,	// Label
-	jump,	// Goto
+	loop,	// Continue
 	
 	atom,	// Atom
 	cast,	// Cast
-	comma,	// Comma
+	comma,
 	invalid, // Invalid expression type
 }

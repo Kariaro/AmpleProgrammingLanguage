@@ -3,8 +3,10 @@ package hardcoded.compiler.statement;
 import hardcoded.compiler.expression.Expression;
 
 public class WhileStat extends NestedStat {
-	public WhileStat() {
+	public WhileStat(Expression condition, Statement body) {
 		super(2);
+		set(0, new ExprStat(condition));
+		set(1, body);
 	}
 	
 	public Expression getCondition() {
@@ -14,14 +16,6 @@ public class WhileStat extends NestedStat {
 	
 	public Statement getBody() {
 		return get(1);
-	}
-	
-	public void setCondition(Expression expr) {
-		set(0, new ExprStat(expr));
-	}
-	
-	public void setBody(Statement stat) {
-		set(1, stat);
 	}
 	
 	public String asString() { return "WHILE"; }
