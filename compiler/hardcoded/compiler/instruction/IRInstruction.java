@@ -5,7 +5,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import hardcoded.compiler.Identifier;
 import hardcoded.compiler.constants.AtomType;
-import hardcoded.compiler.constants.IRInsts;
 import hardcoded.compiler.expression.AtomExpr;
 import hardcoded.utils.StringUtils;
 
@@ -27,7 +26,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	private IRInstruction next;
 	
 	public List<Param> params = new ArrayList<>();
-	public IRInsts op = IRInsts.nop;
+	public IRType op = IRType.nop;
 	private AtomType size;
 	
 	/**
@@ -520,16 +519,16 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	}
 	
 	public IRInstruction() {}
-	public IRInstruction(IRInsts op) {
+	public IRInstruction(IRType op) {
 		this.op = op;
 	}
 	
-	public IRInstruction(IRInsts op, Param... regs) {
+	public IRInstruction(IRType op, Param... regs) {
 		this.op = op;
 		this.params.addAll(Arrays.asList(regs));
 	}
 	
-	public IRInsts type() {
+	public IRType type() {
 		return op;
 	}
 	
@@ -552,11 +551,11 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	public AtomType calculateSize() {
 		if(params.isEmpty()) return null;
 		
-		if(op == IRInsts.call) return params.get(1).getSize();
+		if(op == IRType.call) return params.get(1).getSize();
 		
-		if(op == IRInsts.brz
-		|| op == IRInsts.bnz
-		|| op == IRInsts.br) {
+		if(op == IRType.brz
+		|| op == IRType.bnz
+		|| op == IRType.br) {
 			return null;
 		}
 		
@@ -565,7 +564,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	
 	@Override
 	public String toString() {
-		if(op == IRInsts.label) return params.get(0) + ":";
+		if(op == IRType.label) return params.get(0) + ":";
 		if(params.isEmpty()) return Objects.toString(op);
 		
 		AtomType size = calculateSize();

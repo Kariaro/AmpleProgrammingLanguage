@@ -123,7 +123,7 @@ public class ParseTreeOptimizer {
 			 * to machine code later.
 			 */
 			if(e.type == add || e.type == sub || e.type == cor || e.type == cand || e.type == comma) {
-				for(int i = e.size() - 1; i >= 0; i--) {
+				for(int i = e.length() - 1; i >= 0; i--) {
 					Expression ex = e.get(i);
 					if(ex instanceof OpExpr) {
 						OpExpr nx = (OpExpr)ex;
@@ -158,14 +158,14 @@ public class ParseTreeOptimizer {
 						if(a.type() == comma) {
 							/* Folding the expression		[ set(comma( AAA , x), y) ]
 							 * into							[ comma( AAA , set(x, y)) ] */
-							for(int i = 0; i < a.size() - 1; i++) o.add(a.get(i));
+							for(int i = 0; i < a.length() - 1; i++) o.add(a.get(i));
 							e.set(0, a.last());
 						}
 						
 						if(b.type() == comma) {
 							/* Folding the expression		[ set(x, comma( BBB , y)) ]
 							 * into							[ comma( BBB , set(x, y)) ] */
-							for(int i = 0; i < b.size() - 1; i++) o.add(b.get(i));
+							for(int i = 0; i < b.length() - 1; i++) o.add(b.get(i));
 							e.set(1, b.last());
 						}
 						
@@ -179,11 +179,11 @@ public class ParseTreeOptimizer {
 				}
 				
 				case comma: {
-					for(int i = 0; i < e.size() - 1; i++) {
+					for(int i = 0; i < e.length() - 1; i++) {
 						if(!e.get(i).hasSideEffects()) e.list.remove(i--);
 					}
 					
-					if(e.size() == 1) parent.set(index, e.first());
+					if(e.length() == 1) parent.set(index, e.first());
 					break;
 				}
 				
@@ -216,7 +216,7 @@ public class ParseTreeOptimizer {
 				
 				case sub: case add: {
 					List<AtomExpr> list = new ArrayList<>();
-					for(int i = 0; i < e.size(); i++) {
+					for(int i = 0; i < e.length(); i++) {
 						Expression e0 = e.get(i);
 						
 						if(e0 instanceof AtomExpr) {
@@ -239,12 +239,12 @@ public class ParseTreeOptimizer {
 							list.set(0, c);
 						}
 						
-						if(!(list.get(0).isZero() && e.size() > 0)) {
+						if(!(list.get(0).isZero() && e.length() > 0)) {
 							e.list.add(list.get(0));
 						}
 					}
 					
-					if(e.size() == 1) parent.set(index, e.first());
+					if(e.length() == 1) parent.set(index, e.first());
 					break;
 				}
 				
@@ -253,7 +253,7 @@ public class ParseTreeOptimizer {
 					 * 
 					 * The expression		[ cand(x, y) ]
 					 */
-					for(int i = 0; i < e.size(); i++) {
+					for(int i = 0; i < e.length(); i++) {
 						Expression e0 = e.get(i);
 						
 						if(e0.type() == comma) {
@@ -263,12 +263,12 @@ public class ParseTreeOptimizer {
 								AtomExpr a = (AtomExpr)e0.last();
 								
 								if(a.isZero()) {
-									for(; i + 1 < e.size(); ) {
+									for(; i + 1 < e.length(); ) {
 										e.list.remove(i + 1);
 									}
 								} else {
-									((OpExpr)e0).set(e0.size() - 1, new AtomExpr(1));
-									if(i < e.size() - 1) e.list.remove(i--);
+									((OpExpr)e0).set(e0.length() - 1, new AtomExpr(1));
+									if(i < e.length() - 1) e.list.remove(i--);
 								}
 							}
 						}
@@ -278,17 +278,17 @@ public class ParseTreeOptimizer {
 							
 							if(a.isNumber()) {
 								if(a.isZero()) {
-									for(; i + 1 < e.size(); ) {
+									for(; i + 1 < e.length(); ) {
 										e.list.remove(i + 1);
 									}
 								} else {
-									if(i < e.size() - 1) e.list.remove(i--);
+									if(i < e.length() - 1) e.list.remove(i--);
 								}
 							}
 						}
 					}
 					
-					if(e.size() == 1) {
+					if(e.length() == 1) {
 						if(e.first() instanceof AtomExpr) {
 							parent.set(index, new AtomExpr(((AtomExpr)e.first()).isZero() ? 0:1));
 							break;
@@ -301,7 +301,7 @@ public class ParseTreeOptimizer {
 				
 				// TODO: Still will fail for [ b = (0 || a) ] because it will become [ b = a ]
 				case cor: {
-					for(int i = 0; i < e.size(); i++) {
+					for(int i = 0; i < e.length(); i++) {
 						Expression e0 = e.get(i);
 						
 						if(e0.type() == comma) {
@@ -312,12 +312,12 @@ public class ParseTreeOptimizer {
 								
 								if(!a.isZero()) {
 									// Replace the number with a one....
-									((OpExpr)e0).set(e0.size() - 1, new AtomExpr(1));
-									for(; i + 1 < e.size(); ) {
+									((OpExpr)e0).set(e0.length() - 1, new AtomExpr(1));
+									for(; i + 1 < e.length(); ) {
 										e.list.remove(i + 1);
 									}
 								} else {
-									if(i < e.size() - 1) e.list.remove(i--);
+									if(i < e.length() - 1) e.list.remove(i--);
 								}
 							}
 						}
@@ -327,17 +327,17 @@ public class ParseTreeOptimizer {
 							
 							if(a.isNumber()) {
 								if(!a.isZero()) {
-									for(; i + 1 < e.size(); ) {
+									for(; i + 1 < e.length(); ) {
 										e.list.remove(i + 1);
 									}
 								} else {
-									if(i < e.size() - 1) e.list.remove(i--);
+									if(i < e.length() - 1) e.list.remove(i--);
 								}
 							}
 						}
 					}
 					
-					if(e.size() == 1) {
+					if(e.length() == 1) {
 						if(e.first() instanceof AtomExpr) {
 							parent.set(index, new AtomExpr(((AtomExpr)e.first()).isZero() ? 0:1));
 							break;

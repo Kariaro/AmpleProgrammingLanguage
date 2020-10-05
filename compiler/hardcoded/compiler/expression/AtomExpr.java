@@ -102,8 +102,9 @@ public class AtomExpr implements Expression {
 	
 	public List<Expression> getElements() { return null; }
 	public boolean hasElements() { return false; }
-	public int size() { return 0; }
+	public int length() { return 0; }
 	public Expression get(int index) { return null; }
+	public void remove(int index) {}
 	public void set(int index, Expression e) {}
 	
 	public boolean isPure() { return true; }

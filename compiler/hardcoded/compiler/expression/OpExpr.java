@@ -30,7 +30,7 @@ public class OpExpr implements Expression {
 		return list.get(index);
 	}
 	
-	public int size() {
+	public int length() {
 		return list.size();
 	}
 	
@@ -52,6 +52,7 @@ public class OpExpr implements Expression {
 	
 	public ExprType type() { return type; }
 	public boolean hasElements() { return true; }
+	public void remove(int index) {}
 	public List<Expression> getElements() { return list; }
 	
 	public String asString() { return type.toString(); }

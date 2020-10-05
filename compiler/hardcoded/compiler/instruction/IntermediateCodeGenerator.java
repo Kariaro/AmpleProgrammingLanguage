@@ -10,7 +10,6 @@ import hardcoded.compiler.Identifier;
 import hardcoded.compiler.Identifier.IdType;
 import hardcoded.compiler.Program;
 import hardcoded.compiler.constants.AtomType;
-import hardcoded.compiler.constants.IRInsts;
 import hardcoded.compiler.constants.Primitives;
 import hardcoded.compiler.expression.AtomExpr;
 import hardcoded.compiler.expression.Expression;
@@ -89,7 +88,7 @@ public class IntermediateCodeGenerator {
 	private Map<String, Param> variables = new HashMap<>();
 	private Param addString(AtomExpr a) {
 		if(strings == null) {
-			strings = new InstructionBlock(".consts", new IRInstruction(IRInsts.data, new DataParam(a.s_value, 0)));
+			strings = new InstructionBlock(".consts", new IRInstruction(IRType.data, new DataParam(a.s_value, 0)));
 			strings.returnType = Primitives.VOID;
 			// strings.start.append(new IRInstruction(IRInsts.label, new IRInstruction.Label("const", true)));
 			
@@ -111,7 +110,7 @@ public class IntermediateCodeGenerator {
 			}
 		}
 		
-		strings.start.append(new IRInstruction(IRInsts.data, new DataParam(a.s_value, counter)));
+		strings.start.append(new IRInstruction(IRType.data, new DataParam(a.s_value, counter)));
 		return new RefReg(".consts", counter);
 	}
 	
@@ -160,7 +159,7 @@ public class IntermediateCodeGenerator {
 	}
 	
 	private IRInstruction createInstructions(Function func, Expression expr, Param request) {
-		IRInstruction inst = new IRInstruction(IRInsts.nop, new DebugParam(expr.toString()));
+		IRInstruction inst = new IRInstruction(IRType.nop, new DebugParam(expr.toString()));
 		
 		switch(expr.type()) {
 			case set: {
@@ -194,7 +193,7 @@ public class IntermediateCodeGenerator {
 					inst.append(compileInstructions(func, b, reg_1));
 				}
 				
-				IRInsts action = pointer ? IRInsts.write:IRInsts.mov;
+				IRType action = pointer ? IRType.write:IRType.mov;
 				if(!inst.hasNeighbours()) {
 					inst = new IRInstruction(action, reg_0, reg_1);
 				} else {
@@ -230,7 +229,7 @@ public class IntermediateCodeGenerator {
 					inst.append(compileInstructions(func, b, reg_1));
 				}
 				
-				inst.append(new IRInstruction(IRInsts.convert(expr.type()), IRInstruction.temp(request), reg_0, reg_1));
+				inst.append(new IRInstruction(IRType.convert(expr.type()), IRInstruction.temp(request), reg_0, reg_1));
 				break;
 			}
 			
@@ -243,7 +242,7 @@ public class IntermediateCodeGenerator {
 					inst.append(compileInstructions(func, a, reg_0));
 				}
 				
-				inst.append(new IRInstruction(IRInsts.ret, reg_0));
+				inst.append(new IRInstruction(IRType.ret, reg_0));
 				break;
 			}
 			
@@ -258,7 +257,7 @@ public class IntermediateCodeGenerator {
 					inst.append(compileInstructions(func, a, reg_0));
 				}
 				
-				inst.append(new IRInstruction(IRInsts.convert(expr.type()), IRInstruction.temp(request), reg_0));
+				inst.append(new IRInstruction(IRType.convert(expr.type()), IRInstruction.temp(request), reg_0));
 				break;
 			}
 			
@@ -273,7 +272,7 @@ public class IntermediateCodeGenerator {
 					inst.append(compileInstructions(func, a, reg_0));
 				}
 				
-				inst.append(new IRInstruction(IRInsts.mov, IRInstruction.temp(request), reg_0));
+				inst.append(new IRInstruction(IRType.mov, IRInstruction.temp(request), reg_0));
 				break;
 			}
 			
@@ -296,12 +295,12 @@ public class IntermediateCodeGenerator {
 //						request.size = reg_0.size;
 //				}
 				
-				inst.append(new IRInstruction(IRInsts.read, IRInstruction.temp(request), reg_0));
+				inst.append(new IRInstruction(IRType.read, IRInstruction.temp(request), reg_0));
 				break;
 			}
 			
 			case comma: {
-				for(int i = 0; i < expr.size() - 1; i++) {
+				for(int i = 0; i < expr.length() - 1; i++) {
 					inst.append(compileInstructions(func, expr.get(i)));
 				}
 				
@@ -309,7 +308,7 @@ public class IntermediateCodeGenerator {
 					if(expr.last().hasSideEffects()) {
 						inst.append(compileInstructions(func, expr.last(), request));
 					} else {
-						inst.append(new IRInstruction(IRInsts.mov, request, createObject(expr.last())));
+						inst.append(new IRInstruction(IRType.mov, request, createObject(expr.last())));
 					}
 				} else {
 					inst.append(compileInstructions(func, expr.last()));
@@ -319,7 +318,7 @@ public class IntermediateCodeGenerator {
 			}
 			
 			case add: case sub: {
-				IRInsts type = IRInsts.convert(expr.type());
+				IRType type = IRType.convert(expr.type());
 				Expression a = expr.get(0), b = expr.get(1);
 				
 				Param reg_0 = createObject(a);
@@ -334,7 +333,7 @@ public class IntermediateCodeGenerator {
 					inst.append(compileInstructions(func, b, reg_1));
 				}
 				
-				if(expr.size() > 2) {
+				if(expr.length() > 2) {
 					// ????
 				} else {
 					inst.append(new IRInstruction(type, IRInstruction.temp(request), reg_0, reg_1));
@@ -344,7 +343,7 @@ public class IntermediateCodeGenerator {
 				Param reg_2 = IRInstruction.temp(reg_0.getSize());
 				inst.append(new IRInstruction(type, reg_2, reg_0, reg_1));
 				
-				for(int i = 2; i < expr.size(); i++) {
+				for(int i = 2; i < expr.length(); i++) {
 					b = expr.get(i);
 					reg_1 = createObject(b);
 					if(shouldCheck(b)) {
@@ -353,7 +352,7 @@ public class IntermediateCodeGenerator {
 					}
 					
 					reg_0 = reg_2;
-					if(i == expr.size() - 1) {
+					if(i == expr.length() - 1) {
 						reg_2 = IRInstruction.temp(request);
 					} else {
 						reg_2 = IRInstruction.temp(b.calculateSize());
@@ -383,7 +382,7 @@ public class IntermediateCodeGenerator {
 					}
 				}
 				
-				for(int i = 1; i < expr.size(); i++) {
+				for(int i = 1; i < expr.length(); i++) {
 					Expression e = expr.get(i);
 					Param reg = createObject(e);
 					
@@ -402,15 +401,15 @@ public class IntermediateCodeGenerator {
 					params.add(0, IRInstruction.temp(request));
 				}
 				
-				inst.append(new IRInstruction(IRInsts.call, params.toArray(new Param[0])));
+				inst.append(new IRInstruction(IRType.call, params.toArray(new Param[0])));
 				break;
 			}
 			
 			case cand: {
 				LabelParam label_end = new LabelParam("cand.end");
-				if(request != null) inst.append(new IRInstruction(IRInsts.mov, request, new NumberReg(0, request.getSize())));
+				if(request != null) inst.append(new IRInstruction(IRType.mov, request, new NumberReg(0, request.getSize())));
 				
-				for(int i = 0; i < expr.size(); i++) {
+				for(int i = 0; i < expr.length(); i++) {
 					Expression e = expr.get(i);
 					Param reg = createObject(e);
 					
@@ -419,19 +418,19 @@ public class IntermediateCodeGenerator {
 						inst.append(compileInstructions(func, e, reg));
 					}
 					
-					inst.append(new IRInstruction(IRInsts.brz, reg, label_end));
+					inst.append(new IRInstruction(IRType.brz, reg, label_end));
 				}
 
-				if(request != null) inst.append(new IRInstruction(IRInsts.mov, request, new NumberReg(1, request.getSize())));
-				inst.append(new IRInstruction(IRInsts.label, label_end));
+				if(request != null) inst.append(new IRInstruction(IRType.mov, request, new NumberReg(1, request.getSize())));
+				inst.append(new IRInstruction(IRType.label, label_end));
 				break;
 			}
 			
 			case cor: {
 				LabelParam label_end = new LabelParam("cor.end");
-				if(request != null) inst.append(new IRInstruction(IRInsts.mov, request, new NumberReg(1, request.getSize())));
+				if(request != null) inst.append(new IRInstruction(IRType.mov, request, new NumberReg(1, request.getSize())));
 				
-				for(int i = 0; i < expr.size(); i++) {
+				for(int i = 0; i < expr.length(); i++) {
 					Expression e = expr.get(i);
 					Param reg = createObject(e);
 					
@@ -440,11 +439,11 @@ public class IntermediateCodeGenerator {
 						inst.append(compileInstructions(func, e, reg));
 					}
 					
-					inst.append(new IRInstruction(IRInsts.bnz, reg, label_end));
+					inst.append(new IRInstruction(IRType.bnz, reg, label_end));
 				}
 
-				if(request != null) inst.append(new IRInstruction(IRInsts.mov, request, new NumberReg(0, request.getSize())));
-				inst.append(new IRInstruction(IRInsts.label, label_end));
+				if(request != null) inst.append(new IRInstruction(IRType.mov, request, new NumberReg(0, request.getSize())));
+				inst.append(new IRInstruction(IRType.label, label_end));
 				break;
 			}
 			
@@ -485,12 +484,12 @@ public class IntermediateCodeGenerator {
 			
 			Param temp = IRInstruction.temp(stat.getCondition().calculateSize());
 			inst = compileInstructions(func, stat.getCondition(), temp);
-			inst.append(new IRInstruction(IRInsts.brz, temp, label_else));
+			inst.append(new IRInstruction(IRType.brz, temp, label_else));
 			inst.append(compileInstructions(func, stat.getBody()));
-			inst.append(new IRInstruction(IRInsts.br, label_end));
-			inst.append(new IRInstruction(IRInsts.label, label_else));
+			inst.append(new IRInstruction(IRType.br, label_end));
+			inst.append(new IRInstruction(IRType.label, label_else));
 			inst.append(compileInstructions(func, stat.getElseBody()));
-			inst.append(new IRInstruction(IRInsts.label, label_end));
+			inst.append(new IRInstruction(IRType.label, label_end));
 		} else {
 			// ============================== //
 			// if(x) { ... }
@@ -501,9 +500,9 @@ public class IntermediateCodeGenerator {
 
 			Param temp = IRInstruction.temp(stat.getCondition().calculateSize());
 			inst = compileInstructions(func, stat.getCondition(), temp);
-			inst.append(new IRInstruction(IRInsts.brz, temp, label_end));
+			inst.append(new IRInstruction(IRType.brz, temp, label_end));
 			inst.append(compileInstructions(func, stat.getBody()));
-			inst.append(new IRInstruction(IRInsts.label, label_end));
+			inst.append(new IRInstruction(IRType.label, label_end));
 		}
 		
 		return inst;
@@ -526,14 +525,14 @@ public class IntermediateCodeGenerator {
 		LabelParam label_loop = new LabelParam("while.loop");
 		LabelParam label_end = new LabelParam("while.end");
 
-		IRInstruction inst = new IRInstruction(IRInsts.label, label_next);
+		IRInstruction inst = new IRInstruction(IRType.label, label_next);
 		Param temp = IRInstruction.temp(stat.getCondition().calculateSize());
 		inst.append(compileInstructions(func, stat.getCondition(), temp));
-		inst.append(new IRInstruction(IRInsts.brz, temp, label_end));
-		inst.append(new IRInstruction(IRInsts.label, label_loop));
+		inst.append(new IRInstruction(IRType.brz, temp, label_end));
+		inst.append(new IRInstruction(IRType.label, label_loop));
 		inst.append(compileInstructions(func, stat.getBody()));
-		inst.append(new IRInstruction(IRInsts.br, label_next));
-		inst.append(new IRInstruction(IRInsts.label, label_end));
+		inst.append(new IRInstruction(IRType.br, label_next));
+		inst.append(new IRInstruction(IRType.label, label_end));
 		
 		return inst;
 	}
@@ -569,20 +568,20 @@ public class IntermediateCodeGenerator {
 			if(stat.getCondition() != null) {
 				Param temp = IRInstruction.temp(stat.getCondition().calculateSize());
 				inst.append(compileInstructions(func, stat.getCondition(), temp));
-				inst.append(new IRInstruction(IRInsts.brz, temp, label_end));
-				inst.append(new IRInstruction(IRInsts.br, label_loop));
+				inst.append(new IRInstruction(IRType.brz, temp, label_end));
+				inst.append(new IRInstruction(IRType.br, label_loop));
 			}
 			
-			inst.append(new IRInstruction(IRInsts.label, label_next));
+			inst.append(new IRInstruction(IRType.label, label_next));
 			if(stat.getCondition() != null) {
 				Param temp = IRInstruction.temp(stat.getCondition().calculateSize());
 				inst.append(compileInstructions(func, stat.getCondition(), temp));
-				inst.append(new IRInstruction(IRInsts.brz, temp, label_end));
+				inst.append(new IRInstruction(IRType.brz, temp, label_end));
 			}
 			
 
 			inst.append(compileInstructions(func, stat.getAction()));
-			inst.append(new IRInstruction(IRInsts.label, label_loop));
+			inst.append(new IRInstruction(IRType.label, label_loop));
 		} else {
 			// ============================== //
 			// for(x; y; ) { ... }
@@ -594,17 +593,17 @@ public class IntermediateCodeGenerator {
 			//   br [next]
 			// end:
 			
-			inst.append(new IRInstruction(IRInsts.label, label_next));
+			inst.append(new IRInstruction(IRType.label, label_next));
 			if(stat.getCondition() != null) {
 				Param temp = IRInstruction.temp(stat.getCondition().calculateSize());
 				inst.append(compileInstructions(func, stat.getCondition(), temp));
-				inst.append(new IRInstruction(IRInsts.brz, temp, label_end));
+				inst.append(new IRInstruction(IRType.brz, temp, label_end));
 			}
 		}
 		
 		inst.append(compileInstructions(func, stat.getBody()));
-		inst.append(new IRInstruction(IRInsts.br, label_next));
-		inst.append(new IRInstruction(IRInsts.label, label_end));
+		inst.append(new IRInstruction(IRType.br, label_next));
+		inst.append(new IRInstruction(IRType.label, label_end));
 		
 		return inst;
 	}
@@ -650,7 +649,7 @@ public class IntermediateCodeGenerator {
 			return createExprInstructions(func, (ExprStat)stat);
 		}
 		
-		IRInstruction inst = new IRInstruction(IRInsts.nop, new DebugParam(stat.toString()));
+		IRInstruction inst = new IRInstruction(IRType.nop, new DebugParam(stat.toString()));
 		
 		if(stat.hasStatements()) {
 			IRInstruction point = null;

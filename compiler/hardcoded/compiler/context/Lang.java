@@ -81,21 +81,6 @@ public class Lang {
 		return token.group();
 	}
 	
-	public boolean valueEquals(String string) {
-		if(string == null) return value() == null;
-		return string.equals(value());
-	}
-	
-	public boolean groupEquals(String groupName) {
-		if(groupName == null) return group() == null;
-		return groupName.equals(group());
-	}
-	
-	public boolean equals(String groupName, String string) {
-		return Objects.equals(groupName, group())
-			&& Objects.equals(string, value());
-	}
-	
 	public int line() {
 		return token.line();
 	}
@@ -106,5 +91,24 @@ public class Lang {
 	
 	public String toString() {
 		return value();
+	}
+	
+	public boolean valueEquals(String string) {
+		return Objects.equals(string, value());
+	}
+	
+	public boolean valueEqualsAdvance(String string) {
+		boolean eq = Objects.equals(string, value());
+		if(eq) next();
+		return eq;
+	}
+	
+	public boolean groupEquals(String groupName) {
+		return Objects.equals(groupName, group());
+	}
+	
+	public boolean equals(String groupName, String string) {
+		return Objects.equals(groupName, group())
+			&& Objects.equals(string, value());
 	}
 }
