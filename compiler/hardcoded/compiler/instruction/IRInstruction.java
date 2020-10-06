@@ -4,8 +4,9 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import hardcoded.compiler.Identifier;
-import hardcoded.compiler.constants.AtomType;
+import hardcoded.compiler.constants.Atom;
 import hardcoded.compiler.expression.AtomExpr;
+import hardcoded.compiler.expression.LowType;
 import hardcoded.utils.StringUtils;
 
 /**
@@ -27,7 +28,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	
 	public List<Param> params = new ArrayList<>();
 	public IRType op = IRType.nop;
-	private AtomType size;
+	private Atom size;
 	
 	/**
 	 * Returns the first element found in the list.
@@ -254,17 +255,17 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	public static void reset_counter() { atomic_reg.set(0); }
 	public static Param temp(String name, int size) { return new Reg(name, size, atomic_reg.getAndIncrement()); }
 	public static Param temp(Param reg) { return reg != null ? reg:new Reg(null, 0, atomic_reg.getAndIncrement()); }
-	public static Param temp(AtomType size) { return new Reg(size, atomic_reg.getAndIncrement()); }
+	public static Param temp(LowType size) { return new Reg(size, atomic_reg.getAndIncrement()); }
 	public static Param temp(int size) { return new Reg(size, atomic_reg.getAndIncrement()); }
 	
-	public static Param temp(AtomType size, Param reg) { return reg != null ? reg:temp(size); }
+	public static Param temp(LowType size, Param reg) { return reg != null ? reg:temp(size); }
 	
 	public static final Param NONE = new Param() {
 		public boolean equals(Object obj) { return false; }
 		public String toString() { return "..."; }
 		public String getName() { return null; }
 		public int getIndex() { return -1; }
-		public AtomType getSize() { return null; }
+		public LowType getSize() { return null; }
 	};
 	
 	private static final boolean DEBUG_SIZE = false;
@@ -300,7 +301,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		 * Returns the size of this register.
 		 * @return the size of this register
 		 */
-		public AtomType getSize();
+		public LowType getSize();
 	}
 	
 	/**
@@ -315,7 +316,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 			this.object = object;
 		}
 		
-		public AtomType getSize() { return null; }
+		public LowType getSize() { return null; }
 		public int getIndex() { return -1; }
 		public String getName() { return null; }
 		public String toString() { return Objects.toString(object); }
@@ -324,7 +325,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	public static class Reg implements Param {
 		public String name;
 		public int index;
-		public AtomType size;
+		public LowType size;
 		
 		/**
 		 * There are two types of register. Either they are generated or
@@ -332,19 +333,19 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		 */
 		public boolean isGenerated;
 		
-		public Reg(AtomType type, int index) {
+		public Reg(LowType type, int index) {
 			this(null, type, index);
 		}
 		
 		public Reg(int size, int index) {
-			this(null, AtomType.getNumberType(size), index);
+			this(null, LowType.get(size, 0), index);
 		}
 		
 		public Reg(String name, int size, int index) {
-			this(name, AtomType.getNumberType(size), index);
+			this(name, LowType.get(size, 0), index);
 		}
 		
-		public Reg(String name, AtomType size, int index) {
+		public Reg(String name, LowType size, int index) {
 			this.index = index;
 			this.name = name;
 			this.size = size;
@@ -353,7 +354,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 				isGenerated = true;
 		}
 		
-		public AtomType getSize() {
+		public LowType getSize() {
 			return size;
 		}
 		
@@ -390,7 +391,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		}
 		
 		// TODO: We need to get the size of a reference register.
-		public AtomType getSize() {
+		public LowType getSize() {
 			return null;
 		}
 		
@@ -405,27 +406,27 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	
 	public static class NumberReg implements Param {
 		public long value;
-		public AtomType size;
+		public LowType size;
 		
 		public NumberReg(AtomExpr expr) {
 			this(expr.i_value, expr.atomType);
 		}
 		
-		public NumberReg(long value, AtomType size) {
+		public NumberReg(long value, LowType size) {
 			this.value = value;
 			this.size = size;
 		}
 		
 		public NumberReg(long value, int size) {
 			this.value = value;
-			this.size = AtomType.getNumberType(size);
+			this.size = LowType.get(size, 0);
 		}
 		
 		public long value() {
 			return value;
 		}
 		
-		public AtomType getSize() {
+		public LowType getSize() {
 			return size;
 		}
 		
@@ -452,7 +453,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 			this.obj = obj;
 		}
 		
-		public AtomType getSize() {
+		public LowType getSize() {
 			return null;
 		}
 		
@@ -483,7 +484,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 			this.name = (compiler ? "_":"") + name + (compiler ? ("_" + atomic.getAndIncrement() + ""):"");
 		}
 		
-		public AtomType getSize() {
+		public LowType getSize() {
 			return null;
 		}
 		
@@ -540,7 +541,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		return prev;
 	}
 	
-	public AtomType sizeType() {
+	public Atom sizeType() {
 		return size;
 	}
 	
@@ -548,7 +549,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		return (next != null) || (prev != null);
 	}
 	
-	public AtomType calculateSize() {
+	public LowType calculateSize() {
 		if(params.isEmpty()) return null;
 		
 		if(op == IRType.call) return params.get(1).getSize();
@@ -567,7 +568,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		if(op == IRType.label) return params.get(0) + ":";
 		if(params.isEmpty()) return Objects.toString(op);
 		
-		AtomType size = calculateSize();
+		LowType size = calculateSize();
 		return String.format("%-8s%-8s         [%s]", op, (size == null ? "":size), StringUtils.join("], [", params));
 	}
 }

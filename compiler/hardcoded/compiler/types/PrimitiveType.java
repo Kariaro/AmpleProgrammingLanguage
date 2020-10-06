@@ -1,13 +1,10 @@
 package hardcoded.compiler.types;
 
-import hardcoded.compiler.constants.AtomType;
+import hardcoded.compiler.constants.Atom;
+import hardcoded.compiler.expression.LowType;
 
-public class PrimitiveType extends Type {
-	public PrimitiveType(String name, AtomType type, int size, boolean signed) {
-		super(name, type, size, signed);
-	}
-	
-	public PrimitiveType(String name, AtomType type, int size) {
-		super(name, type, size);
+public class PrimitiveType extends HighType {
+	public PrimitiveType(String name, Atom type, int size) {
+		super(name, LowType.create(type), size);
 	}
 }

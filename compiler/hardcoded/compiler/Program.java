@@ -28,7 +28,7 @@ public class Program implements Printable {
 	
 	public Identifier getFunction(String name) {
 		for(Identifier id : idents)
-			if(id.idtype() == IdType.funct && id.name().equals(name)) return id;
+			if(id.id_type() == IdType.funct && id.name().equals(name)) return id;
 		return null;
 	}
 	

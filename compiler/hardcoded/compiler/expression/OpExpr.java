@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import hardcoded.compiler.constants.AtomType;
 import hardcoded.compiler.constants.ExprType;
 import hardcoded.utils.StringUtils;
 
@@ -34,13 +33,13 @@ public class OpExpr implements Expression {
 		return list.size();
 	}
 	
-	public AtomType override_size;
-	public AtomType calculateSize() {
+	public LowType override_size;
+	public LowType size() {
 		if(type == ExprType.cast) {
 			return override_size;
 		}
 		
-		return Expression.super.calculateSize();
+		return Expression.super.size();
 	}
 	
 	public OpExpr clone() {
@@ -59,6 +58,6 @@ public class OpExpr implements Expression {
 	public Object[] asList() { return list.toArray(); }
 	
 	public String toString() {
-		return type + "(" + StringUtils.join(", ", list) + ")" + ":" + this.calculateSize();
+		return type + "(" + StringUtils.join(", ", list) + ")" + ":" + this.size();
 	}
 }

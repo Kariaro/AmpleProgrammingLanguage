@@ -11,15 +11,13 @@ import hardcoded.compiler.Block.Function;
 import hardcoded.compiler.Identifier;
 import hardcoded.compiler.Program;
 import hardcoded.compiler.constants.*;
+import hardcoded.compiler.constants.ExprType;
 import hardcoded.compiler.constants.Modifiers.Modifier;
 import hardcoded.compiler.context.Lang;
-import hardcoded.compiler.expression.AtomExpr;
-import hardcoded.compiler.expression.Expression;
-import hardcoded.compiler.expression.OpExpr;
+import hardcoded.compiler.expression.*;
 import hardcoded.compiler.statement.*;
-import hardcoded.compiler.types.PointerType;
 import hardcoded.compiler.types.PrimitiveType;
-import hardcoded.compiler.types.Type;
+import hardcoded.compiler.types.HighType;
 import hardcoded.errors.CompilerError;
 import hardcoded.lexer.Tokenizer;
 import hardcoded.lexer.TokenizerFactory;
@@ -46,7 +44,7 @@ public class ParseTreeGenerator {
 	
 	private Map<String, Function> FUNCTIONS = new LinkedHashMap<>();
 	private Map<String, Expression> GLOBAL = new LinkedHashMap<>();
-	private Map<String, Type> defined_types = new HashMap<>();
+	private Map<String, HighType> defined_types = new HashMap<>();
 	private Set<String> importedFiles = new HashSet<>();
 	
 	private Function current_function;
@@ -81,7 +79,7 @@ public class ParseTreeGenerator {
 		GLOBAL.clear();
 		FUNCTIONS.clear();
 		
-		for(Type t : Primitives.getAllTypes()) {
+		for(HighType t : Primitives.getAllTypes()) {
 			defined_types.put(t.name(), t);
 		}
 	}
@@ -145,11 +143,11 @@ public class ParseTreeGenerator {
 				if(!isValidName(reader)) syntaxError("Invalid type name. The value '%s' is not a valid type name.", name);
 				
 				reader.next();
-				Type type = getTypeFromSymbol();
+				HighType type = getTypeFromSymbol();
 				if(!reader.valueEqualsAdvance(";")) syntaxError("Invalid type syntax. Expected a semicolon but got '%s'", reader);
 				
 				if(defined_types.containsKey(name)) syntaxError("Type is already defined '%s'", name);
-				defined_types.put(name, new Type(name, type.atomType(), type.size(), type.isSigned()));
+				defined_types.put(name, new HighType(name, type.type(), type.size()));
 				
 				// System.out.println("#TYPE [" + name + "] as [" + type + "]");
 				break;
@@ -232,7 +230,7 @@ public class ParseTreeGenerator {
 		
 		while(!reader.valueEquals(")")) {
 			Variable arg = nextFuncArgument();
-			func.arguments.add(Identifier.createParamIdent(arg.name, func.arguments.size(), arg.type.atomType()));
+			func.arguments.add(Identifier.createParamIdent(arg.name, func.arguments.size(), arg.type.type()));
 			
 			if(!reader.valueEquals(",")) {
 				if(reader.valueEquals(")")) break;
@@ -375,7 +373,7 @@ public class ParseTreeGenerator {
 	
 	private Statement getVariableDefinition() {
 		reader.mark();
-		Type type = getTypeFromSymbol();
+		HighType type = getTypeFromSymbol();
 		
 		List<Variable> list = new ArrayList<Variable>();
 		do {
@@ -389,6 +387,7 @@ public class ParseTreeGenerator {
 			
 			if(reader.valueEqualsAdvance("[")) {
 				Expression expr = nextExpression();
+				
 				if(!(expr instanceof AtomExpr)) {
 					syntaxError("Invalid array variable definition. Expected a integer expression but got '%s'", expr);
 				} else {
@@ -404,14 +403,14 @@ public class ParseTreeGenerator {
 				}
 				var.isArray = true;
 				
-				{
-					int pointerLength = 1;
-					if(var.type instanceof PointerType) {
-						pointerLength = ((PointerType)var.type).pointerLength + 1;
-					}
-					
-					var.type = new PointerType(type, pointerLength);
-				}
+//				{
+//					int pointerLength = 1;
+//					if(var.type instanceof PointerType) {
+//						pointerLength = ((PointerType)var.type).pointerLength + 1;
+//					}
+//					
+//					var.type = new PointerType(type, pointerLength);
+//				}
 				
 				if(!reader.valueEqualsAdvance("]")) syntaxError(CompilerError.UNCLOSED_ARRAY_DEFINITION, reader);
 				if(!reader.valueEquals(";")) syntaxError(CompilerError.UNCLOSED_VARIABLE_DECLARATION);
@@ -592,7 +591,7 @@ public class ParseTreeGenerator {
 					 * numbers and mathimatical operations on those numbers.
 					 */
 					if(!rhs.isPure()) {
-						AtomExpr temp = new AtomExpr(current_function.temp(rhs.calculateSize()));
+						AtomExpr temp = new AtomExpr(current_function.temp(rhs.size()));
 						rhs = new OpExpr(comma,
 							new OpExpr(set, temp, rhs),
 							temp
@@ -618,7 +617,7 @@ public class ParseTreeGenerator {
 					Expression c = e12();
 					
 					
-					AtomExpr temp = new AtomExpr(current_function.temp(AtomType.largest(b.calculateSize(), c.calculateSize())));
+					AtomExpr temp = new AtomExpr(current_function.temp(LowType.largest(b.size(), c.size())));
 					return new OpExpr(
 						comma,
 						new OpExpr(cor,
@@ -668,7 +667,7 @@ public class ParseTreeGenerator {
 						if(rhs.isPure()) {
 							rhs = new OpExpr(set, rhs, new OpExpr(dir, rhs, new AtomExpr(1)));
 						} else {
-							AtomExpr ident = new AtomExpr(current_function.temp(rhs.calculateSize()));
+							AtomExpr ident = new AtomExpr(current_function.temp(rhs.size()));
 							
 							// TODO: Tell why a modification to a value that is not pure must be memory modification.
 							// TODO: Check that the value is a valid memory modification.
@@ -703,10 +702,10 @@ public class ParseTreeGenerator {
 						// TODO: Allow for comma expressions!
 						// TODO: Use the same solution as the assignment operators.
 						
-						AtomExpr ident2 = new AtomExpr(current_function.temp(lhs.calculateSize()));
+						AtomExpr ident2 = new AtomExpr(current_function.temp(lhs.size()));
 						// System.out.println("Comma expr -> " + ident2 + ", [" + lhs + "]");
 						if(!lhs.isPure()) {
-							AtomExpr ident1 = new AtomExpr(current_function.temp(lhs.calculateSize()));
+							AtomExpr ident1 = new AtomExpr(current_function.temp(lhs.size()));
 							
 							// ( ... ) ++
 							
@@ -755,7 +754,7 @@ public class ParseTreeGenerator {
 							Expression result = e1;
 							if(result.type() == comma) e1 = e1.last();
 							
-							AtomType type = e1.calculateSize();
+							LowType type = e1.size();
 							expr = new OpExpr(mul, expr, new AtomExpr(type.size()));
 							e1 = new OpExpr(decptr, new OpExpr(add, e1, expr));
 							
@@ -833,9 +832,9 @@ public class ParseTreeGenerator {
 					
 					case "(": {
 						if(isType(reader.next())) {
-							Type type = getTypeFromSymbol();
+							HighType type = getTypeFromSymbol();
 							if(type instanceof PrimitiveType) {
-								if(type.atomType() == null) syntaxError(CompilerError.INVALID_CAST_TYPE, type.atomType());
+								if(type.type() == null) syntaxError(CompilerError.INVALID_CAST_TYPE, type.type());
 							}
 							
 							// TODO: Change the type of the value to a 'i64' if the value is a class object.
@@ -846,12 +845,12 @@ public class ParseTreeGenerator {
 								AtomExpr a = (AtomExpr)rhs;
 								
 								if(a.isNumber()) {
-									return a.convert(type.atomType());
+									return a.convert(type.type());
 								}
 							}
 							
 							OpExpr expr = new OpExpr(cast, rhs);
-							expr.override_size = type.atomType();
+							expr.override_size = type.type();
 							return expr;
 						} else reader.prev();
 					}
@@ -944,7 +943,7 @@ public class ParseTreeGenerator {
 			if(!e.isIdentifier()) return false;
 			Identifier ident = e.d_value;
 			
-			return !ident.temp();
+			return !ident.isGenerated();
 		}
 		
 		if(expr instanceof OpExpr) {
@@ -961,22 +960,29 @@ public class ParseTreeGenerator {
 	}
 	
 	private boolean isType(Lang reader) {
-		return defined_types.containsKey(reader.value());
+		String value = reader.value(); // ????
+		if(reader.valueEqualsAdvance("unsigned") || reader.valueEqualsAdvance("signed")) {
+			value = reader.value();
+			reader.prev();
+		}
+		
+		return defined_types.containsKey(value);
 	}
 	
-	public Type getTypeFromSymbol() {
+	public HighType getTypeFromSymbol() {
 		if(!isType(reader)) syntaxError(CompilerError.INVALID_TYPE, reader);
-		Type type = defined_types.get(reader.value());
+		HighType type = defined_types.get(reader.value());
 		reader.next();
 		
 		if(reader.valueEquals("*")) {
-			int size = 0;
+			LowType low = type.type();
 			
+			int size = 0;
 			while(reader.valueEqualsAdvance("*")) {
 				size++;
 			}
 			
-			type = new PointerType(type, size);
+			type = new HighType(type.name(), LowType.getPointer(low, size), LowType.getPointerSize());
 		}
 
 		return type;
@@ -990,8 +996,6 @@ public class ParseTreeGenerator {
 		if(Keywords.contains(reader.value())) return false;
 		return true;
 	}
-	
-	
 	
 	public void syntaxError(CompilerError error, Object... args) {
 		StringBuilder message = new StringBuilder();

@@ -4,38 +4,38 @@ import java.util.List;
 import java.util.Objects;
 
 import hardcoded.compiler.Identifier;
-import hardcoded.compiler.constants.AtomType;
+import hardcoded.compiler.constants.Atom;
 import hardcoded.compiler.constants.ExprType;
 
 public class AtomExpr implements Expression {
-	public AtomType atomType;
+	public LowType atomType;
 	
 	public Identifier d_value; // ident
 	public String s_value; // string
 	public long i_value;  // i64, i32, i16, i8
 	
 	public AtomExpr(long value) {
-		this(value, AtomType.i64);
+		this(value, Atom.i64);
 	}
 	
 	public AtomExpr(int value) {
-		this(Integer.toUnsignedLong(value), AtomType.i32);
+		this(Integer.toUnsignedLong(value), Atom.i32);
 	}
 	
 	public AtomExpr(short value) {
-		this(Short.toUnsignedLong(value), AtomType.i16);
+		this(Short.toUnsignedLong(value), Atom.i16);
 	}
 	
 	public AtomExpr(byte value) {
-		this(Byte.toUnsignedLong(value), AtomType.i8);
+		this(Byte.toUnsignedLong(value), Atom.i8);
 	}
 	
 	public AtomExpr(Identifier value) {
-		this(value, AtomType.ident);
+		this(value, Atom.ident);
 	}
 
 	public AtomExpr(String value) {
-		this(value, AtomType.string);
+		this(value, Atom.string);
 	}
 	
 	/**
@@ -44,12 +44,12 @@ public class AtomExpr implements Expression {
 	 * @param value
 	 * @param type
 	 */
-	public AtomExpr(Object value, AtomType type) {
-		this.atomType = type;
+	public AtomExpr(Object value, Atom type) {
+		this.atomType = LowType.create(type);
 		
-		if(type == AtomType.string) {
+		if(type == Atom.string) {
 			s_value = value.toString();
-		} else if(type == AtomType.ident) {
+		} else if(type == Atom.ident) {
 			d_value = (Identifier)value;
 		} else if(type.isNumber()) {
 			
@@ -65,14 +65,14 @@ public class AtomExpr implements Expression {
 	}
 	
 	public boolean isString() {
-		return atomType == AtomType.string;
+		return atomType.type() == Atom.string;
 	}
 	
 	public boolean isIdentifier() {
-		return atomType == AtomType.ident;
+		return atomType.type() == Atom.ident;
 	}
 	
-	public AtomExpr convert(AtomType type) {
+	public AtomExpr convert(LowType type) {
 		if(!isNumber()) return null; // Invalid
 		
 		if(type.isPointer()) {
@@ -82,10 +82,10 @@ public class AtomExpr implements Expression {
 		}
 		
 		// TODO: Signed unsigned?
-		if(type == AtomType.i64) return new AtomExpr((long)i_value);
-		if(type == AtomType.i32) return new AtomExpr((int)i_value);
-		if(type == AtomType.i16) return new AtomExpr((short)i_value);
-		if(type == AtomType.i8) return new AtomExpr((byte)i_value);
+		if(type.type() == Atom.i64) return new AtomExpr((long)i_value);
+		if(type.type() == Atom.i32) return new AtomExpr((int)i_value);
+		if(type.type() == Atom.i16) return new AtomExpr((short)i_value);
+		if(type.type() == Atom.i8) return new AtomExpr((byte)i_value);
 		
 		throw new RuntimeException("Invalid type cast '" + type + "'");
 	}
@@ -108,16 +108,16 @@ public class AtomExpr implements Expression {
 	public void set(int index, Expression e) {}
 	
 	public boolean isPure() { return true; }
-	public AtomType atomType() { return atomType; }
+	public LowType atomType() { return atomType; }
 	public ExprType type() { return ExprType.atom; }
 	
-	public AtomType override_size;
-	public AtomType calculateSize() {
+	public LowType override_size;
+	public LowType size() {
 		if(override_size != null) {
 			return override_size;
 		}
 		
-		return Expression.super.calculateSize();
+		return Expression.super.size();
 	}
 	
 	public AtomExpr clone() {
@@ -135,8 +135,8 @@ public class AtomExpr implements Expression {
 	
 	public String asString() { return toString() + ":" + atomType(); }
 	public String toString() {
-		if(atomType == AtomType.string) return '\"' + s_value + '\"';
-		if(atomType == AtomType.ident)  return Objects.toString(d_value);
+		if(atomType.type() == Atom.string) return '\"' + s_value + '\"';
+		if(atomType.type() == Atom.ident)  return Objects.toString(d_value);
 		
 		// TODO: Signed unsigned?
 		if(atomType.isNumber()) {

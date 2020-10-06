@@ -1,8 +1,8 @@
 package hardcoded.compiler;
 
 import hardcoded.compiler.Block.Function;
-import hardcoded.compiler.constants.AtomType;
-import hardcoded.compiler.types.Type;
+import hardcoded.compiler.expression.LowType;
+import hardcoded.compiler.types.HighType;
 
 public class Identifier {
 	public enum IdType {
@@ -15,38 +15,42 @@ public class Identifier {
 	private IdType id_type;
 	private String name;
 	private int index;
-	private boolean temp;
-	public Function func;
-	private AtomType low_type;
-	private Type high_type;
+	private boolean isGenerated;
+	
+	private Function function;
+	private LowType low_type;
+
+	@Deprecated
+	private HighType high_type;
 	
 	public Function func() {
-		return func;
+		return function;
 	}
 	
 	public String name() {
 		return name;
 	}
 	
-	public IdType idtype() {
+	public IdType id_type() {
 		return id_type;
 	}
 	
-	public Type highType() {
+	@Deprecated
+	public HighType high_type() {
 		return high_type;
 	}
 	
-	public AtomType atomType() {
+	public LowType low_type() {
 		if(low_type != null) return low_type;
-		return high_type == null ? null:high_type.atomType();
+		return high_type == null ? null:high_type.type();
 	}
 	
 	public int index() {
 		return index;
 	}
 	
-	public boolean temp() {
-		return temp;
+	public boolean isGenerated() {
+		return isGenerated;
 	}
 	
 	public boolean hasType() {
@@ -57,25 +61,25 @@ public class Identifier {
 		Identifier ident = new Identifier();
 		ident.name = name;
 		ident.index = index;
-		ident.func = func;
+		ident.function = func;
 		ident.id_type = IdType.funct;
 		ident.high_type = func.returnType;
-		ident.low_type = ident.high_type.atomType();
+		ident.low_type = ident.high_type.type();
 		return ident;
 	}
 	
-	public static Identifier createVarIdent(String name, int index, AtomType type) { return createVarIdent(name, index, type, false); }
-	public static Identifier createVarIdent(String name, int index, AtomType type, boolean temp) {
+	public static Identifier createVarIdent(String name, int index, LowType type) { return createVarIdent(name, index, type, false); }
+	public static Identifier createVarIdent(String name, int index, LowType type, boolean temp) {
 		Identifier ident = new Identifier();
 		ident.name = name;
 		ident.index = index;
 		ident.low_type = type;
-		ident.temp = temp;
+		ident.isGenerated = temp;
 		ident.id_type = IdType.var;
 		return ident;
 	}
 	
-	public static Identifier createParamIdent(String name, int index, AtomType type) {
+	public static Identifier createParamIdent(String name, int index, LowType type) {
 		Identifier ident = new Identifier();
 		ident.name = name;
 		ident.index = index;
@@ -91,13 +95,13 @@ public class Identifier {
 		a.id_type = id_type;
 		a.low_type = low_type;
 		a.high_type = high_type;
-		a.temp = temp;
-		a.func = func;
+		a.isGenerated = isGenerated;
+		a.function = function;
 		return a;
 	}
 	
 	@Override
 	public String toString() {
-		return name + ":" + atomType();
+		return name + ":" + low_type();
 	}
 }

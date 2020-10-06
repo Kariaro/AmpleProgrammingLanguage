@@ -1,6 +1,5 @@
 package hardcoded.compiler.expression;
 
-import hardcoded.compiler.constants.AtomType;
 import hardcoded.compiler.constants.ExprType;
 
 // TODO: Signed unsigned?
@@ -23,7 +22,7 @@ public final class ExpressionParser {
 			boolean sign = !a.atomType.isSigned()
 						|| !b.atomType.isSigned();
 			
-			return new AtomExpr(o(sign, a.i_value, b.i_value)).convert(AtomType.largest(a.atomType, b.atomType));
+			return new AtomExpr(o(sign, a.i_value, b.i_value)).convert(LowType.largest(a.atomType, b.atomType));
 		}
 		
 		long o(boolean unsigned, long a, long b);
