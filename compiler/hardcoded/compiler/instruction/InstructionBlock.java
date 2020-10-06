@@ -1,11 +1,11 @@
 package hardcoded.compiler.instruction;
 
 import hardcoded.compiler.Block.Function;
-import hardcoded.compiler.types.Type;
+import hardcoded.compiler.types.HighType;
 
 public class InstructionBlock {
 	public IRInstruction start;
-	public Type returnType;
+	public HighType returnType;
 	public String name;
 	public String extra;
 	
@@ -14,7 +14,7 @@ public class InstructionBlock {
 		this.start = inst;
 	}
 	
-	public InstructionBlock(String name, Type returnType, IRInstruction inst) {
+	public InstructionBlock(String name, HighType returnType, IRInstruction inst) {
 		this.returnType = returnType;
 		this.name = name;
 		this.start = inst;

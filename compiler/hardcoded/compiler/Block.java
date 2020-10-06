@@ -4,11 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
-import hardcoded.compiler.constants.AtomType;
 import hardcoded.compiler.constants.Modifiers.Modifier;
+import hardcoded.compiler.expression.LowType;
 import hardcoded.compiler.statement.Statement;
 import hardcoded.compiler.statement.Variable;
-import hardcoded.compiler.types.Type;
+import hardcoded.compiler.types.HighType;
 import hardcoded.visualization.Printable;
 
 public interface Block extends Printable {
@@ -47,7 +47,7 @@ public interface Block extends Printable {
 	
 	public static class Function implements Block {
 		public Modifier modifier;
-		public Type returnType;
+		public HighType returnType;
 		public String name;
 		public List<Identifier> arguments;
 		public Statement body;
@@ -67,7 +67,7 @@ public interface Block extends Printable {
 		
 		public Identifier add(Variable var) {
 			if(!hasIdentifier(var.name)) {
-				Identifier ident = Identifier.createVarIdent(var.name, var_index++, var.type.atomType());
+				Identifier ident = Identifier.createVarIdent(var.name, var_index++, var.type.type());
 				getScope().add(ident);
 				return ident;
 			}
@@ -101,7 +101,7 @@ public interface Block extends Printable {
 			return null;
 		}
 		
-		public Identifier temp(AtomType type) {
+		public Identifier temp(LowType type) {
 			Identifier ident = Identifier.createVarIdent("$temp" + temp_counter, temp_counter, type, true);
 			getScope().add(ident);
 			temp_counter++;
@@ -130,7 +130,7 @@ public interface Block extends Printable {
 			sb.append(returnType).append(" ").append(name).append("(");
 			for(int i = 0; i < arguments.size(); i++) {
 				Identifier ident = arguments.get(i);
-				sb.append(ident.highType()).append(" ").append(ident);
+				sb.append(ident.high_type()).append(" ").append(ident);
 				if(i < arguments.size() - 1) sb.append(", ");
 			}
 			return sb.append(");").toString();

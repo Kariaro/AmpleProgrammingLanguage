@@ -3,7 +3,6 @@ package hardcoded.compiler.expression;
 import java.util.List;
 
 import hardcoded.compiler.Identifier;
-import hardcoded.compiler.constants.AtomType;
 import hardcoded.compiler.constants.ExprType;
 import hardcoded.visualization.Printable;
 
@@ -130,17 +129,17 @@ public interface Expression extends Printable {
 	 * 
 	 * @return
 	 */
-	public default AtomType calculateSize() {
+	public default LowType size() {
 		if(this == EMPTY) return null;
 		
-		AtomType curr = null;
+		LowType curr = null;
 		
 		if(hasElements()) {
 			for(Expression expr : getElements()) {
-				AtomType type = expr.calculateSize();
+				LowType type = expr.size();
 				if(type == null) continue;
 				
-				curr = curr == null ? type:AtomType.largest(curr, type);
+				curr = curr == null ? type:LowType.largest(curr, type);
 			}
 		} else {
 			AtomExpr a = (AtomExpr)this;
@@ -149,7 +148,7 @@ public interface Expression extends Printable {
 				Identifier ident = a.d_value;
 				
 				if(ident.hasType()) {
-					return ident.atomType();
+					return ident.low_type();
 				}
 			}
 			

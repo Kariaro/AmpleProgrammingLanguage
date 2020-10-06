@@ -6,7 +6,7 @@ import java.util.List;
 import hardcoded.assembly.impl.AsmFactory;
 import hardcoded.assembly.impl.AsmInst;
 import hardcoded.assembly.x86.*;
-import hardcoded.compiler.constants.AtomType;
+import hardcoded.compiler.expression.LowType;
 import hardcoded.compiler.instruction.IRInstruction;
 import hardcoded.compiler.instruction.IRType;
 import hardcoded.compiler.instruction.IRInstruction.*;
@@ -488,14 +488,14 @@ public class AssemblyCodeGenerator {
 	}
 	
 	private int calculateBits(IRInstruction inst) {
-		AtomType type = inst.calculateSize();
+		LowType type = inst.calculateSize();
 		if(type == null) return 0; // FIXME This should never happen.
 		int destSize = 0;
 		
 		if(type.isPointer()) {
-			destSize = 4 * PointerType.POINTER_SIZE;
+			destSize = 8 * LowType.getPointerSize();
 		} else {
-			destSize = 4 << type.size();
+			destSize = 8 * type.size();
 		}
 		
 		return destSize;

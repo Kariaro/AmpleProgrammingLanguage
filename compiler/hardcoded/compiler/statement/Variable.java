@@ -4,23 +4,23 @@ import java.util.ArrayList;
 import java.util.List;
 
 import hardcoded.compiler.expression.Expression;
-import hardcoded.compiler.types.Type;
+import hardcoded.compiler.types.HighType;
 
 public class Variable implements Statement {
 	public List<Expression> list;
 	
-	public Type type;
+	public HighType type;
 	public String name;
 	
 	public boolean isArray;
 	public int arraySize;
 	
-	public Variable(Type type) {
+	public Variable(HighType type) {
 		this.list = new ArrayList<>();
 		this.type = type;
 	}
 	
-	public Type valueType() {
+	public HighType valueType() {
 		return type;
 	}
 	

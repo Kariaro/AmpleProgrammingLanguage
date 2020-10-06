@@ -8,7 +8,6 @@ import java.util.List;
 import hardcoded.compiler.Block;
 import hardcoded.compiler.Block.Function;
 import hardcoded.compiler.Program;
-import hardcoded.compiler.constants.AtomType;
 import hardcoded.compiler.constants.ExprType;
 import hardcoded.compiler.constants.Utils;
 import hardcoded.compiler.expression.*;
@@ -194,12 +193,12 @@ public class ParseTreeOptimizer {
 						parent.set(index, e.first().first());
 					} else {
 						Expression ex = e.first();
-						AtomType last = ex.calculateSize();
+						LowType last = ex.size();
 						// System.out.println("[" + ex + "] -> " + last + "(" + e + ": " + e.type + ")");
-						AtomType size;
+						LowType size;
 						
 						if(last != null && last.isPointer()) {
-							size = AtomType.getPointer(last, opp == decptr ? 1:-1);
+							size = LowType.getPointer(last, opp == decptr ? 1:-1);
 						} else {
 							size = last;
 						}

@@ -1,45 +1,20 @@
 package hardcoded.compiler.types;
 
-import hardcoded.compiler.constants.AtomType;
+import hardcoded.compiler.expression.LowType;
 
-public class PointerType extends Type {
-	private Type type;
-	public int pointerLength;
-	private AtomType ptAtomType;
+public class PointerType extends HighType {
+	private HighType type;
+	private int depth;
 	
-	public static final int POINTER_SIZE = 8;
-	
-	public PointerType(Type type, int pointerLength) {
-		super(null, type.atomType(), POINTER_SIZE);
-		this.pointerLength = pointerLength;
+	public PointerType(HighType type, int depth) {
+		super(type.name(), type.type(), LowType.getPointerSize());
+		this.depth = depth;
 		this.type = type;
-		
-		this.ptAtomType = AtomType.getPointer(type.atomType(), pointerLength);
 	}
 	
-	public String name() {
-		return type.name();
-	}
-	
-	public AtomType atomType() {
-		return ptAtomType;
-	}
-	
-	public Type type() {
-		return type;
-	}
-	
-	@Override
-	public boolean equals(Object obj) {
-		if(!(obj instanceof PointerType)) return false;
-		PointerType pt = (PointerType)obj;
-		return pointerLength == pt.pointerLength && type.equals(pt.type);
-	}
-	
-	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		for(int i = 0; i < pointerLength; i++) sb.append("*");
+		for(int i = 0; i < depth; i++) sb.append("*");
 		return type + sb.toString();
 	}
 }

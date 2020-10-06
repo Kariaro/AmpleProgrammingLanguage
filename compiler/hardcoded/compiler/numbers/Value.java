@@ -1,455 +1,493 @@
 package hardcoded.compiler.numbers;
 
+import static hardcoded.compiler.constants.Atom.*;
+
 import java.math.BigDecimal;
-import java.math.BigInteger;
+import java.util.Random;
+
+import hardcoded.compiler.constants.Atom;
 
 /**
- * This is a value interface for number addition.
+ * This is a number utility class for <b>signed</b>, <b>unsigned</b> and <b>floating</b> operations.
  * 
  * @author HardCoded
  */
-public interface Value {
+public class Value {
+	
+	/**
+	 * Container for the number value.
+	 */
+	private BigNum value;
+	
+	/**
+	 * The type of this value.
+	 */
+	private Atom type;
+	
+	
+	
+	private Value(long value, Atom type) {
+		this.value = new BigNum(type, value);
+		this.type = type;
+	}
+	
+	private Value(double value, Atom type) {
+		this.value = new BigNum(type, value);
+		this.type = type;
+	}
 	
 	/**
 	 * Returns {@code true} if this value is signed.
 	 * @return {@code true} if this value is signed
 	 */
-	public boolean isSigned();
+	public boolean isSigned() {
+		return type.isSigned();
+	}
 	
 	/**
 	 * Returns {@code true} if this value is a floating point number.
 	 * @return {@code true} if this value is a floating point number
 	 */
-	public boolean isFloating();
+	public boolean isFloating() {
+		return type.isFloating();
+	}
 	
 	/**
 	 * Returns the amount of bytes this number takes.
 	 * @return the amount of bytes this number takes
 	 */
-	public default int size() {
-		return value().getSize();
+	public int size() {
+		return type.size();
 	}
 	
 	/**
-	 * Returns the value that this number holds.
-	 * @return the value that this number holds
+	 * Returns the atom type of this number.
+	 * @return the atom type of this number
 	 */
-	public BigVal value();
+	public Atom type() {
+		return type;
+	}
+	
+	/**
+	 * Returns the double value of this number.
+	 * @return the double value of this number
+	 */
+	public double doubleValue() {
+		return value.decimal;
+	}
+	
+	/**
+	 * Returns the long value of this number.
+	 * @return the long value of this number
+	 */
+	public long longValue() {
+		return value.integer;
+	}
+	
+	@Override
+	public String toString() {
+		return value.toString();
+	}
 	
 	
-	public default Value add(Value a) { return next(value().add(a.value())); }
-	public default Value sub(Value a) { return next(value().sub(a.value())); }
-	public default Value div(Value a) { return next(value().div(a.value())); }
-	public default Value mul(Value a) { return next(value().mul(a.value())); }
-	public default Value mod(Value a) { return next(value().mod(a.value())); }
-	public default Value and(Value a) { return next(value().and(a.value())); }
-	public default Value xor(Value a) { return next(value().xor(a.value())); }
-	public default Value or(Value a) { return next(value().or(a.value())); }
-	public default Value shl(Value a) { return next(value().shl(a.value())); }
-	public default Value shr(Value a) { return next(value().shr(a.value())); }
+	public Value add(Value a) { return next(value.add(a.value)); }
+	public Value sub(Value a) { return next(value.sub(a.value)); }
+	public Value div(Value a) { return next(value.div(a.value)); }
+	public Value mul(Value a) { return next(value.mul(a.value)); }
+	public Value mod(Value a) { return next(value.mod(a.value)); }
+	public Value and(Value a) { return next(value.and(a.value)); }
+	public Value xor(Value a) { return next(value.xor(a.value)); }
+	public Value or(Value a)  { return next(value.or(a.value)); }
+	public Value shl(Value a) { return next(value.shl(a.value)); }
+	public Value shr(Value a) { return next(value.shr(a.value)); }
+	public Value eq(Value a)  { return next(value.eq(a.value)); }
+	public Value neq(Value a) { return next(value.neq(a.value)); }
+	public Value gt(Value a)  { return next(value.gt(a.value)); }
+	public Value gte(Value a) { return next(value.gte(a.value)); }
+	public Value lt(Value a)  { return next(value.lt(a.value)); }
+	public Value lte(Value a) { return next(value.lte(a.value)); }
+	public Value cor(Value a) { return next(value.cor(a.value)); }
+	public Value cand(Value a) { return next(value.cand(a.value)); }
+	public Value neg() { return next(value.neg()); }
+	public Value not() { return next(value.not()); }
+	public Value nor() { return next(value.nor()); }
+	public Value convert(Atom type) { return next(value.convert(type)); }
 	
-	public default Value eq(Value a) { return next(value().eq(a.value())); }
-	public default Value neq(Value a) { return next(value().neq(a.value())); }
-	public default Value gt(Value a) { return next(value().gt(a.value())); }
-	public default Value gte(Value a) { return next(value().gte(a.value())); }
-	public default Value lt(Value a) { return next(value().lt(a.value())); }
-	public default Value lte(Value a) { return next(value().lte(a.value())); }
+	public static Value sbyte(long value) { return new Value(value, i8); }
+	public static Value word(long value) { return new Value(value, i16); }
+	public static Value dword(long value) { return new Value(value, i32); }
+	public static Value qword(long value) { return new Value(value, i64); }
+	public static Value ubyte(long value) { return new Value(value, u8); }
+	public static Value uword(long value) { return new Value(value, u16); }
+	public static Value udword(long value) { return new Value(value, u32); }
+	public static Value uqword(long value) { return new Value(value, u64); }
+	public static Value ifloat(double value) { return new Value(value, f32); }
+	public static Value idouble(double value) { return new Value(value, f64); }
 	
-
-	public default Value cor(Value a) { return null; }
-	public default Value cand(Value a) { return null; }
+	Value next(BigNum val) {
+		return val.type.isFloating() ?
+			new Value(val.decimal, val.type):
+			new Value(val.integer, val.type);
+	}
 	
-	public default Value neg() { return null; }
-	public default Value not() { return null; } // keeps size and sign but removes floating status
-	public default Value nor() { return null; }
-	
-	public static class IByte implements Value {
-		private BigVal value;
-		public IByte(long value) {
-			this.value = BigVal.signed(1, value);
-		}
+	static class BigNum {
+		private final double decimal;
+		private final long integer;
+		private final Atom type;
 		
-		public boolean isFloating() { return false; }
-		public boolean isSigned() { return true; }
-		public BigVal value() { return value; }
-		public String toString() { return value.toString(); }
-	}
-	
-	public static class Word implements Value {
-		private BigVal value;
-		public Word(long value) {
-			this.value = BigVal.signed(2, value);
-		}
-
-		public boolean isFloating() { return false; }
-		public boolean isSigned() { return true; }
-		public BigVal value() { return value; }
-		public String toString() { return value.toString(); }
-	}
-	
-	public static class Dword implements Value {
-		private BigVal value;
-		public Dword(long value) {
-			this.value = BigVal.signed(4, value);
-		}
-		
-		public boolean isFloating() { return false; }
-		public boolean isSigned() { return true; }
-		public BigVal value() { return value; }
-		public String toString() { return value.toString(); }
-	}
-	
-	public static class Qword implements Value {
-		private BigVal value;
-		public Qword(long value) {
-			this.value = BigVal.signed(8, value);
-		}
-
-		public boolean isFloating() { return false; }
-		public boolean isSigned() { return true; }
-		public BigVal value() { return value; }
-		public String toString() { return value.toString(); }
-	}
-	
-	public static class UByte implements Value {
-		private BigVal value;
-		public UByte(long value) {
-			this.value = BigVal.unsigned(1, value);
-		}
-
-		public boolean isFloating() { return false; }
-		public boolean isSigned() { return false; }
-		public BigVal value() { return value; }
-		public String toString() { return value.toString(); }
-	}
-	
-	public static class UWord implements Value {
-		private BigVal value;
-		public UWord(long value) {
-			this.value = BigVal.unsigned(2, value);
-		}
-
-		public boolean isFloating() { return false; }
-		public boolean isSigned() { return false; }
-		public BigVal value() { return value; }
-		public String toString() { return value.toString(); }
-	}
-	
-	public static class UDword implements Value {
-		private BigVal value;
-		public UDword(long value) {
-			this.value = BigVal.unsigned(4, value);
-		}
-
-		public boolean isFloating() { return false; }
-		public boolean isSigned() { return false; }
-		public BigVal value() { return value; }
-		public String toString() { return value.toString(); }
-	}
-	
-	public static class UQword implements Value {
-		private BigVal value;
-		public UQword(long value) {
-			this.value = BigVal.unsigned(8, value);
-		}
-
-		public boolean isFloating() { return false; }
-		public boolean isSigned() { return false; }
-		public BigVal value() { return value; }
-		public String toString() { return value.toString(); }
-	}
-	
-	
-	
-	
-	public static class IFloat implements Value {
-		private BigVal value;
-		public IFloat(double value) {
-			this.value = BigVal.decimal(4, value);
-		}
-
-		public boolean isFloating() { return true; }
-		public boolean isSigned() { return true; }
-		public BigVal value() { return value; }
-		public String toString() { return value.toString(); }
-	}
-	
-	public static class IDouble implements Value {
-		private BigVal value;
-		public IDouble(double value) {
-			this.value = BigVal.decimal(8, value);
-		}
-
-		public boolean isFloating() { return true; }
-		public boolean isSigned() { return true; }
-		public BigVal value() { return value; }
-		public String toString() { return value.toString(); }
-	}
-	
-	public static IByte sbyte(long value) { return new IByte(value); }
-	public static Word word(long value) { return new Word(value); }
-	public static Dword dword(long value) { return new Dword(value); }
-	public static Qword qword(long value) { return new Qword(value); }
-	public static UByte ubyte(long value) { return new UByte(value); }
-	public static UWord uword(long value) { return new UWord(value); }
-	public static UDword udword(long value) { return new UDword(value); }
-	public static UQword uqword(long value) { return new UQword(value); }
-	public static IFloat ifloat(double value) { return new IFloat(value); }
-	public static IDouble idouble(double value) { return new IDouble(value); }
-	
-	static Value next(BigVal val) {
-		if(val.isInteger()) {
-			if(val.isSigned()) {
-				switch(val.getSize()) {
-					case 1: return sbyte(val.longValue());
-					case 2: return word(val.longValue());
-					case 4: return dword(val.longValue());
-					case 8: return qword(val.longValue());
+		BigNum(Atom type, long value) {
+			this.type = type;
+			
+			if(type.isFloating()) {
+				switch(type.size()) {
+					case 8: decimal = value; break;
+					case 4: decimal = (float)value; break;
+					default: throw new ArithmeticException();
 				}
+				
+				integer = value;
 			} else {
-				switch(val.getSize()) {
-					case 1: return ubyte(val.longValue());
-					case 2: return uword(val.longValue());
-					case 4: return udword(val.longValue());
-					case 8: return uqword(val.longValue());
+				if(type.isSigned()) {
+					switch(type.size()) {
+						case 8: break;
+						case 4: value = (int)value; break;
+						case 2: value = (short)value; break;
+						case 1: value = (byte)value; break;
+						default: throw new ArithmeticException();
+					}
+					
+					decimal = value;
+				} else {
+					value &= (-1L) >>> (8L * (8 - type.size()));
+					
+					if(value < 0) {
+						decimal = 1.0 + 2.0 * ((double)(value >>> 1L));
+					} else {
+						decimal = value;
+					}
 				}
-			}
-		} else {
-			switch(val.getSize()) {
-				case 4: return ifloat(val.doubleValue());
-				case 8: return idouble(val.doubleValue());
+
+				integer = value;
 			}
 		}
 		
-		throw new UnsupportedOperationException("Failed to convert BigVal into a type.");
-	}
-	
-	static Value next(Value a, Value b, long value) {
-		return next(a.isSigned() && b.isSigned(), a.isFloating() || b.isFloating(), Math.max(a.size(), b.size()), value);
-	}
-	
-	static Value next(boolean signed, int size, long value) { return next(signed, false, size, value); }
-	static Value next(boolean signed, boolean floating, int size, long value) {
-		if(floating) {
-			switch(size) {
-				case 4:	return ifloat(Double.longBitsToDouble(value));
-				case 8:	return idouble(Double.longBitsToDouble(value));
-			}
-		} else {
-			if(signed) {
-				switch(size) {
-					case 1: return sbyte(value);
-					case 2: return word(value);
-					case 4: return dword(value);
-					case 8: return qword(value);
-				}
+		BigNum(Atom type, double value) {
+			if(!type.isFloating()) throw new ArithmeticException(type + " does not support floating point values");
+			this.type = type;
+			
+			switch(type.size()) {
+				case  4: decimal = (float)value; break;
+				default: decimal = value;
 			}
 			
-			switch(size) {
-				case 1: return ubyte(value);
-				case 2: return uword(value);
-				case 4: return udword(value);
-				case 8: return uqword(value);
+			integer = (long)value;
+		}
+		
+		BigNum(BigNum a, BigNum b, double value) {
+			this(Atom.largest(a.type, b.type), value);
+		}
+		
+		BigNum(BigNum a, BigNum b, long value) {
+			this(Atom.largest(a.type, b.type), value);
+		}
+		
+		BigNum add(BigNum val) {
+			if(type.isFloating() || val.type.isFloating()) {
+				return new BigNum(this, val, decimal + val.decimal);
 			}
+
+//			TODO: Check if not checking for unsigned or signed causes any errors.
+//			if(type.isSigned() && val.type.isSigned()) {
+//				return new BigNum(this, val, integer + val.integer);
+//			}
+//			
+//			long v0 =     integer & ((-1L) >>> (8L * (8 -     type.size())));
+//			long v1 = val.integer & ((-1L) >>> (8L * (8 - val.type.size())));
+//			return new BigNum(this, val, v0 + v1);
+			
+			return new BigNum(this, val, integer + val.integer);
 		}
 		
-		
-		throw new UnsupportedOperationException("Invalid creation (" + signed + ", " + size + ", " + value + ")");
-	}
-	
-	static class BigVal {
-		private final BigInteger integer;
-		private final BigDecimal decimal;
-		private final boolean signed;
-		private final int size;
-		
-		private BigVal(boolean signed, int size, BigInteger integer) {
-			this.integer = integer;
-			this.decimal = null;
-			this.signed = signed;
-			this.size = size;
-		}
-		
-		private BigVal(int size, BigDecimal decimal) {
-			this.decimal = decimal;
-			this.integer = null;
-			this.signed = true;
-			this.size = size;
-		}
-		
-		public boolean isInteger() { return integer != null; }
-		public boolean isSigned() { return signed; }
-		public int getSize() { return size; }
-		
-		public long longValue() {
-			if(isInteger())
-				return integer.longValue();
-			return decimal.longValue();
-		}
-		
-		public double doubleValue() {
-			if(isInteger())
-				return integer.doubleValue();
-			return decimal.doubleValue();
-		}
-		
-		public BigVal add(BigVal val) {
-			int size = Math.max(this.size, val.size);
-			if(!(isInteger() && val.isInteger())) {
-				BigDecimal a = val.decimal == null ? new BigDecimal(val.integer):val.decimal;
-				return decimal(size, a.add(decimal == null ? new BigDecimal(integer):decimal).doubleValue());
+		BigNum sub(BigNum val) {
+			if(type.isFloating() || val.type.isFloating()) {
+				return new BigNum(this, val, decimal - val.decimal);
 			}
-			if(isSigned() && val.isSigned())
-				return signed(size, integer.add(val.integer).longValue());
-			return unsigned(size, integer.add(val.integer).longValue());
+
+//			TODO: Check if not checking for unsigned or signed causes any errors.
+//			if(type.isSigned() && val.type.isSigned()) {
+//				return new BigNum(this, val, integer - val.integer);
+//			}
+//			
+//			long v0 =     integer & ((-1L) >>> (8L * (8 -     type.size())));
+//			long v1 = val.integer & ((-1L) >>> (8L * (8 - val.type.size())));
+//			return new BigNum(this, val, v0 - v1);
+
+			return new BigNum(this, val, integer - val.integer);
 		}
 		
-		public BigVal sub(BigVal val) {
-			int size = Math.max(this.size, val.size);
-			if(!(isInteger() && val.isInteger())) {
-				BigDecimal a = decimal == null ? new BigDecimal(integer):decimal;
-				return decimal(size, a.subtract(val.decimal == null ? new BigDecimal(val.integer):val.decimal).doubleValue());
+		BigNum div(BigNum val) {
+			if(type.isFloating() || val.type.isFloating()) {
+				return new BigNum(this, val, decimal / val.decimal);
 			}
-			if(isSigned() && val.isSigned())
-				return signed(size, integer.subtract(val.integer).longValue());
-			return unsigned(size, integer.subtract(val.integer).longValue());
-		}
-		
-		public BigVal mul(BigVal val) {
-			int size = Math.max(this.size, val.size);
-			if(!(isInteger() && val.isInteger())) {
-				BigDecimal a = val.decimal == null ? new BigDecimal(val.integer):val.decimal;
-				return decimal(size, a.multiply(decimal == null ? new BigDecimal(integer):decimal).doubleValue());
+			
+			if(type.isSigned() && val.type.isSigned()) {
+				return new BigNum(this, val, integer / val.integer);
 			}
-			if(isSigned() && val.isSigned())
-				return signed(size, integer.multiply(val.integer).longValue());
-			return unsigned(size, integer.multiply(val.integer).longValue());
+			
+			// NOTE: Values should already be bit checked so this is not needed.
+//			long v0 =     integer & ((-1L) >>> (8L * (8 -     type.size())));
+//			long v1 = val.integer & ((-1L) >>> (8L * (8 - val.type.size())));
+			
+			// TODO: Rewrite this to use a faster algorithm.
+			//     : The internal code is using BigInteger to solve
+			//     : some cases and that can become slow if we need
+			//     : speed.
+			return new BigNum(this, val, Long.divideUnsigned(integer, val.integer));
 		}
 		
-		public BigVal div(BigVal val) {
-			int size = Math.max(this.size, val.size);
-			if(!(isInteger() && val.isInteger())) {
-				BigDecimal a = decimal == null ? new BigDecimal(integer):decimal;
-				return decimal(size, a.divide(val.decimal == null ? new BigDecimal(val.integer):val.decimal).doubleValue());
+		BigNum mul(BigNum val) {
+			if(type.isFloating() || val.type.isFloating()) {
+				return new BigNum(this, val, decimal * val.decimal);
 			}
-			if(isSigned() && val.isSigned())
-				return signed(size, integer.divide(val.integer).longValue());
-			return unsigned(size, integer.divide(val.integer).longValue());
+			
+//			TODO: Check if not checking for unsigned or signed causes any errors.
+//			if(type.isSigned() && val.type.isSigned()) {
+//				return new BigNum(this, val, integer * val.integer);
+//			}
+//			
+//			long v0 =     integer & ((-1L) >>> (8L * (8 -     type.size())));
+//			long v1 = val.integer & ((-1L) >>> (8L * (8 - val.type.size())));
+//			return new BigNum(this, val, v0 * v1);
+			return new BigNum(this, val, integer * val.integer);
 		}
 		
-		public BigVal mod(BigVal val) {
-			int size = Math.max(this.size, val.size);
-			if(!(isInteger() && val.isInteger())) {
-				BigDecimal a = decimal == null ? new BigDecimal(integer):decimal;
-				return decimal(size, a.remainder(val.decimal == null ? new BigDecimal(val.integer):val.decimal).doubleValue());
+		BigNum mod(BigNum val) {
+			if(type.isFloating() || val.type.isFloating()) {
+				return new BigNum(this, val, decimal % val.decimal);
 			}
-			if(isSigned() && val.isSigned())
-				return signed(size, integer.remainder(val.integer).longValue());
-			return unsigned(size, integer.remainder(val.integer).longValue());
+			
+			if(type.isSigned() && val.type.isSigned()) {
+				return new BigNum(this, val, integer % val.integer);
+			}
+			
+			// NOTE: Values should already be bit checked so this is not needed.
+//			long v0 =     integer & ((-1L) >>> (8L * (8 -     type.size())));
+//			long v1 = val.integer & ((-1L) >>> (8L * (8 - val.type.size())));
+			
+			// TODO: Rewrite this to use a faster algorithm.
+			//     : The internal code is using BigInteger to solve
+			//     : some cases and that can become slow if we need
+			//     : speed.
+			return new BigNum(this, val, Long.remainderUnsigned(integer, val.integer));
 		}
 		
-		public BigVal xor(BigVal val) {
-			if(!(isInteger() && val.isInteger())) throw new UnsupportedOperationException("Cannot perform 'xor' with float values");
-			int size = Math.max(this.size, val.size);
-			if(isSigned() && val.isSigned())
-				return signed(size, integer.remainder(val.integer).longValue());
-			return unsigned(size, integer.remainder(val.integer).longValue());
+		
+		// 
+		// Invalid for floating numbers
+		// 
+		
+		BigNum xor(BigNum val) {
+			if(type.isFloating() || val.type.isFloating())
+				throw new ArithmeticException("'xor' is invalid for floating point values");
+			
+//			TODO: Check if not checking for unsigned or signed causes any errors.
+//			if(type.isSigned() && val.type.isSigned()) {
+//				return new BigNum(this, val, integer ^ val.integer);
+//			}
+//			long v0 =     integer & ((-1L) >>> (8L * (8 -     type.size())));
+//			long v1 = val.integer & ((-1L) >>> (8L * (8 - val.type.size())));
+//			return new BigNum(this, val, v0 ^ v1);
+			return new BigNum(this, val, integer ^ val.integer);
 		}
 		
-		public BigVal shr(BigVal val) {
-			if(!(isInteger() && val.isInteger())) throw new UnsupportedOperationException("Cannot perform 'shr' with float values");
-			int size = Math.max(this.size, val.size);
-			if(isSigned() && val.isSigned())
-				return signed(size, integer.shiftRight(val.integer.intValue()).longValue());
-			return unsigned(size, integer.shiftRight(val.integer.intValue()).longValue());
+		BigNum and(BigNum val) {
+			if(type.isFloating() || val.type.isFloating())
+				throw new ArithmeticException("'and' is invalid for floating point values");
+			
+//			TODO: Check if not checking for unsigned or signed causes any errors.
+//			if(type.isSigned() && val.type.isSigned()) {
+//				return new BigNum(this, val, integer & val.integer);
+//			}
+//			long v0 =     integer & ((-1L) >>> (8L * (8 -     type.size())));
+//			long v1 = val.integer & ((-1L) >>> (8L * (8 - val.type.size())));
+//			return new BigNum(this, val, v0 & v1);
+			return new BigNum(this, val, integer & val.integer);
 		}
 		
-		public BigVal shl(BigVal val) {
-			if(!(isInteger() && val.isInteger())) throw new UnsupportedOperationException("Cannot perform 'shl' with float values");
-			int size = Math.max(this.size, val.size);
-			if(isSigned() && val.isSigned())
-				return signed(size, integer.shiftLeft(val.integer.intValue()).longValue());
-			return unsigned(size, integer.shiftLeft(val.integer.intValue()).longValue());
+		BigNum or(BigNum val) {
+			if(type.isFloating() || val.type.isFloating())
+				throw new ArithmeticException("'or' is invalid for floating point values");
+			
+//			TODO: Check if not checking for unsigned or signed causes any errors.
+//			if(type.isSigned() && val.type.isSigned()) {
+//				return new BigNum(this, val, integer | val.integer);
+//			}
+//			long v0 =     integer & ((-1L) >>> (8L * (8 -     type.size())));
+//			long v1 = val.integer & ((-1L) >>> (8L * (8 - val.type.size())));
+//			return new BigNum(this, val, v0 | v1);
+			return new BigNum(this, val, integer | val.integer);
 		}
 		
-		public BigVal and(BigVal val) {
-			if(!(isInteger() && val.isInteger())) throw new UnsupportedOperationException("Cannot perform 'and' with float values");
-			int size = Math.max(this.size, val.size);
-			if(isSigned() && val.isSigned())
-				return signed(size, integer.and(val.integer).longValue());
-			return unsigned(size, integer.and(val.integer).longValue());
+		BigNum shr(BigNum val) {
+			if(type.isFloating() || val.type.isFloating())
+				throw new ArithmeticException("'shr' is invalid for floating point values");
+			
+			if(type.isSigned() && val.type.isSigned()) {
+				return new BigNum(this, val, integer >> val.integer);
+			}
+
+			// NOTE: Values should already be bit checked so this is not needed.
+//			long v0 =     integer & ((-1L) >>> (8L * (8 -     type.size())));
+//			long v1 = val.integer & ((-1L) >>> (8L * (8 - val.type.size())));
+//			return new BigNum(this, val, v0 >>> v1);
+			return new BigNum(this, val, integer >>> val.integer);
 		}
 		
-		public BigVal or(BigVal val) {
-			if(!(isInteger() && val.isInteger())) throw new UnsupportedOperationException("Cannot perform 'or' with float values");
-			int size = Math.max(this.size, val.size);
-			if(isSigned() && val.isSigned())
-				return signed(size, integer.or(val.integer).longValue());
-			return unsigned(size, integer.or(val.integer).longValue());
+		BigNum shl(BigNum val) {
+			if(type.isFloating() || val.type.isFloating())
+				throw new ArithmeticException("'shl' is invalid for floating point values");
+			
+			if(type.isSigned() && val.type.isSigned()) {
+				return new BigNum(this, val, integer << val.integer);
+			}
+			
+
+			// NOTE: Values should already be bit checked so this is not needed.
+//			long v0 =     integer & ((-1L) >>> (8L * (8 -     type.size())));
+//			long v1 = val.integer & ((-1L) >>> (8L * (8 - val.type.size())));
+//			return new BigNum(this, val, v0 << v1);
+			if(integer == 0 || val.integer > 0) return new BigNum(this, val, 0);
+			return new BigNum(this, val, integer << val.integer);
 		}
 		
-		public BigVal eq(BigVal val) {
-			throw new UnsupportedOperationException();
+		BigNum not() {
+			if(type.isFloating()) return new BigNum(i32, decimal == 0 ? 1:0);
+			return new BigNum(i32, integer == 0 ? 1:0);
 		}
-		public BigVal neq(BigVal val) {
-			throw new UnsupportedOperationException();
+		
+		BigNum nor() {
+			if(type.isFloating())
+				throw new ArithmeticException("'nor' is invalid for floating point values");
+			return new BigNum(this, this, ~integer);
 		}
-		public BigVal gt(BigVal val) {
-			throw new UnsupportedOperationException();
+		
+		BigNum neg() {
+			if(!type.isSigned()) throw new ArithmeticException("'neg' is invalid for unsigned values");
+			if(type.isFloating()) return new BigNum(this, this, -decimal);
+			return new BigNum(this, this, -integer);
 		}
-		public BigVal gte(BigVal val) {
-			throw new UnsupportedOperationException();
+		
+		BigNum cor(BigNum val)  {
+			boolean a = (type.isFloating() ? (decimal != 0):(integer != 0));
+			boolean b = (val.type.isFloating() ? (val.decimal != 0):(val.integer != 0));
+			return new BigNum(i32, (a || b) ? 1:0);
 		}
-		public BigVal lt(BigVal val) {
-			throw new UnsupportedOperationException();
+		
+		BigNum cand(BigNum val)  {
+			boolean a = (type.isFloating() ? (decimal != 0):(integer != 0));
+			boolean b = (val.type.isFloating() ? (val.decimal != 0):(val.integer != 0));
+			return new BigNum(i32, (a && b) ? 1:0);
 		}
-		public BigVal lte(BigVal val) {
-			throw new UnsupportedOperationException();
+		
+		BigNum eq(BigNum val)  {
+			// TODO: Could cause problems if decimal and integer is not written together
+			if(type.isFloating() || val.type.isFloating())
+				return new BigNum(i32, decimal == val.decimal ? 1:0);
+			return new BigNum(i32, integer == val.integer ? 1:0);
+		}
+		
+		BigNum neq(BigNum val)  {
+			// TODO: Could cause problems if decimal and integer is not written together
+			if(type.isFloating() || val.type.isFloating())
+				return new BigNum(i32, decimal != val.decimal ? 1:0);
+			return new BigNum(i32, integer != val.integer ? 1:0);
+		}
+		
+		BigNum gt(BigNum val)  {
+			// TODO: Could cause problems if decimal and integer is not written together
+			if(type.isFloating() || val.type.isFloating())
+				return new BigNum(i32, decimal > val.decimal ? 1:0);
+			return new BigNum(i32, integer > val.integer ? 1:0);
+		}
+		
+		BigNum gte(BigNum val)  {
+			// TODO: Could cause problems if decimal and integer is not written together
+			if(type.isFloating() || val.type.isFloating())
+				return new BigNum(i32, decimal >= val.decimal ? 1:0);
+			return new BigNum(i32, integer >= val.integer ? 1:0);
+		}
+		
+		BigNum lt(BigNum val)  {
+			// TODO: Could cause problems if decimal and integer is not written together
+			if(type.isFloating() || val.type.isFloating())
+				return new BigNum(i32, decimal < val.decimal ? 1:0);
+			return new BigNum(i32, integer < val.integer ? 1:0);
+		}
+		
+		BigNum lte(BigNum val)  {
+			// TODO: Could cause problems if decimal and integer is not written together
+			if(type.isFloating() || val.type.isFloating())
+				return new BigNum(i32, decimal <= val.decimal ? 1:0);
+			return new BigNum(i32, integer <= val.integer ? 1:0);
+		}
+		
+		BigNum convert(Atom atom) {
+			if(atom.isFloating())
+				return new BigNum(atom, decimal);
+			return new BigNum(atom, integer);
 		}
 		
 		public String toString() {
-			if(isInteger())
-				return integer.toString();
+			if(type.isFloating()) {
+				if(type.size() == 4) return Float.toString((float)decimal);
+				return Double.toString(decimal);
+			}
 			
-			return Double.toString(decimal.doubleValue());
-		}
-		
-		static BigVal unsigned(int size, long value) {
-			long mask = (1L << (size * 8L)) - 1L;
-			if(size == 8) mask = -1;
-			String str = Long.toUnsignedString(value & mask);
-			// System.out.printf("us, %d, %016x : %016x : %016x\n", size, mask, value, Long.valueOf(str, 16));
-			return new BigVal(false, size, new BigInteger(str));
-		}
-		
-		static BigVal signed(int size, long value) {
-			long mask = (1L << (size * 8L)) - 1L;
-			if(size == 8) mask = -1;
-			long valu = value & mask;
-			// System.out.printf("sg, %d, %016x : %016x : %016x\n", size, mask, value, valu);
-			
-			if(size == 1) return new BigVal(true, 1, new BigInteger(Byte.toString((byte)valu)));
-			if(size == 2) return new BigVal(true, 2, new BigInteger(Short.toString((short)valu)));
-			if(size == 4) return new BigVal(true, 4, new BigInteger(Integer.toString((int)valu)));
-			if(size == 8) return new BigVal(true, 8, new BigInteger(Long.toString((long)valu)));
-			
-			throw new UnsupportedOperationException("Invalid size '" + size + "'");
-		}
-		
-		static BigVal decimal(int size, double value) {
-			if(size == 4)
-				return new BigVal(size, new BigDecimal((float)value));
-			
-			if(size == 8)
-				return new BigVal(size, new BigDecimal(value));
-			
-			throw new UnsupportedOperationException("Invalid size '" + size + "'");
+			if(type.isSigned()) return Long.toString(integer);
+			return Long.toUnsignedString(integer);
 		}
 	}
 	
-	public static void main(String[] args) {
-		Value val = ubyte(0x123).mul(sbyte(-2));
+	
+	public static void main(String[] args) throws Exception {
+		Random random = new Random();
 		
-		System.out.println(val + ", " + val.mul(qword(3)).add(sbyte(3200)));
+		while(true) {
+			System.out.println("Outer");
+			long[] array = new long[2000000];
+			for(int i = 0; i < array.length; i++) {
+				array[i] = random.nextLong();
+			}
+			
+			long tick = System.currentTimeMillis();
+			for(int i = 0; i < 1000000; i++) {
+				long a = array[i];
+				long b = array[i + 1000000];
+				
+				Value _a = uqword(a);
+				Value _b = uqword(b);
+				
+				long d_java = (a * b * b * b * b * b) + a + a + a - 0xffffffffffffffL;
+				long d_bnum = _a.mul(_b).mul(_b).mul(_b).mul(_b).mul(_b).add(_a).add(_a).add(_a).sub(qword(0xffffffffffffffL)).longValue();
+				
+				double error = d_java - d_bnum;
+				if(error != 0) {
+					System.out.println("Error: " + error);
+					System.out.println(BigDecimal.valueOf(d_java));
+					System.out.println(BigDecimal.valueOf(d_bnum));
+				}
+			}
+			long time = (System.currentTimeMillis() - tick);
+			System.out.printf("Took %d ms to run (1000000 iterations), %.5f ms\n", time, (time / 1000000.0D));
+		}
+// 		double a = (100000D / 16000D) * 3.231235123D;
+		
+//		System.out.println(val + ", " + val.mul(qword(3)).add(sbyte(3200)));
+		
+		// BigNum num = new BigNum(Atom.f64, -3230389471289374918237489123748912734892D);
+		// System.out.println(num);
+		
+		// System.out.println(new BigDecimal(a));
+		// System.out.println(new BigDecimal(idouble(100000).div(idouble(16000)).mul(idouble(3.231235123D)).doubleValue()));
 	}
 }
