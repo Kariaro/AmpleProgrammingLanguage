@@ -1,19 +1,14 @@
 package hardcoded.compiler;
 
 import java.io.File;
-import java.util.List;
 
-import hardcoded.compiler.Block.Function;
-import hardcoded.compiler.assembler.AssemblyCodeExporter;
-import hardcoded.compiler.assembler.AssemblyCodeGenerator;
-import hardcoded.compiler.assembler.AssemblyCodeOptimizer;
-import hardcoded.compiler.constants.Utils;
-import hardcoded.compiler.instruction.InstructionBlock;
-import hardcoded.compiler.instruction.IntermediateCodeGenerator;
-import hardcoded.compiler.instruction.IntermediateCodeOptimizer;
+import hardcoded.compiler.instruction.*;
 import hardcoded.compiler.parsetree.ParseTreeGenerator;
 import hardcoded.compiler.parsetree.ParseTreeOptimizer;
 import hardcoded.errors.CompilerException;
+import hardcoded.exporter.impl.CodeGeneratorImpl;
+import hardcoded.exporter.spooky.SpookyCodeGenerator;
+import hardcoded.exporter.x86.AssemblyCodeGenerator;
 import hardcoded.visualization.HCVisualization;
 
 public class HCompilerBuild {
@@ -41,21 +36,22 @@ public class HCompilerBuild {
 	 */
 	private IntermediateCodeOptimizer ico;
 	
-	private AssemblyCodeGenerator acg;
-	private AssemblyCodeOptimizer aco;
-	private AssemblyCodeExporter ace;
+	/**
+	 * The code exporter.
+	 */
+	private CodeGeneratorImpl cei;
 	
 	public HCompilerBuild() {
 		parse_tree_generator = new ParseTreeGenerator();
 		parse_tree_optimizer = new ParseTreeOptimizer();
 		icg = new IntermediateCodeGenerator();
 		ico = new IntermediateCodeOptimizer();
-		acg = new AssemblyCodeGenerator();
-		aco = new AssemblyCodeOptimizer();
-		ace = new AssemblyCodeExporter();
+		cei = new AssemblyCodeGenerator();
+		cei = new SpookyCodeGenerator();
 		
 		String file = "main.hc";
 		file = "tests/000_pointer.hc";
+		file = "prim.hc";
 		// file = "tests/001_comma.hc";
 		// file = "tests/002_invalid_assign.hc";
 		// file = "tests/003_invalid_brackets.hc";
@@ -67,7 +63,27 @@ public class HCompilerBuild {
 		// file = "tests_2/000_assign_test.hc";
 		
 		try {
-			build(file);
+			byte[] bytes = build(file);
+			
+			System.out.println();
+			System.out.println("+-----------------+");
+			System.out.println("| COMPILED OUTPUT |");
+			System.out.println("+-----------------+");
+			System.out.println();
+			
+			StringBuilder sb = new StringBuilder();
+			
+			int index = 1;
+			for(byte b : bytes) {
+				if(index++ > 31) {
+					index = 1;
+					sb.append(String.format("%02x\n", b));
+				} else {
+					sb.append(String.format("%02x ", b));
+				}
+			}
+			
+			System.out.println(sb.toString().trim());
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
@@ -78,12 +94,14 @@ public class HCompilerBuild {
 	/**
 	 * Build the project.
 	 * 
-	 * @param	pathname	A pathname string.
+	 * @param	pathname	a pathname string
 	 * @throws	Exception
 	 * @throws	CompilerException
 	 * 			If the compilation failed
+	 * 
+	 * @return a byte array of the compiled output
 	 */
-	public void build(String pathname) throws Exception {
+	public byte[] build(String pathname) throws Exception {
 		current_program = parse_tree_generator.init(projectPath, pathname);
 		if(parse_tree_generator.hasErrors()) {
 			throw new CompilerException("Compiler errors.");
@@ -95,10 +113,10 @@ public class HCompilerBuild {
 		
 		parse_tree_optimizer.do_constant_folding(/* vs, */ current_program);
 		
-		List<InstructionBlock> blocks;
-		blocks = icg.generate(current_program);
-		blocks = ico.generate(blocks);
-		acg.generate(blocks);
+		IRProgram ir_program;
+		ir_program = icg.generate(current_program);
+		ir_program = ico.generate(ir_program);
+		return cei.generate(ir_program);
 		
 //		System.out.println();
 //		System.out.println();

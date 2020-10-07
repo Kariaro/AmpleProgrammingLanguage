@@ -1,10 +1,10 @@
-package hardcoded.compiler.assembler;
+package hardcoded.exporter.x86;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import hardcoded.compiler.assembler.AsmBlock.BlockType;
 import hardcoded.compiler.instruction.IRInstruction;
+import hardcoded.exporter.impl.CodeBlockType;
 
 // Contains a function made up of blocks.
 public class AsmContainer {
@@ -21,17 +21,17 @@ public class AsmContainer {
 	
 	// Add a single instruction block to the container.
 	public void addJumpBlock(IRInstruction inst) {
-		blocks.add(new AsmBlock(BlockType.JUMP, inst));
+		blocks.add(new AsmBlock(CodeBlockType.JUMP, inst));
 	}
 	
 	// Add a single instruction block to the container.
 	public void addDataBlock(IRInstruction inst) {
-		blocks.add(new AsmBlock(BlockType.DATA, inst));
+		blocks.add(new AsmBlock(CodeBlockType.DATA, inst));
 	}
 	
 	// Add a single instruction block to the container.
 	public void addLabel(IRInstruction inst) {
-		blocks.add(new AsmBlock(BlockType.LABEL, inst));
+		blocks.add(new AsmBlock(CodeBlockType.LABEL, inst));
 	}
 	
 	public int size() {

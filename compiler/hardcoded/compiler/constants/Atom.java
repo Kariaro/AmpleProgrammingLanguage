@@ -1,11 +1,6 @@
 package hardcoded.compiler.constants;
 
 public enum Atom {
-	string		(),
-	ident		(),
-	clazz		(),
-	unf			(),
-	
 	// size, isNumber, isSigned, isFloating
 	u64			(8, true, false, false),
 	u32			(4, true, false, false),
@@ -17,6 +12,12 @@ public enum Atom {
 	i8			(1, true, true, false),
 	f64			(8, true, true, true),
 	f32			(4, true, true, true),
+	
+	// Object Types
+	string		(),
+	ident		(),
+	clazz		(),
+	unf			(),
 	;
 	
 	private final boolean isSigned;

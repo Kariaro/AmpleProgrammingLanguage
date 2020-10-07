@@ -26,6 +26,7 @@ public enum IRType {
 	add,		// add			[R0], [R1], [R2]				Set R0 to (R1 + R2)
 	sub,		// sub			[R0], [R1], [R2]				Set R0 to (R1 - R2)
 	mul,		// mul			[R0], [R1], [R2]				Set R0 to (R1 * R2)
+	mod,		// mod			[R0], [R1], [R2]				Set R0 to (R1 % R2)
 	div,		// div			[R0], [R1], [R2]				Set R0 to (R1 / R2)
 	xor,		// xor			[R0], [R1], [R2]				Set R0 to (R1 ^ R2)
 	and,		// and			[R0], [R1], [R2]				Set R0 to (R1 & R2)
@@ -85,6 +86,7 @@ public enum IRType {
 			case sub: return sub;
 			case mul: return mul;
 			case div: return div;
+			case mod: return mod;
 			
 			case xor: return xor;
 			case and: return and;

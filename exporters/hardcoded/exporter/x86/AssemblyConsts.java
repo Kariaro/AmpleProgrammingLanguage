@@ -1,14 +1,9 @@
-package hardcoded.compiler.assembler;
+package hardcoded.exporter.x86;
+
+import hardcoded.utils.StringUtils;
 
 public final class AssemblyConsts {
 	private AssemblyConsts() {}
-	
-//	private static int decode_octal(int octal_binary) {
-//		return (((octal_binary &    07) != 0) ? 1:0)
-//			 | (((octal_binary &   070) != 0) ? 2:0)
-//			 | (((octal_binary &  0700) != 0) ? 4:0)
-//			 | (((octal_binary & 07000) != 0) ? 8:0);
-//	}
 	
 	public static enum OprTy {
 		// [ rXX ] is a register that can have either 16/32 or 64 bit sizes.
@@ -233,8 +228,6 @@ public final class AssemblyConsts {
 			return name().charAt(1);
 		}
 		
-		// TODO: Classify the types into smaller groups.
-		//       ModR/M, Register, Immediate, Memory ...
 		public boolean isModrm() { return type == 'R' || type == 'E' || type == 'M'; }
 		public boolean isMemory() { return type == 'X' || type == 'Y' || type == 'M'; }
 		public boolean isRegister() { return type == 'C' || type == 'D' || type == 'E' || type == 'R' || type == 'K'; }
@@ -279,12 +272,6 @@ public final class AssemblyConsts {
 		}
 	}
 	
-	public static class AsmPf extends AsmOp {
-		public AsmPf(String mnemonic, int[] opcode, int flags) {
-			super(mnemonic, opcode, flags, new OprTy[0]);
-		}
-	}
-	
 	public static class AsmOp {
 		private final String mnemonic;
 		private final int[] opcode;
@@ -315,13 +302,7 @@ public final class AssemblyConsts {
 		}
 		
 		public String getOpcodeString() {
-			StringBuilder sb = new StringBuilder();
-			
-			for(int op : opcode) {
-				sb.append(String.format("%02X", op)).append(" ");
-			}
-			
-			return sb.toString().trim();
+			return StringUtils.printHexString(" ", opcode).toUpperCase();
 		}
 		
 		public OprTy getOperand(int index) {
@@ -335,7 +316,6 @@ public final class AssemblyConsts {
 		public int getRMEX() {
 			return (flags & RM_EXT_MASK) / RM_EXT_OFFSET;
 		}
-		
 		
 		public String toComplexString() { return toComplexString(16); }
 		public String toComplexString(int opcode_padding) {
@@ -375,13 +355,12 @@ public final class AssemblyConsts {
 			}
 			
 			sb.deleteCharAt(sb.length() - 2);
-			
 			return sb.toString().trim();
 		}
 	}
 	
 	/** {@code L} */	public static final int ALLOW_LOCK		= (1 << 0);
-	/** {@code r} */	public static final int USES_MODRM		= (1 << 1);
+	/** {@code r} */	@Deprecated public static final int USES_MODRM		= (1 << 1);
 	/** {@code e.} */	public static final int NEED_RMEXT		= (1 << 2);
 	public static final int RM_EXT_OFFSET	= (1 << 3);
 	public static final int RM_EXT_MASK		= 7 * RM_EXT_OFFSET;

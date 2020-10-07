@@ -8,6 +8,7 @@
 	<classpathentry kind="src" path="editor"/>
 	<classpathentry kind="src" path="assembly"/>
 	<classpathentry kind="src" path="tests"/>
+	<classpathentry kind="src" path="exporters"/>
 	<classpathentry kind="lib" path="res"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -1,57 +1,51 @@
 package hardcoded.compiler.instruction;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import hardcoded.compiler.instruction.IRInstruction.*;
+import hardcoded.compiler.instruction.IRInstruction.NumberReg;
+import hardcoded.compiler.instruction.IRInstruction.Param;
+import hardcoded.compiler.instruction.IRInstruction.Reg;
 
 public class IntermediateCodeOptimizer {
 	public IntermediateCodeOptimizer() {
 		
 	}
 	
-	public List<InstructionBlock> generate(List<InstructionBlock> blocks) {
-		for(InstructionBlock block : blocks) {
-			block.start = simplify(block).first();
+	public IRProgram generate(IRProgram program) {
+		for(IRFunction func : program.list) {
+			simplify(func);
 			
-//			System.out.println("\n" + block.returnType + ", " + block.name);
-//			
-//			Instruction inst = block.start;
-//			int count = 0;
-//			while(inst != null) {
-//				int idx = count++;
-//				if(inst.op == Insts.label) System.out.println();
-//				System.out.printf("%4d: ", idx);
-//				
-//				if(inst.op != Insts.label) System.out.print("  ");
-//				
-//				System.out.printf("%s\n", inst);
-//				inst = inst.next;
-//			}
+			System.out.println("\n" + func.getType() + ", " + func.getName());
+			for(int i = 0; i < func.length(); i++) {
+				IRInstruction inst = func.list.get(i);
+				
+				if(inst.op == IRType.label) {
+					System.out.printf("\n%4d: %s\n", i, inst);
+				} else {
+					System.out.printf("%4d:   %s\n", i, inst);
+				}
+			}
 		}
 		
-		return blocks;
+		return program;
 	}
 	
 	/**
 	 * Remove all the nop instructions from a <code>InstructionBlock</code>.
 	 * @param	block	the instruction block to optimize
 	 */
-	private void remove_nops(InstructionBlock block) {
-		IRInstruction first = null;
-		IRInstruction inst = block.start;
+	private void remove_nops(IRFunction func) {
+		Iterator<IRInstruction> iter = func.list.iterator();
 		
-		do {
+		while(iter.hasNext()) {
+			IRInstruction inst = iter.next();
+			
 			if(inst.op == IRType.nop) {
-				inst = inst.remove();
-			} else {
-				if(first == null) first = inst;
-				inst = inst.next();
+				iter.remove();
 			}
-		} while(inst != null);
+		}
 		
-		block.start = first;
+		func.fixInstructions();
 	}
 	
 	//  eq - brz		if($B == 0)			if(!$B)
@@ -91,49 +85,53 @@ public class IntermediateCodeOptimizer {
 	 * 
 	 * @param	block	the instruction block to optimize
 	 */
-	private void eq_bnz_optimization(InstructionBlock block) {
-		IRInstruction inst = block.start;
+	private void eq_bnz_optimization(IRFunction func) {
+		ListIterator<IRInstruction> iter = func.list.listIterator();
 		
-		do {
-			// Check if the type was the positive equality 'eq'
-			boolean peq = inst.type() == IRType.eq;
+		while(iter.hasNext()) {
+			IRInstruction inst = iter.next();
+			if(!iter.hasNext()) break;
 			
-			if(peq || inst.type() == IRType.neq) {
-				IRInstruction next = inst.next();
-				if(next == null) break;
+			// Check if the type was the positive equality 'eq'
+			boolean positive_eq = inst.type() == IRType.eq;
+			
+			if(positive_eq || inst.type() == IRType.neq) {
+				IRInstruction next = iter.next();
 				
 				// Check if the type was the positive branch 'brz'
-				boolean pbr = next.type() == IRType.brz;
+				boolean positive_br = next.type() == IRType.brz;
 				
 				// Check if the last element is a zero
 				Param reg = inst.getLastParam();
 				if(reg instanceof NumberReg && ((NumberReg)reg).value == 0) {
 					// Check if the equality result is referenced
-					int refs = getReferences(block, inst.getParam(0));
-					if(refs < 3) inst.remove(); // Remove the instruction...
+					
+					int refs = getReferences(func, inst.getParam(0));
+					if(refs < 3) iter.remove(); // Remove the instruction...
+					
 					next.params.set(0, inst.getParam(1));
-					next.op = (pbr == peq) ? IRType.bnz:IRType.brz;
+					next.op = (positive_br == positive_eq) ? IRType.bnz:IRType.brz;
 				}
 			}
-			
-			inst = inst.next();
-		} while(inst != null);
+		}
 		
-		// Make sure that we update the blocks first element the first element
+		// Make sure that we update the instructions
+		func.fixInstructions();
 	}
 	
 	/**
-	 * This optimization removes all 
-	 * 
-	 * @param	block	the instruction block to optimize
+	 * This optimization reduces the amount of registers to
+	 * the lowest amount possible by counting and replacing.
 	 */
-	private void counter_optimization(InstructionBlock block) {
+	private void counter_optimization(IRFunction func) {
 		Map<Integer, Param> map = new HashMap<>();
 		int index = 0;
 		
-		IRInstruction inst = block.start;
+		ListIterator<IRInstruction> iter = func.list.listIterator();
 		
-		do {
+		while(iter.hasNext()) {
+			IRInstruction inst = iter.next();
+			
 			for(int i = 0; i < inst.params.size(); i++) {
 				Param reg = inst.getParam(i);
 				
@@ -147,24 +145,21 @@ public class IntermediateCodeOptimizer {
 					inst.params.set(i, next);
 				}
 			}
-			
-			inst = inst.next();
-		} while(inst != null);
+		}
+		
+		func.fixInstructions();
 	}
 	
-	private void flow_optimization(InstructionBlock block) {
-		IRInstruction flow = block.start;
-		if(flow == null) return;
+	private void flow_optimization(IRFunction func) {
+		ListIterator<IRInstruction> iter = func.list.listIterator();
 		
-		IRInstruction start = flow;
-		IRInstruction inst = flow;
-		
-		while(inst != null) {
+		while(iter.hasNext()) {
+			IRInstruction inst = iter.next();
 			// add [a], [b], [c]
 			// check if a has been used inside the block..
 			
 
-			if(inst.next() != null) {
+			if(iter.hasNext()) {
 				//    ... [a], [b], [c]
 				//    mov [z], [a]
 				// Should become
@@ -174,9 +169,13 @@ public class IntermediateCodeOptimizer {
 					Param reg = inst.params.get(0);
 					Param wnt = inst.next().params.get(1);
 					
-					if(getReferences(start, reg) == 2 && wnt == reg) {
+					if(getReferences(func, reg) == 2 && wnt == reg) {
 						inst.params.set(0, inst.next().params.get(0));
-						inst.next().remove();
+						
+						iter.next();
+						iter.remove();
+						
+						// inst.next().remove();
 					}
 				}
 			}
@@ -187,7 +186,7 @@ public class IntermediateCodeOptimizer {
 			
 			if(!inst.params.isEmpty()) {
 				Param reg = inst.params.get(0);
-				int num = getReferences(start, reg);
+				int num = getReferences(func, reg);
 				
 				// Only remove temporary variables.
 				// System.out.println("Regs -> " + reg + ", " + num);
@@ -195,20 +194,18 @@ public class IntermediateCodeOptimizer {
 				if(num < 2) {
 					if(!keepIfNotReferences(inst.op)) {
 						// TODO: There could be a problem if the register is pointing towards a global variable.
-						inst = inst.remove();
+						iter.remove();
+						
+						// inst = inst.remove();
 					}
 				}
 			}
-			
-			if(inst == null) break;
-			
-			inst = inst.next();
 		}
 		
-		block.start = start.last().first();
+		func.fixInstructions();
 	}
 	
-	private IRInstruction simplify(InstructionBlock block) {
+	private void simplify(IRFunction func) {
 		// if(true) return block.start;
 		// TODO: Find a way to check if any changes has been made to the instruction block
 		
@@ -217,23 +214,19 @@ public class IntermediateCodeOptimizer {
 		// If there is no code between the branch and not the branch then remove them.
 		//   ...
 		
-		remove_nops(block);
-		eq_bnz_optimization(block);
+		remove_nops(func);
+		eq_bnz_optimization(func);
 		
 		for(int i = 0; i < 1; i++) {
-			flow_optimization(block);
-			counter_optimization(block);
+			flow_optimization(func);
+			counter_optimization(func);
 		}
-		
-		return block.start;
 	}
 	
-	private int getReferences(InstructionBlock block, Param reg) { return getReferences(block.start, reg); }
-	private int getReferences(IRInstruction in, Param reg) {
-		in = in.first();
+	private int getReferences(IRFunction func, Param reg) {
 		int references = 0;
 		
-		for(IRInstruction inst : in) {
+		for(IRInstruction inst : func.list) {
 			for(Param r : inst.params) {
 				if(reg.equals(r)) references++;
 			}

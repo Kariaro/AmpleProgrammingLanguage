@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Random;
 
 import hardcoded.assembly.x86.*;
-import hardcoded.compiler.assembler.Assembly;
-import hardcoded.compiler.assembler.AssemblyConsts.AsmOp;
-import hardcoded.compiler.assembler.AssemblyConsts.OprTy;
+import hardcoded.exporter.x86.Assembly;
+import hardcoded.exporter.x86.AssemblyConsts.AsmOp;
+import hardcoded.exporter.x86.AssemblyConsts.OprTy;
 
 /**
  * This class is used for debug.

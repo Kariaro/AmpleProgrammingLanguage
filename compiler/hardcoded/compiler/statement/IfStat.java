@@ -3,10 +3,6 @@ package hardcoded.compiler.statement;
 import hardcoded.compiler.expression.Expression;
 
 public class IfStat extends NestedStat {
-	public IfStat() {
-		super(3);
-	}
-	
 	public IfStat(Expression condition, Statement body, Statement elseBody) {
 		super(3);
 		set(0, new ExprStat(condition));
@@ -28,7 +24,9 @@ public class IfStat extends NestedStat {
 	}
 	
 	public boolean hasElseBody() {
-		return get(2) != EMPTY;
+		Statement stat = getElseBody();
+		if(stat == null || stat == EMPTY) return false;
+		return stat.hasStatements() && !stat.getStatements().isEmpty();
 	}
 	
 	public String asString() { return "IF"; }
