@@ -1,4 +1,4 @@
-package hardcoded.compiler.assembler;
+package hardcoded.exporter.x86;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -7,6 +7,7 @@ import hardcoded.assembly.impl.AsmInst;
 import hardcoded.compiler.instruction.IRInstruction;
 import hardcoded.compiler.instruction.IRInstruction.DataParam;
 import hardcoded.compiler.instruction.IRInstruction.Param;
+import hardcoded.exporter.impl.CodeBlockType;
 
 /**
  * There are three types of assembly blocks.
@@ -27,7 +28,7 @@ class AsmBlock {
 	List<AsmInst> assembly = new ArrayList<>();
 	int[] compiled_code;
 	
-	private BlockType blockType = BlockType.INST;
+	private CodeBlockType blockType = CodeBlockType.INST;
 	public boolean isCompiled;
 	
 	/**
@@ -38,7 +39,7 @@ class AsmBlock {
 	
 	
 	public AsmBlock() {}
-	public AsmBlock(BlockType type, IRInstruction inst) {
+	public AsmBlock(CodeBlockType type, IRInstruction inst) {
 		blockType = type;
 		
 		switch(type) {
@@ -82,10 +83,10 @@ class AsmBlock {
 		return list.isEmpty();
 	}
 
-	public boolean isJumpBlock() { return blockType == BlockType.JUMP; }
-	public boolean isDataBlock() { return blockType == BlockType.DATA; }
-	public boolean isInstBlock() { return blockType == BlockType.INST; }
-	public boolean isLabelBlock() { return blockType == BlockType.LABEL; }
+	public boolean isJumpBlock() { return blockType == CodeBlockType.JUMP; }
+	public boolean isDataBlock() { return blockType == CodeBlockType.DATA; }
+	public boolean isInstBlock() { return blockType == CodeBlockType.INST; }
+	public boolean isLabelBlock() { return blockType == CodeBlockType.LABEL; }
 	
 	public boolean isCompiled() {
 		return isCompiled;
@@ -101,7 +102,7 @@ class AsmBlock {
 	}
 	
 	public String toString() {
-		if(blockType == BlockType.LABEL) {
+		if(blockType == CodeBlockType.LABEL) {
 			return "\t" + dataName;
 		}
 		
@@ -112,12 +113,5 @@ class AsmBlock {
 		}
 		
 		return "\t" + sb.toString().trim();
-	}
-	
-	public static enum BlockType {
-		DATA,
-		JUMP,
-		INST,
-		LABEL
 	}
 }

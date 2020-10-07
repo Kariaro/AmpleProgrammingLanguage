@@ -28,7 +28,7 @@ public class ForStat extends NestedStat {
 	}
 	
 	public void setVariables(Statement stat) {
-		set(1, stat);
+		set(0, stat);
 	}
 	
 	public void setCondition(Expression expr) {

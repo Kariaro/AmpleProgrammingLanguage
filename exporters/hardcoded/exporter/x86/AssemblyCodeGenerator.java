@@ -1,4 +1,4 @@
-package hardcoded.compiler.assembler;
+package hardcoded.exporter.x86;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -7,15 +7,13 @@ import hardcoded.assembly.impl.AsmFactory;
 import hardcoded.assembly.impl.AsmInst;
 import hardcoded.assembly.x86.*;
 import hardcoded.compiler.expression.LowType;
-import hardcoded.compiler.instruction.IRInstruction;
-import hardcoded.compiler.instruction.IRType;
+import hardcoded.compiler.instruction.*;
 import hardcoded.compiler.instruction.IRInstruction.*;
-import hardcoded.compiler.instruction.InstructionBlock;
-import hardcoded.compiler.types.PointerType;
+import hardcoded.exporter.impl.CodeGeneratorImpl;
 import hardcoded.utils.StringUtils;
 import hardcoded.utils.buffer.IntBuffer;
 
-public class AssemblyCodeGenerator {
+public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 //	public static void main(String[] args) {
 //		AsmInst inst = AsmFactory.getInstruction("neg qword [RAX]");
 //		System.out.println(Assembly.canEncodeInstruction(inst));
@@ -55,13 +53,13 @@ public class AssemblyCodeGenerator {
 		
 	}
 	
-	public void generate(List<InstructionBlock> blocks) {
+	public byte[] generate(IRProgram program) {
 		System.out.println("\nInside the asm code generator");
 		
-		for(InstructionBlock block : blocks) {
+		for(IRFunction func : program.getFunctions()) {
 			System.out.println("========================");
-			System.out.println("Name -> " + block.name);
-			for(IRInstruction inst : block.start) {
+			System.out.println("Name -> " + func.getName());
+			for(IRInstruction inst : func.getInstructions()) {
 				if(inst.type() == IRType.label) {
 					System.out.println(" " + inst);
 				} else {
@@ -77,10 +75,9 @@ public class AssemblyCodeGenerator {
 		//    function blocks
 		List<AsmContainer> containers = new ArrayList<>();
 		
-		for(InstructionBlock block : blocks) {
-			IRInstruction inst = block.start;
-			System.out.println("Name -> " + block.name);
-			containers.add(createContainer(inst));
+		for(IRFunction func : program.getFunctions()) {
+			System.out.println("Name -> " + func.getName());
+			containers.add(createContainer(func));
 		}
 		
 		for(AsmContainer container : containers) {
@@ -160,19 +157,19 @@ public class AssemblyCodeGenerator {
 		
 		return null;
 		 */
+		
+		return null;
 	}
 	
 	// Create a container from instructions without converting it into assembly
 	// the difrerent blocks will be split depending if they are jump instructions or not.
-	private AsmContainer createContainer(IRInstruction inst) {
+	private AsmContainer createContainer(IRFunction func) {
 		AsmContainer container = new AsmContainer();
 		
 		// What instructions are easy to block?
 		// call, bnz, brz, br, label
 		AsmBlock block = new AsmBlock();
-		for(int i = 0; i < inst.length(); i++) {
-			IRInstruction a = inst.get(i);
-			
+		for(IRInstruction a : func.getInstructions()) {
 			switch(a.type()) {
 				case call:
 				case bnz:

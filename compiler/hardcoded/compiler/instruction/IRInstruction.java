@@ -23,8 +23,8 @@ import hardcoded.utils.StringUtils;
  * @see List
  */
 public class IRInstruction implements Iterable<IRInstruction> {
-	private IRInstruction prev;
-	private IRInstruction next;
+	IRInstruction prev;
+	IRInstruction next;
 	
 	public List<Param> params = new ArrayList<>();
 	public IRType op = IRType.nop;
@@ -253,12 +253,8 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	private static final AtomicInteger atomic = new AtomicInteger();
 	
 	public static void reset_counter() { atomic_reg.set(0); }
-	public static Param temp(String name, int size) { return new Reg(name, size, atomic_reg.getAndIncrement()); }
-	public static Param temp(Param reg) { return reg != null ? reg:new Reg(null, 0, atomic_reg.getAndIncrement()); }
+	public static Param temp(LowType size, String name) { return new Reg(name, size, atomic_reg.getAndIncrement()); }
 	public static Param temp(LowType size) { return new Reg(size, atomic_reg.getAndIncrement()); }
-	public static Param temp(int size) { return new Reg(size, atomic_reg.getAndIncrement()); }
-	
-	public static Param temp(LowType size, Param reg) { return reg != null ? reg:temp(size); }
 	
 	public static final Param NONE = new Param() {
 		public boolean equals(Object obj) { return false; }
@@ -337,13 +333,8 @@ public class IRInstruction implements Iterable<IRInstruction> {
 			this(null, type, index);
 		}
 		
-		public Reg(int size, int index) {
-			this(null, LowType.get(size, 0), index);
-		}
-		
-		public Reg(String name, int size, int index) {
-			this(name, LowType.get(size, 0), index);
-		}
+//		public Reg(int size, int index) { this(null, LowType.get(size, 0), index); }
+//		public Reg(String name, int size, int index) { this(name, LowType.get(size, 0), index); }
 		
 		public Reg(String name, LowType size, int index) {
 			this.index = index;
@@ -417,11 +408,6 @@ public class IRInstruction implements Iterable<IRInstruction> {
 			this.size = size;
 		}
 		
-		public NumberReg(long value, int size) {
-			this.value = value;
-			this.size = LowType.get(size, 0);
-		}
-		
 		public long value() {
 			return value;
 		}
@@ -473,6 +459,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	// Used for functions. Data and more.
 	public static class LabelParam implements Param {
 		public String name;
+		public String rawName;
 		public boolean compiler;
 		
 		public LabelParam(String name) {
@@ -481,6 +468,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		
 		public LabelParam(String name, boolean compiler) {
 			this.compiler = compiler;
+			this.rawName = name;
 			this.name = (compiler ? "_":"") + name + (compiler ? ("_" + atomic.getAndIncrement() + ""):"");
 		}
 		
@@ -489,7 +477,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		}
 		
 		public String getName() {
-			return name;
+			return rawName;
 		}
 		
 		public int getIndex() {
@@ -507,6 +495,10 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		public FunctionLabel(Identifier ident) {
 			super(ident.toString(), true);
 			this.ident = ident;
+		}
+		
+		public String getName() {
+			return ident.name();
 		}
 	}
 	

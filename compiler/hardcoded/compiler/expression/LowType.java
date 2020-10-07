@@ -1,5 +1,7 @@
 package hardcoded.compiler.expression;
 
+import java.util.Objects;
+
 import hardcoded.compiler.constants.Atom;
 
 public class LowType {
@@ -16,6 +18,9 @@ public class LowType {
 	private final int depth;
 	
 	LowType(Atom type, int depth) {
+		Objects.requireNonNull(type, "LowType type can never be null"); // Type can never be null.
+		if(depth < 0 || depth > 255) throw new AssertionError("LowType pointer depth was outside bounds. (0 < depth < 256). Got '" + depth + "'");
+		
 		this.type = type;
 		this.depth = depth;
 	}

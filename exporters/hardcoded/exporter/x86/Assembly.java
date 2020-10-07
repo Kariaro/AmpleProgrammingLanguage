@@ -1,6 +1,6 @@
-package hardcoded.compiler.assembler;
+package hardcoded.exporter.x86;
 
-import static hardcoded.compiler.assembler.AssemblyConsts.*;
+import static hardcoded.exporter.x86.AssemblyConsts.*;
 
 import java.io.IOException;
 import java.util.*;
@@ -9,8 +9,8 @@ import hardcoded.assembly.impl.AsmInst;
 import hardcoded.assembly.impl.AsmLoader;
 import hardcoded.assembly.impl.AsmLoader.Unit;
 import hardcoded.assembly.x86.*;
-import hardcoded.compiler.assembler.AssemblyConsts.AsmOp;
-import hardcoded.compiler.assembler.AssemblyConsts.OprTy;
+import hardcoded.exporter.x86.AssemblyConsts.AsmOp;
+import hardcoded.exporter.x86.AssemblyConsts.OprTy;
 
 /**
  * This is x86 assembly instructions

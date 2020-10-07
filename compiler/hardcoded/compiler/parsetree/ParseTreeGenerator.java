@@ -289,6 +289,7 @@ public class ParseTreeGenerator {
 		}
 		
 		
+		// TODO: Implement LABEL and GOTO expressions.
 		if(reader.valueEqualsAdvance("break")) {
 			if(!reader.valueEquals(";")) syntaxError(CompilerError.INVALID_XXX_STATEMENT_EXPECTED_SEMICOLON, "break", reader);
 			reader.nextClear();
@@ -335,11 +336,35 @@ public class ParseTreeGenerator {
 	}
 	
 	private Statement makeForStatement() {
+		boolean declares_variables = false;
+		
 		reader.next();
 		if(!reader.valueEquals("(")) syntaxError(CompilerError.INVALID_XXX_STATEMENT_EXPECTED_OPEN_PARENTHESIS, "for", reader);
 		ForStat stat = new ForStat(); {
 			reader.next();
-			if(!reader.valueEquals(";")) { stat.setVariables(getVariableDefinition()); reader.prev(); }
+			if(!reader.valueEquals(";")) {
+				declares_variables = true;
+				current_function.inc_scope();
+				Statement vars = getVariableDefinition();
+				stat.setVariables(vars);
+				
+				if(vars instanceof StatementList) {
+					StatementList list = (StatementList)vars;
+					for(int i = 0; i < list.list.size(); i++) {
+						Variable var = (Variable)list.list.get(i);
+						Identifier ident = current_function.add(var);
+						
+						if(!var.isInitialized()) {
+							list.list.remove(i--);
+						} else {
+							list.list.set(i, new ExprStat(new OpExpr(ExprType.set, new AtomExpr(ident), var.value())));
+						}
+					}
+				}
+				
+				reader.prev();
+			}
+			
 			if(!reader.valueEquals(";")) syntaxError("Invalid for statement (variables). Expected semicolon but got '%s'", reader);
 			reader.next();
 			if(!reader.valueEquals(";")) stat.setCondition(nextExpression());
@@ -348,8 +373,14 @@ public class ParseTreeGenerator {
 			if(!reader.valueEquals(")")) stat.setAction(nextExpression());
 			if(!reader.valueEquals(")")) syntaxError(CompilerError.UNCLOSED_STATEMENT_PARENTHESES, reader);
 		}
+		
 		reader.next();
 		stat.setBody(getStatements());
+		
+		if(declares_variables) {
+			current_function.dec_scope();
+		}
+		
 		reader.resetMarked();
 		return stat;
 	}

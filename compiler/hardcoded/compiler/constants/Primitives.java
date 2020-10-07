@@ -15,7 +15,7 @@ public final class Primitives {
 	private Primitives() {}
 	
 	private static final Set<HighType> PRIMITIVE;
-	public static final HighType VOID = new PrimitiveType("void", null, 0); // none
+	public static final HighType VOID = new PrimitiveType("void", Atom.unf, 0); // none
 	// public static final Type DOUBLE = new PrimitiveType("double", AtomType.i64, 8, true, true);
 	// public static final Type FLOAT = new PrimitiveType("float", AtomType.i32, 4, true, true);
 	public static final HighType LONG = new PrimitiveType("long", Atom.i64, 8);
