@@ -5,7 +5,6 @@
 	<classpathentry kind="src" path="lexer"/>
 	<classpathentry kind="src" path="files"/>
 	<classpathentry kind="src" path="compiler"/>
-	<classpathentry kind="src" path="editor"/>
 	<classpathentry kind="src" path="assembly"/>
 	<classpathentry kind="src" path="tests"/>
 	<classpathentry kind="src" path="exporters"/>
