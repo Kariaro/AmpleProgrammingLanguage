@@ -12,7 +12,8 @@ class Address {
 		if(baseAddr == -1) {
 			if(offset >=  0) return "[" + offset + "]";
 			if(offset == -1) return "0";
-			if(offset == -2) return "-1";
+			if(offset == -2) return "0";
+			if(offset == -3) return "-1";
 			return "Data[" + (offset) + "]";
 		}
 		

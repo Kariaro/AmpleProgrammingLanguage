@@ -137,7 +137,7 @@ public class IntermediateCodeOptimizer {
 			
 			for(int i = 0; i < inst.params.size(); i++) {
 				Param param = inst.getParam(i);
-				if(!(param instanceof Reg)) break;
+				if(!(param instanceof Reg)) continue;
 				Reg reg = (Reg)param;
 				
 				// Keep function variables.

@@ -59,5 +59,18 @@ public class CompilerMain {
 		HCompiler compiler = new HCompiler();
 		compiler.setProjectPath("res/project/src/");
 		compiler.build();
+		
+		// -h help
+		// -f format
+		//    spooky
+		//    x86
+		//    ...
+		// -d debuging tools
+		// -i inputfile
+		// -o outputfile
+		
+		if(args.length > 1) {
+			
+		}
 	}
 }
