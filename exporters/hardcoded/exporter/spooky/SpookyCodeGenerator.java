@@ -1,6 +1,7 @@
 package hardcoded.exporter.spooky;
 
-import java.nio.charset.StandardCharsets;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,11 +19,11 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 	private ByteOutputWriter writer;
 	private int data_offset;
 	
-	private Address zero_number = Address.create(-1, 18);
-	private Address neg_one_num = Address.create(-1, 17);
-	private Address temp_number = Address.create(-1, 16);
-	private Address return_addr = Address.create(-1, 15); // 
-	private Address return_valu = Address.create(-1, 1); // 
+	private static final Address BASE_POINTER  = Address.create(-1,  0);
+	private static final Address ZERO_CONST    = Address.create(-1, -2);
+	private static final Address NEG_ONE_CONST = Address.create(-1, -3);
+	private static final Address TEMP_ADDR     = Address.create(-1,  1);
+	private SpookyBase base;
 	
 	public byte[] generate(IRProgram program) {
 		System.out.println("\nInside the spooky code generator");
@@ -41,40 +42,71 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 
 		writeProgramData(program, sorted);
 		
-		List<SpookyContainer> list = new ArrayList<>();
+		base = new SpookyBase();
+		List<SpookyFunction> list = base.list;
+		
+		int func_id = 0;
 		for(IRFunction func : sorted) {
-			list.add(convertFunction(func, list.size()));
+			int id = func_id;
+			if(func.length() == 0) id = -1;
+			else func_id++;
+			list.add(convertFunction(func, id));
 		}
 		
-		for(SpookyContainer item : list) {
+		for(SpookyFunction item : list) {
 			apply_work(item);
 			
 			if(item.func.length() != 0) {
+				SpookyBlock first = item.blocks.get(0);
+				
 				if(item.func.getName().equals("main")) {
 					SpookyBlock block = new SpookyBlock(CodeBlockType.INST);
-					block.insts.add(new SpookyInst(OpCode.HALT));
-					item.addBlock(block);
+					block.insts.add(new SpookyInst(OpCode.CONST, item.getStackSize() + 1, BASE_POINTER));
+					item.blocks.add(0, block);
 				} else {
-					SpookyBlock block = new SpookyBlock(CodeBlockType.JUMP);
-					block.insts.add(new SpookyInst(OpCode.JMPADR, return_addr));
-					item.addBlock(block);
+					first.insts.add(0, new SpookyInst(OpCode.CONST, item.getStackSize() - item.getNumParams(), TEMP_ADDR));
+					first.insts.add(1, new SpookyInst(OpCode.ADD, TEMP_ADDR, BASE_POINTER, BASE_POINTER));
 				}
+				
+				// Halt if outside of function
+				SpookyBlock block = new SpookyBlock(CodeBlockType.INST);
+				block.insts.add(new SpookyInst(OpCode.CONST, item.getStackSize() - item.getNumParams(), TEMP_ADDR));
+				block.insts.add(new SpookyInst(OpCode.SUB, BASE_POINTER, TEMP_ADDR, BASE_POINTER));
+				block.insts.add(new SpookyInst(OpCode.JMPADR, Address.stack(0)));
+				block.insts.add(new SpookyInst(OpCode.HALT));
+				item.addBlock(block);
+			} else {
+				item.stack_size = 0;
 			}
 		}
 		
 		
 		
 		int offset = 0;
-		for(SpookyContainer item : list) {
+		for(SpookyFunction item : list) {
 			item.func_offset = offset;
 			offset += getFunctionSize(item);
 		}
 		
-		for(SpookyContainer item : list) {
-			apply_work_jump(list, item);
+		for(SpookyFunction item : list) {
+			apply_work_jump(item);
 		}
 		
-		for(SpookyContainer item : list) {
+//		{
+//			list.clear();
+//			SpookyFunction cont = new SpookyFunction(sorted.get(0), 0); list.add(cont);
+//			SpookyBlock block = new SpookyBlock(); cont.addBlock(block);
+//			
+//			
+//			block.insts.add(new SpookyInst(OpCode.CONST, 10, BASE_POINTER));
+//			block.insts.add(new SpookyInst(OpCode.MOV, NEG_ONE_CONST, Address.stack(-1)));
+//			block.insts.add(new SpookyInst(OpCode.JMPADR, ZERO_CONST));
+//			block.insts.add(new SpookyInst(OpCode.HALT));
+//			block.insts.add(new SpookyInst(OpCode.EXTERN, "printInt"));
+//			block.insts.add(new SpookyInst(OpCode.JMP, ZERO_CONST, 3));
+//		}
+		
+		for(SpookyFunction item : list) {
 			for(SpookyBlock block : item.blocks) {
 				writer.writeBytes(block.compile());
 			}
@@ -82,21 +114,39 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 		
 		writer.write(OpCode.DATA);
 		
-		for(int i = 0; i < 18; i++) writer.write(i); // Reserved
+		// StackPointer
+		writer.write( 0); // STACK_POINTER
+		writer.write( 0); // ZERO_CONST
+		writer.write(-1); // NEG_ONE_CONST
 		
-		writer.write( 0); // Always zero
-		writer.write(-1); // Negative one
-		writer.write( 0); // Temp value
+		for(SpookyFunction item : list) {
+			if(item.id >= 0) {
+				writer.write(item.func_offset);
+			}
+		}
+		// TODO: All functions are saved here
 		
 		data_offset = writer.index();
 		
 		// Write all strings into memory
-		IRData data = program.getIRData();
-		for(String str : data.strings) {
-			writer.write(OpCode.TEXT);
-			writer.write(str);
-		}
+//		IRData data = program.getIRData();
+//		for(String str : data.strings) {
+//			writer.write(OpCode.TEXT);
+//			writer.write(str);
+//		}
 		
+		{
+			byte[] array = writer.toByteArray();
+			
+			try {
+				FileOutputStream stream = new FileOutputStream(new File("C:/Users/Admin/Desktop/spooky/export.spook"));
+				stream.write(array);
+				stream.close();
+			} catch(Exception e) {
+				e.printStackTrace();
+			}
+			
+		}
 		return writer.toByteArray();
 	}
 	
@@ -106,18 +156,8 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 		writer.write(OpCode.TEXT);
 	}
 	
-	private int calculateDataSize(IRProgram program, IRFunction func) {
-		int size = 3 + func.getNumParams() * 4;
-		IRData data = program.getIRData();
-		for(String str : data.strings) {
-			size += 1 + (str.getBytes(StandardCharsets.ISO_8859_1).length);
-		}
-		
-		return size;
-	}
-	
-	private SpookyContainer convertFunction(IRFunction func, int id) {
-		SpookyContainer list = new SpookyContainer(func, id);
+	private SpookyFunction convertFunction(IRFunction func, int id) {
+		SpookyFunction list = new SpookyFunction(func, id);
 		SpookyBlock block = new SpookyBlock();
 		
 		for(IRInstruction a : func.getInstructions()) {
@@ -151,19 +191,19 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 		return list;
 	}
 	
-	private void apply_work(SpookyContainer item) {
+	private void apply_work(SpookyFunction item) {
 		for(SpookyBlock block : item.blocks) {
 			apply_work(item.func.getProgram(), item, block);
 		}
 	}
 	
-	private void apply_work_jump(List<SpookyContainer> full, SpookyContainer item) {
+	private void apply_work_jump(SpookyFunction item) {
 		for(SpookyBlock block : item.blocks) {
-			apply_work_jump(item.func.getProgram(), full, item, block);
+			apply_work_jump(item.func.getProgram(), item, block);
 		}
 		
 		// Debugging
-		System.out.println("\n" + item.func);
+		System.out.println("\n" + item.func + ", " + base.calculateStack(item));
 		for(SpookyBlock block : item.blocks) {
 			for(SpookyInst inst : block.insts) {
 				System.out.println("   " + inst);
@@ -171,86 +211,27 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 		}
 	}
 	
-	private int findLabel(List<SpookyContainer> full, SpookyContainer base, LabelParam label) {
-		int index = base.func_offset;
-		
-		if(label instanceof FunctionLabel) {
-			FunctionLabel flabel = (FunctionLabel)label;
-			
-			for(SpookyContainer item : full) {
-				if(item.func.getName().equals(flabel.getName())) {
-					return item.func_offset;
-				}
-			}
-		} else {
-			for(SpookyBlock block : base.blocks) {
-				if(block.isLabelBlock()) {
-					if(block.getDataName().equals(label.toString()))
-						return index;
-				} else {
-					index += block.insts.size();
-				}
-			}
-		}
-		
-		throw new IllegalArgumentException("Cound not find the label '" + label + "'");
-	}
-	
-	private int findNextInst(List<SpookyContainer> full, SpookyContainer base, SpookyInst inst) {
-		int index = 0;
-		
-		for(SpookyContainer item : full) {
-			for(SpookyBlock block : item.blocks) {
-				for(SpookyInst i : block.insts) {
-					if(i == inst) return index;
-					index++;
-				}
-			}
-		}
-		
-		throw new IllegalArgumentException("Cound not find the instruction '" + inst + "'");
-	}
-	
-	private void apply_work_jump(IRProgram program, List<SpookyContainer> full, SpookyContainer base, SpookyBlock block) {
+	private void apply_work_jump(IRProgram program, SpookyFunction func, SpookyBlock block) {
 		for(SpookyInst inst : block.insts) {
 			for(int i = 0; i < inst.params.size(); i++) {
 				Object obj = inst.params.get(i);
 				
 				if(obj instanceof LabelParam) {
 					if(inst.op == OpCode.JMP) {
-						inst.params.set(i, findLabel(full, base, (LabelParam)obj));
+						inst.params.set(i, base.getLabelIndex(func, (LabelParam)obj));
 					} else {
-						inst.params.set(i, Address.create(0, findLabel(full, base, (LabelParam)obj)));
+						inst.params.set(i, Address.create(0, base.getLabelIndex(func, (LabelParam)obj)));
 					}
 				}
 				
 				if(obj instanceof Relative) {
-					inst.params.set(i, findNextInst(full, base, inst) + ((Relative)obj).offset);
+					inst.params.set(i, base.getNextInstruction(func, inst) + ((Relative)obj).offset);
 				}
 			}
 		}
 	}
 	
-	private int getStackSize(SpookyContainer item) {
-		int size = item.func.getNumParams();
-		
-		for(SpookyBlock block : item.blocks) {
-			for(IRInstruction inst : block.list) {
-				for(Param p : inst.params) {
-					if(!(p instanceof Reg)) continue;
-					Reg reg = (Reg)p;
-					
-					if(reg.isGenerated) {
-						size += 4;
-					}
-				}
-			}
-		}
-		
-		return size;
-	}
-	
-	private int getFunctionSize(SpookyContainer item) {
+	private int getFunctionSize(SpookyFunction item) {
 		int size = 0;
 		
 		for(SpookyBlock block : item.blocks) {
@@ -273,7 +254,7 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 		return Address.create(data_offset, offset);
 	}
 	
-	private void apply_work(IRProgram program, SpookyContainer base, SpookyBlock block) {
+	private void apply_work(IRProgram program, SpookyFunction func, SpookyBlock block) {
 		List<SpookyInst> list = block.insts;
 		for(IRInstruction inst : block.list) {
 			switch(inst.type()) {
@@ -281,11 +262,11 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 					Reg a = (Reg)inst.getParam(0);
 					Param b = inst.getParam(1);
 					
-					Address target = generate(base, (Reg)a);
+					Address target = generate(func, (Reg)a);
 					if(b instanceof NumberReg) {
 						list.add(new SpookyInst(OpCode.CONST, ((NumberReg)b).value, target));
 					} else if(b instanceof Reg) {
-						list.add(new SpookyInst(OpCode.MOV, generate(base, (Reg)b), target));
+						list.add(new SpookyInst(OpCode.MOV, generate(func, (Reg)b), target));
 					} else if(b instanceof RefReg) {
 						list.add(new SpookyInst(OpCode.MOV, getStringAddress(program, b.getIndex()), target));
 					} else throw new IllegalArgumentException("Invalid mov parameter '" + b + "' '" + (b == null ? "NULL":b.getClass())+ "'");
@@ -296,11 +277,11 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 				case neg: { // mul(A, -1)
 					Reg a = (Reg)inst.getParam(0);
 					
-					Address target = generate(base, (Reg)a);
+					Address target = generate(func, (Reg)a);
 					if(inst.type() == IRType.not) {
-						list.add(new SpookyInst(OpCode.EQ, target, zero_number, target));
+						list.add(new SpookyInst(OpCode.EQ, target, ZERO_CONST, target));
 					} else {
-						list.add(new SpookyInst(OpCode.MUL, target, neg_one_num, target));
+						list.add(new SpookyInst(OpCode.MUL, target, NEG_ONE_CONST, target));
 					}
 					
 					break;
@@ -321,25 +302,24 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 					Reg b = (Reg)inst.getParam(1);
 					Param c = inst.getParam(2);
 					
-					Address target = generate(base, a);
-					Address op1 = generate(base, b);
+					Address target = generate(func, a);
+					Address op1 = generate(func, b);
 					OpCode op = OpCode.convert(inst.type());
 					
 					if(c instanceof NumberReg) {
-						list.add(new SpookyInst(OpCode.CONST, ((NumberReg)c).value, temp_number));
+						list.add(new SpookyInst(OpCode.CONST, ((NumberReg)c).value, TEMP_ADDR));
 						if(op == null) {
 							op = OpCode.convertSpecial(inst.type());
-							list.add(new SpookyInst(op, op1, temp_number, temp_number));
-							list.add(new SpookyInst(OpCode.EQ, zero_number, temp_number, target));
+							list.add(new SpookyInst(op, TEMP_ADDR, op1, TEMP_ADDR));
 						} else {
-							list.add(new SpookyInst(op, op1, temp_number, target));
+							list.add(new SpookyInst(op, op1, TEMP_ADDR, target));
 						}
 					} else if(c instanceof Reg) {
 						if(op == null) {
-							list.add(new SpookyInst(op, op1, generate(base, (Reg)c), temp_number));
-							list.add(new SpookyInst(OpCode.EQ, zero_number, temp_number, target));
+							list.add(new SpookyInst(op, op1, generate(func, (Reg)c), TEMP_ADDR));
+							list.add(new SpookyInst(OpCode.EQ, ZERO_CONST, TEMP_ADDR, target));
 						} else {
-							list.add(new SpookyInst(op, op1, generate(base, (Reg)c), target));
+							list.add(new SpookyInst(op, op1, generate(func, (Reg)c), target));
 						}
 					} else throw new IllegalArgumentException("Invalid parameter '" + c + "' '" + (c == null ? "NULL":c.getClass())+ "'");
 					break;
@@ -348,7 +328,7 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 				case br: {
 					// TODO: Make the label point to the correct memory index
 					LabelParam label = (LabelParam)inst.getParam(0);
-					list.add(new SpookyInst(OpCode.JMP, zero_number, label));
+					list.add(new SpookyInst(OpCode.JMP, ZERO_CONST, label));
 					break;
 				}
 				
@@ -360,18 +340,18 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 						long value = ((NumberReg)a).value;
 						
 						if(inst.type() == IRType.brz) {
-							if(value == 0) list.add(new SpookyInst(OpCode.JMP, zero_number, label));
+							if(value == 0) list.add(new SpookyInst(OpCode.JMP, ZERO_CONST, label));
 						} else {
-							if(value != 0) list.add(new SpookyInst(OpCode.JMP, zero_number, label));
+							if(value != 0) list.add(new SpookyInst(OpCode.JMP, ZERO_CONST, label));
 						}
 						
 						break;
 					} else if(a instanceof Reg) {
 						if(inst.type() == IRType.brz) {
-							list.add(new SpookyInst(OpCode.JMP, generate(base, (Reg)a), label));
+							list.add(new SpookyInst(OpCode.JMP, generate(func, (Reg)a), label));
 						} else {
-							list.add(new SpookyInst(OpCode.EQ, generate(base, (Reg)a), zero_number, temp_number));
-							list.add(new SpookyInst(OpCode.JMP, temp_number, label));
+							list.add(new SpookyInst(OpCode.EQ, generate(func, (Reg)a), ZERO_CONST, TEMP_ADDR));
+							list.add(new SpookyInst(OpCode.JMP, TEMP_ADDR, label));
 						}
 					} else throw new IllegalArgumentException("Invalid brach parameter '" + a + "' '" + (a == null ? "NULL":a.getClass())+ "'");
 					break;
@@ -380,44 +360,69 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 				case ret: {
 					Param a = inst.getParam(0);
 					
+					// TODO: Read from stack
+					int jump = func.getNumParams() + 1;
 					if(a instanceof NumberReg) {
-						list.add(new SpookyInst(OpCode.CONST, ((NumberReg)a).value, return_valu));
-						list.add(new SpookyInst(OpCode.JMPADR, return_addr));
+						list.add(new SpookyInst(OpCode.CONST, jump, TEMP_ADDR));
+						list.add(new SpookyInst(OpCode.SUB, BASE_POINTER, TEMP_ADDR, BASE_POINTER));
+						list.add(new SpookyInst(OpCode.CONST, ((NumberReg)a).value, TEMP_ADDR));
+						list.add(new SpookyInst(OpCode.JMPADR, Address.stack(0)));
 					} else if(a instanceof Reg) {
-						list.add(new SpookyInst(OpCode.MOV, generate(base, (Reg)a), return_valu));
-						list.add(new SpookyInst(OpCode.JMPADR, return_addr));
+						list.add(new SpookyInst(OpCode.CONST, jump, TEMP_ADDR));
+						list.add(new SpookyInst(OpCode.SUB, BASE_POINTER, TEMP_ADDR, BASE_POINTER));
+						list.add(new SpookyInst(OpCode.JMPADR, Address.stack(0)));
 					} else throw new IllegalArgumentException("Invalid return parameter '" + a + "' '" + (a == null ? "NULL":a.getClass())+ "'");
 					
 					break;
 				}
 				
-				case call: {
+				case call: { // TODO: Call
 					Param a = inst.getParam(0);
 					FunctionLabel label = (FunctionLabel)inst.getParam(1);
+					SpookyFunction called = base.getFunction(label);
 					
-					// [returnvärde] [returnaddress] [arg1] [arg2] ..
+					boolean isExternal = called.id < 0;
+					// First we need to allocate enough memory on stack.
+					// called.func.getNumParams();
+					
+					// Get the size of this functions stack.
+					int stackOffset = called.getNumParams() + 2;
+					if(isExternal) {
+						// stackOffset = called.getNumParams() + 2;
+					}
+					
+					// Allocate 
+					
 					for(int i = 2; i < inst.params.size(); i++) {
 						Param c = inst.getParam(i);
 						
-						Address target = Address.create(-1, i);
+						// We write the address tack to the back of our function
+						Address target = Address.stack(-i + stackOffset);
+						
 						if(c instanceof NumberReg) {
 							list.add(new SpookyInst(OpCode.CONST, ((NumberReg)c).value, target));
 						} else if(c instanceof Reg) {
-							list.add(new SpookyInst(OpCode.MOV, generate(base, (Reg)c), target));
+							list.add(new SpookyInst(OpCode.MOV, generate(func, (Reg)c), target));
 						} else {
 							throw new IllegalArgumentException("Invalid call parameter '" + a + "' '" + (a == null ? "NULL":a.getClass())+ "'");
 						}
 					}
 					
-					if(isExternal(base, label)) {
+
+					if(isExternal) {
+						int val = called.getNumParams() + 1;
+						list.add(new SpookyInst(OpCode.CONST, val, TEMP_ADDR));
+						list.add(new SpookyInst(OpCode.ADD, BASE_POINTER, TEMP_ADDR, BASE_POINTER));
 						list.add(new SpookyInst(OpCode.EXTERN, label.ident.name()));
+						list.add(new SpookyInst(OpCode.CONST, val, TEMP_ADDR));
+						list.add(new SpookyInst(OpCode.SUB, BASE_POINTER, TEMP_ADDR, BASE_POINTER));
 					} else {
-						list.add(new SpookyInst(OpCode.CONST, new Relative(2), return_addr));
-						list.add(new SpookyInst(OpCode.JMP, zero_number, label));
+						list.add(new SpookyInst(OpCode.CONST, new Relative(2), Address.stack(0)));
+						list.add(new SpookyInst(OpCode.JMPADR, Address.functionPointer(called.id)));
 					}
 					
 					if(a instanceof Reg) {
-						list.add(new SpookyInst(OpCode.MOV, return_valu, generate(base, (Reg)a)));
+						list.add(new SpookyInst(OpCode.MOV, TEMP_ADDR, generate(func, (Reg)a)));
 					} else {
 						// throw new IllegalArgumentException("Invalid call parameter '" + a + "' '" + (a == null ? "NULL":a.getClass())+ "'");
 					}
@@ -430,33 +435,15 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 				}
 			}
 		}
-		
-//		if(block.insts.isEmpty()) {
-//			System.out.println(block.getDataName());
-//		}
-		
-//		for(SpookyInst inst : block.insts) {
-//			System.out.println("   " + inst);
-//		}
 	}
 	
-	private boolean isExternal(SpookyContainer base, FunctionLabel label) {
-		IRProgram program = base.func.getProgram();
-		
-		for(IRFunction func : program.getFunctions()) {
-			if(func.getName().equals(label.getName())) {
-				return func.length() == 0;
-			}
+	private Address generate(SpookyFunction func, Reg reg) {
+		if(reg.isTemporary) {
+			return Address.stack(func.getStackSize() - reg.getIndex());
 		}
 		
-		return false;
-	}
-	
-	private Address generate(SpookyContainer base, Reg param) {
-		if(param.isGenerated) {
-			return Address.create(0, 16 + base.id * 16 + param.getIndex());
-		}
-		
-		return Address.create(-1, param.getIndex() + 2);
+		System.out.println(reg + ":" + reg.getIndex());
+		// ReturnAddr, Result, Params, Stack
+		return Address.stack(-reg.getIndex() - 1);
 	}
 }

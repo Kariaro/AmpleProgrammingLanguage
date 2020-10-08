@@ -7,7 +7,6 @@ import java.util.List;
 
 import hardcoded.compiler.instruction.IRInstruction.Param;
 import hardcoded.exporter.spooky.SpookyCodeGenerator.Relative;
-import hardcoded.utils.StringUtils;
 
 class SpookyInst {
 	OpCode op;
@@ -86,6 +85,15 @@ class SpookyInst {
 	
 	@Override
 	public String toString() {
-		return op + " " + StringUtils.join(", ", params);
+		if(params.isEmpty()) return op + "";
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append(String.format("%-10s", op));
+		
+		for(Object obj : params)
+			sb.append(String.format("%-12s", obj));
+		
+		sb.deleteCharAt(sb.length() - 2);
+		return sb.toString().trim();
 	}
 }

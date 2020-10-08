@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 import hardcoded.compiler.expression.LowType;
+import hardcoded.utils.StringUtils;
 
 public class IRFunction {
 	private final IRProgram program;
@@ -81,6 +82,7 @@ public class IRFunction {
 	
 	@Override
 	public String toString() {
-		return type + " " + name + "( ... ); [" + extra + "]";
+		if(params.length == 0) return type + " " + name + "():";
+		return type + " " + name + "( " + StringUtils.join(", ", params) + " ):";
 	}
 }

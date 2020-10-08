@@ -50,8 +50,8 @@ enum OpCode {
 	static OpCode convertSpecial(IRType type) {
 		switch(type) {
 			case neq: return EQ;
-			case gt: return LEQ;
-			case gte: return LT;
+			case gt: return LT;
+			case gte: return LEQ;
 			default: return null;
 		}
 	}
