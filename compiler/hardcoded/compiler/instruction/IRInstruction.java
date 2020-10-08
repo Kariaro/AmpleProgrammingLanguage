@@ -318,7 +318,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		public String toString() { return Objects.toString(object); }
 	}
 	
-	public static class Reg implements Param {
+	public static final class Reg implements Param {
 		public String name;
 		public int index;
 		public LowType size;
@@ -327,7 +327,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		 * There are two types of register. Either they are generated or
 		 * they are given by the coder.
 		 */
-		public boolean isGenerated;
+		public boolean isTemporary;
 		
 		public Reg(LowType type, int index) {
 			this(null, type, index);
@@ -342,7 +342,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 			this.size = size;
 			
 			if(name == null)
-				isGenerated = true;
+				isTemporary = true;
 		}
 		
 		public LowType getSize() {
@@ -358,7 +358,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		}
 		
 		public String toString() {
-			if(isGenerated) {
+			if(isTemporary) {
 				return "$" + createValue(index).toUpperCase() + (DEBUG_SIZE ? (":" + size):"");
 			}
 			
@@ -498,6 +498,10 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		}
 		
 		public String getName() {
+			return ident.name();
+		}
+		
+		public String toString() {
 			return ident.name();
 		}
 	}

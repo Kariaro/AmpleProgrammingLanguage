@@ -3,23 +3,45 @@
 // Imported function
 // extern
 void printInt(int value);
+void print(int value);
+int random();
+
+void ptc(int a, int b, int c, int d, int e) {
+	print(a);
+	print(b);
+	print(c);
+	print(d);
+	print(e);
+	return 0;
+}
 
 // Check if a number is a prime or not.
+
 bool isPrime(int value) {
 	for(int i = 2; i < value - 1; i++) {
-		int a = (value / i) * i;
-		if(a == value) return 0;
+		if((value % i) == 0) return 0;
 	}
 	
 	return 1;
 }
 
 void main() {
-	int a = isPrime(661);			// True
-	int b = isPrime(2500);			// False
-	//int c = isPrime(661);		// True
+	ptc('F','a','l','s','e');
+	print('\n');
 	
-	printInt(a);
-	//printInt(b);
-	//printInt(c);
+	for(int i = 9; i < 10; i++) {
+		bool test = isPrime(i);
+		
+		ptc('I','s',' ',0,0);
+		printInt(test);
+		ptc(' ','p','r','i','m');
+		ptc('e','?',' ',0,0);
+		
+		if(test) {
+			ptc('T','r','u','e',0);
+		} else {
+			ptc('F','a','l','s','e');
+		}
+		ptc('\n',0,0,0,0);
+	}
 }

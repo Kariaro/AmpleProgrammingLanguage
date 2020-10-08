@@ -63,7 +63,7 @@ public class HCompilerBuild {
 		// file = "tests_2/000_assign_test.hc";
 		
 		try {
-			byte[] bytes = build(file);
+			build(file);
 			
 			System.out.println();
 			System.out.println("+-----------------+");
@@ -71,19 +71,19 @@ public class HCompilerBuild {
 			System.out.println("+-----------------+");
 			System.out.println();
 			
-			StringBuilder sb = new StringBuilder();
-			
-			int index = 1;
-			for(byte b : bytes) {
-				if(index++ > 31) {
-					index = 1;
-					sb.append(String.format("%02x\n", b));
-				} else {
-					sb.append(String.format("%02x ", b));
-				}
-			}
-			
-			System.out.println(sb.toString().trim());
+//			StringBuilder sb = new StringBuilder();
+//			
+//			int index = 1;
+//			for(byte b : bytes) {
+//				if(index++ > 31) {
+//					index = 1;
+//					sb.append(String.format("%02x\n", b));
+//				} else {
+//					sb.append(String.format("%02x ", b));
+//				}
+//			}
+//			
+//			System.out.println(sb.toString().trim());
 		} catch(Exception e) {
 			e.printStackTrace();
 		}

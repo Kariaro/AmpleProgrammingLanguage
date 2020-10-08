@@ -15,14 +15,15 @@ public class IntermediateCodeOptimizer {
 		for(IRFunction func : program.list) {
 			simplify(func);
 			
-			System.out.println("\n" + func.getType() + ", " + func.getName());
-			for(int i = 0; i < func.length(); i++) {
+			System.out.println("\n" + func);
+			for(int i = 0, line = 0; i < func.length(); i++) {
 				IRInstruction inst = func.list.get(i);
 				
 				if(inst.op == IRType.label) {
-					System.out.printf("\n%4d: %s\n", i, inst);
+					System.out.printf("\n%4d: %s\n", line, inst);
 				} else {
-					System.out.printf("%4d:   %s\n", i, inst);
+					System.out.printf("%4d:   %s\n", line, inst);
+					line++;
 				}
 			}
 		}
@@ -96,7 +97,7 @@ public class IntermediateCodeOptimizer {
 			boolean positive_eq = inst.type() == IRType.eq;
 			
 			if(positive_eq || inst.type() == IRType.neq) {
-				IRInstruction next = iter.next();
+				IRInstruction next = inst.next();
 				
 				// Check if the type was the positive branch 'brz'
 				boolean positive_br = next.type() == IRType.brz;
@@ -107,7 +108,9 @@ public class IntermediateCodeOptimizer {
 					// Check if the equality result is referenced
 					
 					int refs = getReferences(func, inst.getParam(0));
-					if(refs < 3) iter.remove(); // Remove the instruction...
+					if(refs < 3) {
+						iter.remove(); // Remove the instruction...
+					}
 					
 					next.params.set(0, inst.getParam(1));
 					next.op = (positive_br == positive_eq) ? IRType.bnz:IRType.brz;
@@ -124,7 +127,7 @@ public class IntermediateCodeOptimizer {
 	 * the lowest amount possible by counting and replacing.
 	 */
 	private void counter_optimization(IRFunction func) {
-		Map<Integer, Param> map = new HashMap<>();
+		Map<Integer, Reg> map = new HashMap<>();
 		int index = 0;
 		
 		ListIterator<IRInstruction> iter = func.list.listIterator();
@@ -133,17 +136,20 @@ public class IntermediateCodeOptimizer {
 			IRInstruction inst = iter.next();
 			
 			for(int i = 0; i < inst.params.size(); i++) {
-				Param reg = inst.getParam(i);
+				Param param = inst.getParam(i);
+				if(!(param instanceof Reg)) break;
+				Reg reg = (Reg)param;
 				
-				if(reg.getClass() == Param.class) {
-					Param next = map.get(reg.getIndex());
-					if(next == null) {
-						next = new Reg(reg.getSize(), index++);
-						map.put(reg.getIndex(), next);
-					}
-					
-					inst.params.set(i, next);
+				// Keep function variables.
+				if(!reg.isTemporary) continue;
+				
+				Reg next = map.get(reg.getIndex());
+				if(next == null) {
+					next = new Reg(reg.getSize(), index++);
+					map.put(reg.getIndex(), next);
 				}
+				
+				inst.params.set(i, next);
 			}
 		}
 		
@@ -204,6 +210,25 @@ public class IntermediateCodeOptimizer {
 		
 		func.fixInstructions();
 	}
+	
+	// TODO: Pass through label optimization
+	//   If some branch instruction jumps to a label that only contains a unconditional instruction
+	// then jump to the target's location.
+	// =====================
+	//   br [some_label]
+	//     ...
+	// some_label:
+	//   br [another]
+	//
+	// Should become:
+	// =====================
+	//   br [another]
+	//     ...
+	// some_label:
+	//   br [another]
+	
+	// TODO: Dead code optimization
+	//   If an instruction is inside a code block that will never be entered it should be removed.
 	
 	private void simplify(IRFunction func) {
 		// if(true) return block.start;
