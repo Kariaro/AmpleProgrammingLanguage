@@ -24,6 +24,7 @@ import java.util.logging.LogManager;
  * @author HardCoded
  */
 public class CompilerMain {
+	// Carbon programming language.
 	
 	static {
 		try {

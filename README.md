@@ -1,7 +1,34 @@
-# HCProgrammingLanguage
+# Carbon Programming Language
 Creating a compiler for my own programing language.
 This project is not finished and is currently under construction.
 
+The carbon syntax is simmilar to C or C++ styled code but will allow for flexible
+keywords and inline syntax changes.
+
+## Compiler
+
+The compiler will be able to generate multiple output formats.
+
+Some formats that this compiler will support.
+ * x86-64/Intel-AMD
+ * spooky
+
+Here is an example of the syntax:
+
+```
+void print(int v);
+
+void main() {
+    int a = 3;
+    print(a);
+}
+
+void print(int v) {
+	*((int*)0xb8000) = v;
+}
+```
+
+The compiler has its own IR language.
 
 
 ## Lexer

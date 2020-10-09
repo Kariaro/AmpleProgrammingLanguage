@@ -4,12 +4,20 @@ import java.util.*;
 
 import hardcoded.compiler.instruction.IRInstruction;
 import hardcoded.compiler.instruction.IRInstruction.*;
+import hardcoded.compiler.instruction.IRProgram;
 
 class SpookyBase {
-	List<SpookyFunction> list = new ArrayList<>();
+	final List<SpookyFunction> list = new ArrayList<>();
+	final IRProgram program;
+	
+	public SpookyBase(IRProgram program) {
+		this.program = program;
+	}
 	
 	public SpookyFunction getFunction(FunctionLabel label) {
 		for(SpookyFunction item : list) {
+			if(item.func == null) continue;
+			
 			if(item.func.getName().equals(label.getName())) {
 				return item;
 			}

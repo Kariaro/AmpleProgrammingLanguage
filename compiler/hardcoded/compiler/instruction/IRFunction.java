@@ -8,26 +8,19 @@ import hardcoded.compiler.expression.LowType;
 import hardcoded.utils.StringUtils;
 
 public class IRFunction {
-	private final IRProgram program;
+	private final LowType[] params;
 	private final LowType type;
 	private final String name;
-	private final LowType[] params;
 	
-	List<IRInstruction> list;
-	String extra;
+	protected List<IRInstruction> list;
 	
-	IRFunction(IRProgram program, LowType type, String name, LowType[] params) {
+	protected IRFunction(LowType type, String name, LowType[] params) {
 		Objects.requireNonNull(type); // A type can never be null
 		
-		this.program = program;
 		this.list = new ArrayList<>();
 		this.params = params;
 		this.type = type;
 		this.name = name;
-	}
-	
-	public IRProgram getProgram() {
-		return program;
 	}
 	
 	public String getName() {

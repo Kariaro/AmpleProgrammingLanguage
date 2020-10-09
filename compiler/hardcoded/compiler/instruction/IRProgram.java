@@ -1,42 +1,46 @@
 package hardcoded.compiler.instruction;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import hardcoded.compiler.Block.Function;
 import hardcoded.compiler.expression.LowType;
 
-public class IRProgram {
+// TODO: Make this class serializable
+public class IRProgram implements java.io.Serializable {
+	private static final long serialVersionUID = -7513138804605254084L;
+
 	/**
 	 * All the functions inside a IRProgram
 	 */
-	final List<IRFunction> list;
+	private final List<IRFunction> list;
 	
 	/**
-	 * All constant type data.
+	 * All context type data.
 	 */
-	final IRData data;
+	private final IRContext context;
 	
-	IRProgram() {
-		data = new IRData();
+	protected IRProgram() {
+		context = new IRContext();
 		list = new ArrayList<>();
 	}
 	
-	public IRFunction[] getFunctions() {
-		return list.toArray(new IRFunction[0]);
+	public List<IRFunction> getFunctions() {
+		return Collections.unmodifiableList(list);
 	}
 	
-	public IRData getIRData() {
-		return data;
+	public IRContext getContext() {
+		return context;
 	}
 	
-	public IRFunction addFunction(Function func, IRInstruction start) {
+	protected IRFunction addFunction(Function func, IRInstruction start) {
 		LowType[] params = new LowType[func.arguments.size()];
 		for(int i = 0; i < params.length; i++) {
 			params[i] = func.arguments.get(i).low_type();
 		}
 		
-		IRFunction ir_func = new IRFunction(this, func.returnType.type(), func.name, params);
+		IRFunction ir_func = new IRFunction(func.returnType.type(), func.name, params);
 		
 		for(IRInstruction inst : start) {
 			ir_func.list.add(inst);

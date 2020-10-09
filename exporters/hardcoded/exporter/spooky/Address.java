@@ -12,14 +12,14 @@ class Address {
 		if(baseAddr == -1) {
 			if(offset >=  0) return "[" + offset + "]";
 			if(offset == -1) return "0";
-			if(offset == -2) return "0";
-			if(offset == -3) return "-1";
+			if(offset == -2) return "-1";
 			return "Data[" + (offset) + "]";
 		}
 		
 		if(baseAddr == 0) {
 			return "[SP " + (offset < 0 ? ("- " + (-offset)):("+ " + offset)) + "]";
 		}
+		
 		return "Address[" + baseAddr + ":" + offset + "]";
 	}
 	
@@ -44,6 +44,6 @@ class Address {
 	}
 	
 	static Address functionPointer(int id) {
-		return new Address(-1, -(id + 4));
+		return new Address(-1, -(id + 3));
 	}
 }

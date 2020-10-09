@@ -491,6 +491,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	
 	public static class FunctionLabel extends LabelParam {
 		public Identifier ident;
+		// TODO: Remove any reference to Identifier inside params!
 		
 		public FunctionLabel(Identifier ident) {
 			super(ident.toString(), true);
