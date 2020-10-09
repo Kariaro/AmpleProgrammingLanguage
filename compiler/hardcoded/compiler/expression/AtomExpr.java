@@ -30,6 +30,10 @@ public class AtomExpr implements Expression {
 		this(Byte.toUnsignedLong(value), Atom.i8);
 	}
 	
+	public AtomExpr(boolean value) {
+		this(value ? 1:0, Atom.i8);
+	}
+	
 	public AtomExpr(Identifier value) {
 		this(value, Atom.ident);
 	}

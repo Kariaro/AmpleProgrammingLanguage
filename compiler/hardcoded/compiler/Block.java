@@ -91,7 +91,7 @@ public interface Block extends Printable {
 		public Identifier getIdentifier(String name) {
 			for(Identifier var : arguments) {
 				if(var.name().equals(name)) return var;
-			}
+			} 
 			
 			for(Scope scope : scopes) {
 				Identifier ident = scope.getIdentifier(name);

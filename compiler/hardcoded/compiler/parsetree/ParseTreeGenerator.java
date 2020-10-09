@@ -149,7 +149,6 @@ public class ParseTreeGenerator {
 				if(defined_types.containsKey(name)) syntaxError("Type is already defined '%s'", name);
 				defined_types.put(name, new HighType(name, type.type(), type.size()));
 				
-				// System.out.println("#TYPE [" + name + "] as [" + type + "]");
 				break;
 			}
 			case "import": {
@@ -157,7 +156,6 @@ public class ParseTreeGenerator {
 				String filename = reader.value().substring(1, reader.value().length() - 1);
 				if(!reader.next().valueEqualsAdvance(";")) syntaxError("Invalid import syntax. Expected a semicolon but got '%s'", reader);
 				
-				// System.out.println("#IMPORT [" + filename + "]");
 				importFile(filename);
 				break;
 			}
@@ -167,7 +165,6 @@ public class ParseTreeGenerator {
 				reader.next();
 				Expression expr = nextExpression();
 				if(!reader.valueEqualsAdvance(";")) syntaxError("Invalid set syntax. Expected a semicolon but got '%s'", reader);
-				// System.out.println("#SET [" + name + "] as [" + expr + "]");
 				
 				// TODO: Check that the expression is a compiler value that does not use variables.
 				GLOBAL.put(name, expr);
@@ -177,7 +174,6 @@ public class ParseTreeGenerator {
 				String name = reader.next().value();
 				if(!reader.next().valueEqualsAdvance(";")) syntaxError("Did you forget a semicolon here?");
 				
-				// System.out.println("#UNSET [" + name + "]");
 				if(defined_types.containsKey(name)) {
 					if(defined_types.get(name) instanceof PrimitiveType) syntaxError("Invalid unset syntax. You cannot unset the primitive type '%s'", name);
 					defined_types.remove(name);
@@ -465,8 +461,7 @@ public class ParseTreeGenerator {
 				syntaxError("Invalid variable definition. Expected a comma or semicolon but got '%s'", reader);
 			}
 		} while(true);
-
-		// System.out.println(reader + " -> ?" + list);
+		
 		return new StatementList(list);
 	}
 	
@@ -555,8 +550,6 @@ public class ParseTreeGenerator {
 			
 			Expression parse() {
 				Expression expr = skipComma ? e14():e15();
-				// System.out.println("Expr -> " + expr);
-				
 				return expr;
 			}
 			Expression e15() { return e_read_combine(",", comma, this::e14); }
@@ -647,7 +640,6 @@ public class ParseTreeGenerator {
 					if(!reader.valueEqualsAdvance(":")) syntaxError("Invalid ternary operation a ? b : c. Missing the colon. '%s'", reader);
 					Expression c = e12();
 					
-					
 					AtomExpr temp = new AtomExpr(current_function.temp(LowType.largest(b.size(), c.size())));
 					return new OpExpr(
 						comma,
@@ -734,7 +726,6 @@ public class ParseTreeGenerator {
 						// TODO: Use the same solution as the assignment operators.
 						
 						AtomExpr ident2 = new AtomExpr(current_function.temp(lhs.size()));
-						// System.out.println("Comma expr -> " + ident2 + ", [" + lhs + "]");
 						if(!lhs.isPure()) {
 							AtomExpr ident1 = new AtomExpr(current_function.temp(lhs.size()));
 							
@@ -895,6 +886,7 @@ public class ParseTreeGenerator {
 				if(reader.groupEquals("LONG")) { String value = reader.value(); reader.next(); return new AtomExpr(parseLong(value)); }
 				if(reader.groupEquals("INT")) { String value = reader.value(); reader.next(); return new AtomExpr(parseInteger(value)); }
 				if(reader.groupEquals("STRING")) { String value = reader.value(); reader.next(); return new AtomExpr(value.substring(1, value.length() - 1)); } // TODO: Unicode ?
+				if(reader.groupEquals("BOOL")) { String value = reader.value(); reader.next(); return new AtomExpr(Boolean.parseBoolean(value)); }
 				
 				if(reader.groupEquals("CHAR")) { // TODO: Unicode ?
 					String value = StringUtils.unescapeString(reader.value().substring(1, reader.value().length() - 1));

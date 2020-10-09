@@ -27,13 +27,12 @@ public class IntermediateCodeGenerator {
 		
 	}
 	
-	private IRProgram ir_program;
-	
-	public IRProgram generate(Program program) {
-		ir_program = new IRProgram();
+	private IRProgram program;
+	public IRProgram generate(Program prog) {
+		program = new IRProgram();
 		
-		for(int i = 0; i < program.size(); i++) {
-			Block block = program.get(i);
+		for(int i = 0; i < prog.size(); i++) {
+			Block block = prog.get(i);
 			
 			if(!(block instanceof Function)) continue;
 			Function func = (Function)block;
@@ -41,22 +40,10 @@ public class IntermediateCodeGenerator {
 			
 			IRInstruction.reset_counter();
 			IRInstruction inst = compileInstructions(func.body).first();
-			IRFunction ir_func = ir_program.addFunction(func, inst);
-			
-			{
-				String str = "";
-				for(int j = 0; j < func.arguments.size(); j++) {
-					Identifier id = func.arguments.get(j);
-					str += ", " + id.low_type();
-				}
-				
-				if(!str.isEmpty()) {
-					ir_func.extra = str.substring(2);
-				}
-			}
+			program.addFunction(func, inst);
 		}
 		
-		return ir_program;
+		return program;
 	}
 	
 	private boolean shouldCheck(Expression e) {
@@ -65,7 +52,7 @@ public class IntermediateCodeGenerator {
 	
 	private Map<String, Param> variables = new HashMap<>();
 	private Param addString(AtomExpr a) {
-		return new RefReg(".data.strings", ir_program.data.getStringIndexAddIfAbsent(a.s_value));
+		return new RefReg(".data.strings", program.getContext().getStringIndexAddIfAbsent(a.s_value));
 	}
 	
 	private Param createObject(Expression e) {
@@ -99,7 +86,6 @@ public class IntermediateCodeGenerator {
 			}
 		}
 		
-		System.out.println("Creating object reg ? " + e);
 		//throw new NullPointerException("Failed to create parameter for expression '" + e +"'");
 		return new DebugParam(e.clone());
 	}
@@ -179,6 +165,7 @@ public class IntermediateCodeGenerator {
 				} else {
 					System.out.println("Operation?!?!?!?" + a + ", " + b);
 				}
+				
 				break;
 			}
 			
@@ -235,15 +222,6 @@ public class IntermediateCodeGenerator {
 				}
 				
 				// TODO: Reading from a Identifier should hold the primitive size and not the pointer size.
-				
-				// FIXME
-//				if(request.size == null && reg_0.size != null) {
-//					if(reg_0.size.isPointer())
-//						request.size = AtomType.getPointer(reg_0.size, -1);
-//					else
-//						request.size = reg_0.size;
-//				}
-				
 				inst.append(new IRInstruction(IRType.read, request, reg_0));
 				break;
 			}
@@ -282,9 +260,7 @@ public class IntermediateCodeGenerator {
 					inst.append(compileInstructions(b, reg_1));
 				}
 				
-				if(expr.length() > 2) {
-					// ????
-				} else {
+				if(expr.length() < 3) {
 					inst.append(new IRInstruction(type, request, reg_0, reg_1));
 					break;
 				}
@@ -397,6 +373,11 @@ public class IntermediateCodeGenerator {
 			}
 			
 			default: {
+				if(expr instanceof AtomExpr && request != null) {
+					inst.append(new IRInstruction(IRType.mov, request, createObject(expr)));
+					break;
+				}
+				
 				System.err.println("[MISSING INSTRUCTION] -> " + expr);
 			}
 		}

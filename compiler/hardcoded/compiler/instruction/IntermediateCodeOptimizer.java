@@ -12,7 +12,7 @@ public class IntermediateCodeOptimizer {
 	}
 	
 	public IRProgram generate(IRProgram program) {
-		for(IRFunction func : program.list) {
+		for(IRFunction func : program.getFunctions()) {
 			simplify(func);
 			
 			System.out.println("\n" + func);
@@ -181,7 +181,8 @@ public class IntermediateCodeOptimizer {
 						iter.next();
 						iter.remove();
 						
-						// inst.next().remove();
+						// TODO???
+						continue;
 					}
 				}
 			}

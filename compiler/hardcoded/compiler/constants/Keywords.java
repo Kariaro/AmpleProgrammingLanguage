@@ -18,6 +18,7 @@ public final class Keywords {
 		keywords.addAll(Arrays.asList(
 			"switch", "case", "default",
 			"signed", "unsigned",
+			"true", "false",
 			"while",
 			"for",
 			"if",

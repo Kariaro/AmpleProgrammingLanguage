@@ -1,0 +1,61 @@
+package hardcoded.compiler.instruction;
+
+import java.sql.Date;
+import java.text.DateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * Context class for IRPrograms.
+ * 
+ * This class will contain detailed information
+ * about the code that has been compiled.
+ * 
+ * @author HardCoded
+ */
+public class IRContext implements java.io.Serializable {
+	private static final long serialVersionUID = -2121936920412719936L;
+	
+	private List<String> strings = new ArrayList<>();
+	
+	protected String programName;
+	protected long creationDate;
+	
+	protected IRContext() {
+		creationDate = System.currentTimeMillis();
+		
+		System.out.println(this);
+	}
+	
+	public List<String> getStrings() {
+		return Collections.unmodifiableList(strings);
+	}
+	
+	public int getStringIndex(String value) {
+		return strings.indexOf(value);
+	}
+	
+	public boolean hasString(String value) {
+		return strings.contains(value);
+	}
+	
+	public int getStringIndexAddIfAbsent(String value) {
+		int index = getStringIndex(value);
+		if(index < 0) {
+			strings.add(value);
+			return strings.size() - 1;
+		}
+		
+		return index;
+	}
+
+	public String getString(int index) {
+		return strings.get(index);
+	}
+	
+	@Override
+	public String toString() {
+		return "IRContext{date=\"" + DateFormat.getInstance().format(new Date(creationDate)) + "\"}";
+	}
+}

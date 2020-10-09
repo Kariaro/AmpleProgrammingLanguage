@@ -16,12 +16,6 @@ class SpookyFunction {
 	 * The instruction offset of this function
 	 */
 	public int func_offset;
-	
-	/**
-	 * How many local variables inside this function
-	 */
-	public int stack_size;
-	
 	public final int id;
 	
 	public SpookyFunction(IRFunction func, int id) {
@@ -47,34 +41,40 @@ class SpookyFunction {
 	}
 	
 	public int getNumParams() {
+		if(func == null) return 0;
 		return func.getNumParams();
 	}
 	
-	// Tell the size in bytes for this container.
-	public int sizeInBytes() {
-		return -1;
+	public boolean isExtern() {
+		if(func == null) return true;
+		return func.length() == 0;
 	}
-
-	public int getStackSize() {
-		if(stack_size != 0) return stack_size;
+	
+	private int usage = -1;
+	public int getUsage() {
+		if(isExtern()) return 0;
+		if(usage != -1) return usage;
+		
 		Set<Integer> set = new HashSet<>();
 		
 		for(SpookyBlock block : blocks) {
 			for(IRInstruction ir : block.list) {
 				for(Param param : ir.params) {
-					if(param instanceof Reg) {
-						
-						if(!set.contains(param.getIndex())) {
-							set.add(param.getIndex());
-						}
+					if(!(param instanceof Reg)) continue;
+					Reg reg = (Reg)param;
+					
+					if(!reg.isTemporary) continue;
+					
+					if(!set.contains(param.getIndex())) {
+						set.add(param.getIndex());
 					}
 				}
 			}
 		}
 		
-		stack_size = set.size() + 1 + getNumParams();
-		// [ RetAddr, Params, Stack ]
-		return stack_size;
+		// [ ReturnAddress, Params, Stack ] = Function Memory
+		usage = 1 + getNumParams() + set.size();
+		return usage;
 	}
 	
 }

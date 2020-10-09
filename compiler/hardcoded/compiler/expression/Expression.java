@@ -139,7 +139,7 @@ public interface Expression extends Printable {
 				LowType type = expr.size();
 				if(type == null) continue;
 				
-				curr = curr == null ? type:LowType.largest(curr, type);
+				curr = (curr == null) ? type:LowType.largest(curr, type);
 			}
 		} else {
 			AtomExpr a = (AtomExpr)this;
@@ -155,6 +155,9 @@ public interface Expression extends Printable {
 			if(a.isNumber()) {
 				return a.atomType;
 			}
+			
+			// FIXME: Ternary operations does not work sometimes because size is a group and not a primitive type!
+			// curr = a.atomType();
 		}
 		
 		return curr;
