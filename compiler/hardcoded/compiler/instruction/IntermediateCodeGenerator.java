@@ -487,9 +487,9 @@ public class IntermediateCodeGenerator {
 			//   brz [check], end
 			//   br loop
 			// next:
+			//   ; Calculate action
 			//   check = y;
 			//   brz [check], end
-			//   ; Calculate action
 			// loop:
 			//   ; ...
 			//   br [next]
@@ -503,14 +503,13 @@ public class IntermediateCodeGenerator {
 			}
 			
 			inst.append(new IRInstruction(IRType.label, label_next));
+			inst.append(compileInstructions(stat.getAction()));
 			if(stat.getCondition() != null) {
 				Param temp = IRInstruction.temp(stat.getCondition().size());
 				inst.append(compileInstructions(stat.getCondition(), temp));
 				inst.append(new IRInstruction(IRType.brz, temp, label_end));
 			}
 			
-
-			inst.append(compileInstructions(stat.getAction()));
 			inst.append(new IRInstruction(IRType.label, label_loop));
 		} else {
 			// ============================== //

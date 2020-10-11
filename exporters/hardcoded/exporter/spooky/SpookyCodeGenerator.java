@@ -18,9 +18,9 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 	
 	private ByteOutputWriter writer;
 	private static final Address BASE_POINTER = Address.global(0);
+	private static final Address TEMP         = Address.global(1);
 	private static final Address ZERO         = Address.data(0);
 	private static final Address MINUS_ONE    = Address.data(1);
-	private static final Address TEMP         = Address.global(1);
 	private SpookyBase base;
 	
 	// A program always start with the stack pointer and a temporary memory cell
@@ -50,7 +50,7 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 		
 		base = new SpookyBase(program);
 		List<SpookyFunction> list = base.list;
-		writeProgramData(sorted);
+		writeProgramData();
 		
 		int func_id = 0;
 		for(IRFunction func : sorted) {
@@ -83,57 +83,8 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 			}
 		}
 		
-		int offset = 0;
-		for(SpookyFunction item : list) {
-			item.func_offset = offset;
-			offset += getFunctionSize(item);
-		}
-		
-		for(SpookyFunction item : list) {
-			for(SpookyBlock block : item.blocks) {
-				apply_work_jump(item, block);
-			}
-		}
-		
-		for(SpookyFunction item : list) {
-			for(SpookyBlock block : item.blocks) {
-				writer.writeBytes(block.compile());
-			}
-		}
-		
-		writer.write(OpCode.DATA);
-		
-		// StackPointer
-		writer.write( 0); // ZERO
-		writer.write(-1); // MINUS_ONE
-		
-		for(SpookyFunction item : list) {
-			if(item.id >= 0) {
-				writer.write(item.func_offset);
-			}
-		}
-		
-		IRContext data = program.getContext();
-		for(String str : data.getStrings()) {
-			byte[] bytes = str.getBytes(StandardCharsets.ISO_8859_1);
-			writer.writeInt(bytes.length);
-			
-			for(byte b : bytes) {
-				writer.writeInt(b & 0xff);
-			}
-		}
-		
-		// Debugging
-		for(SpookyFunction item : list) {
-			System.out.println("\n" + item.func + " using " + item.getUsage() + " stack");
-			for(SpookyBlock block : item.blocks) {
-				for(SpookyInst inst : block.insts) {
-					System.out.println("   " + inst);
-				}
-			}
-		}
-		
-		for(int i = 0; i < 30; i++) writer.write(0);
+		// Write all functions and data into the output buffer
+		writeProgramBytes(list);
 		
 		{
 			byte[] array = writer.toByteArray();
@@ -149,12 +100,72 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 			} catch(Exception e) {
 				e.printStackTrace();
 			}
-			
 		}
+		
 		return writer.toByteArray();
 	}
 	
-	private void writeProgramData(List<IRFunction> list) {
+	private void writeProgramBytes(List<SpookyFunction> list) {
+		int offset = 0;
+		for(SpookyFunction item : list) {
+			item.func_offset = offset;
+			offset += getFunctionSize(item);
+		}
+		
+		for(SpookyFunction item : list) {
+			for(SpookyBlock block : item.blocks) {
+				apply_work_jump(item, block);
+			}
+		}
+		
+		// Compile all functions and write
+		for(SpookyFunction item : list) {
+			for(SpookyBlock block : item.blocks) {
+				writer.writeBytes(block.compile());
+			}
+		}
+		
+		// Add data segment tag
+		writer.write(OpCode.DATA);
+		
+		// Runtime constants for operations
+		writer.write( 0); // ZERO
+		writer.write(-1); // MINUS_ONE
+		
+		// Write all function offsets to the function pointer array
+		for(SpookyFunction item : list) {
+			if(item.id >= 0) {
+				writer.write(item.func_offset);
+			}
+		}
+		
+		// Write all strings to the data segment
+		IRContext data = base.program.getContext();
+		for(String str : data.getStrings()) {
+			byte[] bytes = str.getBytes(StandardCharsets.ISO_8859_1);
+			writer.writeInt(bytes.length);
+			
+			for(byte b : bytes) {
+				writer.writeInt(b & 0xff);
+			}
+		}
+		
+		// Debugging the output
+		for(SpookyFunction item : list) {
+			System.out.println("\n" + item.func + " using " + item.getUsage() + " stack");
+			for(SpookyBlock block : item.blocks) {
+				for(SpookyInst inst : block.insts) {
+					System.out.println("   " + inst);
+				}
+			}
+		}
+		
+		// TODO: Reserving som extra data incase of out of bounds.
+		for(int i = 0; i < 30; i++)
+			writer.write(0);
+	}
+	
+	private void writeProgramData() {
 		writer.write(OpCode.BINDEF);
 		writer.write("HCCompiler SpookyCodeGenerator");
 		writer.write(OpCode.TEXT);
@@ -413,7 +424,7 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 						}
 					}
 					
-
+					
 					if(called.isExtern()) {
 						int val = called.getNumParams() + 1;
 						list.add(new SpookyInst(OpCode.CONST, val, TEMP));
