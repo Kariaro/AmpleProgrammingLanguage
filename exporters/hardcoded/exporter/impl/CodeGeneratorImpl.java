@@ -9,6 +9,7 @@ public interface CodeGeneratorImpl {
 	 * 
 	 * @param	program	the {@code IRProgram} to export
 	 * @return	a byte array
+	 * @throws	CodeGenException
 	 */
-	public byte[] generate(IRProgram program);
+	public byte[] generate(IRProgram program) throws CodeGenException;
 }

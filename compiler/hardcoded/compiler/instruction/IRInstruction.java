@@ -23,11 +23,15 @@ import hardcoded.utils.StringUtils;
  * @see List
  */
 public class IRInstruction implements Iterable<IRInstruction> {
-	IRInstruction prev;
-	IRInstruction next;
+	// TODO: Remove all list functionality from this class and
+	//       replace it wil ListIterator<IRInstruction>
+	
+	protected IRInstruction prev;
+	protected IRInstruction next;
 	
 	public List<Param> params = new ArrayList<>();
 	public IRType op = IRType.nop;
+	@Deprecated
 	private Atom size;
 	
 	/**
@@ -252,6 +256,10 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	private static final AtomicInteger atomic_reg = new AtomicInteger();
 	private static final AtomicInteger atomic = new AtomicInteger();
 	
+	// TODO: Do not rely on static methods to create temporary registers.
+	//       Replace this with another utility class.
+	
+	@Deprecated
 	public static void reset_counter() { atomic_reg.set(0); }
 	public static Param temp(LowType size, String name) { return new Reg(name, size, atomic_reg.getAndIncrement()); }
 	public static Param temp(LowType size) { return new Reg(size, atomic_reg.getAndIncrement()); }
@@ -259,8 +267,6 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	public static final Param NONE = new Param() {
 		public boolean equals(Object obj) { return false; }
 		public String toString() { return "..."; }
-		public String getName() { return null; }
-		public int getIndex() { return -1; }
 		public LowType getSize() { return null; }
 	};
 	
@@ -285,13 +291,17 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		 * Returns the name of this register.
 		 * @return the name of this register
 		 */
-		public String getName();
+		public default String getName() {
+			return null;
+		}
 		
 		/**
 		 * Returns the index of a register or {@code -1} if the register is a variable register.
 		 * @return
 		 */
-		public int getIndex();
+		public default int getIndex() {
+			return -1;
+		}
 		
 		/**
 		 * Returns the size of this register.
@@ -313,8 +323,6 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		}
 		
 		public LowType getSize() { return null; }
-		public int getIndex() { return -1; }
-		public String getName() { return null; }
 		public String toString() { return Objects.toString(object); }
 	}
 	
@@ -416,14 +424,6 @@ public class IRInstruction implements Iterable<IRInstruction> {
 			return size;
 		}
 		
-		public String getName() {
-			return null;
-		}
-		
-		public int getIndex() {
-			return -1;
-		}
-		
 		public String toString() {
 			return Long.toString(value);
 		}
@@ -441,14 +441,6 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		
 		public LowType getSize() {
 			return null;
-		}
-		
-		public String getName() {
-			return null;
-		}
-		
-		public int getIndex() {
-			return -1;
 		}
 		
 		public String toString() {
@@ -480,16 +472,13 @@ public class IRInstruction implements Iterable<IRInstruction> {
 			return rawName;
 		}
 		
-		public int getIndex() {
-			return -1;
-		}
-		
 		public String toString() {
 			return name;
 		}
 	}
 	
 	public static class FunctionLabel extends LabelParam {
+		@Deprecated
 		public Identifier ident;
 		// TODO: Remove any reference to Identifier inside params!
 		
@@ -511,10 +500,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	public Param getParam(int index) {
 		return params.get(index);
 	}
-	
-	public Param getLastParam() {
-		return params.get(params.size() - 1);
-	}
+	@Deprecated public Param getLastParam() { return params.get(params.size() - 1); }
 	
 	public IRInstruction() {}
 	public IRInstruction(IRType op) {
@@ -537,12 +523,14 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	public IRInstruction prev() {
 		return prev;
 	}
-	
-	public Atom sizeType() {
+
+	// TODO: Remove
+	@Deprecated public Atom sizeType() {
 		return size;
 	}
 	
-	public boolean hasNeighbours() {
+	// TODO: Remove
+	@Deprecated public boolean hasNeighbours() {
 		return (next != null) || (prev != null);
 	}
 	
