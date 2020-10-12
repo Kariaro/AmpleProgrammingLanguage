@@ -4,10 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-// TODO: Disp and Imm should not be inputed as 'imm8 16 32' but instead
-//       be variable and changed to the correct size later. Then the
-//       compiler should throw an error if it's illegal to use that combination.
-
 /**
  * A builder for assembly operators.
  * 

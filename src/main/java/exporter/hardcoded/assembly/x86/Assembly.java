@@ -1,61 +1,17 @@
-package hardcoded.assembly.impl;
+package hardcoded.assembly.x86;
 
 import java.util.Arrays;
 import java.util.List;
 
-import hardcoded.assembly.x86.*;
-import hardcoded.exporter.x86.Assembly;
 import hardcoded.exporter.x86.AssemblyConsts.AsmOp;
 import hardcoded.exporter.x86.AssemblyConsts.OprTy;
 import hardcoded.utils.NumberUtils;
 import hardcoded.utils.buffer.IntBuffer;
 
-public final class AsmFactory {
-	private AsmFactory() {}
-	
-//	public static void main(String[] args) {
-//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jz 0x7f"))));
-//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jz 0x7ff"))));
-//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jz 0x7fff"))));
-//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jz 0x7ffff"))));
-//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jz 0x7fffff"))));
-//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jz 0x7ffffff"))));
-//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jz 0x7fffffff"))));
-//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jz 0x7ffffffff"))));
-//		
-//		System.out.println();
-//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jmp 0x7f"))));
-//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jmp 0x7ff"))));
-//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jmp 0x7fff"))));
-//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jmp 0x7ffff"))));
-//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jmp 0x7fffff"))));
-//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jmp 0x7ffffff"))));
-//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jmp 0x7fffffff"))));
-//		System.out.println(StringUtils.printHexString(" ", AsmFactory.compile(getInstruction("jmp 0x7ffffffff"))));
-//	}
+public final class Assembly {
+	private Assembly() {}
 	
 	public static AsmInst getInstruction(AsmMnm mnemonic, AsmOpr... operators) {
-		return new AsmInst(mnemonic, operators);
-	}
-	
-	@SafeVarargs
-	public static AsmInst getInstruction(AsmMnm mnemonic, java.util.function.Function<OprBuilder, Object>... regs) {
-		AsmOpr[] operators = new AsmOpr[regs.length];
-		
-		for(int i = 0; i < regs.length; i++) {
-			Object o = regs[i].apply(new OprBuilder());
-			
-			if(o instanceof OprBuilder) {
-				operators[i] = ((OprBuilder)o).get();
-			} else if(o instanceof RegisterX86) {
-				operators[i] = new OprBuilder().reg((RegisterX86)o).get();
-			} else if(o instanceof AsmOpr) {
-				operators[i] = (AsmOpr)o;
-			} else {
-				operators[i] = null;
-			}
-		}
-		
 		return new AsmInst(mnemonic, operators);
 	}
 	
@@ -114,7 +70,7 @@ public final class AsmFactory {
 	}
 	
 	public static int[] compile(AsmInst inst) {
-		List<AsmOp> list = Assembly.lookup(inst);
+		List<AsmOp> list = AsmLoader.lookup(inst);
 //		System.out.println("-----------------------------------------------------");
 		if(list.isEmpty()) {
 			System.out.println("Instruction could not be encoded");

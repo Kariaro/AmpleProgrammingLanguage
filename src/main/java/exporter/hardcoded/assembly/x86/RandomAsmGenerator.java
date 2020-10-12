@@ -1,16 +1,14 @@
-package hardcoded.assembly.impl;
+package hardcoded.assembly.x86;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import hardcoded.assembly.x86.*;
-import hardcoded.exporter.x86.Assembly;
 import hardcoded.exporter.x86.AssemblyConsts.AsmOp;
 import hardcoded.exporter.x86.AssemblyConsts.OprTy;
 
 /**
- * This class is used for debug.
+ * This class is used for debugging the assembly class.
  * 
  * <p>This class will provide methods
  * to generate random instructions in
@@ -18,8 +16,8 @@ import hardcoded.exporter.x86.AssemblyConsts.OprTy;
  * 
  * @author HardCoded
  */
-public final class AsmGenerator {
-	private AsmGenerator() {}
+public final class RandomAsmGenerator {
+	private RandomAsmGenerator() {}
 	
 	public static void main(String[] args) {
 //		for(AsmMnm mnm : AsmMnm.values()) {
@@ -68,7 +66,7 @@ public final class AsmGenerator {
 			System.out.println();
 			System.out.println("=====================================================");
 			System.out.println(inst);
-			AsmFactory.compile(inst);
+			Assembly.compile(inst);
 		}
 	}
 	
@@ -94,7 +92,7 @@ public final class AsmGenerator {
 			AsmInst inst = _generate();
 			if(inst == null) continue;
 			
-			if(!Assembly.canEncodeInstruction(inst))
+			if(!AsmLoader.canEncodeInstruction(inst))
 				continue;
 				
 			return inst;
@@ -103,7 +101,7 @@ public final class AsmGenerator {
 	
 	private static AsmInst _generate() {
 		AsmMnm mnemonic = pickRandom(AsmMnm.values());
-		AsmOp op = pickRandom(Assembly.get(mnemonic));
+		AsmOp op = pickRandom(AsmLoader.get(mnemonic));
 		if(op == null) return null;
 		
 		AsmOpr[] params = new AsmOpr[op.getNumOperands()];

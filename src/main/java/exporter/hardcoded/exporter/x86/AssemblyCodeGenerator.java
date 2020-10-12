@@ -3,8 +3,6 @@ package hardcoded.exporter.x86;
 import java.util.ArrayList;
 import java.util.List;
 
-import hardcoded.assembly.impl.AsmFactory;
-import hardcoded.assembly.impl.AsmInst;
 import hardcoded.assembly.x86.*;
 import hardcoded.compiler.expression.LowType;
 import hardcoded.compiler.instruction.*;
@@ -299,9 +297,9 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 				
 				System.out.println(command);
 				
-				AsmInst inst = AsmFactory.getInstruction(command);
+				AsmInst inst = Assembly.getInstruction(command);
 				block.assembly.add(inst);
-				block.compiled_code = AsmFactory.compile(inst);
+				block.compiled_code = Assembly.compile(inst);
 				block.isCompiled = true;
 			}
 		}
@@ -342,7 +340,7 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 		IntBuffer buffer = new IntBuffer(block.assembly.size() * 15);
 		for(AsmInst inst : block.assembly) {
 			// System.out.println(inst);
-			int[] opcode = AsmFactory.compile(inst);
+			int[] opcode = Assembly.compile(inst);
 			
 			// FIXME: Sometimes the opcode is null because the instruction could not be encoded.
 			if(opcode == null) continue;
@@ -366,18 +364,18 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 				Param op1 = inst.getParam(1);
 				
 				if(op1 instanceof NumberReg) {
-					block.assembly.add(AsmFactory.getInstruction(AsmMnm.MOV,
+					block.assembly.add(Assembly.getInstruction(AsmMnm.MOV,
 						createOperator(op0, size), createOperator(op1)
 					));
 				} else if(op1 instanceof RefReg) {
 					RefReg ref = (RefReg)op1;
 					
 					RegisterX86 reg = pickRegister(size, RegisterX86.DX.index);
-					block.assembly.add(AsmFactory.getInstruction(AsmMnm.MOV,
+					block.assembly.add(Assembly.getInstruction(AsmMnm.MOV,
 						new OprBuilder().reg(reg).get(),
 						new OprBuilder().num(ref.index).ptr(size)
 					));
-					block.assembly.add(AsmFactory.getInstruction(AsmMnm.MOV,
+					block.assembly.add(Assembly.getInstruction(AsmMnm.MOV,
 						createOperator(op0, size),
 						new OprBuilder().reg(reg).get()
 					));
@@ -407,22 +405,22 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 				if(reg == null) break;
 				
 				if(op1 instanceof NumberReg) {
-					block.assembly.add(AsmFactory.getInstruction(AsmMnm.MOV,
+					block.assembly.add(Assembly.getInstruction(AsmMnm.MOV,
 						new OprBuilder().reg(reg).get(), createOperator(op1)
 					));
 				} else {
-					block.assembly.add(AsmFactory.getInstruction(AsmMnm.MOV,
+					block.assembly.add(Assembly.getInstruction(AsmMnm.MOV,
 						new OprBuilder().reg(reg).get(), createOperator(op1)
 					));
 				}
 				
 				// For now we say that op0 is always a register.
 				if(true) {
-					block.assembly.add(AsmFactory.getInstruction(action,
+					block.assembly.add(Assembly.getInstruction(action,
 						new OprBuilder().reg(reg).get(), createOperator(op0, size)
 					));
 					
-					block.assembly.add(AsmFactory.getInstruction(AsmMnm.MOV,
+					block.assembly.add(Assembly.getInstruction(AsmMnm.MOV,
 						createOperator(dst, size), new OprBuilder().reg(reg).get()
 					));
 				}
@@ -444,10 +442,10 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 				RegisterX86 reg = pickRegister(size, RegisterX86.DX.index);
 				if(reg == null) break;
 				
-				block.assembly.add(AsmFactory.getInstruction(AsmMnm.MOV,
+				block.assembly.add(Assembly.getInstruction(AsmMnm.MOV,
 					new OprBuilder().reg(reg).get(), createOperator(src, size)
 				));
-				block.assembly.add(AsmFactory.getInstruction(AsmMnm.MOV,
+				block.assembly.add(Assembly.getInstruction(AsmMnm.MOV,
 					createOperator(dst, size), new OprBuilder().reg(reg).get()
 				));
 				
@@ -465,7 +463,7 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 				// All the jump instructions will be compiled in the next stage.
 				// First stage is to give all of the jump instructions the max size.
 				// and after that do elimination by compression them.
-				block.assembly.add(AsmFactory.getInstruction("nop"));
+				block.assembly.add(Assembly.getInstruction("nop"));
 			}
 		}
 	}

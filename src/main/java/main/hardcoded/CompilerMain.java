@@ -4,6 +4,10 @@ import java.io.ByteArrayInputStream;
 import java.io.PrintStream;
 import java.util.Locale;
 import java.util.logging.LogManager;
+import java.util.logging.Logger;
+
+import hardcoded.utils.DomainUtils;
+import hardcoded.utils.FileUtils;
 
 /**
  * This is the main entry point for the compiler.<br>
@@ -24,8 +28,6 @@ import java.util.logging.LogManager;
  * @author HardCoded
  */
 public class CompilerMain {
-	// Carbon programming language.
-	
 	static {
 		try {
 			// The ConsoleHandler is initialized once inside LogManager.RootLogger.
@@ -55,11 +57,40 @@ public class CompilerMain {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		// TODO: Use the arguments to change build options.
+		if(!DomainUtils.isJarRuntime()) {
+			// Special settings
+			
+		}
 		
-		HCompiler compiler = new HCompiler();
-		compiler.setProjectPath("res/project/src/");
-		compiler.build();
+		String format = null;
+		
+		for(int i = 0; i < args.length; i++) {
+			String str = args[i];
+			
+			switch(str) {
+				case "-h": {
+					System.out.println(new String(FileUtils.readInputStream(
+						CompilerMain.class.getResourceAsStream("/command/help.txt")
+					)));
+					return;
+				}
+				
+				case "-f": {
+					if(i + 1 >= args.length) break;
+					format = args[i + 1];
+					i++;
+					continue;
+				}
+			}
+			System.out.println(str);
+		}
+		
+		System.out.println("Running");
+		System.out.println("Format: " + format);
+		
+//		HCompiler compiler = new HCompiler();
+//		compiler.setProjectPath("res/project/src/");
+//		compiler.build();
 		
 		// -h help
 		// -f format
@@ -67,6 +98,7 @@ public class CompilerMain {
 		//    x86
 		//    ...
 		// -d debuging tools
+		// -v
 		// -i inputfile
 		// -o outputfile
 		

@@ -21,6 +21,18 @@ import hardcoded.utils.NumberUtils;
 abstract class OprPart {
 	
 	/**
+	 * Returns the size of this operator part.
+	 * @return the size of this operator part
+	 */
+	abstract int size();
+	
+	/**
+	 * Returns the value of this operator part.
+	 * @return the value of this operator part
+	 */
+	abstract Object value();
+	
+	/**
 	 * Used to define addition or multiplication inside an assembly operator.
 	 * 
 	 * @see OprPart
@@ -97,16 +109,4 @@ abstract class OprPart {
 			return String.format("0x%01x", value);
 		}
 	}
-	
-	/**
-	 * Returns the size of this operator part.
-	 * @return the size of this operator part
-	 */
-	abstract int size();
-	
-	/**
-	 * Returns the value of this operator part.
-	 * @return the value of this operator part
-	 */
-	abstract Object value();
 }
