@@ -1,8 +1,8 @@
-# Carbon Programming Language
+# HCProgramming Language
 Creating a compiler for my own programing language.
 This project is not finished and is currently under construction.
 
-The carbon syntax is simmilar to C or C++ styled code but will allow for flexible
+The hc syntax is simmilar to C or C++ styled code but will allow for flexible
 keywords and inline syntax changes.
 
 ## Compiler
