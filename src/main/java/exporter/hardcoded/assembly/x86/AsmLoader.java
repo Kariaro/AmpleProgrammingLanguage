@@ -1,61 +1,86 @@
-package hardcoded.exporter.x86;
+package hardcoded.assembly.x86;
 
 import static hardcoded.exporter.x86.AssemblyConsts.*;
 
 import java.io.IOException;
 import java.util.*;
 
-import hardcoded.assembly.impl.AsmInst;
-import hardcoded.assembly.impl.AsmLoader;
-import hardcoded.assembly.impl.AsmLoader.Unit;
-import hardcoded.assembly.x86.*;
 import hardcoded.exporter.x86.AssemblyConsts.AsmOp;
 import hardcoded.exporter.x86.AssemblyConsts.OprTy;
+import hardcoded.utils.FileUtils;
+import hardcoded.utils.buffer.IntBuffer;
 
 /**
- * This is x86 assembly instructions
+ * This class loads all x86 assembly instructions and provide
+ * some validity checks for instructions.<p>
  * 
  * https://wiki.osdev.org/X86-64_Instruction_Encoding
  * https://reverseengineering.stackexchange.com/questions/19693/how-many-registers-does-an-x86-64-cpu-actually-have
  * 
  * @author HardCoded
  */
-public final class Assembly {
-	private static final Assembly ALL;
+public final class AsmLoader {
+	private static final AsmLoader INSTRUCTIONS;
 	
 	static {
-		Unit[] units = new Unit[0];
+		List<AsmOp> list = null;
 		
 		try {
-			units = AsmLoader.load("/assembler/insts.dat");
+			list = loadInstructions("/assembler/insts.dat");
 		} catch(IOException e) {
 			e.printStackTrace();
 			System.err.println("Failed to load instructions : '/assembler/insts.dat'");
 		}
 		
+		INSTRUCTIONS = new AsmLoader(list);
+	}
+	
+	private static List<AsmOp> loadInstructions(String path) throws IOException {
+		byte[] bytes = FileUtils.readInputStream(AsmLoader.class.getResourceAsStream(path));
+		String[] lines = new String(bytes).split("(\r\n|\n|\r)");
+		
 		List<AsmOp> list = new ArrayList<>();
-		for(Unit unit : units) {
-			String[] array = unit.getOperands();
+		for(String line : lines) {
+			line = line.trim();
+			if(line.isEmpty() || line.startsWith("#")) continue;
 			
-			OprTy[] params = new OprTy[array.length];
-			for(int i = 0; i < array.length; i++) {
-				String opr = array[i];
+			String[] parts = line.split("\\s+");
+			IntBuffer buffer = new IntBuffer(32);
+			
+			int flagsIndex = -1;
+			for(int i = 2; i < parts.length; i++) {
+				if(parts[i].equals("]")) {
+					flagsIndex = i + 1;
+					break;
+				}
+				
+				buffer.write(Integer.parseInt(parts[i], 16));
+			}
+			
+			int[] opcode = buffer.toArray();
+			if(flagsIndex >= parts.length) {
+				list.add(new AsmOp(parts[0], opcode, 0, new OprTy[0]));
+				continue;
+			}
+			
+			List<OprTy> params = new ArrayList<>();
+			for(int i = flagsIndex + 1; i < parts.length; i++) {
+				if(parts[i].trim().equals(",")) continue;
+				String opr = parts[i].replace(",", "");
 				
 				// TODO: We need a way to define rXX/eXX for both the AX->DI and R8->R15
 				//       This is only a temporary solution to not getting any syntax errors.
 				if(opr.indexOf('/') < 0) {
-					params[i] = OprTy.valueOf(opr);
+					params.add(OprTy.valueOf(opr));
 				} else {
-					params[i] = OprTy.valueOf(opr.substring(0, opr.indexOf('/')));
+					params.add(OprTy.valueOf(opr.substring(0, opr.indexOf('/'))));
 				}
 			}
 			
-			AsmOp op = new AsmOp(unit.getMnemonic(), unit.getOpcode(), flags(unit.getFlags()), params);
-			list.add(op);
-			// System.out.println(op.toPlainString());
+			list.add(new AsmOp(parts[0], opcode, flags(parts[flagsIndex]), params.toArray(new OprTy[0])));
 		}
 		
-		ALL = new Assembly(list);
+		return list;
 	}
 	
 	public static List<AsmOp> lookup(AsmInst inst) {
@@ -300,7 +325,7 @@ public final class Assembly {
 	
 	
 	private final Map<String, List<AsmOp>> map;
-	private Assembly(List<AsmOp> instructions) {
+	private AsmLoader(List<AsmOp> instructions) {
 		map = new LinkedHashMap<>();
 		
 		for(AsmOp op : instructions) {
@@ -322,16 +347,8 @@ public final class Assembly {
 	 * @return	A unmodifiable list containing {@code AsmOp}.
 	 */
 	public static List<AsmOp> get(AsmMnm mnemonic) {
-		List<AsmOp> list = ALL.map.get(mnemonic.name());
+		List<AsmOp> list = INSTRUCTIONS.map.get(mnemonic.name());
 		if(list == null) return Collections.emptyList();
 		return list;
 	}
-	
-//	public static void main(String[] args) {
-//		for(String key : ALL.map.keySet()) {
-//			for(AsmOp asm : ALL.map.get(key)) {
-//				System.out.println(asm.toComplexString());
-//			}
-//		}
-//	}
 }

@@ -1,17 +1,15 @@
-package hardcoded.assembly.impl;
-
-import hardcoded.assembly.x86.*;
+package hardcoded.assembly.x86;
 
 public final class AsmInst {
 	private final AsmMnm mnemonic;
 	private final AsmOpr[] operands;
 	
-	AsmInst(AsmMnm mnemonic) {
+	protected AsmInst(AsmMnm mnemonic) {
 		this.mnemonic = mnemonic;
 		this.operands = new AsmOpr[0];
 	}
 	
-	AsmInst(AsmMnm mnemonic, AsmOpr... operands) {
+	protected AsmInst(AsmMnm mnemonic, AsmOpr... operands) {
 		this.mnemonic = mnemonic;
 		this.operands = operands.clone();
 	}
@@ -29,36 +27,26 @@ public final class AsmInst {
 	}
 	
 	public String toString() {
-		if(getNumOperands() < 1) {
-			return mnemonic.toString();
-		}
-		
+		if(getNumOperands() < 1) return mnemonic.toString();
 		StringBuilder sb = new StringBuilder();
 		sb.append(String.format("%-16s", mnemonic));
 		
-		for(AsmOpr o : operands) {
+		for(AsmOpr o : operands)
 			sb.append(String.format("%-16s", o)).append(", ");
-		}
 		
 		sb.deleteCharAt(sb.length() - 2);
-		
 		return sb.toString().trim();
 	}
 
 	public String toPlainString() {
-		if(getNumOperands() < 1) {
-			return mnemonic.toString().toLowerCase();
-		}
-		
+		if(getNumOperands() < 1) return mnemonic.toString().toLowerCase();
 		StringBuilder sb = new StringBuilder();
 		sb.append(String.format("%s ", mnemonic).toLowerCase());
 		
-		for(AsmOpr o : operands) {
+		for(AsmOpr o : operands)
 			sb.append(String.format("%s, ", o));
-		}
 		
 		sb.deleteCharAt(sb.length() - 2);
-		
 		return sb.toString().trim();
 	}
 }

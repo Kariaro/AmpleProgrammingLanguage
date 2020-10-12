@@ -3,7 +3,7 @@ package hardcoded.exporter.x86;
 import java.util.ArrayList;
 import java.util.List;
 
-import hardcoded.assembly.impl.AsmInst;
+import hardcoded.assembly.x86.AsmInst;
 import hardcoded.compiler.instruction.IRInstruction;
 import hardcoded.compiler.instruction.IRInstruction.DataParam;
 import hardcoded.compiler.instruction.IRInstruction.Param;

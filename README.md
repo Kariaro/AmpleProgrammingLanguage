@@ -24,7 +24,7 @@ void main() {
 }
 
 void print(int v) {
-	*((int*)0xb8000) = v;
+    *((int*)0xb8000) = v;
 }
 ```
 

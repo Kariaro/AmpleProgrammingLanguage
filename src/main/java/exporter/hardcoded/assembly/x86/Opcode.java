@@ -92,9 +92,4 @@ public class Opcode {
 		
 		return buffer.toArray();
 	}
-	
-	@Override
-	public String toString() {
-		return super.toString();
-	}
 }
