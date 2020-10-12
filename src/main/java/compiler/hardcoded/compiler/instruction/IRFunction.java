@@ -17,6 +17,7 @@ public class IRFunction {
 	protected IRFunction(LowType type, String name, LowType[] params) {
 		Objects.requireNonNull(type); // A type can never be null
 		
+		// FIXME: Require that max 255 parameters can be given.
 		this.list = new ArrayList<>();
 		this.params = params;
 		this.type = type;
@@ -35,6 +36,7 @@ public class IRFunction {
 		return params;
 	}
 	
+	// FIXME: Change to getReturn() maybe?
 	public LowType getType() {
 		return type;
 	}

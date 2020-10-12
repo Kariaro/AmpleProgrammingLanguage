@@ -4,7 +4,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import hardcoded.compiler.Identifier;
-import hardcoded.compiler.constants.Atom;
 import hardcoded.compiler.expression.AtomExpr;
 import hardcoded.compiler.expression.LowType;
 import hardcoded.utils.StringUtils;
@@ -32,7 +31,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	public List<Param> params = new ArrayList<>();
 	public IRType op = IRType.nop;
 	@Deprecated
-	private Atom size;
+	private LowType size;
 	
 	/**
 	 * Returns the first element found in the list.
@@ -84,7 +83,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	 * 
 	 * @return the closest neighbour
 	 */
-	public IRInstruction remove() {
+	@Deprecated public IRInstruction remove() {
 		if(next == null) {
 			if(prev == null) return null;
 			prev.next = null;
@@ -253,16 +252,8 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	
 	
 	// ==================== NON LIST METHODS ==================== //
-	private static final AtomicInteger atomic_reg = new AtomicInteger();
 	private static final AtomicInteger atomic = new AtomicInteger();
-	
-	// TODO: Do not rely on static methods to create temporary registers.
-	//       Replace this with another utility class.
-	
-	@Deprecated
-	public static void reset_counter() { atomic_reg.set(0); }
-	public static Param temp(LowType size, String name) { return new Reg(name, size, atomic_reg.getAndIncrement()); }
-	public static Param temp(LowType size) { return new Reg(size, atomic_reg.getAndIncrement()); }
+	private static final boolean DEBUG_SIZE = false;
 	
 	public static final Param NONE = new Param() {
 		public boolean equals(Object obj) { return false; }
@@ -270,7 +261,6 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		public LowType getSize() { return null; }
 	};
 	
-	private static final boolean DEBUG_SIZE = false;
 	private static String createValue(int value) {
 		StringBuilder sb = new StringBuilder();
 		
@@ -327,7 +317,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	}
 	
 	public static final class Reg implements Param {
-		public String name;
+		public final String name;
 		public int index;
 		public LowType size;
 		
@@ -335,22 +325,17 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		 * There are two types of register. Either they are generated or
 		 * they are given by the coder.
 		 */
-		public boolean isTemporary;
+		public final boolean isTemporary;
 		
 		public Reg(LowType type, int index) {
 			this(null, type, index);
 		}
 		
-//		public Reg(int size, int index) { this(null, LowType.get(size, 0), index); }
-//		public Reg(String name, int size, int index) { this(name, LowType.get(size, 0), index); }
-		
 		public Reg(String name, LowType size, int index) {
 			this.index = index;
 			this.name = name;
 			this.size = size;
-			
-			if(name == null)
-				isTemporary = true;
+			this.isTemporary = (name == null);
 		}
 		
 		public LowType getSize() {
@@ -374,8 +359,6 @@ public class IRInstruction implements Iterable<IRInstruction> {
 		}
 	}
 	
-	// Reference to a label
-	// TODO: Fix this class.
 	public static class RefReg implements Param {
 		public String label;
 		public int index;
@@ -525,7 +508,7 @@ public class IRInstruction implements Iterable<IRInstruction> {
 	}
 
 	// TODO: Remove
-	@Deprecated public Atom sizeType() {
+	@Deprecated public LowType sizeType() {
 		return size;
 	}
 	

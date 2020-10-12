@@ -1,6 +1,6 @@
 package hardcoded.compiler;
 
-import java.io.File;
+import java.io.*;
 
 import hardcoded.compiler.errors.CompilerException;
 import hardcoded.compiler.instruction.*;
@@ -116,7 +116,15 @@ public class HCompilerBuild {
 		IRProgram ir_program;
 		ir_program = icg.generate(current_program);
 		ir_program = ico.generate(ir_program);
-		return cei.generate(ir_program);
+		
+		try {
+			test(ir_program);
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
+		
+		return null;
+		//return cei.generate(ir_program);
 		
 //		System.out.println();
 //		System.out.println();
@@ -133,5 +141,46 @@ public class HCompilerBuild {
 //		}
 //		
 //		System.out.println("========================================================");
+	}
+	
+	public void test(IRProgram program) throws IOException {
+		ByteArrayOutputStream bs = new ByteArrayOutputStream();
+		IRSerializer.write(program, bs);
+		byte[] array = bs.toByteArray();
+		
+		try {
+			test2(program);
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		
+		File file = new File(System.getProperty("user.home") + "/Desktop/spooky/serial.lir");
+		if(!file.getParentFile().exists())
+			file.getParentFile().mkdirs();
+		
+		FileOutputStream stream = new FileOutputStream(file);
+		stream.write(array);
+		stream.close();
+	}
+	
+	public void test2(IRProgram program) throws Exception {
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		IRSerializer.write(program, out);
+		IRProgram result = IRSerializer.read(new ByteArrayInputStream(out.toByteArray()));
+		
+		int depth = 5;
+		String deep_0 = IRSerializer.deepPrint("Deep(0)", program, depth).replace("\t", "    ");
+		String deep_1 = IRSerializer.deepPrint("Deep(1)", result, depth).replace("\t", "    ");
+		
+		System.out.println("--------------------------------------------------------------");
+		System.out.println();
+		System.out.println(deep_0);
+		System.out.println();
+		System.out.println("--------------------------------------------------------------");
+		System.out.println();
+		System.out.println(deep_1);
+		System.out.println();
+		System.out.println("--------------------------------------------------------------");
 	}
 }

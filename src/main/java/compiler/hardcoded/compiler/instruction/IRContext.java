@@ -14,18 +14,13 @@ import java.util.List;
  * 
  * @author HardCoded
  */
-public class IRContext implements java.io.Serializable {
-	private static final long serialVersionUID = -2121936920412719936L;
-	
-	private List<String> strings = new ArrayList<>();
-	
+public class IRContext {
+	protected final List<String> strings = new ArrayList<>();
 	protected String programName;
 	protected long creationDate;
 	
 	protected IRContext() {
 		creationDate = System.currentTimeMillis();
-		
-		System.out.println(this);
 	}
 	
 	public List<String> getStrings() {
