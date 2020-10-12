@@ -1,4 +1,4 @@
-package hardcoded.errors;
+package hardcoded.compiler.errors;
 
 public enum CompilerError {
 	INVALID_UNARY_EXPRESSION_OPERATION("Invalid use of a unary expression. The value you are trying to modify is not modifiable."),

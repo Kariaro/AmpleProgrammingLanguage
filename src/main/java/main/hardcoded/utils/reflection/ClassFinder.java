@@ -16,6 +16,7 @@ import java.util.zip.ZipFile;
  * 
  * @author HardCoded
  */
+@Deprecated
 public class ClassFinder {
 	public static List<Class<?>> findClasses(String path) {
 		boolean isJar = isRunningFromJar();

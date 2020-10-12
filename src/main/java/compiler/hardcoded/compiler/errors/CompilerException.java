@@ -1,4 +1,4 @@
-package hardcoded.errors;
+package hardcoded.compiler.errors;
 
 /**
  * This is a custom exception thrown when the compiler has

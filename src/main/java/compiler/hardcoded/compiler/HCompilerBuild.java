@@ -2,10 +2,10 @@ package hardcoded.compiler;
 
 import java.io.File;
 
+import hardcoded.compiler.errors.CompilerException;
 import hardcoded.compiler.instruction.*;
 import hardcoded.compiler.parsetree.ParseTreeGenerator;
 import hardcoded.compiler.parsetree.ParseTreeOptimizer;
-import hardcoded.errors.CompilerException;
 import hardcoded.exporter.impl.CodeGeneratorImpl;
 import hardcoded.exporter.spooky.SpookyCodeGenerator;
 import hardcoded.exporter.x86.AssemblyCodeGenerator;
