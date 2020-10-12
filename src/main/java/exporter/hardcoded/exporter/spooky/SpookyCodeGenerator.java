@@ -91,8 +91,8 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 			
 			try {
 				File file = new File(System.getProperty("user.home") + "/Desktop/spooky/export.spook");
-				if(!file.exists())
-					file.mkdirs();
+				if(!file.getParentFile().exists())
+					file.getParentFile().mkdirs();
 				
 				FileOutputStream stream = new FileOutputStream(file);
 				stream.write(array);

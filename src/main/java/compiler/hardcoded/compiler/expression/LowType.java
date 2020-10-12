@@ -85,6 +85,10 @@ public class LowType {
 		return new LowType(type, 0);
 	}
 	
+	public static LowType create(Atom type, int depth) {
+		return new LowType(type, depth);
+	}
+	
 	/**
 	 * Returns the default pointer size.
 	 * @return the default pointer size

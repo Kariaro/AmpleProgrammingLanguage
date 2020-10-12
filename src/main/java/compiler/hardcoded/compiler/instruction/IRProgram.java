@@ -7,19 +7,21 @@ import java.util.List;
 import hardcoded.compiler.Block.Function;
 import hardcoded.compiler.expression.LowType;
 
-// TODO: Make this class serializable
-public class IRProgram implements java.io.Serializable {
-	private static final long serialVersionUID = -7513138804605254084L;
-
-	/**
-	 * All the functions inside a IRProgram
-	 */
-	private final List<IRFunction> list;
-	
+public class IRProgram {
 	/**
 	 * All context type data.
 	 */
-	private final IRContext context;
+	protected final IRContext context;
+	
+	/**
+	 * All the functions inside a IRProgram
+	 */
+	protected final List<IRFunction> list;
+	
+	protected IRProgram(IRContext context, List<IRFunction> list) {
+		this.context = context;
+		this.list = list;
+	}
 	
 	protected IRProgram() {
 		context = new IRContext();

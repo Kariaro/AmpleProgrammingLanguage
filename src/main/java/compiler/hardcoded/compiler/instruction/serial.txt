@@ -1,0 +1,17 @@
+LowType
++- ubyte type      // AtomType ordinal
++- ubyte depth     // Pointer depth
+
+IRProgram
+|
++- IRContext       // .
+|  |
+|
++- int             // array length
++- IRFunction[]
+   |
+   +- ubyte        // array length
+   +- LowType[]    // params
+   +- LowType      // return type
+   +- ubyte        // string length
+   +- 

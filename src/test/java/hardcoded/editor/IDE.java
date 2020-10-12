@@ -1,16 +1,12 @@
 package hardcoded.editor;
 
-import com.sun.javafx.application.PlatformImpl;
-
 import hardcoded.editor.syntax.SyntaxTextLine;
 import hardcoded.editor.syntax.SyntaxTextPanel;
 import hardcoded.utils.FileUtils;
-import javafx.stage.FileChooser;
 
 import java.awt.BorderLayout;
 import java.awt.event.*;
 import java.io.File;
-import java.util.concurrent.*;
 
 import javax.swing.*;
 
@@ -40,16 +36,10 @@ public class IDE extends JFrame {
 	
 	public static void main(String[] args) {
 		IDE ide = new IDE();
-		ide.addWindowListener(new WindowAdapter() {
-			public void windowClosing(WindowEvent e) {
-				PlatformImpl.exit();
-			}
-		});
-		
 		ide.setVisible(true);
 	}
 
-	private FileChooser fileChooser;
+	private JFileChooser fileChooser;
 	private SyntaxTextPanel textPane;
 	
 	public IDE() {
@@ -63,10 +53,10 @@ public class IDE extends JFrame {
 	}
 	
 	private void initFx() {
-		PlatformImpl.startup(() -> {
-			fileChooser = new FileChooser();
-			fileChooser.setInitialDirectory(new File("C:/Users/Admin/git/HCProgrammingLanguage/res/project/src"));
-			fileChooser.setTitle("Open");
+		SwingUtilities.invokeLater(() -> {
+			fileChooser = new JFileChooser();
+			fileChooser.setCurrentDirectory(new File("C:/Users/Admin/git/HCProgrammingLanguage/res/project/src"));
+			fileChooser.setDialogTitle("Open");
 		});
 	}
 	
@@ -80,13 +70,8 @@ public class IDE extends JFrame {
 		JMenuItem mntmOpen = new JMenuItem("Open");
 		mntmOpen.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent event) {
-				CompletableFuture<File> openFile = new CompletableFuture<File>();				
-				PlatformImpl.runAndWait(() -> {
-					openFile.complete(fileChooser.showOpenDialog(null));
-				});
-				
 				try {
-					File file = openFile.get();
+					File file = fileChooser.getSelectedFile();
 					
 					if(file != null) {
 						byte[] bytes = FileUtils.readFileBytes(file);
