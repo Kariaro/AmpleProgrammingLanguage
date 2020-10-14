@@ -14,12 +14,18 @@ import hardcoded.utils.StringUtils;
  * freedom in instructions are handled. Because all instructions are
  * linked with eachother it is easier to get the prevous or next instruction.</s><p>
  * 
- * A three register instruction set is when the instructions uses three
- * registers for a given operation.
+ * This class is a representation of this compilers internal instruction language
+ * or more commonly known as its <i>immediate representation</i> language. A <i>IR</i>
+ * language allows a compiler to use more advanced optimization techniques when compiling
+ * input syntax.
+ * 
+ * 
+ * <p>Each instruction in this <i>IR</i> language is written with either two or three
+ * parameters with the only exception beeing the call instruction that can have a
+ * variable amount of parameters.
+ * 
  * 
  * @author HardCoded
- * 
- * @see List
  */
 public class IRInstruction {
 	private static final AtomicInteger atomic = new AtomicInteger();
@@ -29,28 +35,6 @@ public class IRInstruction {
 		public String toString() { return "..."; }
 		public LowType getSize() { return null; }
 	};
-	
-	
-	public List<Param> params = new ArrayList<>();
-	public IRType op = IRType.nop;
-	@Deprecated
-	private LowType size;
-	
-	
-	private static String createValue(int value) {
-		StringBuilder sb = new StringBuilder();
-		
-		while(true) {
-			int v = (value) % 26;
-			sb.insert(0, (char)(v + 97));
-			
-			if(value > 25) {
-				value = ((value - v) / 26) - 1;
-			} else break;
-		}
-		
-		return sb.toString();
-	}
 	
 	public static interface Param {
 		/**
@@ -93,15 +77,15 @@ public class IRInstruction {
 	}
 	
 	public static final class Reg implements Param {
-		public final String name;
-		public int index;
-		public LowType size;
+		private final String name;
+		private final LowType size;
+		private final int index;
 		
 		/**
 		 * There are two types of register. Either they are generated or
 		 * they are given by the coder.
 		 */
-		public final boolean isTemporary;
+		private final boolean isTemporary;
 		
 		public Reg(LowType type, int index) {
 			this(null, type, index);
@@ -112,6 +96,13 @@ public class IRInstruction {
 			this.name = name;
 			this.size = size;
 			this.isTemporary = (name == null);
+			
+			if(size == null)
+				throw new NullPointerException();
+		}
+		
+		public boolean isTemporary() {
+			return isTemporary;
 		}
 		
 		public LowType getSize() {
@@ -128,7 +119,9 @@ public class IRInstruction {
 		
 		public String toString() {
 			if(isTemporary) {
-				return "$" + createValue(index).toUpperCase() + (DEBUG_SIZE ? (":" + size):"");
+				String value = StringUtils.toStringCustomBase(index, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", false);
+				
+				return "$" + value + (DEBUG_SIZE ? (":" + size):"");
 			}
 			
 			return "@" + name + (DEBUG_SIZE ? (":" + size):"");
@@ -148,8 +141,8 @@ public class IRInstruction {
 			return label;
 		}
 		
-		// TODO: We need to get the size of a reference register.
 		public LowType getSize() {
+			// TODO: Get the size of the reference register
 			return null;
 		}
 		
@@ -173,6 +166,10 @@ public class IRInstruction {
 		public NumberReg(long value, LowType size) {
 			this.value = value;
 			this.size = size;
+			
+			// Cannot be null
+			if(size == null)
+				throw new NullPointerException();
 		}
 		
 		public long value() {
@@ -255,16 +252,17 @@ public class IRInstruction {
 		}
 	}
 	
+	protected final List<Param> params = new ArrayList<>();
+	protected IRType op = IRType.nop;
 	
-	public Param getParam(int index) {
-		return params.get(index);
+	// TODO: Find a way to calculate the size of a instruction duing the generation/optimization stage.
+	@Deprecated
+	private LowType size;
+	
+	public IRInstruction() {
+		
 	}
 	
-	@Deprecated public Param getLastParam() {
-		return params.get(params.size() - 1);
-	}
-	
-	public IRInstruction() {}
 	public IRInstruction(IRType op) {
 		this.op = op;
 	}
@@ -278,9 +276,38 @@ public class IRInstruction {
 		return op;
 	}
 	
-	// TODO: Remove
-	@Deprecated public LowType sizeType() {
+	@Deprecated
+	public LowType getSize() {
 		return size;
+	}
+	
+	/**
+	 * Returns the parameter at the specified index.
+	 * @param	index	the index of the parameter
+	 * @return	the parameter at the specified index
+	 */
+	public Param getParam(int index) {
+		return params.get(index);
+	}
+	
+	/**
+	 * Returns an unmodifiable list of this instructions parameters.
+	 * @return an unmodifiable list of this instructions parameters
+	 */
+	public List<Param> getParams() {
+		return Collections.unmodifiableList(params);
+	}
+	
+	/**
+	 * Returns the amount of parameters of this instruction has.
+	 * @return the amount of parameters of this instruction has
+	 */
+	public int getNumParams() {
+		return params.size();
+	}
+	
+	@Deprecated public Param getLastParam() {
+		return params.get(params.size() - 1);
 	}
 	
 	public LowType calculateSize() {
@@ -297,7 +324,6 @@ public class IRInstruction {
 		return params.get(0).getSize();
 	}
 	
-	@Override
 	public String toString() {
 		if(op == IRType.label) return params.get(0) + ":";
 		if(params.isEmpty()) return Objects.toString(op);

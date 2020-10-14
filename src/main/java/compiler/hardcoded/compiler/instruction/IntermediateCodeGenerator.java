@@ -9,6 +9,7 @@ import hardcoded.compiler.Block;
 import hardcoded.compiler.Block.Function;
 import hardcoded.compiler.Identifier;
 import hardcoded.compiler.Identifier.IdType;
+import hardcoded.compiler.constants.ExprType;
 import hardcoded.compiler.Program;
 import hardcoded.compiler.expression.AtomExpr;
 import hardcoded.compiler.expression.Expression;
@@ -23,9 +24,11 @@ import hardcoded.compiler.statement.*;
  * @author HardCoded
  */
 public class IntermediateCodeGenerator {
-	private final AtomicInteger atomic_reg = new AtomicInteger();
+	private final Map<String, Param> variables = new HashMap<>();
+	private final AtomicInteger atomic = new AtomicInteger();
+	
 	private Param temp(LowType type) {
-		return new Reg(type, atomic_reg.getAndIncrement());
+		return new Reg(type, atomic.getAndIncrement());
 	}
 	
 	public IntermediateCodeGenerator() {
@@ -42,7 +45,8 @@ public class IntermediateCodeGenerator {
 			if(!(block instanceof Function)) continue;
 			Function func = (Function)block;
 			variables.clear();
-			atomic_reg.set(0);
+			atomic.set(0);
+			
 			program.addFunction(func, compileInstructions(func.body));
 		}
 		
@@ -50,10 +54,11 @@ public class IntermediateCodeGenerator {
 	}
 	
 	private boolean shouldCheck(Expression e) {
+		if(e.type() == ExprType.nop) return false;
+		
 		return !(e instanceof AtomExpr);
 	}
 	
-	private Map<String, Param> variables = new HashMap<>();
 	private Param addString(AtomExpr a) {
 		return new RefReg(".data.strings", program.getContext().getStringIndexAddIfAbsent(a.s_value));
 	}
@@ -150,12 +155,12 @@ public class IntermediateCodeGenerator {
 				Param reg_0 = createObject(a);
 				Param reg_1 = createObject(b);
 				if(shouldCheck(a)) {
-					reg_0 = temp(reg_0.getSize());
+					reg_0 = temp(a.size());
 					list.addAll(compileInstructions(a, reg_0));
 				}
 				
 				if(shouldCheck(b)) {
-					reg_1 = temp(reg_1.getSize());
+					reg_1 = temp(b.size());
 					list.addAll(compileInstructions(b, reg_1));
 				}
 				
@@ -174,7 +179,7 @@ public class IntermediateCodeGenerator {
 				
 				Param reg_0 = createObject(a);
 				if(shouldCheck(a)) {
-					reg_0 = temp(reg_0.getSize());
+					reg_0 = temp(a.size());
 					list.addAll(compileInstructions(a, reg_0));
 				}
 				
@@ -189,7 +194,7 @@ public class IntermediateCodeGenerator {
 				
 				Param reg_0 = createObject(a);
 				if(shouldCheck(a)) {
-					reg_0 = temp(reg_0.getSize());
+					reg_0 = temp(a.size());
 					list.addAll(compileInstructions(a, reg_0));
 				}
 				
@@ -204,7 +209,7 @@ public class IntermediateCodeGenerator {
 				
 				Param reg_0 = createObject(a);
 				if(shouldCheck(a)) {
-					reg_0 = temp(reg_0.getSize());
+					reg_0 = temp(a.size());
 					list.addAll(compileInstructions(a, reg_0));
 				}
 				
@@ -313,7 +318,7 @@ public class IntermediateCodeGenerator {
 					
 					if(shouldCheck(e)) {
 						// reg should be the size of the parameter for that function...
-						reg = temp(reg.getSize());
+						reg = temp(e.size());
 						list.addAll(compileInstructions(e, reg));
 					}
 					
@@ -345,7 +350,7 @@ public class IntermediateCodeGenerator {
 					
 					list.add(new IRInstruction(IRType.brz, reg, label_end));
 				}
-
+				
 				if(request != null) list.add(new IRInstruction(IRType.mov, request, new NumberReg(1, request.getSize())));
 				list.add(new IRInstruction(IRType.label, label_end));
 				break;
@@ -373,16 +378,22 @@ public class IntermediateCodeGenerator {
 			}
 			
 			default: {
-				if(expr instanceof AtomExpr && request != null) {
-					list.add(new IRInstruction(IRType.mov, request, createObject(expr)));
+				if(expr instanceof AtomExpr) {
+					if(request != null) {
+						list.add(new IRInstruction(IRType.mov, request, createObject(expr)));
+					} else {
+						// If we end up here then a instruction was executed that does not affect
+						// any memory or other register.
+						// 
+						// It's safe to ignore this instruction because it does not do anything.
+					}
+					
 					break;
 				}
 				
 				System.err.println("[MISSING INSTRUCTION] -> " + expr);
 			}
 		}
-		
-		//System.out.println(inst + ", [" + inst.first() + ", " + inst.last() + "]");
 		
 		// This checks if we have modified the instruction.
 		// If we did modify the instruction we should remove

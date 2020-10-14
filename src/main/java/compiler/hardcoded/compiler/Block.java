@@ -49,6 +49,7 @@ public interface Block extends Printable {
 		public Modifier modifier;
 		public HighType returnType;
 		public String name;
+		
 		public List<Identifier> arguments;
 		public Statement body;
 		
@@ -133,6 +134,7 @@ public interface Block extends Printable {
 				sb.append(ident.high_type()).append(" ").append(ident);
 				if(i < arguments.size() - 1) sb.append(", ");
 			}
+			
 			return sb.append(");").toString();
 		}
 		

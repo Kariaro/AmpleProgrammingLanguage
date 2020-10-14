@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.PrintStream;
 import java.util.Locale;
 import java.util.logging.LogManager;
-import java.util.logging.Logger;
 
 import hardcoded.utils.DomainUtils;
 import hardcoded.utils.FileUtils;

@@ -137,7 +137,10 @@ public final class Utils {
 		public void set(IRInstruction e) { iterator.set(e); }
 		public void add(IRInstruction e) { iterator.add(e); }
 		
-
+		public int index() {
+			return iterator.nextIndex() - 1;
+		}
+		
 		public IRInstruction peakNext() {
 			int index = nextIndex();
 			if(index >= list.size()) return null;
