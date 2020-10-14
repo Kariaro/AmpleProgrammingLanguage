@@ -24,12 +24,12 @@ import hardcoded.exporter.impl.CodeBlockType;
  */
 class AsmBlock {
 	// Contains instructions...
-	List<IRInstruction> list = new ArrayList<>();
-	List<AsmInst> assembly = new ArrayList<>();
-	int[] compiled_code;
+	protected List<IRInstruction> list = new ArrayList<>();
+	protected List<AsmInst> assembly = new ArrayList<>();
+	protected int[] compiled_code;
+	protected boolean isCompiled;
 	
 	private CodeBlockType blockType = CodeBlockType.INST;
-	public boolean isCompiled;
 	
 	/**
 	 * For label blocks this is a label name.

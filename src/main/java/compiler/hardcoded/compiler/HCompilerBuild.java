@@ -50,7 +50,7 @@ public class HCompilerBuild {
 		cei = new SpookyCodeGenerator();
 		
 		String file = "main.hc";
-		file = "tests/000_pointer.hc";
+		// file = "tests/000_pointer.hc";
 		file = "prim.hc";
 		// file = "tests/001_comma.hc";
 		// file = "tests/002_invalid_assign.hc";
@@ -170,8 +170,8 @@ public class HCompilerBuild {
 		IRProgram result = IRSerializer.read(new ByteArrayInputStream(out.toByteArray()));
 		
 		int depth = 10;
-		String deep_0 = IRSerializer.deepPrint("Deep(0)", program, depth).replace("\t", "    ");
-		String deep_1 = IRSerializer.deepPrint("Deep(1)", result, depth).replace("\t", "    ");
+		String deep_0 = "";//IRSerializer.deepPrint("Deep(0)", program, depth).replace("\t", "    ");
+		String deep_1 = "";//IRSerializer.deepPrint("Deep(1)", result, depth).replace("\t", "    ");
 		
 		System.out.println("--------------------------------------------------------------");
 		System.out.println();

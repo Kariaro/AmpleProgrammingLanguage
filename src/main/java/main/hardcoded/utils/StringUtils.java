@@ -33,6 +33,81 @@ public final class StringUtils {
 	}
 	
 	/**
+	 * This method will convert a number into a string using a custom base. Calling this
+	 * method with a base of {@code "012346789abcdef"} will return a hexadecimal string
+	 * and will do the same thing as calling {@code Long.toString(value, 16)}.
+	 * 
+	 * @param	value	the input number
+	 * @param	base	the custom base
+	 * @return	a {@code number} written with a custom base.
+	 * @throws	NullPointerException
+	 * 			if the base was null
+	 * @throws	IllegalArgumentException
+	 * 			if the base string had a length less than 2
+	 */
+	public static String toStringCustomBase(long value, String base) {
+		return toStringCustomBase(value, base, true);
+	}
+	
+	/**
+	 * This method will convert a number into a string using a custom base. Calling this
+	 * method with a base of {@code "012346789abcdef"} will return a hexadecimal string
+	 * and will do the same thing as calling {@code Long.toString(value, 16)}.
+	 * 
+	 * <p>If {@code hasZero} is {@code false} then the first character will be treated as a
+	 * non zero character and will always be included in the output. The following is an
+	 * example of how the base {@code "01"} would convert the input number depending on the
+	 * {@code hazZero} parameter.
+	 *<PRE>
+	 *value:   hasZero = false / hasZero = true
+	 *   0     "0"               "0"
+	 *   1     "1"               "1"
+	 *   2     "00"              "10"
+	 *   3     "01"              "11"
+	 *   4     "10"              "100"
+	 *   5     "11"              "101"
+	 *</PRE>
+	 *
+	 * @param	value	the input number
+	 * @param	base	the custom base
+	 * @param	hasZero	if {@code false} will always treat the zero character as part of the number
+	 * 					
+	 * @return	a string of a {@code number} written in a custom base
+	 * @throws	NullPointerException
+	 * 			if the base string was null
+	 * @throws	IllegalArgumentException
+	 * 			if the base string had a length less than 2
+	 */
+	public static String toStringCustomBase(long value, String base, boolean hasZero) {
+		if(base == null) throw new NullPointerException();
+		if(base.length() < 2) throw new IllegalArgumentException();
+		
+		StringBuilder sb = new StringBuilder();
+		int length = base.length();
+		int offset = hasZero ? 0:1;
+		
+		// Allow negative values to be outputed. Will always turn a negative value positive
+		// because the smallest allowed base is 2 and that base and all bases greater than 2
+		// will remove the signed bit from the long value.
+		if(value < 0) {
+			long v = Long.remainderUnsigned(value, length);
+			sb.append(base.charAt((int)v));
+			value = Long.divideUnsigned(value - v, length) - offset;
+		}
+		
+		while(true) {
+			long v = value % length;
+			sb.insert(0, base.charAt((int)v));
+			
+			if(value >= length) {
+				value = ((value - v) / length) - offset;
+			} else break;
+		}
+		
+		return sb.toString();
+	}
+	
+	/**
 	 * Convertes all instances of <code>[\'] [\"] [\\] [\r] [\n] [\b] [\t] [\x..] [&bsol;u....]</code> to the correct character.
 	 * 
 	 * @param string

@@ -26,6 +26,7 @@ import hardcoded.utils.FileUtils;
 import hardcoded.utils.StringUtils;
 
 // NOTE: Try unrolling parsetree recursion.
+// TODO: Create error messages inside the enum for each error message in this class.
 public class ParseTreeGenerator {
 	private static final Tokenizer LEXER;
 	
@@ -99,7 +100,7 @@ public class ParseTreeGenerator {
 		
 		this.reader = next;
 		
-		System.out.printf("Tokens: '%s'\n", next.token().toString(" ", Integer.MAX_VALUE));
+		// System.out.printf("Tokens: '%s'\n", next.token().toString(" ", Integer.MAX_VALUE));
 		
 		try {
 			nextProgram();
@@ -124,7 +125,7 @@ public class ParseTreeGenerator {
 		return current_program;
 	}
 	
-	public Block nextBlock() {
+	private Block nextBlock() {
 		if(reader.valueEqualsAdvance("@")) {
 			parseCompiler();
 			return Block.EMPTY;
@@ -133,6 +134,7 @@ public class ParseTreeGenerator {
 		}
 	}
 	
+	// TODO: Redo this method
 	private void parseCompiler() {
 		switch(reader.value()) {
 			case "type": {
@@ -222,7 +224,7 @@ public class ParseTreeGenerator {
 		
 		current_function = func;
 		
-		if(!reader.next().valueEqualsAdvance("(")) syntaxError(CompilerError.INVALID_XXX_DEFINITION_EXPECTED_OPEN_PARENTHESIS, "function", reader);
+		if(!reader.next().valueEqualsAdvance("(")) syntaxError(CompilerError.INVALID_FUNCTION_DECLARATION_EXPECTED_XXX, "Expected open parenthesis '(' but got '" + reader + "'");
 		
 		while(!reader.valueEquals(")")) {
 			Variable arg = nextFuncArgument();
@@ -238,12 +240,12 @@ public class ParseTreeGenerator {
 			current_program.add(func);
 		}
 		
-		if(!reader.valueEqualsAdvance(")")) syntaxError("Invalid closing of the funtion arguments. Expected a closing bracket ')'.");
+		if(!reader.valueEqualsAdvance(")")) syntaxError(CompilerError.INVALID_FUNCTION_DECLARATION_EXPECTED_XXX, "Expected a closing parenthesis ')'");
 		if(reader.valueEqualsAdvance(";")) {
-			if(needsBody) syntaxError("Invalid function declaration. Expected a body.");
+			if(needsBody) syntaxError(CompilerError.INVALID_FUNCTION_DECLARATION_EXPECTED_XXX, "Expected a function body");
 			return func;
 		} else if(!reader.valueEquals("{")) {
-			syntaxError("Invalid function body. Expected a open bracket '{'.");
+			syntaxError(CompilerError.INVALID_FUNCTION_DECLARATION_EXPECTED_XXX, "Expected a open bracket '{'");
 		}
 		
 		current_function.inc_scope();
@@ -287,17 +289,17 @@ public class ParseTreeGenerator {
 		
 		// TODO: Implement LABEL and GOTO expressions.
 		if(reader.valueEqualsAdvance("break")) {
-			if(!reader.valueEquals(";")) syntaxError(CompilerError.INVALID_XXX_STATEMENT_EXPECTED_SEMICOLON, "break", reader);
+			if(!reader.valueEquals(";")) syntaxError(CompilerError.INVALID_XXX_EXPECTED_SEMICOLON, "break statement", reader);
 			reader.nextClear();
 			return new ExprStat(new OpExpr(leave));
 		} else if(reader.valueEqualsAdvance("continue")) {
-			if(!reader.valueEquals(";")) syntaxError(CompilerError.INVALID_XXX_STATEMENT_EXPECTED_SEMICOLON, "continue", reader);
+			if(!reader.valueEquals(";")) syntaxError(CompilerError.INVALID_XXX_EXPECTED_SEMICOLON, "continue statement", reader);
 			reader.nextClear();
 			return new ExprStat(new OpExpr(loop));
 		} else if(reader.valueEqualsAdvance("return")) {
 			OpExpr expr = new OpExpr(ret);
 			if(!reader.valueEquals(";")) expr.add(nextExpression());
-			if(!reader.valueEquals(";")) syntaxError(CompilerError.INVALID_XXX_STATEMENT_EXPECTED_SEMICOLON, "return", reader);
+			if(!reader.valueEquals(";")) syntaxError(CompilerError.INVALID_XXX_EXPECTED_SEMICOLON, "return statement", reader);
 			reader.nextClear();
 			return new ExprStat(expr);
 		}
@@ -312,7 +314,7 @@ public class ParseTreeGenerator {
 				return new ExprStat(expr);
 			}
 			
-			syntaxError(CompilerError.INVALID_XXX_STATEMENT_EXPECTED_SEMICOLON, "expr", reader);
+			syntaxError(CompilerError.INVALID_XXX_EXPECTED_OPEN_PARENTHESIS, "expr statement", reader);
 			reader.nextClear();
 		}
 		
@@ -321,7 +323,7 @@ public class ParseTreeGenerator {
 	
 	private Statement makeWhileStatement() {
 		reader.next();
-		if(!reader.valueEqualsAdvance("(")) syntaxError(CompilerError.INVALID_XXX_STATEMENT_EXPECTED_OPEN_PARENTHESIS, "while", reader);
+		if(!reader.valueEqualsAdvance("(")) syntaxError(CompilerError.INVALID_XXX_EXPECTED_OPEN_PARENTHESIS, "while statement", reader);
 		Expression condition = nextExpression();
 		
 		if(!reader.valueEqualsAdvance(")")) syntaxError(CompilerError.UNCLOSED_STATEMENT_PARENTHESES, reader);
@@ -335,7 +337,7 @@ public class ParseTreeGenerator {
 		boolean declares_variables = false;
 		
 		reader.next();
-		if(!reader.valueEquals("(")) syntaxError(CompilerError.INVALID_XXX_STATEMENT_EXPECTED_OPEN_PARENTHESIS, "for", reader);
+		if(!reader.valueEquals("(")) syntaxError(CompilerError.INVALID_XXX_EXPECTED_OPEN_PARENTHESIS, "for statement", reader);
 		ForStat stat = new ForStat(); {
 			reader.next();
 			if(!reader.valueEquals(";")) {
@@ -361,10 +363,10 @@ public class ParseTreeGenerator {
 				reader.prev();
 			}
 			
-			if(!reader.valueEquals(";")) syntaxError("Invalid for statement (variables). Expected semicolon but got '%s'", reader);
+			if(!reader.valueEquals(";")) syntaxError(CompilerError.INVALID_XXX_EXPECTED_SEMICOLON, "for statement (variables)", reader);
 			reader.next();
 			if(!reader.valueEquals(";")) stat.setCondition(nextExpression());
-			if(!reader.valueEquals(";")) syntaxError("Invalid for statement (condition). Expected semicolon but got '%s'", reader);
+			if(!reader.valueEquals(";")) syntaxError(CompilerError.INVALID_XXX_EXPECTED_SEMICOLON, "for statement (condition)", reader);
 			reader.next();
 			if(!reader.valueEquals(")")) stat.setAction(nextExpression());
 			if(!reader.valueEquals(")")) syntaxError(CompilerError.UNCLOSED_STATEMENT_PARENTHESES, reader);
@@ -383,7 +385,7 @@ public class ParseTreeGenerator {
 	
 	private Statement makeIfStatement() {
 		reader.next();
-		if(!reader.valueEqualsAdvance("(")) syntaxError(CompilerError.INVALID_XXX_STATEMENT_EXPECTED_OPEN_PARENTHESIS, "if", reader);
+		if(!reader.valueEqualsAdvance("(")) syntaxError(CompilerError.INVALID_XXX_EXPECTED_OPEN_PARENTHESIS, "if statement", reader);
 		Expression condition = nextExpression();
 		
 		if(!reader.valueEqualsAdvance(")")) syntaxError(CompilerError.UNCLOSED_STATEMENT_PARENTHESES, reader);
@@ -408,7 +410,7 @@ public class ParseTreeGenerator {
 			list.add(var);
 			
 			if(!isValidName(reader)) syntaxError(CompilerError.INVALID_VARIABLE_NAME, reader);
-			if(current_function.hasIdentifier(reader.value())) syntaxError("Redeclaration of a local variable '%s'", reader);
+			if(current_function.hasIdentifier(reader.value())) syntaxError(CompilerError.REDECLARATION_OF_LOCAL_VARIABLE, reader);
 			var.name = reader.value();
 			reader.next();
 			
@@ -416,28 +418,18 @@ public class ParseTreeGenerator {
 				Expression expr = nextExpression();
 				
 				if(!(expr instanceof AtomExpr)) {
-					syntaxError("Invalid array variable definition. Expected a integer expression but got '%s'", expr);
+					syntaxError(CompilerError.INVALID_ARRAY_VARIABLE_DECLARATION_EXPECTED_INTEGER, expr);
 				} else {
 					AtomExpr number = (AtomExpr)expr;
 					if(!number.isNumber()) {
-						syntaxError("Invalid array variable definition. Expected a integer expression. But got '%s'", expr);
+						syntaxError(CompilerError.INVALID_ARRAY_VARIABLE_DECLARATION_EXPECTED_INTEGER, expr);
 					}
 					
 					// TODO: What should we do if the array has a negative length?
-					
 					var.list.add(Expression.EMPTY);
 					var.arraySize = (int)number.i_value;
 				}
 				var.isArray = true;
-				
-//				{
-//					int pointerLength = 1;
-//					if(var.type instanceof PointerType) {
-//						pointerLength = ((PointerType)var.type).pointerLength + 1;
-//					}
-//					
-//					var.type = new PointerType(type, pointerLength);
-//				}
 				
 				if(!reader.valueEqualsAdvance("]")) syntaxError(CompilerError.UNCLOSED_ARRAY_DEFINITION, reader);
 				if(!reader.valueEquals(";")) syntaxError(CompilerError.UNCLOSED_VARIABLE_DECLARATION);
@@ -458,7 +450,7 @@ public class ParseTreeGenerator {
 			}
 			
 			if(!reader.valueEqualsAdvance(",")) {
-				syntaxError("Invalid variable definition. Expected a comma or semicolon but got '%s'", reader);
+				syntaxError(CompilerError.INVALID_VARIABLE_DECLARATION_MISSING_COLON_OR_SEMICOLON, reader);
 			}
 		} while(true);
 		
@@ -637,7 +629,7 @@ public class ParseTreeGenerator {
 				Expression expr = e12();
 				if(reader.valueEqualsAdvance("?")) {
 					Expression b = e12();
-					if(!reader.valueEqualsAdvance(":")) syntaxError("Invalid ternary operation a ? b : c. Missing the colon. '%s'", reader);
+					if(!reader.valueEqualsAdvance(":")) syntaxError(CompilerError.INVALID_TERNARY_OPERATOR_MISSING_COLON, reader);
 					Expression c = e12();
 					
 					AtomExpr temp = new AtomExpr(current_function.temp(LowType.largest(b.size(), c.size())));
@@ -741,14 +733,6 @@ public class ParseTreeGenerator {
 								new OpExpr(set, lhs, new OpExpr(dir, lhs, new AtomExpr(1))),
 								ident1
 							);
-							
-//							return new OpExpr(comma,
-//								new OpExpr(set, ident2, new OpExpr(addptr, lhs)),
-//								new OpExpr(set, ident1, new OpExpr(decptr, ident2)),
-//								new OpExpr(set, new OpExpr(decptr, ident2), new OpExpr(dir, new OpExpr(decptr, ident2), new AtomExpr(1))),
-//								new OpExpr(set, lhs, new OpExpr(dir, lhs, new AtomExpr(1))),
-//								ident1
-//							);
 						}
 						
 						return new OpExpr(comma,
@@ -788,17 +772,18 @@ public class ParseTreeGenerator {
 							continue;
 						}
 						
-						// NOTE: Implement class structures later
+						// NOTE: Implement class blocks later
 						// case ".": e1 = new BiExpr("MEMBER", e1, e1(symbol.next())); continue;
 						// case "->": e1 = new BiExpr("PMEMBER", e1, e1(symbol.next())); continue;
 						// case "::": e1 = new BiExpr("NMEMBER", e1, e1(symbol.next())); continue;
 						
 						case "(": {
 							if(!(e1 instanceof AtomExpr)) {
-								// Function pointer ?
-								syntaxError("Invalid call expression! %s", e1);
+								// NOTE: What if this was a function pointer?
+								syntaxError(CompilerError.INVALID_FUNCTION_CALL_EXPRESSION, e1);
 								break;
 							}
+							
 							OpExpr o = new OpExpr(call);
 							o.list.add(e1);
 							reader.next();
@@ -811,15 +796,15 @@ public class ParseTreeGenerator {
 							int length = func.arguments.size();
 							for(int i = 0; i < length; i++) {
 								Expression arg = e14();
-								if(arg == null) syntaxError("Invalid call argument value.");
+								if(arg == null) syntaxError(CompilerError.INVALID_FUNCTION_CALL_PARAMETER);
 								o.list.add(arg);
 								
 								if(reader.valueEqualsAdvance(",")) {
-									if(i == length - 1) syntaxError("Too many arguments calling function '%s' expected %s", func.name, length + (length == 1 ? " argument":"arguments"));
+									if(i == length - 1) syntaxError(CompilerError.TOO_MANY_FUNCTION_CALL_ARGUMENTS, func.name, length + (length == 1 ? " argument":"arguments"));
 									continue;
 								}
 								
-								if(i != length - 1) syntaxError("Not enough arguments to call function '%s' expected %s but got %d", func.name, length + (length == 1 ? " argument":"arguments"), i + 1);
+								if(i != length - 1) syntaxError(CompilerError.NOT_ENOUGH_FUNCTION_CALL_ARGUMENTS, func.name, length + (length == 1 ? " argument":"arguments"), i + 1);
 								
 								if(!reader.valueEqualsAdvance(")")) syntaxError(CompilerError.UNCLOSED_CALL_PARENTHESES, reader);
 								closed = true;
@@ -882,7 +867,7 @@ public class ParseTreeGenerator {
 			}
 			
 			Expression e1() {
-				if(reader.groupEquals("DOUBLE") || reader.groupEquals("FLOAT")) syntaxError("Float data types are not implemented in this language.");
+				if(reader.groupEquals("DOUBLE") || reader.groupEquals("FLOAT")) syntaxError(CompilerError.FLOATING_TYPES_NOT_IMPLEMENTED);
 				if(reader.groupEquals("LONG")) { String value = reader.value(); reader.next(); return new AtomExpr(parseLong(value)); }
 				if(reader.groupEquals("INT")) { String value = reader.value(); reader.next(); return new AtomExpr(parseInteger(value)); }
 				if(reader.groupEquals("STRING")) { String value = reader.value(); reader.next(); return new AtomExpr(value.substring(1, value.length() - 1)); } // TODO: Unicode ?
@@ -903,12 +888,13 @@ public class ParseTreeGenerator {
 							reader.next();
 							return GLOBAL.get(value);
 						}
+						
 						if(FUNCTIONS.containsKey(value)) {
 							reader.next();
 							return new AtomExpr(current_program.getFunction(value));
 						}
 						
-						syntaxError("Undeclared variable name. Could not find the variable '%s'", value);
+						syntaxError(CompilerError.UNDECLARED_VARIABLE_OR_FUNCTION, value);
 					} else {
 						reader.next();
 						return new AtomExpr(current_function.getIdentifier(value));
@@ -946,8 +932,8 @@ public class ParseTreeGenerator {
 	
 	public Variable nextFuncArgument() {
 		Variable variable = new Variable(getTypeFromSymbol());
-		if(!reader.groupEquals("IDENTIFIER")) syntaxError("Invalid function argument name '%s'", reader);
-		if(current_function.hasIdentifier(reader.value())) syntaxError("Redefinition of a variable named '%s'", reader);
+		if(!reader.groupEquals("IDENTIFIER")) syntaxError(CompilerError.INVALID_FUNCTION_PARAMETER_NAME, reader);
+		if(current_function.hasIdentifier(reader.value())) syntaxError(CompilerError.REDECLARATION_OF_FUNCTION_PARAMETER, reader);
 		variable.name = reader.value();
 		reader.next();
 		return variable;

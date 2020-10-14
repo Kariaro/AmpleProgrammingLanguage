@@ -59,11 +59,11 @@ class SpookyFunction {
 		
 		for(SpookyBlock block : blocks) {
 			for(IRInstruction ir : block.list) {
-				for(Param param : ir.params) {
+				for(Param param : ir.getParams()) {
 					if(!(param instanceof Reg)) continue;
 					Reg reg = (Reg)param;
 					
-					if(!reg.isTemporary) continue;
+					if(!reg.isTemporary()) continue;
 					
 					if(!set.contains(param.getIndex())) {
 						set.add(param.getIndex());

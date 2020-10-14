@@ -407,7 +407,7 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 					FunctionLabel label = (FunctionLabel)inst.getParam(1);
 					SpookyFunction called = base.getFunction(label);
 					
-					for(int i = 2; i < inst.params.size(); i++) {
+					for(int i = 2; i < inst.getNumParams(); i++) {
 						Param c = inst.getParam(i);
 						
 						// We write the address tack to the back of our function
@@ -455,7 +455,7 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 	}
 	
 	private Address generate(SpookyFunction func, Reg reg) {
-		if(reg.isTemporary) {
+		if(reg.isTemporary()) {
 			return Address.stack(-func.getUsage() + func.getNumParams() + reg.getIndex() + 1);
 		}
 		

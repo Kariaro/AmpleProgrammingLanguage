@@ -137,8 +137,8 @@ public class IntermediateCodeOptimizer {
 				if(!(param instanceof Reg)) continue;
 				Reg reg = (Reg)param;
 				
-				// Keep function variables.
-				if(!reg.isTemporary) continue;
+				// Only optimize generated registers and not variable registers.
+				if(!reg.isTemporary()) continue;
 				
 				Reg next = map.get(reg.getIndex());
 				if(next == null) {
@@ -238,9 +238,20 @@ public class IntermediateCodeOptimizer {
 		remove_nops(func);
 		eq_bnz_optimization(func);
 		
-		for(int i = 0; i < 1; i++) {
+		while(true) {
+			int size = func.list.size();
+			
 			flow_optimization(func);
 			counter_optimization(func);
+			
+			if(size != func.list.size()) {
+				// If the size changed during the flow optimization we
+				// should try re run the optimizations
+				
+				continue;
+			}
+			
+			break;
 		}
 	}
 	
