@@ -45,8 +45,8 @@ public final class IRSerializer {
 	}
 	
 	private void writeLong(long value) throws IOException {
-		writeInt((int)(value >>> 32L));
 		writeInt((int)(value & 0xffffffffL));
+		writeInt((int)(value >>> 32L));
 	}
 	
 	private void writeLowType(LowType type) throws IOException {
@@ -126,14 +126,14 @@ public final class IRSerializer {
 //	}
 	
 	private long readLong() throws IOException {
-		return (long)in.read()
-			| (in.read() << 8L)
-			| (in.read() << 16L)
-			| (in.read() << 24L)
-			| (in.read() << 32L)
-			| (in.read() << 40L)
-			| (in.read() << 48L)
-			| (in.read() << 56L);
+		return((long)in.read() <<  0L)
+			| ((long)in.read() <<  8L)
+			| ((long)in.read() << 16L)
+			| ((long)in.read() << 24L)
+			| ((long)in.read() << 32L)
+			| ((long)in.read() << 40L)
+			| ((long)in.read() << 48L)
+			| ((long)in.read() << 56L);
 	}
 	
 	private String readString() throws IOException {

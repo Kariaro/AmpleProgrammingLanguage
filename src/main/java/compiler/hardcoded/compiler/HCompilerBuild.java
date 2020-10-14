@@ -169,7 +169,7 @@ public class HCompilerBuild {
 		IRSerializer.write(program, out);
 		IRProgram result = IRSerializer.read(new ByteArrayInputStream(out.toByteArray()));
 		
-		int depth = 5;
+		int depth = 10;
 		String deep_0 = IRSerializer.deepPrint("Deep(0)", program, depth).replace("\t", "    ");
 		String deep_1 = IRSerializer.deepPrint("Deep(1)", result, depth).replace("\t", "    ");
 		

@@ -88,9 +88,9 @@ public class CompilerMain {
 		System.out.println("Running");
 		System.out.println("Format: " + format);
 		
-//		HCompiler compiler = new HCompiler();
-//		compiler.setProjectPath("res/project/src/");
-//		compiler.build();
+		HCompiler compiler = new HCompiler();
+		compiler.setProjectPath("res/project/src/");
+		compiler.build();
 		
 		// -h help
 		// -f format

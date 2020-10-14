@@ -1,9 +1,11 @@
 package hardcoded.compiler.constants;
 
 import java.util.List;
+import java.util.ListIterator;
 
 import hardcoded.compiler.Block.Function;
 import hardcoded.compiler.expression.Expression;
+import hardcoded.compiler.instruction.IRInstruction;
 import hardcoded.compiler.statement.*;
 
 public final class Utils {
@@ -114,5 +116,42 @@ public final class Utils {
 		}
 		
 		return "\n\t" + stat.toString();
+	}
+	
+	public static class IRListIterator implements ListIterator<IRInstruction> {
+		private final ListIterator<IRInstruction> iterator;
+		private final List<IRInstruction> list;
+		
+		private IRListIterator(List<IRInstruction> list) {
+			this.list = list;
+			this.iterator = list.listIterator();
+		}
+		
+		public boolean hasNext() { return iterator.hasNext(); }
+		public IRInstruction next() { return iterator.next(); }
+		public boolean hasPrevious() { return iterator.hasPrevious(); }
+		public IRInstruction previous() { return iterator.previous(); }
+		public int nextIndex() { return iterator.nextIndex(); }
+		public int previousIndex() { return iterator.previousIndex(); }
+		public void remove() { iterator.remove(); }
+		public void set(IRInstruction e) { iterator.set(e); }
+		public void add(IRInstruction e) { iterator.add(e); }
+		
+
+		public IRInstruction peakNext() {
+			int index = nextIndex();
+			if(index >= list.size()) return null;
+			return list.get(index);
+		}
+		
+		public IRInstruction peakPrevious() {
+			int index = previousIndex();
+			if(index < 0) return null;
+			return list.get(index);
+		}
+	}
+	
+	public static IRListIterator createIterator(List<IRInstruction> list) {
+		return new IRListIterator(list);
 	}
 }
