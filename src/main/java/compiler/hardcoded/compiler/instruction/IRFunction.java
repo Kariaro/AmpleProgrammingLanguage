@@ -16,8 +16,9 @@ public class IRFunction {
 	
 	protected IRFunction(LowType type, String name, LowType[] params) {
 		Objects.requireNonNull(type); // A type can never be null
+		if(params.length > 255)
+			throw new IllegalArgumentException("Function argument length cannot exceed 255");
 		
-		// FIXME: Require that max 255 parameters can be given.
 		this.list = new ArrayList<>();
 		this.params = params;
 		this.type = type;
@@ -45,35 +46,9 @@ public class IRFunction {
 		return list.toArray(new IRInstruction[0]);
 	}
 	
-	/**
-	 * Combine all instructions that have been disconnected.
-	 */
-	void fixInstructions() {
-		if(list.isEmpty()) return;
-		
-		list.get(0).prev = null;
-		list.get(list.size() - 1).next = null;
-		if(list.size() == 1) return;
-		if(list.size() == 2) {
-			IRInstruction first = list.get(0);
-			IRInstruction last = list.get(1);
-			first.next = last;
-			last.prev = first;
-			return;
-		}
-		
-		for(int i = 1; i < list.size() - 1; i++) {
-			IRInstruction a = list.get(i - 1);
-			IRInstruction b = list.get(i);
-			a.next = b;
-			b.prev = a;
-		}
-	}
-	
 	public int length() {
 		return list.size();
 	}
-	
 	
 	@Override
 	public String toString() {

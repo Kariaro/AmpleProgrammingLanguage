@@ -2,6 +2,8 @@ package hardcoded.compiler.instruction;
 
 import java.util.*;
 
+import hardcoded.compiler.constants.Utils;
+import hardcoded.compiler.constants.Utils.IRListIterator;
 import hardcoded.compiler.instruction.IRInstruction.NumberReg;
 import hardcoded.compiler.instruction.IRInstruction.Param;
 import hardcoded.compiler.instruction.IRInstruction.Reg;
@@ -15,17 +17,17 @@ public class IntermediateCodeOptimizer {
 		for(IRFunction func : program.getFunctions()) {
 			simplify(func);
 			
-//			System.out.println("\n" + func);
-//			for(int i = 0, line = 0; i < func.length(); i++) {
-//				IRInstruction inst = func.list.get(i);
-//				
-//				if(inst.op == IRType.label) {
-//					System.out.printf("\n%4d: %s\n", line, inst);
-//				} else {
-//					System.out.printf("%4d:   %s\n", line, inst);
-//					line++;
-//				}
-//			}
+			System.out.println("\n" + func);
+			for(int i = 0, line = 0; i < func.length(); i++) {
+				IRInstruction inst = func.list.get(i);
+				
+				if(inst.op == IRType.label) {
+					System.out.printf("\n%4d: %s\n", line, inst);
+				} else {
+					System.out.printf("%4d:   %s\n", line, inst);
+					line++;
+				}
+			}
 		}
 		
 		return program;
@@ -45,8 +47,6 @@ public class IntermediateCodeOptimizer {
 				iter.remove();
 			}
 		}
-		
-		func.fixInstructions();
 	}
 	
 	//  eq - brz		if($B == 0)			if(!$B)
@@ -87,7 +87,7 @@ public class IntermediateCodeOptimizer {
 	 * @param	block	the instruction block to optimize
 	 */
 	private void eq_bnz_optimization(IRFunction func) {
-		ListIterator<IRInstruction> iter = func.list.listIterator();
+		IRListIterator iter = Utils.createIterator(func.list);
 		
 		while(iter.hasNext()) {
 			IRInstruction inst = iter.next();
@@ -97,7 +97,7 @@ public class IntermediateCodeOptimizer {
 			boolean positive_eq = inst.type() == IRType.eq;
 			
 			if(positive_eq || inst.type() == IRType.neq) {
-				IRInstruction next = inst.next();
+				IRInstruction next = iter.peakNext();
 				
 				// Check if the type was the positive branch 'brz'
 				boolean positive_br = next.type() == IRType.brz;
@@ -117,9 +117,6 @@ public class IntermediateCodeOptimizer {
 				}
 			}
 		}
-		
-		// Make sure that we update the instructions
-		func.fixInstructions();
 	}
 	
 	/**
@@ -130,7 +127,7 @@ public class IntermediateCodeOptimizer {
 		Map<Integer, Reg> map = new HashMap<>();
 		int index = 0;
 		
-		ListIterator<IRInstruction> iter = func.list.listIterator();
+		IRListIterator iter = Utils.createIterator(func.list);
 		
 		while(iter.hasNext()) {
 			IRInstruction inst = iter.next();
@@ -152,12 +149,10 @@ public class IntermediateCodeOptimizer {
 				inst.params.set(i, next);
 			}
 		}
-		
-		func.fixInstructions();
 	}
 	
 	private void flow_optimization(IRFunction func) {
-		ListIterator<IRInstruction> iter = func.list.listIterator();
+		IRListIterator iter = Utils.createIterator(func.list);
 		
 		while(iter.hasNext()) {
 			IRInstruction inst = iter.next();
@@ -166,17 +161,19 @@ public class IntermediateCodeOptimizer {
 			
 
 			if(iter.hasNext()) {
+				IRInstruction next = iter.peakNext();
+				
 				//    ... [a], [b], [c]
 				//    mov [z], [a]
 				// Should become
 				//    ... [z], [b], [c]
 				//    If z was zero before.
-				if(inst.next().op == IRType.mov && canReduce(inst.op)) {
+				if(next.op == IRType.mov && canReduce(inst.op)) {
 					Param reg = inst.params.get(0);
-					Param wnt = inst.next().params.get(1);
+					Param wnt = next.params.get(1);
 					
 					if(getReferences(func, reg) == 2 && wnt == reg) {
-						inst.params.set(0, inst.next().params.get(0));
+						inst.params.set(0, next.params.get(0));
 						
 						iter.next();
 						iter.remove();
@@ -208,8 +205,6 @@ public class IntermediateCodeOptimizer {
 				}
 			}
 		}
-		
-		func.fixInstructions();
 	}
 	
 	// TODO: Pass through label optimization

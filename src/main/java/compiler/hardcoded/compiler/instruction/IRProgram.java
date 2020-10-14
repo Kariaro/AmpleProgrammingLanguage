@@ -14,7 +14,7 @@ public class IRProgram {
 	protected final IRContext context;
 	
 	/**
-	 * All the functions inside a IRProgram
+	 * All the functions inside this IRProgram
 	 */
 	protected final List<IRFunction> list;
 	
@@ -36,7 +36,7 @@ public class IRProgram {
 		return context;
 	}
 	
-	protected IRFunction addFunction(Function func, IRInstruction start) {
+	protected IRFunction addFunction(Function func, List<IRInstruction> list) {
 		LowType[] params = new LowType[func.arguments.size()];
 		for(int i = 0; i < params.length; i++) {
 			params[i] = func.arguments.get(i).low_type();
@@ -44,11 +44,11 @@ public class IRProgram {
 		
 		IRFunction ir_func = new IRFunction(func.returnType.type(), func.name, params);
 		
-		for(IRInstruction inst : start) {
+		for(IRInstruction inst : list) {
 			ir_func.list.add(inst);
 		}
 		
-		list.add(ir_func);
+		this.list.add(ir_func);
 		return ir_func;
 	}
 }
