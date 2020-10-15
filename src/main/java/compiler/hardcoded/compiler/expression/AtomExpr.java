@@ -10,24 +10,24 @@ import hardcoded.compiler.constants.ExprType;
 public class AtomExpr implements Expression {
 	public LowType atomType;
 	
-	public Identifier d_value; // ident
-	public String s_value; // string
-	public long i_value;  // i64, i32, i16, i8
+	public Identifier d_value;	// ident
+	public String s_value;		// string
+	public long i_value;		// number
 	
 	public AtomExpr(long value) {
 		this(value, Atom.i64);
 	}
 	
 	public AtomExpr(int value) {
-		this(Integer.toUnsignedLong(value), Atom.i32);
+		this((long)value, Atom.i32);
 	}
 	
 	public AtomExpr(short value) {
-		this(Short.toUnsignedLong(value), Atom.i16);
+		this((long)value, Atom.i16);
 	}
 	
 	public AtomExpr(byte value) {
-		this(Byte.toUnsignedLong(value), Atom.i8);
+		this((long)value, Atom.i8);
 	}
 	
 	public AtomExpr(boolean value) {

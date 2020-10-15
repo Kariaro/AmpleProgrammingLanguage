@@ -49,7 +49,7 @@ class AsmBlock {
 				Param reg = inst.getLastParam();
 				
 				if(reg instanceof DataParam) {
-					Object obj = ((DataParam)reg).obj;
+					Object obj = ((DataParam)reg).getValue();
 					
 					System.out.println(obj + "/" + obj.getClass());
 					if(obj instanceof String) {
@@ -66,7 +66,7 @@ class AsmBlock {
 				break;
 			}
 			case LABEL: {
-				dataName = ((IRInstruction.LabelParam)inst.getParam(0)).name;
+				dataName = inst.getParam(0).getName();
 				break;
 			}
 			default: {

@@ -32,7 +32,7 @@ class SpookyBlock {
 		
 		switch(type) {
 			case LABEL: {
-				dataName = ((IRInstruction.LabelParam)inst.getParam(0)).name;
+				dataName = inst.getParam(0).getName();
 				break;
 			}
 			

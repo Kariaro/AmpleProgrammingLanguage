@@ -276,7 +276,7 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 					
 					Address target = generate(func, (Reg)a);
 					if(b instanceof NumberReg) {
-						list.add(new SpookyInst(OpCode.CONST, ((NumberReg)b).value, target));
+						list.add(new SpookyInst(OpCode.CONST, ((NumberReg)b).getValue(), target));
 					} else if(b instanceof Reg) {
 						list.add(new SpookyInst(OpCode.MOV, generate(func, (Reg)b), target));
 					} else if(b instanceof RefReg) {
@@ -322,7 +322,7 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 					OpCode op = OpCode.convert(inst.type());
 					
 					if(c instanceof NumberReg) {
-						list.add(new SpookyInst(OpCode.CONST, ((NumberReg)c).value, TEMP));
+						list.add(new SpookyInst(OpCode.CONST, ((NumberReg)c).getValue(), TEMP));
 						if(op == null) {
 							op = OpCode.convertSpecial(inst.type());
 							list.add(new SpookyInst(op, TEMP, op1, TEMP));
@@ -350,7 +350,7 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 					LabelParam label = (LabelParam)inst.getParam(1);
 					
 					if(a instanceof NumberReg) {
-						long value = ((NumberReg)a).value;
+						long value = ((NumberReg)a).getValue();
 						
 						if(inst.type() == IRType.brz) {
 							if(value == 0) list.add(new SpookyInst(OpCode.JMP, ZERO, label));
@@ -391,7 +391,7 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 					if(a instanceof NumberReg) {
 						list.add(new SpookyInst(OpCode.CONST, jump, TEMP));
 						list.add(new SpookyInst(OpCode.SUB, BASE_POINTER, TEMP, BASE_POINTER));
-						list.add(new SpookyInst(OpCode.CONST, ((NumberReg)a).value, TEMP));
+						list.add(new SpookyInst(OpCode.CONST, ((NumberReg)a).getValue(), TEMP));
 						list.add(new SpookyInst(OpCode.JMPADR, Address.stack(0)));
 					} else if(a instanceof Reg) {
 						list.add(new SpookyInst(OpCode.CONST, jump, TEMP));
@@ -414,7 +414,7 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 						Address target = Address.stack(i - 1);
 						
 						if(c instanceof NumberReg) {
-							list.add(new SpookyInst(OpCode.CONST, ((NumberReg)c).value, target));
+							list.add(new SpookyInst(OpCode.CONST, ((NumberReg)c).getValue(), target));
 						} else if(c instanceof Reg) {
 							list.add(new SpookyInst(OpCode.MOV, generate(func, (Reg)c), target));
 						} else if(c instanceof RefReg) {

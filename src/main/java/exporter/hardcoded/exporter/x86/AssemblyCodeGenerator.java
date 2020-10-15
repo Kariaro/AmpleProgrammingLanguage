@@ -436,7 +436,7 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 				
 				int size = calculateBits(inst);
 				if(inst.type() == IRType.write) {
-					size = 4 << inst.calculateSize().size();
+					size = 4 << inst.getSize().size();
 				}
 				
 				RegisterX86 reg = pickRegister(size, RegisterX86.DX.index);
@@ -483,7 +483,7 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 	}
 	
 	private int calculateBits(IRInstruction inst) {
-		LowType type = inst.calculateSize();
+		LowType type = inst.getSize();
 		if(type == null) return 0; // FIXME This should never happen.
 		int destSize = 0;
 		
@@ -515,7 +515,7 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 		
 		if(param instanceof NumberReg) {
 			NumberReg reg = (NumberReg)param;
-			return new OprBuilder().imm(reg.value);
+			return new OprBuilder().imm(reg.getValue());
 		}
 		
 		System.out.println(param.getClass());

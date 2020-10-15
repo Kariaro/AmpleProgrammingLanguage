@@ -1,6 +1,7 @@
 package hardcoded;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Locale;
 import java.util.logging.LogManager;
@@ -55,54 +56,99 @@ public class CompilerMain {
 		}
 	}
 	
+	private static void printHelpMessage() {
+		try {
+			System.out.println(new String(FileUtils.readInputStream(
+				CompilerMain.class.getResourceAsStream("/command/help.txt")
+			)));
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	public static void main(String[] args) throws Exception {
-		if(!DomainUtils.isJarRuntime()) {
-			// Special settings
-			
+		if(!isDeveloper() && args.length < 1) {
+			printHelpMessage();
+			return;
 		}
 		
+		String source_path = null;
+		String binary_path = null;
 		String format = null;
 		
 		for(int i = 0; i < args.length; i++) {
 			String str = args[i];
 			
 			switch(str) {
-				case "-h": {
-					System.out.println(new String(FileUtils.readInputStream(
-						CompilerMain.class.getResourceAsStream("/command/help.txt")
-					)));
-					return;
-				}
 				
+				case "-format":
 				case "-f": {
 					if(i + 1 >= args.length) break;
-					format = args[i + 1];
-					i++;
+					format = args[(i++) + 1];
 					continue;
 				}
+				
+				case "-src":
+				case "-s": {
+					if(i + 1 >= args.length) break;
+					source_path = args[(i++) + 1];
+					continue;
+				}
+				
+				case "-bin":
+				case "-b": {
+					if(i + 1 >= args.length) break;
+					binary_path = args[(i++) + 1];
+					continue;
+				}
+				
+				default: {
+					System.out.println("Invalid argument '" + str + "'\n");
+				}
+				case "?":
+				case "-?":
+				case "-h": {
+					printHelpMessage();
+					return;
+				}
 			}
-			System.out.println(str);
 		}
 		
-		System.out.println("Running");
-		System.out.println("Format: " + format);
+		if(isDeveloper()) {
+			// Developer variables and test environment
+			
+			format = "ir";
+			source_path = "res/project/src";
+			binary_path = "res/project/bin";
+		}
+		
+		System.out.println("---------------------------------------------------------");
+		System.out.println("HardCoded HCProgrammingLanguage compiler (2020-10-15) (c)");
+		System.out.println();
+		System.out.println("OutputFormat: " + format);
+		System.out.println("SourcePath  : '" + source_path + "'");
+		System.out.println("BinaryPath  : '" + binary_path + "'");
+		System.out.println("---------------------------------------------------------");
+		
+		long start = System.nanoTime();
 		
 		HCompiler compiler = new HCompiler();
+		compiler.setOutputFormat(format);
 		compiler.setProjectPath("res/project/src/");
 		compiler.build();
 		
-		// -h help
-		// -f format
-		//    spooky
-		//    x86
-		//    ...
-		// -d debuging tools
-		// -v
-		// -i inputfile
-		// -o outputfile
+		long time = System.nanoTime() - start;
 		
-		if(args.length > 1) {
-			
-		}
+		System.out.println();
+		System.out.println("---------------------------------------------------------");
+		System.out.println("COMPILE FINISHED");
+		System.out.println();
+		System.out.printf("Took: %.4f milliseconds\n", time / 1000000D);
+		System.out.println("---------------------------------------------------------");
+	}
+	
+	public static boolean isDeveloper() {
+		return "true".equalsIgnoreCase(System.getProperty("hardcoded.developer"))
+			&& !DomainUtils.isJarRuntime();
 	}
 }

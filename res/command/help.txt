@@ -1,12 +1,23 @@
 Help message for HCProgrammingLanguage https://github.com/Kariaro/HCProgrammingLanguage
 
-options:
-    -h    display this help message
-    
-    -f    the output format type
-          [spooky]
-          [x86]
-          [...]
+calling:
+     [-f] [-s] [-b]
 
-    -i    input source file
-    -o    output file
+options:
+    -h
+              display this help message
+
+    -format
+    -f
+              the output format type
+              [spooky]
+              [x86]
+              [ir]
+
+    -src
+    -s
+              the projects source directory
+
+    -bin
+    -b
+              the projects output directory

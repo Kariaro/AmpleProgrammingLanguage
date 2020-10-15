@@ -2,8 +2,10 @@ package unit;
 
 import static hardcoded.compiler.numbers.Value.*;
 
+import org.junit.Test;
+
 public final class ValueTest {
-	
+	@Test
 	public static void value_add() {
 		Assertions.assertEquals(
 			idouble(Math.PI).add(ifloat(Math.E)).doubleValue(),

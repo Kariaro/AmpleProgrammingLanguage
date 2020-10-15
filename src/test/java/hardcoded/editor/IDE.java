@@ -21,7 +21,6 @@ public class IDE extends JFrame {
 	private static final long serialVersionUID = 8431695233762144631L;
 	
 	static {
-		
 		try {
 			// Fix syntax highighligting.
 			System.setProperty("line.separator", "\n");
@@ -55,10 +54,13 @@ public class IDE extends JFrame {
 	private void initFx() {
 		SwingUtilities.invokeLater(() -> {
 			fileChooser = new JFileChooser();
-			fileChooser.setCurrentDirectory(new File("C:/Users/Admin/git/HCProgrammingLanguage/res/project/src"));
+			fileChooser.setCurrentDirectory(new File("res/project/src"));
 			fileChooser.setDialogTitle("Open");
 		});
 	}
+	
+	// FIXME: The IDE uses WAY to much GPU for just a simple IDE!!!
+	// FIXME: Backup font for different systems. MAC, LINUX, WINDOWS!
 	
 	private void initLayout() {
 		JMenuBar menuBar = new JMenuBar();
@@ -71,6 +73,8 @@ public class IDE extends JFrame {
 		mntmOpen.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent event) {
 				try {
+
+					fileChooser.showOpenDialog(null);
 					File file = fileChooser.getSelectedFile();
 					
 					if(file != null) {
