@@ -33,7 +33,6 @@ public class IRInstruction {
 	public static final Param NONE = new Param() {
 		public boolean equals(Object obj) { return false; }
 		public String toString() { return "..."; }
-		public LowType getSize() { return null; }
 	};
 	
 	public static interface Param {
@@ -57,7 +56,9 @@ public class IRInstruction {
 		 * Returns the size of this register.
 		 * @return the size of this register
 		 */
-		public LowType getSize();
+		public default LowType getSize() {
+			return null;
+		}
 	}
 	
 	/**
@@ -69,11 +70,16 @@ public class IRInstruction {
 		private final Object object;
 		
 		public DebugParam(Object object) {
-			this.object = object;
+			this.object = "" + object;
 		}
 		
-		public LowType getSize() { return null; }
-		public String toString() { return Objects.toString(object); }
+		public Object getValue() {
+			return object;
+		}
+		
+		public String toString() {
+			return Objects.toString(object);
+		}
 	}
 	
 	public static final class Reg implements Param {
@@ -82,8 +88,8 @@ public class IRInstruction {
 		private final int index;
 		
 		/**
-		 * There are two types of register. Either they are generated or
-		 * they are given by the coder.
+		 * Tells the developer if this register was made by the
+		 * compiler or by the developer.
 		 */
 		private final boolean isTemporary;
 		
@@ -141,11 +147,6 @@ public class IRInstruction {
 			return label;
 		}
 		
-		public LowType getSize() {
-			// TODO: Get the size of the reference register
-			return null;
-		}
-		
 		public int getIndex() {
 			return index;
 		}
@@ -156,8 +157,8 @@ public class IRInstruction {
 	}
 	
 	public static class NumberReg implements Param {
-		public long value;
-		public LowType size;
+		private final LowType size;
+		private final long value;
 		
 		public NumberReg(AtomExpr expr) {
 			this(expr.i_value, expr.atomType);
@@ -167,12 +168,11 @@ public class IRInstruction {
 			this.value = value;
 			this.size = size;
 			
-			// Cannot be null
 			if(size == null)
 				throw new NullPointerException();
 		}
 		
-		public long value() {
+		public long getValue() {
 			return value;
 		}
 		
@@ -181,22 +181,27 @@ public class IRInstruction {
 		}
 		
 		public String toString() {
+			// TODO: Print this value depending on the LowType
 			return Long.toString(value);
 		}
 	}
 	
 	public static class DataParam implements Param {
-		public Object obj;
-		public int index;
+		private final Object obj;
+		private final int index;
 		
 		// FIXME: Remove the Object and replace with the type [ String ]
 		public DataParam(Object obj, int index) {
 			this.index = index;
-			this.obj = obj;
+			this.obj = "" + obj;
 		}
 		
-		public LowType getSize() {
-			return null;
+		public int getIndex() {
+			return index;
+		}
+		
+		public Object getValue() {
+			return obj;
 		}
 		
 		public String toString() {
@@ -206,26 +211,35 @@ public class IRInstruction {
 	
 	// Used for functions. Data and more.
 	public static class LabelParam implements Param {
-		public String name;
-		public String rawName;
-		public boolean compiler;
+		private final boolean isTemporary;
+		private final String name;
 		
 		public LabelParam(String name) {
 			this(name, true);
 		}
 		
-		public LabelParam(String name, boolean compiler) {
-			this.compiler = compiler;
-			this.rawName = name;
-			this.name = (compiler ? "_":"") + name + (compiler ? ("_" + atomic.getAndIncrement() + ""):"");
+		public LabelParam(String name, boolean isTemporary) {
+			this.isTemporary = isTemporary;
+			
+			if(isTemporary) {
+				this.name = "_" + name + "_" + atomic.getAndIncrement();
+			} else {
+				this.name = name;
+			}
 		}
 		
-		public LowType getSize() {
-			return null;
+		public LabelParam(String name, boolean isTemporary, Object tmp) {
+			this.isTemporary = isTemporary;
+			this.name = name;
+		}
+		
+		
+		public boolean isTemporary() {
+			return isTemporary;
 		}
 		
 		public String getName() {
-			return rawName;
+			return name;
 		}
 		
 		public String toString() {
@@ -234,21 +248,19 @@ public class IRInstruction {
 	}
 	
 	public static class FunctionLabel extends LabelParam {
-		@Deprecated
-		public Identifier ident;
-		// TODO: Remove any reference to Identifier inside params!
+		private final LowType size;
 		
 		public FunctionLabel(Identifier ident) {
-			super(ident.toString(), true);
-			this.ident = ident;
+			this(ident.name(), ident.low_type());
 		}
 		
-		public String getName() {
-			return ident.name();
+		public FunctionLabel(String name, LowType size) {
+			super(name, false);
+			this.size = size;
 		}
 		
-		public String toString() {
-			return ident.name();
+		public LowType getSize() {
+			return size;
 		}
 	}
 	
@@ -274,11 +286,6 @@ public class IRInstruction {
 	
 	public IRType type() {
 		return op;
-	}
-	
-	@Deprecated
-	public LowType getSize() {
-		return size;
 	}
 	
 	/**
@@ -310,7 +317,8 @@ public class IRInstruction {
 		return params.get(params.size() - 1);
 	}
 	
-	public LowType calculateSize() {
+	public LowType getSize() {
+		// TODO: Cache the size with the local size variable
 		if(params.isEmpty()) return null;
 		
 		if(op == IRType.call) return params.get(1).getSize();
@@ -328,7 +336,7 @@ public class IRInstruction {
 		if(op == IRType.label) return params.get(0) + ":";
 		if(params.isEmpty()) return Objects.toString(op);
 		
-		LowType size = calculateSize();
+		LowType size = getSize();
 		return String.format("%-8s%-8s         [%s]", op, (size == null ? "":size), StringUtils.join("], [", params));
 	}
 }

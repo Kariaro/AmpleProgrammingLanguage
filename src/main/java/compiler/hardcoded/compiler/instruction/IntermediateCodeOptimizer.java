@@ -17,17 +17,17 @@ public class IntermediateCodeOptimizer {
 		for(IRFunction func : program.getFunctions()) {
 			simplify(func);
 			
-			System.out.println("\n" + func);
-			for(int i = 0, line = 0; i < func.length(); i++) {
-				IRInstruction inst = func.list.get(i);
-				
-				if(inst.op == IRType.label) {
-					System.out.printf("\n%4d: %s\n", line, inst);
-				} else {
-					System.out.printf("%4d:   %s\n", line, inst);
-					line++;
-				}
-			}
+//			System.out.println("\n" + func);
+//			for(int i = 0, line = 0; i < func.length(); i++) {
+//				IRInstruction inst = func.list.get(i);
+//				
+//				if(inst.op == IRType.label) {
+//					System.out.printf("\n%4d: %s\n", line, inst);
+//				} else {
+//					System.out.printf("%4d:   %s\n", line, inst);
+//					line++;
+//				}
+//			}
 		}
 		
 		return program;
@@ -104,7 +104,7 @@ public class IntermediateCodeOptimizer {
 				
 				// Check if the last element is a zero
 				Param reg = inst.getLastParam();
-				if(reg instanceof NumberReg && ((NumberReg)reg).value == 0) {
+				if(reg instanceof NumberReg && ((NumberReg)reg).getValue() == 0) {
 					// Check if the equality result is referenced
 					
 					int refs = getReferences(func, inst.getParam(0));

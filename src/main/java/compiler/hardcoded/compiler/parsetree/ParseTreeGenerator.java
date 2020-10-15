@@ -34,7 +34,7 @@ public class ParseTreeGenerator {
 		Tokenizer lexer = null;
 		
 		try {
-			lexer = TokenizerFactory.loadFromFile(new File("res/project/lexer.lex"));
+			lexer = TokenizerFactory.load(ParseTreeGenerator.class.getResourceAsStream("/project/lexer.lex"));
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
@@ -870,7 +870,7 @@ public class ParseTreeGenerator {
 				if(reader.groupEquals("DOUBLE") || reader.groupEquals("FLOAT")) syntaxError(CompilerError.FLOATING_TYPES_NOT_IMPLEMENTED);
 				if(reader.groupEquals("LONG")) { String value = reader.value(); reader.next(); return new AtomExpr(parseLong(value)); }
 				if(reader.groupEquals("INT")) { String value = reader.value(); reader.next(); return new AtomExpr(parseInteger(value)); }
-				if(reader.groupEquals("STRING")) { String value = reader.value(); reader.next(); return new AtomExpr(value.substring(1, value.length() - 1)); } // TODO: Unicode ?
+				if(reader.groupEquals("STRING")) { String value = reader.value(); reader.next(); return new AtomExpr(StringUtils.unescapeString(value.substring(1, value.length() - 1))); } // TODO: Unicode ?
 				if(reader.groupEquals("BOOL")) { String value = reader.value(); reader.next(); return new AtomExpr(Boolean.parseBoolean(value)); }
 				
 				if(reader.groupEquals("CHAR")) { // TODO: Unicode ?
