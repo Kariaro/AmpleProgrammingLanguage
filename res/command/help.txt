@@ -7,6 +7,9 @@ options:
     -h
               display this help message
 
+    -link-project **
+              build a probject xml file
+
     -format
     -f
               the output format type

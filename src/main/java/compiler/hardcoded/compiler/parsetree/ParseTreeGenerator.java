@@ -21,7 +21,6 @@ import hardcoded.compiler.types.PrimitiveType;
 import hardcoded.compiler.types.HighType;
 import hardcoded.lexer.Tokenizer;
 import hardcoded.lexer.TokenizerFactory;
-import hardcoded.lexer.TokenizerOld;
 import hardcoded.utils.FileUtils;
 import hardcoded.utils.StringUtils;
 
@@ -34,8 +33,8 @@ public class ParseTreeGenerator {
 		Tokenizer lexer = null;
 		
 		try {
-			lexer = TokenizerFactory.load(ParseTreeGenerator.class.getResourceAsStream("/project/lexer.lex"));
-		} catch(Exception e) {
+			lexer = TokenizerFactory.load(ParseTreeGenerator.class.getResourceAsStream("/lexer/lexer.lex"));
+		} catch(IOException e) {
 			e.printStackTrace();
 		}
 		
@@ -69,7 +68,8 @@ public class ParseTreeGenerator {
 		return hasErrors;
 	}
 	
-	public void reset() {
+	// FIXME: Remove this method.
+	private void reset() {
 		hasErrors = false;
 		current_program = null;
 		source_path = null;
@@ -93,7 +93,8 @@ public class ParseTreeGenerator {
 		Lang next = null;
 		
 		try {
-			next = new Lang(TokenizerOld.generateTokenChain(LEXER, FileUtils.readFileBytes(new File(source_path, filename))));
+			
+			next = new Lang(LEXER.parse(FileUtils.readFileBytes(new File(source_path, filename))));
 		} catch(IOException e) {
 			e.printStackTrace();
 		}

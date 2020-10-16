@@ -39,7 +39,7 @@ public class SyntaxHighlighter {
 	}
 	
 	public List<Highlight> createHighlight(String text) {
-		Token token = TokenizerOld.generateTokenChain(lexer, text.getBytes());
+		Token token = lexer.parse(text.getBytes());
 		List<Highlight> list = new ArrayList<>();
 		
 		while(token != null) {
