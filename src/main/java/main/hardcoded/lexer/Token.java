@@ -98,7 +98,7 @@ public class Token {
 	
 	/**
 	 * Get the relative index of the passed token to this token.
-	 * @return -1 if the token was not found in the chain
+	 * @return {@code -1} if the token was not found in the chain
 	 */
 	public int indexOf(Token token) {
 		if(token == null) return -1;

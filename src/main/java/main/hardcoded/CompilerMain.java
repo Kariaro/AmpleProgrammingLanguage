@@ -11,16 +11,19 @@ import hardcoded.utils.FileUtils;
 
 /**
  * This is the main entry point for the compiler.<br>
- * This compiler is a multi stage compiler.<br><br>
+ * This compiler is a multi stage compiler.<p>
  * 
  * 
- * Stage one is to generate a token list from a input.<br><br>
+ * Stage one is to generate a token list from a input.<p>
+ * 
  * 
  * Stage two is to generate a basic parse tree.<br>
- * State three is to optimize the parse tree.<br><br>
+ * State three is to optimize the parse tree.<p>
+ * 
  * 
  * Stage four is to generate the reduced instruction language.<br>
- * Stage five is to optimize the reduced instruction language.<br><br>
+ * Stage five is to optimize the reduced instruction language.<p>
+ * 
  * 
  * Stage six is to generate the assembly code.<br>
  * Stage seven is to optimize the assembly code.

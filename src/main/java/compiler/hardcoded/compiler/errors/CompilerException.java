@@ -20,7 +20,7 @@ public class CompilerException extends RuntimeException {
 	
 	/**
 	 * Construct a new compiler exception with a message.
-	 * @param message
+	 * @param	message
 	 */
 	public CompilerException(String message) {
 		this.message = message;

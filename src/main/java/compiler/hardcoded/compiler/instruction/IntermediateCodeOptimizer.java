@@ -9,6 +9,28 @@ import hardcoded.compiler.instruction.IRInstruction.Param;
 import hardcoded.compiler.instruction.IRInstruction.Reg;
 
 public class IntermediateCodeOptimizer {
+	// TODO: Pass through label optimization
+	//   If some branch instruction jumps to a label that only contains a unconditional instruction
+	// then jump to the target's location.
+	// =====================
+	//   br [some_label]
+	//     ...
+	// some_label:
+	//   br [another]
+	//
+	// Should become:
+	// =====================
+	//   br [another]
+	//     ...
+	// some_label:
+	//   br [another]
+	
+	// TODO: Dead code optimization
+	//   If an instruction is inside a code block that will never be entered or if a
+	//   label is never jumped to or is proceeded by another label it should be removed.
+	
+	// TODO: Tail recursion optimization
+	
 	public IntermediateCodeOptimizer() {
 		
 	}
@@ -63,26 +85,30 @@ public class IntermediateCodeOptimizer {
 	 * instructions can cancel eachother. One such pair
 	 * is the equals and branching instructions.
 	 * 
-	 * All pairs of a <code>eq</code> or a <code>neq</code>
-	 * followed by a <code>brz</code> or a <code>bnz</code> can
+	 * All pairs of a {@code eq} or a {@code neq}
+	 * followed by a {@code brz} or a {@code bnz} can
 	 * be reduced if the equal instruction contains a {@code zero}.
 	 * 
 	 * <p>We will give each instruction different values to
 	 * get to each outcome. If we have a not instruction such as
-	 * <code>neq</code> or <code>bnz</code> they will give a value
+	 * {@code neq} or {@code bnz} they will give a value
 	 * of {@code one}. Otherwise it will give {@code zero}.
 	 * 
 	 * <p>This will create the bit field.
-	 *<pre>brz   eq	00
+	 *<PRE>
+	 *brz   eq	00
 	 *brz  neq	01
 	 *bnz   eq	10
-	 *bnz  neq	11</pre>
+	 *bnz  neq	11
+	 *</PRE>
 	 * 
 	 * <p>An example of this optimization would be the following.
-	 *<pre>eq	..	[$A], [$B], [0]
+	 *<PRE>
+	 *eq	..	[$A], [$B], [0]
 	 *brz		[$A], [ ... ]
 	 *==== Becomes ====
-	 *bnz		[$B], [ ... ]</pre>
+	 *bnz		[$B], [ ... ]
+	 *</PRE>
 	 * 
 	 * @param	block	the instruction block to optimize
 	 */
@@ -193,41 +219,18 @@ public class IntermediateCodeOptimizer {
 				int num = getReferences(func, reg);
 				
 				// Only remove temporary variables.
-				// System.out.println("Regs -> " + reg + ", " + num);
 				
 				if(num < 2) {
 					if(!keepIfNotReferences(inst.op)) {
 						// TODO: There could be a problem if the register is pointing towards a global variable.
 						iter.remove();
-						
-						// inst = inst.remove();
 					}
 				}
 			}
 		}
 	}
 	
-	// TODO: Pass through label optimization
-	//   If some branch instruction jumps to a label that only contains a unconditional instruction
-	// then jump to the target's location.
-	// =====================
-	//   br [some_label]
-	//     ...
-	// some_label:
-	//   br [another]
-	//
-	// Should become:
-	// =====================
-	//   br [another]
-	//     ...
-	// some_label:
-	//   br [another]
-	
-	// TODO: Dead code optimization
-	//   If an instruction is inside a code block that will never be entered it should be removed.
-	
 	private void simplify(IRFunction func) {
-		// if(true) return block.start;
 		// TODO: Find a way to check if any changes has been made to the instruction block
 		
 		//   brz [ ... ], [A]

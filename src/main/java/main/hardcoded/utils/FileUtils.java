@@ -18,13 +18,14 @@ public final class FileUtils {
 	 * and return them as a byte array. This function will not close
 	 * the inputstream.
 	 * 
-	 * @param stream the inputstream to read.
-	 * @return the content of the inputstream.
-	 * @throws IOException
-	 * @throws NullPointerException if the stream was null
+	 * @param	stream	the inputstream to read
+	 * @return	the content of the inputstream
+	 * @throws	NullPointerException
+	 * 			if the stream was {@code null}
+	 * @throws	IOException
 	 */
 	public static byte[] readInputStream(InputStream stream) throws IOException {
-		if(stream == null) throw new NullPointerException("The stream was null.");
+		if(stream == null) throw new NullPointerException("The stream was null");
 		
 		ByteArrayOutputStream bs = new ByteArrayOutputStream();
 		byte[] buffer = new byte[65536];

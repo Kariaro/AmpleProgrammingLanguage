@@ -33,5 +33,15 @@
 	  <version>4.13.1</version>
 	  <scope>test</scope>
 	</dependency>
+	
+	<!-- https://search.maven.org/artifact/org.fusesource.jansi/jansi/1.18/jar -->
+	<!--
+	<dependency>
+	  <groupId>org.fusesource.jansi</groupId>
+	  <artifactId>jansi</artifactId>
+	  <version>1.18</version>
+	</dependency>
+	-->
+	
   </dependencies>
 </project>

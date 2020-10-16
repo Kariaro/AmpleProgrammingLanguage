@@ -37,7 +37,7 @@ public final class TokenizerFactory {
 	/**
 	 * Returns a new tokenizer from a file.
 	 * 
-	 * @param	filePath	a pathname string
+	 * @param	pathname	a pathname string
 	 * @return	a new tokenizer from a file
 	 */
 	public static Tokenizer loadFromFile(String pathname) throws IOException {

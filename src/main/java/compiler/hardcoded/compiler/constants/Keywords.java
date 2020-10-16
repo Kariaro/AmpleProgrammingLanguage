@@ -33,8 +33,9 @@ public final class Keywords {
 	
 	/**
 	 * Checks if the string value is a keyword.
-	 * @param value
-	 * @return true if the string value was a keyword.
+	 * 
+	 * @param	value
+	 * @return	{@code true} if the string value was a keyword
 	 */
 	public static boolean contains(String value) {
 		return KEYWORDS.contains(value);
@@ -42,7 +43,7 @@ public final class Keywords {
 	
 	/**
 	 * Returns a list with all keywords inside of it.
-	 * @return A set of keywords.
+	 * @return a set of keywords
 	 */
 	public static Set<String> getAllKeywords() {
 		return KEYWORDS;
