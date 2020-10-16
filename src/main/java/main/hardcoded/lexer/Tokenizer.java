@@ -9,6 +9,8 @@ import java.util.regex.Pattern;
 
 import hardcoded.utils.StringUtils;
 
+// TODO: Work a bit more with the tokenizer classes!
+
 /**
  * This is a lexer class. This class takes a string input or byte input and outputs
  * a list of tokens generated from the set of rules that this lexer has goten.
@@ -134,7 +136,7 @@ public class Tokenizer implements Serializable {
 	 * @return a list of symbols.
 	 * @throws NullPointerException if the string was null.
 	 */
-	public List<TokenizerSymbol> parse(String string) {
+	public Token parse(String string) {
 		return parse(string.getBytes(StandardCharsets.ISO_8859_1));
 	}
 	
@@ -145,7 +147,7 @@ public class Tokenizer implements Serializable {
 	 * @return a list of symbols.
 	 * @throws NullPointerException if the string was null.
 	 */
-	public List<TokenizerSymbol> parse(String string, Charset charset) {
+	public Token parse(String string, Charset charset) {
 		return parse(string.getBytes(charset));
 	}
 	
@@ -156,9 +158,10 @@ public class Tokenizer implements Serializable {
 	 * @param bytes
 	 * @return a list of symbols.
 	 */
-	public List<TokenizerSymbol> parse(byte[] bytes) {
+	public Token parse(byte[] bytes) {
 		TokenizerString string = new TokenizerString(bytes);
-		List<TokenizerSymbol> list = new ArrayList<>();
+		Token start = new Token();
+		Token token = start;
 		
 		StringBuilder sb = new StringBuilder();
 		boolean hasNull = false;
@@ -168,17 +171,8 @@ public class Tokenizer implements Serializable {
 		int index = 0;
 		
 		while(string.length() > 0) {
-			TokenizerSymbol sym = parseSingle(string, 0);
-			if(sym != null) {
-				if(hasNull) {
-					hasNull = false;
-					
-					list.add(new TokenizerSymbol(defaultGroup, false, sb.toString(), line, column, index));
-					sb.delete(0, sb.length());
-				}
-				
-				if(!autoDiscard || !sym.discard()) list.add(sym);
-			} else {
+			Token sym = parseSingle(string, 0);
+			if(sym == null) {
 				if(!hasNull) {
 					line = string.getLine();
 					column = string.getColumn();
@@ -188,17 +182,42 @@ public class Tokenizer implements Serializable {
 				
 				sb.append(string.charAt(0));
 				string.move(1);
+				continue;
+			}
+			
+			if(hasNull) {
+				hasNull = false;
+				
+				Token nullSym = new Token(defaultGroup, sb.toString(), false, line, column, index);
+				sb.delete(0, sb.length());
+				
+				token.next = nullSym;
+				nullSym.prev = token;
+				token = nullSym;
+			}
+			
+			if(!autoDiscard || !sym.discard) {
+				token.next = sym;
+				sym.prev = token;
+				token = sym;
 			}
 		}
 		
 		if(hasNull) {
-			list.add(new TokenizerSymbol(defaultGroup, false, sb.toString(), line, column, index));
+			Token nullSym = new Token(defaultGroup, sb.toString(), false, line, column, index);
+			token.next = nullSym;
+			nullSym.prev = token;
 		}
 		
-		return list;
+		if(start.next != null) {
+			start = start.next;
+			start.prev = null;
+		}
+		
+		return start;
 	}
 	
-	private TokenizerSymbol parseSingle(TokenizerString string, int index) {
+	private Token parseSingle(TokenizerString string, int index) {
 		SymbolGroup g = null;
 		int length = -1;
 		
@@ -231,7 +250,7 @@ public class Tokenizer implements Serializable {
 		}
 		
 		if(g != null && length > 0) {
-			TokenizerSymbol sym = new TokenizerSymbol(g.name, g.discard, string.subSequence(0, length).toString(), string.getLine(), string.getColumn(), string.getIndex());
+			Token sym = new Token(g.name, string.subSequence(0, length).toString(), g.discard, string.getLine(), string.getColumn(), string.getIndex());
 			string.move(length);
 			return sym;
 		}
@@ -257,13 +276,13 @@ public class Tokenizer implements Serializable {
 		}
 		
 		public SymbolGroup addString(String string) {
-			rules.add(new Rule(StringUtils.unescapeString(string)));
+			rules.add(new Rule(string));
 			return this;
 		}
 		
 		public SymbolGroup addStrings(String... strings) {
 			for(String string : strings) {
-				rules.add(new Rule(StringUtils.unescapeString(string)));
+				rules.add(new Rule(string));
 			}
 			return this;
 		}
@@ -315,14 +334,14 @@ public class Tokenizer implements Serializable {
 		protected final String string;
 		
 		private Rule(String open, String escape, String close) {
-			String S = StringUtils.regexEscape(StringUtils.unescapeString(open));
-			String C = StringUtils.regexEscape(StringUtils.unescapeString(close));
+			String S = StringUtils.regexEscape(open);
+			String C = StringUtils.regexEscape(close);
 			
 			String regex;
 			if(escape.isEmpty()) {
 				regex = S + ".*?" + C;
 			} else {
-				String E = StringUtils.regexEscape(StringUtils.unescapeString(escape));
+				String E = StringUtils.regexEscape(escape);
 				regex = S + "(?:" + E + "(?:" + E + "|" + C + "|(?!" + C + ").)|(?!" + E + "|" + C + ").)*" + C;
 			}
 			
@@ -364,9 +383,9 @@ public class Tokenizer implements Serializable {
 		public String getDefaultGroup() { return tokenizer.defaultGroup; }
 		public boolean hasAutoDiscard() { return tokenizer.autoDiscard; }
 		public Tokenizer getImmutableTokenizer() { return this; }
-		public List<TokenizerSymbol> parse(String string, Charset charset) { return tokenizer.parse(string, charset); }
-		public List<TokenizerSymbol> parse(String string) { return tokenizer.parse(string); }
-		public List<TokenizerSymbol> parse(byte[] bytes) { return tokenizer.parse(bytes); }
+		public Token parse(String string, Charset charset) { return tokenizer.parse(string, charset); }
+		public Token parse(String string) { return tokenizer.parse(string); }
+		public Token parse(byte[] bytes) { return tokenizer.parse(bytes); }
 		public boolean equals(Object obj) { return Objects.equals(tokenizer, obj); }
 		public int hashCode() { return tokenizer.hashCode(); }
 		public String toString() { return tokenizer.toString(); }

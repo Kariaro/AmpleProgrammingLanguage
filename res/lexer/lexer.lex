@@ -1,4 +1,4 @@
-# Lexer file
+# This is the lexer file for the programming language
 
 TOKEN: ['.']
 
@@ -6,17 +6,11 @@ TOKEN: ['.']
 %DISCARD COMMENT: %DELIMITER('/*', '', '*/')
                   ['//[^\r\n]*']
 
-#COMPILER: ['#[a-zA-Z_][a-zA-Z0-9_]*']
 IDENTIFIER: ['[a-zA-Z_][a-zA-Z0-9_]*']
 
-DELIMITER:	
-#'{' '}' '(' ')' '[' ']'
-#'.' ';' ',' ':' '?'
-			'+=' '-=' '*=' '/=' '%=' '^=' '>>=' '<<='
+DELIMITER:	'+=' '-=' '*=' '/=' '%=' '^=' '>>=' '<<='
 			'>>' '<<' '++' '--' '&=' '|='
-#'+' '-' '*' '/' '%' '^' '&' '~'
 			'||' '&&' '==' '>=' '<=' '!='
-#'>' '<' '=' '|'
 
 STRING: %DELIMITER('\"', '\\', '\"')
 CHAR: %DELIMITER('\'', '\\', '\'')

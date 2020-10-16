@@ -3,12 +3,14 @@ package hardcoded.lexer;
 import java.util.Objects;
 
 /**
- * This is a dual linked list.
+ * This {@code Token} class contains data about syntax read from
+ * a file or string.
  * 
  * @author HardCoded
  */
 public class Token {
 	// TODO: Maybe use the words trailing? leading?
+	protected final boolean discard;
 	protected final String value;
 	protected String group;
 	protected Token prev;
@@ -18,9 +20,18 @@ public class Token {
 	protected int column;
 	protected int fileOffset;
 	
-	protected Token(String value, String group) {
-		this.value = value;
+	protected Token() {
+		value = null;
+		discard = true;
+	}
+	
+	protected Token(String group, String value, boolean discard, int lineIndex, int columnIndex, int fileOffset) {
 		this.group = group;
+		this.value = value;
+		this.discard = discard;
+		this.line = lineIndex;
+		this.column = columnIndex;
+		this.fileOffset = fileOffset;
 	}
 	
 	public int line() {
@@ -60,19 +71,16 @@ public class Token {
 	 * @return the nth-next token or null if the count was greater than the number of remaining tokens
 	 */
 	public Token next(int count) {
-		Token token = this;
-		for(int i = 0; i < count; i++) {
-			token = token.next;
-			if(token == null) return null;
-		}
-		return token;
+		if(count <= 0)
+			return this;
+		
+		return next.next(count - 1);
 	}
 	
 	/**
 	 * Get the previous token.
 	 */
 	public Token prev() {
-		
 		return prev;
 	}
 	
@@ -82,12 +90,10 @@ public class Token {
 	 * @return the nth-previous token or null if the count was greater than the length of the chain
 	 */
 	public Token prev(int count) {
-		Token token = this.prev;
-		for(int i = 0; i < count; i++) {
-			token = token.prev;
-			if(token == null) return null;
-		}
-		return token;
+		if(count <= 0)
+			return this;
+		
+		return prev.prev(count - 1);
 	}
 	
 	/**
@@ -113,13 +119,8 @@ public class Token {
 	 * Get the number of remaining tokens in the chain.
 	 */
 	public int remaining() {
-		Token token = this;
-		int index = 0;
-		while(token.next != null) {
-			token = token.next;
-			index++;
-		}
-		return index;
+		if(next == null) return 0;
+		return next.remaining() + 1;
 	}
 	
 	public boolean equals(Object obj) {
