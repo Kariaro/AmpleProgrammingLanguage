@@ -17,8 +17,8 @@ public final class Modifiers {
 	
 	/**
 	 * Checks if the string value is a modifier.
-	 * @param value
-	 * @return true if the string value was a modifier.
+	 * @param	value
+	 * @return	{@code true} if the string value was a modifier
 	 */
 	public static boolean contains(String value) {
 		for(Modifier modifier : MODIFIERS) {
@@ -37,7 +37,7 @@ public final class Modifiers {
 	
 	/**
 	 * Returns a list with all modifiers inside of it.
-	 * @return A list with all modifiers.
+	 * @return a list with all modifiers
 	 */
 	public static List<Modifier> getAllModifiers() {
 		return Collections.unmodifiableList(Arrays.asList(MODIFIERS));
@@ -69,5 +69,4 @@ public final class Modifiers {
 			return name;
 		}
 	}
-
 }

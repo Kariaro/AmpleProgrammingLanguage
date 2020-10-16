@@ -29,6 +29,10 @@ import hardcoded.utils.StringUtils;
 public class ParseTreeGenerator {
 	private static final Tokenizer LEXER;
 	
+	// FIXME: Add global variables
+	// FIXME: Add non const arrays
+	// FIXME: Add break and continue keywords
+	
 	static {
 		Tokenizer lexer = null;
 		

@@ -39,7 +39,8 @@ public abstract class Visualization {
 	
 	/**
 	 * Shows the visualization with the specified arguments.
-	 * @param parameters
+	 * 
+	 * @param	parameters
 	 */
 	public abstract void show(Object... parameters);
 	

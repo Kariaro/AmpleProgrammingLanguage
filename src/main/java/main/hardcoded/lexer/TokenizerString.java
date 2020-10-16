@@ -12,8 +12,9 @@ final class TokenizerString implements CharSequence {
 	/**
 	 * Create a new TokenizerString that is used by the lexer.
 	 * 
-	 * @param bytes
-	 * @throws NullPointerException if the array was null
+	 * @param	bytes
+	 * @throws	NullPointerException
+	 * 			if the array was {@code null}
 	 */
 	public TokenizerString(byte[] bytes) {
 		this.bytes = bytes.clone();

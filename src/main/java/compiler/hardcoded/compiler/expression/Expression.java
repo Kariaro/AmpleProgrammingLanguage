@@ -42,8 +42,8 @@ public interface Expression extends Printable {
 	
 	/**
 	 * Retruns the child node at the specified position.
-	 * @param index the index of the child node in this list
-	 * @return the child node at the specified position
+	 * @param	index the index of the child node in this list
+	 * @return	the child node at the specified position
 	 */
 	public Expression get(int index);
 	
@@ -81,7 +81,9 @@ public interface Expression extends Printable {
 		return getElements().get(length() - 1);
 	}
 	
-	/** This is true if the expression can be reduced while compiling. */
+	/**
+	 * This is true if the expression can be reduced while compiling.
+	 */
 	public default boolean isPure() {
 		List<Expression> list = getElements();
 		if(list != null) {
@@ -123,6 +125,7 @@ public interface Expression extends Printable {
 		return false;
 	}
 	
+	// TODO: Change this documentation to something easier to understand.
 	/**
 	 * Calculate the size of the nummerical size that this expression might hold.<br>
 	 * <code>1L + 3 = (long)1 + (int)3 = (long)</code>

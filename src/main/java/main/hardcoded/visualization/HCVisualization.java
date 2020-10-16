@@ -148,7 +148,6 @@ public final class HCVisualization extends Visualization {
 					offset = 0;
 					
 					for(Object obj : stab.asList()) {
-						// System.out.println("object: " + object.getClass() + ",    [" + obj + "] [" + obj.getClass() + "]");
 						Element e = new Element(this, obj);
 						e.move(offset, 140);
 						offset += e.offset;

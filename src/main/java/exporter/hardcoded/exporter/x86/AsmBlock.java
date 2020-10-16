@@ -12,18 +12,17 @@ import hardcoded.exporter.impl.CodeBlockType;
 /**
  * There are three types of assembly blocks.
  * 
- *<pre>
+ *<PRE>
  *(0): Data blocks that contain a map linking a label and some data.
  *(1): Jump blocks that contain single instructions with a label offset.
  *(2): Inst blocks that contain basic assembly instructions.
  *(3): Label block that contains a name.
- *</pre>
+ *</PRE>
  *
  *
  *@author HardCoded
  */
 class AsmBlock {
-	// Contains instructions...
 	protected List<IRInstruction> list = new ArrayList<>();
 	protected List<AsmInst> assembly = new ArrayList<>();
 	protected int[] compiled_code;

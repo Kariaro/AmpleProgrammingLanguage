@@ -38,7 +38,7 @@ public final class IntBuffer {
 	/**
 	 * Returns the value of the array at the current {@code index} pointer.
 	 * @param	offset	the offset from the {@code index} pointer
-	 * @return the value of the array at the current {@code index} pointer
+	 * @return	the value of the array at the current {@code index} pointer
 	 */
 	public int read(int offset) {
 		return array[index + offset];

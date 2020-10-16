@@ -42,8 +42,8 @@ public final class Primitives {
 	
 	/**
 	 * Checks if the string is a primitive type.
-	 * @param value
-	 * @return true if the string was a primitive type.
+	 * @param	value
+	 * @return	{@code true} if the string was a primitive type
 	 */
 	public static boolean contains(String value) {
 		for(HighType t : PRIMITIVE) {
@@ -55,8 +55,8 @@ public final class Primitives {
 	
 	/**
 	 * Get the primitive datatype with a specified name.
-	 * @param value
-	 * @return the primitive if found otherwise null.
+	 * @param	value
+	 * @return	the primitive if found otherwise {@code null}
 	 */
 	public static HighType getType(String value) {
 		for(HighType t : PRIMITIVE) {
@@ -68,7 +68,7 @@ public final class Primitives {
 	
 	/**
 	 * Returns a unmodifiable set with all primitives inside of it.
-	 * @return the set of primitives.
+	 * @return a unmodifiable set with all primitives inside of it
 	 */
 	public static Set<HighType> getAllTypes() {
 		return PRIMITIVE;

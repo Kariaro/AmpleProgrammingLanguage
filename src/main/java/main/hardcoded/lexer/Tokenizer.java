@@ -9,11 +9,9 @@ import java.util.regex.Pattern;
 
 import hardcoded.utils.StringUtils;
 
-// TODO: Work a bit more with the tokenizer classes!
-
 /**
- * This is a lexer class. This class takes a string input or byte input and outputs
- * a list of tokens generated from the set of rules that this lexer has goten.
+ * This {@code Tokenizer} class reads an input string and outputs a {@code Token}
+ * generated from each rule inside this tokenizer.
  * 
  * @author HardCoded
  */
@@ -49,8 +47,8 @@ public class Tokenizer implements Serializable {
 	/**
 	 * Add a new symbol group to this tokenizer.
 	 * 
-	 * @param name
-	 * @return a new symbol group.
+	 * @param	name
+	 * @return	a new symbol group
 	 */
 	public SymbolGroup add(String name) {
 		return add(name, false);
@@ -59,9 +57,9 @@ public class Tokenizer implements Serializable {
 	/**
 	 * Add a new symbol group to this tokenizer.
 	 * 
-	 * @param name
-	 * @param discard
-	 * @return a new symbol group.
+	 * @param	name
+	 * @param	discard
+	 * @return	a new symbol group
 	 */
 	public SymbolGroup add(String name, boolean discard) {
 		if(contains(name)) return null;
@@ -74,7 +72,7 @@ public class Tokenizer implements Serializable {
 	
 	/**
 	 * Set if the lexer should automaticly remove all tokens that has the discard flag.
-	 * @param enable
+	 * @param	enable
 	 */
 	public void setAutoDiscard(boolean enable) {
 		autoDiscard = enable;
@@ -86,8 +84,8 @@ public class Tokenizer implements Serializable {
 	
 	/**
 	 * Get a group from this tokenizer.
-	 * @param name the group name.
-	 * @return the group that matched the name.
+	 * @param	name	the group name
+	 * @return	the group that matched the name
 	 */
 	public SymbolGroup get(String name) {
 		return groups.get(name);
@@ -95,8 +93,8 @@ public class Tokenizer implements Serializable {
 	
 	/**
 	 * Remove a group from this tokenizer.
-	 * @param name the group name
-	 * @return true if the group was found and removed.
+	 * @param	name	the group name
+	 * @return	{@code true} if the group was found and removed
 	 */
 	public boolean remove(String name) {
 		return groups.remove(name) != null;
@@ -104,8 +102,8 @@ public class Tokenizer implements Serializable {
 	
 	/**
 	 * Check if this tokenizer contains this group.
-	 * @param name the group name.
-	 * @return true if the tokenizer found the item.
+	 * @param	name	the group name
+	 * @return	{@code true} if the tokenizer found the item
 	 */
 	public boolean contains(String name) {
 		return groups.containsKey(name);
@@ -132,9 +130,10 @@ public class Tokenizer implements Serializable {
 	/**
 	 * Parse a string into a list of symbols using the charset ISO_8859_1.
 	 * 
-	 * @param string
-	 * @return a list of symbols.
-	 * @throws NullPointerException if the string was null.
+	 * @param	string
+	 * @return	a list of symbols
+	 * @throws	NullPointerException
+	 * 			if the string was {@code null}
 	 */
 	public Token parse(String string) {
 		return parse(string.getBytes(StandardCharsets.ISO_8859_1));
@@ -143,9 +142,10 @@ public class Tokenizer implements Serializable {
 	/**
 	 * Parse a string into a list of symbols using the specified charset.
 	 * 
-	 * @param string
-	 * @return a list of symbols.
-	 * @throws NullPointerException if the string was null.
+	 * @param	string
+	 * @return	a list of symbols.
+	 * @throws	NullPointerException
+	 * 			if the string was {@code null}
 	 */
 	public Token parse(String string, Charset charset) {
 		return parse(string.getBytes(charset));
@@ -155,8 +155,8 @@ public class Tokenizer implements Serializable {
 	 * Parse a byte array into a list of symbols using
 	 * the patterns given to this lexer.
 	 * 
-	 * @param bytes
-	 * @return a list of symbols.
+	 * @param	bytes
+	 * @return	a list of symbols
 	 */
 	public Token parse(byte[] bytes) {
 		TokenizerString string = new TokenizerString(bytes);

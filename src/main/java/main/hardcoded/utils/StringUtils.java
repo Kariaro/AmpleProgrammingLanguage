@@ -41,7 +41,7 @@ public final class StringUtils {
 	 * @param	base	the custom base
 	 * @return	a {@code number} written with a custom base.
 	 * @throws	NullPointerException
-	 * 			if the base was null
+	 * 			if the base was {@code null}
 	 * @throws	IllegalArgumentException
 	 * 			if the base string had a length less than 2
 	 */
@@ -74,7 +74,7 @@ public final class StringUtils {
 	 * 					
 	 * @return	a string of a {@code number} written in a custom base
 	 * @throws	NullPointerException
-	 * 			if the base string was null
+	 * 			if the base string was {@code null}
 	 * @throws	IllegalArgumentException
 	 * 			if the base string had a length less than 2
 	 */
@@ -110,9 +110,9 @@ public final class StringUtils {
 	/**
 	 * Convertes all instances of <code>[\'] [\"] [\\] [\r] [\n] [\b] [\t] [\x..] [&bsol;u....]</code> to the correct character.
 	 * 
-	 * @param string
-	 * @return the unescaped string
-	 * @throws MalformedEscapeException
+	 * @param	string
+	 * @return	the unescaped string
+	 * @throws	MalformedEscapeException
 	 */
 	public static String unescapeString(String string) {
 		if(string == null) return null;
@@ -217,8 +217,8 @@ public final class StringUtils {
 	
 	/**
 	 * Escapes a string so that it becomes regex safe.
-	 * @param string
-	 * @return
+	 * @param	string
+	 * @return	
 	 */
 	public static String regexEscape(String string) {
 		if(string == null) return null;
@@ -274,19 +274,19 @@ public final class StringUtils {
 	/**
 	 * Converts a number into a hex string with a given minimum length.
 	 * 
-	 * @param value the value to be converted to a hex string.
-	 * @param length the minimum length of that hex string.
-	 * @return the returned hex string.
+	 * @param	value	the value to be converted to a hex string
+	 * @param	length	the minimum length of that hex string
+	 * @return	the returned hex string
 	 */
 	public static String toHexString(long value, int length) {
 		if(length < 1) throw new IllegalArgumentException("The minimum length of the returned string cannot be less than one.");
 		return String.format("%0" + length + "x", value);
 	}
 	
+	// NOTE: Why is this printHexString method not using a byte array?
 	public static String printHexString(CharSequence separator, int[] array) {
 		if(array == null || array.length == 0) return "";
 		StringBuilder sb = new StringBuilder();
-		// TODO: Byte array????
 		for(int i : array) {
 			sb.append(separator).append(String.format("%02x", i & 0xff));
 		}

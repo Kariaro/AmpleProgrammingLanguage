@@ -27,11 +27,13 @@ public final class Operators {
 	/**
 	 * Checks if the string value is an assignment operator.<br>
 	 * An assignment operator can be one of the following values.<br>
-	 *<pre>&lt&lt=  &gt&gt=    =
+	 *<PRE>
+	 *&lt&lt=  &gt&gt=    =
 	 * +=   -=   *=   /=
-	 * %=   &=   ^=   |=</pre>
-	 * @param value
-	 * @return true if the string value was an assignment operator.
+	 * %=   &=   ^=   |=
+	 *</PRE>
+	 * @param	value
+	 * @return	{@code true} if the string value was an assignment operator
 	 */
 	public static boolean isAssignmentOperator(String value) {
 		return ASSIGNMENT.contains(value);

@@ -117,5 +117,8 @@ public final class ExpressionParser {
 	}
 }
 
-/** Temporary interface to tell the dev that this operation is unsigned safe meaning that the operation wont change depending on sign */
+/**
+ * Temporary interface to tell the dev that this operation is unsigned
+ * safe meaning that the operation wont change depending on sign.
+ */
 @interface UnsignedSafe {}
