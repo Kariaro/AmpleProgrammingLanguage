@@ -68,13 +68,17 @@ public class Token {
 	/**
 	 * Get the nth-next token.
 	 * @param count a value of one will give the same result as calling {@link #next()}
-	 * @return the nth-next token or null if the count was greater than the number of remaining tokens
+	 * @return the nth-next token or {@code null} if the count was greater than the number of remaining tokens
 	 */
 	public Token next(int count) {
 		if(count <= 0)
 			return this;
 		
-		return next.next(count - 1);
+		Token token = this;
+		while(count-- > 0)
+			token = token.next;
+		
+		return token;
 	}
 	
 	/**
@@ -87,13 +91,18 @@ public class Token {
 	/**
 	 * Get the nth-previous token.
 	 * @param count a value of one will give the same result as calling {@link #prev()}
-	 * @return the nth-previous token or null if the count was greater than the length of the chain
+	 * @return the nth-previous token or {@code null} if the count was greater than the length of the chain
 	 */
 	public Token prev(int count) {
 		if(count <= 0)
 			return this;
 		
-		return prev.prev(count - 1);
+
+		Token token = this;
+		while(count-- > 0)
+			token = token.prev;
+		
+		return token;
 	}
 	
 	/**
@@ -120,7 +129,13 @@ public class Token {
 	 */
 	public int remaining() {
 		if(next == null) return 0;
-		return next.remaining() + 1;
+		int result = 0;
+		Token token = next;
+		while(token != null) {
+			result++;
+			token = token.next;
+		}
+		return result;
 	}
 	
 	public boolean equals(Object obj) {

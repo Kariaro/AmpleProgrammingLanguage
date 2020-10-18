@@ -15,7 +15,7 @@ Some formats that this compiler will support.
 
 Here is an example of the syntax:
 
-```
+```cpp
 void print(int v);
 
 void main() {

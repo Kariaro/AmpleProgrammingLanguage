@@ -120,7 +120,7 @@ public final class Utils {
 	
 	public static class IRListIterator implements ListIterator<IRInstruction> {
 		private final ListIterator<IRInstruction> iterator;
-		private final List<IRInstruction> list;
+		public final List<IRInstruction> list;
 		
 		private IRListIterator(List<IRInstruction> list) {
 			this.list = list;

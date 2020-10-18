@@ -40,6 +40,8 @@ public enum CompilerError {
 	
 	
 	FLOATING_TYPES_NOT_IMPLEMENTED("Float data types are not implemented yet"),
+	
+	EXPRESSION_NESTED_TOO_DEEP("Expression was nested too deep.");
 	;
 	
 	public final String message;
