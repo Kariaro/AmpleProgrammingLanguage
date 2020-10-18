@@ -7,12 +7,37 @@ import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import hardcoded.compiler.constants.Atom;
 import hardcoded.compiler.expression.LowType;
 import hardcoded.compiler.instruction.IRInstruction.*;
 import hardcoded.utils.StringUtils;
 
+/**
+ * TODO: Generated strings should be put into categories like
+ *<PRE>
+ *Each compiler made label should be written with this pattern
+ *
+ *First byte:
+ *....    | Type   if, for, while, switch, cor, cand
+ *    ....| Id     specific id that tells what type of label it is.
+ *=========
+ *
+ *Second byte:
+ *VarInt index.
+ *
+ *Each user made label is written with this pattern
+ *
+ *1111    | Type
+ *    ....| Reserved
+ *=========
+ *VarInt string_index
+ *
+ *</PRE>
+ * 
+ */
 public final class IRSerializer {
 	private static final int MAGIC = 0x52494C48; // 'HLIR'
 	
@@ -96,35 +121,45 @@ public final class IRSerializer {
 		writeLong(context.creationDate);
 	}
 	
+	private void writeLabelParam(LabelParam param) throws IOException {
+		if(param.isTemporary()) {
+			int[] parts = IO.getBytesFromLabelName(param.getName());
+			writeByte(parts[0]);
+			writeVarInt(parts[1]);
+		} else {
+			writeString(param.getName());
+		}
+	}
+	
 	private void writeParam(Param param) throws IOException {
 		if(param == IRInstruction.NONE) {
+			// TODO: Only allowed in call PARAMS
 			writeByte(0);
-		} else if(param instanceof IRInstruction.Reg) {
+		} else if(param instanceof Reg) {
 			writeByte(1);
 			writeLowType(param.getSize());
 			writeVarInt(param.getIndex());
 			writeString(param.getName());
-		} else if(param instanceof IRInstruction.RefReg) {
+		} else if(param instanceof RefReg) {
 			writeByte(2);
 			writeVarInt(param.getIndex());
 			writeString(param.getName());
-		} else if(param instanceof IRInstruction.NumberReg) {
+		} else if(param instanceof NumberReg) {
 			writeByte(3);
 			writeLowType(param.getSize());
-			writeVarLong(((IRInstruction.NumberReg) param).getValue());
-		} else if(param instanceof IRInstruction.DataParam) {
+			writeVarLong(((NumberReg)param).getValue());
+		} else if(param instanceof DataParam) {
 			writeByte(4);
 			writeVarInt(param.getIndex());
-			writeString("" + ((IRInstruction.DataParam) param).getValue());
-		} else if(param instanceof IRInstruction.FunctionLabel) {
+			writeString("" + ((DataParam)param).getValue());
+		} else if(param instanceof FunctionLabel) {
 			writeByte(5);
 			writeLowType(param.getSize());
 			writeString(param.getName());
-		} else if(param instanceof IRInstruction.LabelParam) {
+		} else if(param instanceof LabelParam) {
 			writeByte(6);
-			writeByte(((IRInstruction.LabelParam)param).isTemporary() ? 1:0);
-			writeString(param.getName());
-		} else if(param instanceof IRInstruction.DebugParam) {
+			writeLabelParam((LabelParam)param);
+		} else if(param instanceof DebugParam) {
 			writeByte(7);
 			writeString("" + ((DebugParam)param).getValue());
 		} else {
@@ -134,6 +169,15 @@ public final class IRSerializer {
 	
 	private void writeInstruction(IRInstruction inst) throws IOException {
 		writeByte(inst.op.ordinal());
+		
+		switch(inst.op) {
+			case br:
+			case label: {
+				writeLabelParam((LabelParam)inst.getParam(0));
+				return;
+			}
+			default:
+		}
 		
 		if(inst.op.args < 0)
 			writeByte(inst.getNumParams());
@@ -190,32 +234,33 @@ public final class IRSerializer {
 	public static void write(IRProgram program, OutputStream out) throws IOException {
 		IRSerializer serial = new IRSerializer();
 		byte[] buffer = processWrite(serial, program);
+		// buffer = encodeGzip(buffer);
 		
 		serial.out = out;
 		serial.writeInt(MAGIC);
-		serial.writeBytes(buffer);//encodeGzip(buffer));
+		serial.writeBytes(buffer);
 	}
 	
-//	private static byte[] encodeGzip(byte[] input) throws IOException {
-//		ByteArrayOutputStream output = new ByteArrayOutputStream();
-//		GZIPOutputStream stream = new GZIPOutputStream(output);
-//		stream.write(input);
-//		stream.close();
-//		return output.toByteArray();
-//	}
-//	
-//	private static byte[] decodeGzip(InputStream stream) throws IOException {
-//		ByteArrayOutputStream bs = new ByteArrayOutputStream();
-//		GZIPInputStream gzip = new GZIPInputStream(stream);
-//		
-//		byte[] buffer = new byte[4096];
-//		int readBytes = 0;
-//		while((readBytes = gzip.read(buffer)) != -1) {
-//			bs.write(buffer, 0, readBytes);
-//		}
-//		
-//		return buffer;
-//	}
+	private static byte[] encodeGzip(byte[] input) throws IOException {
+		ByteArrayOutputStream output = new ByteArrayOutputStream();
+		GZIPOutputStream stream = new GZIPOutputStream(output);
+		stream.write(input);
+		stream.close();
+		return output.toByteArray();
+	}
+	
+	private static ByteArrayInputStream decodeGzip(InputStream stream) throws IOException {
+		ByteArrayOutputStream bs = new ByteArrayOutputStream();
+		GZIPInputStream gzip = new GZIPInputStream(stream);
+		
+		byte[] buffer = new byte[4096];
+		int readBytes = 0;
+		while((readBytes = gzip.read(buffer)) != -1) {
+			bs.write(buffer, 0, readBytes);
+		}
+		
+		return new ByteArrayInputStream(bs.toByteArray());
+	}
 	
 	// ================================================================================================ //
 	// ================================================================================================ //
@@ -302,6 +347,21 @@ public final class IRSerializer {
 		return context;
 	}
 	
+	private LabelParam readLabelParam() throws IOException {
+		int head = readUByte();
+		int type = head >> 4;
+		
+		if(type == 0xf) {
+			// USER LABEL
+			return new LabelParam(readString(), false, null);
+		} else {
+			String name = "_" + IO.getStringFromType(head)
+						+ "_" + readVarInt();
+			
+			return new LabelParam(name, true, null);
+		}
+	}
+	
 	private Param readParam() throws IOException {
 		int type = readUByte();
 		
@@ -334,9 +394,7 @@ public final class IRSerializer {
 				return new FunctionLabel(name, size);
 			}
 			case 6: {
-				boolean isTemporary = readUByte() != 0;
-				String name = readString();
-				return new LabelParam(name, isTemporary, null);
+				return readLabelParam();
 			}
 			case 7: return new DebugParam(readString());
 			default: {
@@ -347,6 +405,18 @@ public final class IRSerializer {
 	
 	private IRInstruction readInstruction() throws IOException {
 		IRType op = IRType.values()[readUByte()];
+		
+		// Quick
+		switch(op) {
+			case br:
+			case label: {
+				IRInstruction inst = new IRInstruction(op);
+				inst.params.add(readLabelParam());
+				return inst;
+			}
+			default:
+		}
+		
 		int num_params = op.args;
 		if(num_params < 0) {
 			num_params = readVarInt();
@@ -388,7 +458,7 @@ public final class IRSerializer {
 	}
 	
 	private static IRProgram processRead(IRSerializer serial, InputStream stream) throws IOException {
-		serial.in = stream;//new ByteArrayInputStream(decodeGzip(stream));
+		serial.in = stream; //decodeGzip(stream);
 		
 		int num_strings = serial.readVarInt();
 		for(int i = 0; i < num_strings; i++) {
@@ -492,6 +562,101 @@ public final class IRSerializer {
 }
 
 class Converter {
+	static final int IF_TYPE		= 0x0;
+	static final int FOR_TYPE		= 0x1;
+	static final int WHILE_TYPE		= 0x2;
+	static final int SWITCH_TYPE	= 0x3;
+	static final int COR_TYPE		= 0x4;
+	static final int CAND_TYPE		= 0x5;
+	// RESERVED
+	static final int USER_TYPE		= 0xf;
+	
+	static int[] getByteFromLabelName(String name) {
+		// Remove dash
+		name = name.substring(1);
+		
+		// [ type, number ]
+		String[] parts = name.split("_");
+		
+		String part = parts[0];
+		int index = Integer.valueOf(parts[1]);
+		int header = -1;
+		
+		switch(part) {
+			case "if.end":		header = (IF_TYPE << 4) | 0; break;
+			case "if.else":		header = (IF_TYPE << 4) | 1; break;
+			
+			case "for.next":	header = (FOR_TYPE << 4) | 0; break;
+			case "for.loop":	header = (FOR_TYPE << 4) | 1; break;
+			case "for.end":		header = (FOR_TYPE << 4) | 2; break;
+			
+			case "while.next":	header = (WHILE_TYPE << 4) | 0; break;
+			case "while.loop":	header = (WHILE_TYPE << 4) | 1; break;
+			case "while.end":	header = (WHILE_TYPE << 4) | 2; break;
+			
+			// switch
+			
+			case "cor.end":		header = (COR_TYPE << 4) | 0; break;
+			case "cand.end":	header = (CAND_TYPE << 4) | 0; break;
+		}
+		
+		if(header < 0) {
+			throw new IllegalArgumentException("The compiler label '" + part + "' is undefined");
+		}
+		
+		return new int[] { header, index };
+	}
+	
+	static String getLabelTypeName(int type) {
+		switch(type) {
+			case IF_TYPE: return "if";
+			case FOR_TYPE: return "for";
+			case WHILE_TYPE: return "while";
+			case SWITCH_TYPE: return "switch";
+			case COR_TYPE: return "cor";
+			case CAND_TYPE: return "cand";
+			
+			// Reserved
+			case USER_TYPE: return "";
+		}
+		
+		throw new IllegalArgumentException("The type '" + type + "' is undefined");
+	}
+	
+	static String getTypeString(int type, int id) {
+		String typeName = getLabelTypeName(type);
+		switch(type) {
+			case IF_TYPE: {
+				switch(id) {
+					case 0: return typeName + ".end";
+					case 1: return typeName + ".else";
+				}
+				break;
+			}
+			case WHILE_TYPE:
+			case FOR_TYPE: {
+				switch(id) {
+					case 0: return typeName + ".next";
+					case 1: return typeName + ".loop";
+					case 2: return typeName + ".end";
+				}
+				break;
+			}
+			case SWITCH_TYPE: {
+				// Not implemented yet
+				break;
+			}
+			
+			case CAND_TYPE:
+			case COR_TYPE: {
+				if(id == 0) return typeName + ".end";
+				break;
+			}
+		}
+		
+		throw new IllegalArgumentException("The type '" + getLabelTypeName(type) + "' does not have the id '" + id + "'");
+	}
+	
 	static byte getLowType(LowType type) {
 		// ..          : type   I, U, F, <object>
 		//    .        : is_pointer
@@ -541,7 +706,7 @@ class Converter {
 		int type_field = (field & 0b11_000000) >>> 6;
 		int size_field = (field & 0b111_00) >>> 2;
 		int size = ((int)Math.pow(2, size_field)) / 2;
-		boolean isPointer  = (field & 0b1_00000) != 0;
+		boolean isPointer = (field & 0b1_00000) != 0;
 		
 		if(type_field == 3) {
 			// Custom one..
@@ -555,5 +720,58 @@ class Converter {
 			Atom.get(size, !isUnsigned, isFloating),
 			isPointer ? 1:0
 		);
+	}
+}
+
+class IO {
+	private static Map<String, Integer> map;
+	private static final int IF_LABEL		= 0x0 << 4,
+							 FOR_LABEL		= 0x1 << 4,
+							 WHILE_LABEL	= 0x2 << 4,
+							 SWITCH_LABEL	= 0x3 << 4,
+							 COR_LABEL		= 0x4 << 4,
+							 CAND_LABEL		= 0x5 << 4,
+							 /* Reserved */
+							 USER_LABEL		= 0xf << 4;
+	
+	static {
+		Map<String, Integer> m = new HashMap<>();
+		map = Collections.unmodifiableMap(m);
+		m.put("if.end", IF_LABEL | 0);
+		m.put("if.else", IF_LABEL | 1);
+		
+		m.put("for.next", FOR_LABEL | 0);
+		m.put("for.loop", FOR_LABEL | 1);
+		m.put("for.end", FOR_LABEL | 2);
+		
+		m.put("while.next", WHILE_LABEL | 0);
+		m.put("while.loop", WHILE_LABEL | 1);
+		m.put("while.end", WHILE_LABEL | 2);
+		
+		// Switch_label
+		
+		m.put("cor.end", COR_LABEL | 0);
+		m.put("cand.end", CAND_LABEL | 0);
+	}
+	
+	static int[] getBytesFromLabelName(String name) {
+		// Remove dash
+		name = name.substring(1);
+		
+		// [ type, number ]
+		String[] parts = name.split("_");
+		
+		return new int[] {
+			map.get(parts[0]),
+			Integer.valueOf(parts[1])
+		};
+	}
+	
+	static String getStringFromType(int read) {
+		for(String key : map.keySet()) {
+			if(map.get(key) == read) return key;
+		}
+		
+		throw new NullPointerException("Could not find label '" + read + "' /");
 	}
 }

@@ -233,6 +233,11 @@ public class IRInstruction {
 			this.name = name;
 		}
 		
+		public boolean equals(Object obj) {
+			if(!(obj instanceof LabelParam)) return false;
+			LabelParam param = (LabelParam)obj;
+			return name.equals(param.name) && isTemporary == param.isTemporary;
+		}
 		
 		public boolean isTemporary() {
 			return isTemporary;
@@ -268,8 +273,8 @@ public class IRInstruction {
 	protected IRType op = IRType.nop;
 	
 	// TODO: Find a way to calculate the size of a instruction duing the generation/optimization stage.
-	@Deprecated
-	private LowType size;
+//	@Deprecated
+//	private LowType size;
 	
 	public IRInstruction() {
 		
@@ -320,15 +325,8 @@ public class IRInstruction {
 	public LowType getSize() {
 		// TODO: Cache the size with the local size variable
 		if(params.isEmpty()) return null;
-		
 		if(op == IRType.call) return params.get(1).getSize();
-		
-		if(op == IRType.brz
-		|| op == IRType.bnz
-		|| op == IRType.br) {
-			return null;
-		}
-		
+		if(op == IRType.brz || op == IRType.bnz || op == IRType.br) return null;
 		return params.get(0).getSize();
 	}
 	

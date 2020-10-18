@@ -36,22 +36,22 @@ public class ParseTreeOptimizer {
 			Function func = (Function)block;
 			
 			Utils.execute_for_all_expressions(func, (parent, index, function) -> {
-				String bef = "" + parent.get(index);
+				//String bef = "" + parent.get(index);
 				constantFolding(parent, index, function);
 				
-				String now = "" + parent.get(index);
-				
-				if(!bef.equals(now)) {
-					vs.show(current_program);
-					vs.getComponent().repaint();
-					try {
-						// Thread.sleep(1000);
-					} catch(Exception e) {
-						e.printStackTrace();
-					}
-					
-					// System.out.println("[" + index + "] (" + bef + ")\n[" + index + "] (" + now + ")\n");
-				}
+//				String now = "" + parent.get(index);
+//				
+//				if(!bef.equals(now)) {
+//					vs.show(current_program);
+//					vs.getComponent().repaint();
+//					try {
+//						// Thread.sleep(1000);
+//					} catch(Exception e) {
+//						e.printStackTrace();
+//					}
+//					
+//					// System.out.println("[" + index + "] (" + bef + ")\n[" + index + "] (" + now + ")\n");
+//				}
 			});
 			
 			Utils.execute_for_all_statements(func, (parent, index, function) -> {

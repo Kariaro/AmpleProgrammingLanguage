@@ -4,36 +4,46 @@ import java.util.*;
 
 import hardcoded.compiler.constants.Utils;
 import hardcoded.compiler.constants.Utils.IRListIterator;
-import hardcoded.compiler.instruction.IRInstruction.NumberReg;
-import hardcoded.compiler.instruction.IRInstruction.Param;
-import hardcoded.compiler.instruction.IRInstruction.Reg;
+import hardcoded.compiler.instruction.IRInstruction.*;
 
 public class IntermediateCodeOptimizer {
-	// TODO: Pass through label optimization
-	//   If some branch instruction jumps to a label that only contains a unconditional instruction
-	// then jump to the target's location.
-	// =====================
-	//   br [some_label]
-	//     ...
-	// some_label:
-	//   br [another]
-	//
-	// Should become:
-	// =====================
-	//   br [another]
-	//     ...
-	// some_label:
-	//   br [another]
-	
-	// TODO: Dead code optimization
-	//   If an instruction is inside a code block that will never be entered or if a
-	//   label is never jumped to or is proceeded by another label it should be removed.
-	
 	// TODO: Tail recursion optimization
 	
-	public IntermediateCodeOptimizer() {
-		
-	}
+	// TODO: Unused write optimization
+	//   If a instruction changes the value of a register and is later changed with mov
+	//   inside the same label region. Then the initial mov instruction should be removed.
+	
+	// TODO: Unused code optimization
+	//   If code that does not write to memory, alter some other state of the program or
+	//   affect the output of the function is found inside a function. Then it should be
+	//   removed.
+	
+	// TODO: Reuse read optimization
+	//   If a read instruction reads to a register from some memory and another instruction
+	//   later inside the same block read from the same memory address. If the original
+	//   register has not been changed the second read instructions register should be
+	//   replaced with the original register.
+	
+	// TODO: Compacting optimization
+	//   not [$B], [$A]
+	//   mul [$C], [$B], [1]
+	// Becomes
+	//   mul [$C], [$A], [-1]
+	
+	// TODO: Constant traversal optimization
+	//   If some instruction does some logic addition after beeing reset it can be
+	//   optimized to just hold the value of the operation.
+	//
+	//   mov [$B], [3]
+	//   add [$B], [$B], [2]
+	// Becomes
+	//   mov [$B], [5]
+	
+	// TODO: Loop unfolding optimization
+	//   Each branch instruction inside a loop can take a small amount of time to
+	//   execute so unfolding loops of a small size should be prefered for speed.
+	
+	public IntermediateCodeOptimizer() {}
 	
 	public IRProgram generate(IRProgram program) {
 		for(IRFunction func : program.getFunctions()) {
@@ -75,6 +85,8 @@ public class IntermediateCodeOptimizer {
 	// neq - brz		if($B != 0)			if( $B)
 	//  eq - bnz		if(!($B == 0))		if( $B)
 	// neq - bnz		if(!($B != 0))		if(!$B)
+	// not - brz        bnz
+	// not - bnz		brz
 	// neq		$A, $B, 0
 	// bnz		$A, ...
 	// 
@@ -121,25 +133,35 @@ public class IntermediateCodeOptimizer {
 			
 			// Check if the type was the positive equality 'eq'
 			boolean positive_eq = inst.type() == IRType.eq;
+			// not, brz == bnz
+			// not, bnz == brz
 			
-			if(positive_eq || inst.type() == IRType.neq) {
+			// TODO: Check that the next instruction is a branch instruction!
+			
+			if(positive_eq || inst.type() == IRType.neq || inst.type() == IRType.not) {
 				IRInstruction next = iter.peakNext();
 				
 				// Check if the type was the positive branch 'brz'
 				boolean positive_br = next.type() == IRType.brz;
 				
 				// Check if the last element is a zero
-				Param reg = inst.getLastParam();
-				if(reg instanceof NumberReg && ((NumberReg)reg).getValue() == 0) {
-					// Check if the equality result is referenced
-					
-					int refs = getReferences(func, inst.getParam(0));
-					if(refs < 3) {
-						iter.remove(); // Remove the instruction...
-					}
-					
+				if(inst.type() == IRType.not) {
 					next.params.set(0, inst.getParam(1));
-					next.op = (positive_br == positive_eq) ? IRType.bnz:IRType.brz;
+					next.op = (positive_br) ? IRType.bnz:IRType.brz;
+					iter.remove();
+				} else {
+					Param reg = inst.getLastParam();
+					if(reg instanceof NumberReg && ((NumberReg)reg).getValue() == 0) {
+						// Check if the equality result is referenced
+						
+						int refs = getReferences(func, inst.getParam(0));
+						if(refs < 3) {
+							iter.remove(); // Remove the instruction...
+						}
+						
+						next.params.set(0, inst.getParam(1));
+						next.op = (positive_br == positive_eq) ? IRType.bnz:IRType.brz;
+					}
 				}
 			}
 		}
@@ -230,22 +252,104 @@ public class IntermediateCodeOptimizer {
 		}
 	}
 	
+	// TODO: Pass through label optimization
+	//   If some branch instruction jumps to a label that only contains a unconditional instruction
+	// then jump to the target's location.
+	// =====================
+	//   br [some_label]
+	//     ...
+	// some_label:
+	//   br [another]
+	//
+	// Should become:
+	// =====================
+	//   br [another]
+	//     ...
+	// some_label:
+	//   br [another]
+	private void pass_though_label_optimization(IRFunction func) {
+		IRListIterator iter = Utils.createIterator(func.list);
+		List<IRInstruction> list = func.list;
+		
+		while(iter.hasNext()) {
+			IRInstruction inst = iter.next();
+			
+			switch(inst.op) {
+				case bnz:
+				case brz:
+				case br: break;
+				default: continue;
+			}
+			
+			int paramIndex = inst.op.args == 2 ? 1:0;
+			LabelParam label = (LabelParam)inst.getParam(paramIndex);
+			
+			int index = findLabel(func, iter.index(), label);
+			
+			// Check if the index is followed by a br
+			if(index + 1 < list.size()) {
+				IRInstruction pass = list.get(index + 1);
+				
+				if(pass.op == IRType.br) {
+					inst.params.set(paramIndex, pass.getParam(0));
+				}
+			}
+		}
+	}
+	
+	// TODO: Dead code optimization
+	//   If an instruction is inside a code block that will never be entered or if a
+	//   label is never jumped to or is proceeded by another label it should be removed.
+	private void dead_code_optimization(IRFunction func) {
+		IRListIterator iter = Utils.createIterator(func.list);
+		
+		while(iter.hasNext()) {
+			IRInstruction inst = iter.next();
+			
+			if(!(inst.op == IRType.ret || inst.type() == IRType.br)) continue;
+			
+			while(iter.hasNext()) {
+				IRInstruction next = iter.next();
+				
+				if(next.op != IRType.label) {
+					iter.remove();
+					continue;
+				}
+				
+				break;
+			}
+		}
+	}
+	
 	private void simplify(IRFunction func) {
+		if(func.length() < 1) return; // TODO: Do not simplify empty functions
+		
 		// TODO: Find a way to check if any changes has been made to the instruction block
 		
 		//   brz [ ... ], [A]
 		// A:
 		// If there is no code between the branch and not the branch then remove them.
 		//   ...
-		
+		logOptimization(func, null);
 		remove_nops(func);
+		logOptimization(func, "remove_nops");
 		eq_bnz_optimization(func);
+		logOptimization(func, "eq_bnz");
 		
 		while(true) {
 			int size = func.list.size();
 			
 			flow_optimization(func);
+			logOptimization(func, "flow");
+			
 			counter_optimization(func);
+			logOptimization(func, "counter");
+			
+			pass_though_label_optimization(func);
+			logOptimization(func, "pass_through_label");
+			
+			dead_code_optimization(func);
+			logOptimization(func, "dead_code");
 			
 			if(size != func.list.size()) {
 				// If the size changed during the flow optimization we
@@ -255,6 +359,34 @@ public class IntermediateCodeOptimizer {
 			}
 			
 			break;
+		}
+	}
+	
+	private int findLabel(IRFunction func, int pivot, LabelParam label) {
+		List<IRInstruction> list = func.list;
+		
+		// TODO: Maybe implement a pivot based search.
+		for(int i = 0; i < list.size(); i++) {
+			IRInstruction inst = list.get(i);
+			
+			if(inst.op == IRType.label) {
+				if(inst.getParam(0).equals(label)) {
+					return i;
+				}
+			}
+		}
+		
+		return -1;
+	}
+	
+	private int size;
+	private void logOptimization(IRFunction func, String name) {
+		if(name == null) {
+			size = func.length();
+			System.out.println("============================================== [" + func + "]");
+		} else {
+			System.out.printf("Optimization[%s]: %d -> %d\n", name, size, func.length());
+			size = func.length();
 		}
 	}
 	

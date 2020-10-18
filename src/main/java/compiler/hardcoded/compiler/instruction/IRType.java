@@ -54,14 +54,14 @@ public enum IRType {
 	// Branching instructions
 	call(-1),	// call			[R0], [LABEL]					Call label and set R0 to result
 	ret(1),		// ret			[R0]							Return R0
-	br(1),			// br			[LABEL]							Jump to [LABEL]
+	br(1),		// br			[LABEL]							Jump to [LABEL]
 	brz(2),		// brz			[R0], [LABEL]					Jump to [LABEL] if R0 is zero
 	bnz(2),		// bnz			[R0], [LABEL]					Jump to [LABEL] if R0 is not zero
 	
 	
 	// Misc
 	nop(-1),	// nop											No operation
-	label(1),	// label		[NAME]							Define a label
+	label(1),	// label		[LABEL]							Define a label
 	data(2),	// data			[LABEL], [VALUE]				Define data of type [TYPE]
 	;
 	

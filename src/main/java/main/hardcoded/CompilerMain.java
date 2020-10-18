@@ -3,11 +3,17 @@ package hardcoded;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.Locale;
+import java.util.*;
 import java.util.logging.LogManager;
 
+import hardcoded.assembly.x86.RandomAsmGenerator;
+import hardcoded.compiler.instruction.IRFunction;
+import hardcoded.compiler.instruction.IRInstruction;
+import hardcoded.compiler.instruction.IRInstruction.LabelParam;
+import hardcoded.compiler.instruction.IRType;
 import hardcoded.utils.DomainUtils;
 import hardcoded.utils.FileUtils;
+import hardcoded.utils.StringUtils;
 
 /**
  * This is the main entry point for the compiler.<br>
@@ -124,6 +130,39 @@ public class CompilerMain {
 			source_path = "res/project/src";
 			binary_path = "res/project/bin";
 		}
+		
+//		final Thread mainThread = Thread.currentThread();
+//		Thread thread = new Thread(new Runnable() {
+//			public void run() {
+//				int grab = 0;
+//				int len = 0;
+//				while(true) {
+//					String str = createDump();
+//					if(!mainThread.isAlive()) break;
+//					
+//					int sln = str.length();
+//					if(sln > len && sln > 6000) {
+//						len = sln;
+//						
+//						System.out.println("========================================================= [" + grab + "] [" + len + "]");
+//						System.out.println(str);
+//						grab++;
+//					}
+//				}
+//			}
+//			
+//			public String createDump() {
+//				StringBuilder sb = new StringBuilder();
+//				StackTraceElement[] array = Thread.getAllStackTraces().get(mainThread);
+//				if(array == null) return null;
+//				for(StackTraceElement item : array) {
+//					sb.append(item).append("\n");
+//				}
+//				return sb.toString().trim();
+//			}
+//		});
+//		thread.setDaemon(true);
+//		thread.start();
 		
 		System.out.println("---------------------------------------------------------");
 		System.out.println("HardCoded HCProgrammingLanguage compiler (2020-10-15) (c)");
