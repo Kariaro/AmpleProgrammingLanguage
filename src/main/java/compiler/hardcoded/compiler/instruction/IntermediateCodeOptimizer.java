@@ -2,6 +2,7 @@ package hardcoded.compiler.instruction;
 
 import java.util.*;
 
+import hardcoded.CompilerMain;
 import hardcoded.compiler.constants.Utils;
 import hardcoded.compiler.constants.Utils.IRListIterator;
 import hardcoded.compiler.instruction.IRInstruction.*;
@@ -61,6 +62,12 @@ public class IntermediateCodeOptimizer {
 //				}
 //			}
 		}
+		
+//		try {
+//			Thread.sleep(100000);
+//		} catch (InterruptedException e) {
+//			e.printStackTrace();
+//		}
 		
 		return program;
 	}
@@ -381,6 +388,9 @@ public class IntermediateCodeOptimizer {
 	
 	private int size;
 	private void logOptimization(IRFunction func, String name) {
+		if(!CompilerMain.isDeveloper()) return;
+		if(true) return;
+		
 		if(name == null) {
 			size = func.length();
 			System.out.println("============================================== [" + func + "]");

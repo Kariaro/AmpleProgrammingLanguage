@@ -16,10 +16,8 @@ bool isPrime(int number) {
 }
 
 void prints(char* chars) {
-	int len = chars[0];
-	
-	for(int i = 0; i < len; i++) {
-		print(chars[-(i + 1)]);
+	while(*chars != 0) {
+		print(*(chars++));
 	}
 }
 

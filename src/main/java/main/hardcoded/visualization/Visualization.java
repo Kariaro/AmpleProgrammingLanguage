@@ -26,8 +26,8 @@ public abstract class Visualization {
 			
 			@Override public void paint(Graphics g) {
 				if(bs == null) {
-					bs = getBufferStrategy();
 					createBufferStrategy(buffers);
+					bs = getBufferStrategy();
 				}
 				super.paint(g);
 			}

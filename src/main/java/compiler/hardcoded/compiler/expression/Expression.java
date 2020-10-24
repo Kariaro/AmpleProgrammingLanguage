@@ -125,12 +125,9 @@ public interface Expression extends Printable {
 		return false;
 	}
 	
-	// TODO: Change this documentation to something easier to understand.
 	/**
-	 * Calculate the size of the nummerical size that this expression might hold.<br>
-	 * <code>1L + 3 = (long)1 + (int)3 = (long)</code>
-	 * 
-	 * @return
+	 * Returns the size computed from this expression.
+	 * @return the size computed from this expression
 	 */
 	public default LowType size() {
 		if(this == EMPTY) return null;
