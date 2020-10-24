@@ -1,29 +1,53 @@
 package hardcoded;
 
 import java.io.File;
+import java.io.FileOutputStream;
 
 import hardcoded.compiler.HCompilerBuild;
 import hardcoded.compiler.errors.CompilerException;
+import hardcoded.compiler.instruction.IRProgram;
+import hardcoded.exporter.impl.CodeGeneratorImpl;
 
 public class HCompiler {
 	private HCompilerBuild builder = new HCompilerBuild();
+	private CodeGeneratorImpl codegen;
 	private OutputFormat format;
-	private File projectPath;
+	private File sourcePath;
+	private File binaryPath;
+	private String fileName;
+	
+	private boolean hasCompiled;
+	
+	// Information about the compiled code
+	private IRProgram program;
+	private byte[] bytes;
 	
 	public HCompiler() {
 		
 	}
 	
-	public void setProjectPath(String filePath) {
-		this.projectPath = new File(filePath);
+	public void setSourcePath(String pathname) {
+		this.sourcePath = new File(pathname);
 	}
 	
-	public void setProjectPath(File path) {
-		this.projectPath = path;
+	public void setSourcePath(File path) {
+		this.sourcePath = path;
+	}
+	
+	public void setBinaryPath(String pathname) {
+		this.binaryPath = new File(pathname);
+	}
+	
+	public void setBinaryPath(File path) {
+		this.binaryPath = path;
+	}
+	
+	public void setFileName(String name) {
+		this.fileName = name;
 	}
 	
 	public File getProjectPath() {
-		return projectPath;
+		return sourcePath;
 	}
 	
 	public void setOutputFormat(String formatName) {
@@ -34,43 +58,56 @@ public class HCompiler {
 		this.format = format;
 	}
 	
-	public void build() {
-		if(format == null)
-			throw new CompilerException("No output format has been selected");
+	public void build() throws Exception {
+		if(hasCompiled)
+			throw new Exception("Unclosed resources. Try calling reset()");
+		if(format == null) throw new CompilerException("No output format has been selected");
+		if(fileName == null) throw new CompilerException("Entry file name was null");
 		
-		builder.setOutputFormat(format);
+		codegen = format.createNew();
 		
-		String file = "main.hc";
-		// file = "tests/000_pointer.hc";
-		file = "prim.hc";
-		// file = "tests/001_comma.hc";
-		// file = "tests/002_invalid_assign.hc";
-		// file = "tests/003_invalid_brackets.hc";
-		// file = "tests/004_cor_cand.hc";
-		// file = "tests/005_assign_comma.hc";
-		// file = "tests/006_cast_test.hc";
-		// file = "test_syntax.hc";
+		File entryFile = new File(sourcePath, fileName);
+		program = builder.build(entryFile);
+		bytes = codegen.generate(program);
 		
-		// file = "tests_2/000_assign_test.hc";
-		
-		try {
-			builder.build(file);
-			
-//			StringBuilder sb = new StringBuilder();
-//			
-//			int index = 1;
-//			for(byte b : bytes) {
-//				if(index++ > 31) {
-//					index = 1;
-//					sb.append(String.format("%02x\n", b));
-//				} else {
-//					sb.append(String.format("%02x ", b));
-//				}
-//			}
-//			
-//			System.out.println(sb.toString().trim());
-		} catch(Exception e) {
-			e.printStackTrace();
+		// TODO: Is this safe?
+		String outputName = fileName;
+		{
+			int index = fileName.lastIndexOf('.');
+			if(index >= 0) {
+				outputName = outputName.substring(0, index) + format.extension;
+			}
 		}
+		
+		File binaryFile = new File(binaryPath, outputName);
+		FileOutputStream stream = new FileOutputStream(binaryFile);
+		stream.write(bytes, 0, bytes.length);
+		stream.close();
+		
+		hasCompiled = true;
+	}
+	
+	/**
+	 * Returns the compiled bytes.
+	 * @return the compiled bytes
+	 */
+	public byte[] getBytes() {
+		return bytes;
+	}
+	
+	/**
+	 * Returns the compiled ir program.
+	 * @return the compiled ir program
+	 * @return
+	 */
+	public IRProgram getProgram() {
+		return program;
+	}
+	
+	public void reset() {
+		// TODO: Check if the builder is reusable or if it sill has information about the last compile
+		builder = new HCompilerBuild();
+		program = null;
+		bytes = null;
 	}
 }

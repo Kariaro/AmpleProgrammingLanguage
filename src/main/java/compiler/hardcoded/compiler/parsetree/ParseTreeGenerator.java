@@ -792,7 +792,7 @@ public class ParseTreeGenerator {
 								}
 								
 								OpExpr o = new OpExpr(call);
-								o.list.add(e1);
+								o.add(e1);
 								reader.next();
 								
 								AtomExpr ae = (AtomExpr)e1;
@@ -804,7 +804,7 @@ public class ParseTreeGenerator {
 								for(int i = 0; i < length; i++) {
 									Expression arg = e14();
 									if(arg == null) syntaxError(CompilerError.INVALID_FUNCTION_CALL_PARAMETER);
-									o.list.add(arg);
+									o.add(arg);
 									
 									if(reader.valueEqualsAdvance(",")) {
 										if(i == length - 1) syntaxError(CompilerError.TOO_MANY_FUNCTION_CALL_ARGUMENTS, func.name, length + (length == 1 ? " argument":"arguments"));

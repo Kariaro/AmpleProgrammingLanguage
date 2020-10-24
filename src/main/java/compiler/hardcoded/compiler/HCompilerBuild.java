@@ -2,18 +2,13 @@ package hardcoded.compiler;
 
 import java.io.*;
 
-import hardcoded.CompilerMain;
-import hardcoded.OutputFormat;
 import hardcoded.compiler.errors.CompilerException;
 import hardcoded.compiler.instruction.*;
 import hardcoded.compiler.parsetree.ParseTreeGenerator;
 import hardcoded.compiler.parsetree.ParseTreeOptimizer;
-import hardcoded.exporter.impl.CodeGeneratorImpl;
 import hardcoded.visualization.Visualization;
 
 public class HCompilerBuild {
-	private File projectPath = new File("res/project/src/");
-	
 	/**
 	 * The parse tree generator.
 	 */
@@ -35,11 +30,6 @@ public class HCompilerBuild {
 	private IntermediateCodeOptimizer ico;
 	
 	/**
-	 * The code exporter.
-	 */
-	private CodeGeneratorImpl cei;
-	
-	/**
 	 * Visualization class.
 	 */
 	private Visualization vs;
@@ -49,54 +39,45 @@ public class HCompilerBuild {
 		parse_tree_optimizer = new ParseTreeOptimizer();
 		icg = new IntermediateCodeGenerator();
 		ico = new IntermediateCodeOptimizer();
-		vs =  Visualization.DUMMY; // vs = new hardcoded.visualization.HCVisualization();
-		vs.hide();
+		vs = Visualization.DUMMY; // vs = new hardcoded.visualization.HCVisualization(); vs.hide();
 	}
-	
-	public void setOutputFormat(OutputFormat format) {
-		this.cei = format.createNew();
-	}
-	
 	
 	/**
-	 * Build the project.
+	 * Compile the file at the specified file into a {@code IRProgram}.
 	 * 
-	 * @param	pathname	a pathname string
+	 * @param	file	a file
 	 * @throws	Exception
 	 * @throws	CompilerException
 	 * 			If the compilation failed
 	 * 
-	 * @return a byte array of the compiled output
+	 * @return a {@code IRProgram}
 	 */
-	public byte[] build(String pathname) throws Exception {
-		if(cei == null) throw new CompilerException("No output format has been selected.");
-		
-		Program current_program = parse_tree_generator.init(projectPath, pathname);
+	public IRProgram build(File file) throws Exception {
+		Program current_program = parse_tree_generator.init(file.getParentFile(), file.getName());
 		if(parse_tree_generator.hasErrors()) {
 			throw new CompilerException("Compiler errors.");
 		}
 		
-		// vs.show(current_program);
-		parse_tree_optimizer.do_constant_folding(/*vs, */current_program);
+		vs.show(current_program);
+		parse_tree_optimizer.do_constant_folding(vs, current_program);
 		
 		IRProgram ir_program;
 		ir_program = icg.generate(current_program);
 		ir_program = ico.generate(ir_program);
 		
-		byte[] bytes = cei.generate(ir_program);
+//		if(CompilerMain.isDeveloper()) {
+//			try {
+//				test(ir_program);
+//			} catch(IOException e) {
+//				e.printStackTrace();
+//			}
+//		}
 		
-		if(CompilerMain.isDeveloper()) {
-			try {
-				test(ir_program);
-			} catch(IOException e) {
-				e.printStackTrace();
-			}
-		}
-		
-		return bytes;
+		return ir_program;
 	}
 	
-	public void test(IRProgram program) throws IOException {
+	@SuppressWarnings("unused")
+	private void test(IRProgram program) throws IOException {
 		File file = new File(System.getProperty("user.home") + "/Desktop/spooky/serial.lir");
 		try {
 			test2(program);
@@ -116,7 +97,7 @@ public class HCompilerBuild {
 		stream.close();
 	}
 	
-	public void test2(IRProgram program) throws Exception {
+	private void test2(IRProgram program) throws Exception {
 //		File file = new File(System.getProperty("user.home") + "/Desktop/spooky/serial.lir");
 //		FileInputStream in = new FileInputStream(file);
 //		IRProgram result = IRSerializer.read(in);
@@ -130,11 +111,11 @@ public class HCompilerBuild {
 		String deep_0 = IRSerializer.deepPrint("Deep(0)", program, depth).replace("\t", "    ");
 		String deep_1 = IRSerializer.deepPrint("Deep(0)", result, depth).replace("\t", "    ");
 		
-		System.out.println("--------------------------------------------------------------");
-		System.out.println();
-		System.out.println(deep_0);
-		System.out.println();
-		System.out.println("--------------------------------------------------------------");
+//		System.out.println("--------------------------------------------------------------");
+//		System.out.println();
+//		System.out.println(deep_0);
+//		System.out.println();
+//		System.out.println("--------------------------------------------------------------");
 //		System.out.println();
 //		System.out.println(deep_1);
 //		System.out.println();

@@ -8,6 +8,7 @@ import hardcoded.compiler.expression.LowType;
 import hardcoded.utils.StringUtils;
 
 public class IRFunction {
+	// TODO: Keep param names for easier use
 	private final LowType[] params;
 	private final LowType type;
 	private final String name;

@@ -2,10 +2,8 @@ package hardcoded.compiler.numbers;
 
 import static hardcoded.compiler.constants.Atom.*;
 
-import java.math.BigDecimal;
-import java.util.Random;
-
 import hardcoded.compiler.constants.Atom;
+import hardcoded.compiler.expression.LowType;
 
 /**
  * This is a number utility class for <b>signed</b>, <b>unsigned</b> and <b>floating</b> operations.
@@ -137,6 +135,8 @@ public class Value {
 	public static Value uqword(long value) { return new Value(u64, value); }
 	public static Value ifloat(double value) { return new Value(f32, value); }
 	public static Value idouble(double value) { return new Value(f64, value); }
+	public static Value get(long value, Atom type) { return new Value(type, value); }
+	public static Value get(double value, Atom type) { return new Value(type, value); }
 	
 	public Value add(Value val) {
 		if(isFloating() || val.isFloating())
@@ -334,6 +334,11 @@ public class Value {
 		return new Value(atom, integer);
 	}
 	
+	public Value convert(LowType type) {
+		if(type.isPointer()) return convert(Atom.i64);
+		return convert(type.type());
+	}
+	
 	@Override
 	public String toString() {
 		if(isFloating()) {
@@ -346,45 +351,45 @@ public class Value {
 	}
 	
 	
-	public static void main(String[] args) throws Exception {
-		Random random = new Random();
-		
-		while(true) {
-			System.out.println("Outer");
-			long[] array = new long[2000000];
-			for(int i = 0; i < array.length; i++) {
-				array[i] = random.nextLong();
-			}
-			
-			long tick = System.currentTimeMillis();
-			for(int i = 0; i < 1000000; i++) {
-				long a = array[i];
-				long b = array[i + 1000000];
-				
-				Value _a = uqword(a);
-				Value _b = uqword(b);
-				
-				long d_java = (a * b * b * b * b * b) + a + a + a - 0xffffffffffffffL;
-				long d_bnum = _a.mul(_b).mul(_b).mul(_b).mul(_b).mul(_b).add(_a).add(_a).add(_a).sub(qword(0xffffffffffffffL)).longValue();
-				
-				double error = d_java - d_bnum;
-				if(error != 0) {
-					System.out.println("Error: " + error);
-					System.out.println(BigDecimal.valueOf(d_java));
-					System.out.println(BigDecimal.valueOf(d_bnum));
-				}
-			}
-			long time = (System.currentTimeMillis() - tick);
-			System.out.printf("Took %d ms to run (1000000 iterations), %.5f ms\n", time, (time / 1000000.0D));
-		}
-// 		double a = (100000D / 16000D) * 3.231235123D;
-		
-//		System.out.println(val + ", " + val.mul(qword(3)).add(sbyte(3200)));
-		
-		// Value2 num = new Value2(Atom.f64, -3230389471289374918237489123748912734892D);
-		// System.out.println(num);
-		
-		// System.out.println(new BigDecimal(a));
-		// System.out.println(new BigDecimal(idouble(100000).div(idouble(16000)).mul(idouble(3.231235123D)).doubleValue()));
-	}
+//	public static void main(String[] args) throws Exception {
+//		Random random = new Random();
+//		
+//		while(true) {
+//			System.out.println("Outer");
+//			long[] array = new long[2000000];
+//			for(int i = 0; i < array.length; i++) {
+//				array[i] = random.nextLong();
+//			}
+//			
+//			long tick = System.currentTimeMillis();
+//			for(int i = 0; i < 1000000; i++) {
+//				long a = array[i];
+//				long b = array[i + 1000000];
+//				
+//				Value _a = uqword(a);
+//				Value _b = uqword(b);
+//				
+//				long d_java = (a * b * b * b * b * b) + a + a + a - 0xffffffffffffffL;
+//				long d_bnum = _a.mul(_b).mul(_b).mul(_b).mul(_b).mul(_b).add(_a).add(_a).add(_a).sub(qword(0xffffffffffffffL)).longValue();
+//				
+//				double error = d_java - d_bnum;
+//				if(error != 0) {
+//					System.out.println("Error: " + error);
+//					System.out.println(BigDecimal.valueOf(d_java));
+//					System.out.println(BigDecimal.valueOf(d_bnum));
+//				}
+//			}
+//			long time = (System.currentTimeMillis() - tick);
+//			System.out.printf("Took %d ms to run (1000000 iterations), %.5f ms\n", time, (time / 1000000.0D));
+//		}
+//// 		double a = (100000D / 16000D) * 3.231235123D;
+//		
+////		System.out.println(val + ", " + val.mul(qword(3)).add(sbyte(3200)));
+//		
+//		// Value2 num = new Value2(Atom.f64, -3230389471289374918237489123748912734892D);
+//		// System.out.println(num);
+//		
+//		// System.out.println(new BigDecimal(a));
+//		// System.out.println(new BigDecimal(idouble(100000).div(idouble(16000)).mul(idouble(3.231235123D)).doubleValue()));
+//	}
 }

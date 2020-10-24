@@ -274,7 +274,7 @@ public class IRInstruction {
 	
 	// TODO: Find a way to calculate the size of a instruction duing the generation/optimization stage.
 //	@Deprecated
-//	private LowType size;
+	//private LowType test_size;
 	
 	public IRInstruction() {
 		

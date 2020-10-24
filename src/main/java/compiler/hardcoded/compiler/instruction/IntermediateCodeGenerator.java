@@ -226,8 +226,17 @@ public class IntermediateCodeGenerator {
 					list.addAll(compileInstructions(a, reg_0));
 				}
 				
-				// TODO: Reading from a Identifier should hold the primitive size and not the pointer size.
-				list.add(new IRInstruction(IRType.read, request, reg_0));
+				LowType next = reg_0.getSize().nextLowerPointer();
+				
+				if(!next.equals(request)) {
+					Param temp = temp(next);
+					list.add(new IRInstruction(IRType.read, temp, reg_0));
+					list.add(new IRInstruction(IRType.mov, request, temp));
+				} else {
+					// System.out.println("Read instruction: " + request + ":" + request.getSize() + " / " + reg_0 + ":" + reg_0.getSize());
+					list.add(new IRInstruction(IRType.read, request, reg_0));
+				}
+				
 				break;
 			}
 			
@@ -297,6 +306,7 @@ public class IntermediateCodeGenerator {
 			case call: {
 				List<Param> params = new ArrayList<>();
 				
+				Function func = null;
 				{
 					// Called function
 					Expression e = expr.first();
@@ -305,6 +315,7 @@ public class IntermediateCodeGenerator {
 						AtomExpr a = (AtomExpr)e;
 						
 						if(a.isIdentifier()) {
+							func = a.d_value.func();
 							params.add(new IRInstruction.FunctionLabel(a.d_value));
 						}
 					} else {
@@ -318,7 +329,9 @@ public class IntermediateCodeGenerator {
 					
 					if(shouldCheck(e)) {
 						// reg should be the size of the parameter for that function...
-						reg = temp(e.size());
+						reg = temp(func.arguments.get(i - 1).low_type());//e.size());
+						
+						// System.out.println("Call param: " + reg + ":" + reg.getSize());
 						list.addAll(compileInstructions(e, reg));
 					}
 					

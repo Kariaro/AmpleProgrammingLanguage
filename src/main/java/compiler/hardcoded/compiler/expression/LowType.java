@@ -30,6 +30,7 @@ public class LowType {
 	}
 	
 	public boolean equals(Object obj) {
+		if(obj instanceof Atom) return depth == 0 && type == obj;
 		if(!(obj instanceof LowType)) return false;
 		return hashCode() == obj.hashCode();
 	}
@@ -62,6 +63,10 @@ public class LowType {
 		return type.isFloating();
 	}
 	
+	public LowType nextLowerPointer() {
+		return new LowType(type, depth - 1);
+	}
+	
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		for(int i = 0; i < depth; i++) sb.append('*');
@@ -73,6 +78,8 @@ public class LowType {
 	}
 	
 	public static LowType largest(LowType a, LowType b) {
+		if(a.isPointer()) return a;
+		if(b.isPointer()) return b;
 		return new LowType(Atom.largest(a.type, b.type), 0);
 	}
 	
