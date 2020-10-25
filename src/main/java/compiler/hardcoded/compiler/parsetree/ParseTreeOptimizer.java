@@ -5,6 +5,7 @@ import static hardcoded.compiler.constants.ExprType.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import hardcoded.CompilerMain;
 import hardcoded.compiler.Block;
 import hardcoded.compiler.Block.Function;
 import hardcoded.compiler.Program;
@@ -189,26 +190,39 @@ public class ParseTreeOptimizer {
 				case addptr: case decptr: {
 					ExprType opp = e.type == decptr ? addptr:decptr;
 					
-					if(e.first().type() == opp) {
-						parent.set(index, e.first().first());
-					} else {
-						Expression ex = e.first();
-						LowType last = ex.size();
-						// System.out.println("[" + ex + "] -> " + last + "(" + e + ": " + e.type + ")");
-						LowType size;
-						
-						if(last != null && last.isPointer()) {
-							size = LowType.getPointer(last, opp == decptr ? 1:-1);
-						} else {
-							size = last;
-						}
-						
-						if(ex instanceof OpExpr) {
-							((OpExpr)ex).override_size = size;
-						} else {
-							((AtomExpr)ex).override_size = size;
-						}
+					Expression ex = e.first();
+					
+					if(ex.type() == opp) {
+						// Remove all instances of [ addptr(decptr( ... )) ]
+						//                         [ decptr(addptr( ... )) ]
+						parent.set(index, ex.first());
 					}
+					
+					// TODO: I do not know if this even does anything?
+//					else {
+//						LowType type = ex.size();
+//						System.out.println(parent + " -> " + type);
+//						LowType size;
+//						
+//						// TODO: Last is never null
+//						
+//						if(e.type() == ExprType.decptr) {
+//							size = type.nextLowerPointer();
+//						} else {
+//							size = type.nextHigherPointer();
+//						}
+//						
+//						if(ex instanceof OpExpr) {
+//							((OpExpr)ex).override_size = size;
+//							parent.set(index, ex);
+//						} else {
+//							((AtomExpr)ex).atomType = size;
+//							parent.set(index, ex);
+//						}
+//						
+//						System.out.println(parent + " -> " + ex + ":" + size);
+//						System.out.println();
+//					}
 					
 					break;
 				}
@@ -366,9 +380,29 @@ public class ParseTreeOptimizer {
 					 */
 					break;
 				}
+//			case atom:
+//				break;
+//			case cast:
+//				break;
+//			case invalid:
+//				break;
+//			case jump:
+//				break;
+//			case label:
+//				break;
+//			case leave:
+//				break;
+//			case loop:
+//				break;
+//			case nop:
+//				break;
+//			default:
+//				break;
 				
 				default: {
-					System.out.println("[NOT FOLDED]" + e);
+					if(CompilerMain.isDeveloper()) {
+						System.err.println("[NOT FOLDED]" + e);
+					}
 				}
 			}
 		}

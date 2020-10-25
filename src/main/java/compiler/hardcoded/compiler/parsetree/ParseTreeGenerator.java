@@ -155,7 +155,7 @@ public class ParseTreeGenerator {
 				if(!reader.valueEqualsAdvance(";")) syntaxError("Invalid type syntax. Expected a semicolon but got '%s'", reader);
 				
 				if(defined_types.containsKey(name)) syntaxError("Type is already defined '%s'", name);
-				defined_types.put(name, new HighType(name, type.type(), type.size()));
+				defined_types.put(name, new HighType(name, type.type()));
 				
 				break;
 			}
@@ -305,6 +305,7 @@ public class ParseTreeGenerator {
 		} else if(reader.valueEqualsAdvance("return")) {
 			OpExpr expr = new OpExpr(ret);
 			if(!reader.valueEquals(";")) expr.add(nextExpression());
+			else expr.add(new AtomExpr(0)); // TODO: Make sure that the return is not null!!!
 			if(!reader.valueEquals(";")) syntaxError(CompilerError.INVALID_XXX_EXPECTED_SEMICOLON, "return statement", reader);
 			reader.nextClear();
 			return new ExprStat(expr);
@@ -422,6 +423,7 @@ public class ParseTreeGenerator {
 			
 			if(reader.valueEqualsAdvance("[")) {
 				Expression expr = nextExpression();
+				var.isArray = true;
 				
 				if(!(expr instanceof AtomExpr)) {
 					syntaxError(CompilerError.INVALID_ARRAY_VARIABLE_DECLARATION_EXPECTED_INTEGER, expr);
@@ -434,8 +436,8 @@ public class ParseTreeGenerator {
 					// TODO: What should we do if the array has a negative length?
 					var.list.add(Expression.EMPTY);
 					var.arraySize = (int)number.i_value;
+					var.type = new HighType(type.name(), type.type().nextHigherPointer());
 				}
-				var.isArray = true;
 				
 				if(!reader.valueEqualsAdvance("]")) syntaxError(CompilerError.UNCLOSED_ARRAY_DEFINITION, reader);
 				if(!reader.valueEquals(";")) syntaxError(CompilerError.UNCLOSED_VARIABLE_DECLARATION);
@@ -865,6 +867,7 @@ public class ParseTreeGenerator {
 								
 								OpExpr expr = new OpExpr(cast, rhs);
 								expr.override_size = type.type();
+								// System.out.println("Cast of type: '" + type + "' / " + rhs);
 								return expr;
 							} else reader.prev();
 						}
@@ -1005,7 +1008,7 @@ public class ParseTreeGenerator {
 				size++;
 			}
 			
-			type = new HighType(type.name(), LowType.getPointer(low, size), LowType.getPointerSize());
+			type = new HighType(type.name(), LowType.create(low.type(), size));
 		}
 
 		return type;

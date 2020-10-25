@@ -1,7 +1,6 @@
 package hardcoded;
 
 import java.io.File;
-import java.io.FileOutputStream;
 
 import hardcoded.compiler.HCompilerBuild;
 import hardcoded.compiler.errors.CompilerException;
@@ -12,9 +11,7 @@ public class HCompiler {
 	private CodeGeneratorImpl codegen;
 	private OutputFormat format;
 	
-	private File workingDirectory;
-	private String sourceFile;
-	private String outputFile;
+	private File sourceFile;
 	
 	private boolean hasCompiled;
 	
@@ -26,32 +23,12 @@ public class HCompiler {
 		
 	}
 	
-	public File getWorkingDirectory() {
-		return workingDirectory;
-	}
-	
-	/**
-	 * Set the working directory of the compiler.
-	 * @param	file	a directory
-	 */
-	public void setWorkingDirectory(File directory) {
-		this.workingDirectory = directory;
-	}
-	
 	/**
 	 * Set the source file of the compiler.
 	 * @param	pathname	a pathname string
 	 */
-	public void setSourceFile(String pathname) {
-		this.sourceFile = pathname;
-	}
-	
-	/**
-	 * Set the output file of the compiler.
-	 * @param	pathname	a pathname string
-	 */
-	public void setOutputFile(String pathname) {
-		this.outputFile = pathname;
+	public void setSourceFile(File file) {
+		this.sourceFile = file;
 	}
 	
 	public void setOutputFormat(String formatName) {
@@ -64,27 +41,14 @@ public class HCompiler {
 	
 	public void build() throws Exception {
 		if(hasCompiled) throw new Exception("Unclosed resources. Try calling reset()");
-		if(format == null) throw new CompilerException("No output format has been selected");
-		
+		if(format == null) throw new CompilerException("No output format was specified");
 		if(sourceFile == null) throw new CompilerException("No source file was specified");
-		if(outputFile == null) throw new CompilerException("No output file was specified");
-		
-		File sourcePath = new File(workingDirectory, sourceFile);
-		File outputPath = new File(workingDirectory, outputFile);
-		
-		if(sourcePath.equals(outputPath))
-			throw new CompilerException("source and output file cannot be the same file");
 		
 		// TODO: Check if this can be reused
 		HCompilerBuild builder = new HCompilerBuild();
 		codegen = format.createNew();
-		program = builder.build(sourcePath);
+		program = builder.build(sourceFile);
 		bytes = codegen.generate(program);
-		
-		// TODO: Is this safe?
-		FileOutputStream stream = new FileOutputStream(outputPath);
-		stream.write(bytes, 0, bytes.length);
-		stream.close();
 		
 		hasCompiled = true;
 	}

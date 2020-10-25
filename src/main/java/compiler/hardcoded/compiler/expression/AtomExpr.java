@@ -81,7 +81,7 @@ public class AtomExpr implements Expression {
 		
 		if(type.isPointer()) {
 			AtomExpr expr = new AtomExpr((long)i_value);
-			expr.override_size = type;
+			expr.atomType = type;
 			return expr;
 		}
 		
@@ -115,11 +115,9 @@ public class AtomExpr implements Expression {
 	public LowType atomType() { return atomType; }
 	public ExprType type() { return ExprType.atom; }
 	
-	public LowType override_size;
+	// public LowType override_size;
 	public LowType size() {
-		if(override_size != null) {
-			return override_size;
-		}
+		// if(override_size != null) return override_size;
 		
 		return Expression.super.size();
 	}
@@ -127,7 +125,7 @@ public class AtomExpr implements Expression {
 	public AtomExpr clone() {
 		AtomExpr expr = new AtomExpr(0);
 		expr.atomType = atomType;
-		expr.override_size = override_size;
+		// expr.override_size = override_size;
 		if(isIdentifier()) {
 			expr.d_value = d_value.clone();
 			

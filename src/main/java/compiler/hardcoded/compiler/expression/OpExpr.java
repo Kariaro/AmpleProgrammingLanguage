@@ -33,13 +33,20 @@ public class OpExpr implements Expression {
 		return list.size();
 	}
 	
+	/**
+	 * Will only be used if this Expression is a cast expression.
+	 */
 	public LowType override_size;
 	public LowType size() {
 		if(type == ExprType.cast) {
 			return override_size;
 		}
 		
-		return Expression.super.size();
+		LowType lowType = Expression.super.size();
+		if(type == ExprType.decptr) return lowType.nextLowerPointer();
+		if(type == ExprType.addptr) return lowType.nextHigherPointer();
+		
+		return lowType;
 	}
 	
 	public OpExpr clone() {

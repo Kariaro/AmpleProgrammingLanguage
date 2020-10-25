@@ -35,11 +35,13 @@ public class LowType {
 		return hashCode() == obj.hashCode();
 	}
 	
+	// TODO: This should return the default pointer type
 	public Atom type() {
 		return type;
 	}
 	
 	public int size() {
+		if(depth != 0) return getPointerSize();
 		return type.size();
 	}
 	
@@ -65,6 +67,10 @@ public class LowType {
 	
 	public LowType nextLowerPointer() {
 		return new LowType(type, depth - 1);
+	}
+	
+	public LowType nextHigherPointer() {
+		return new LowType(type, depth + 1);
 	}
 	
 	public String toString() {
@@ -96,11 +102,20 @@ public class LowType {
 		return new LowType(type, depth);
 	}
 	
+	
 	/**
 	 * Returns the default pointer size.
 	 * @return the default pointer size
 	 */
 	public static int getPointerSize() {
 		return 8;
+	}
+	
+	/**
+	 * Returns the default pointer type.
+	 * @return the default pointer type
+	 */
+	public static Atom getPointerType() {
+		return Atom.i64;
 	}
 }
