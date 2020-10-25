@@ -1,26 +1,17 @@
 Help message for HCProgrammingLanguage https://github.com/Kariaro/HCProgrammingLanguage
 
-calling:
-     [-f] [-s] [-b]
+Usage: [options] -compile <sourcefile> <outputfile>
+       [options] -run <sourcefile>
 
 options:
-    -h
-              display this help message
+    -? -h -help
+                  display this help message
 
-    -link-project **
-              build a probject xml file
+    -p <path>
+                  set the working directory
 
-    -format
-    -f
-              the output format type
-              [spooky]
-              [x86]
-              [ir]
-
-    -src
-    -s
-              the projects source directory
-
-    -bin
-    -b
-              the projects output directory
+    -f -format
+                  the output format type
+                  [spooky]
+                  [x86]
+                  [ir]

@@ -1,8 +1,6 @@
 package hardcoded;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
 import java.util.*;
 import java.util.logging.LogManager;
 
@@ -59,6 +57,12 @@ public class CompilerMain {
 		}
 	}
 	
+	private static enum ActionType {
+		COMPILE,
+		RUN,
+		NONE
+	}
+	
 	private static void printHelpMessage() {
 		try {
 			System.out.println(new String(FileUtils.readInputStream(
@@ -75,54 +79,67 @@ public class CompilerMain {
 			return;
 		}
 		
-		String source_path = null;
-		String binary_path = null;
-		String file_name = null;
+		ActionType mode = ActionType.NONE;
+		
+		File working_directory = null;
+		String source_file = null;
+		String output_file = null;
 		String format = null;
 		
 		for(int i = 0; i < args.length; i++) {
 			String str = args[i];
 			
 			switch(str) {
-				
-				case "-format":
-				case "-f": {
+				case "-f": case "-format": {
 					if(i + 1 >= args.length) break;
 					format = args[(i++) + 1];
-					continue;
+					break;
 				}
 				
-				case "-r":
+				case "-p": {
+					if(i + 1 >= args.length) break;
+					working_directory = new File(args[(i++) + 1]);
+					if(!working_directory.exists()) {
+						System.out.println("Path does not exist");
+						printHelpMessage();
+						return;
+					}
+					break;
+				}
+				
 				case "-run": {
 					if(i + 1 >= args.length) break;
-					format = args[(i++) + 1];
-					continue;
+					source_file = args[(i++) + 1];
+					mode = ActionType.RUN;
+					break;
 				}
 				
-				case "-src":
-				case "-s": {
-					if(i + 1 >= args.length) break;
-					source_path = args[(i++) + 1];
-					continue;
-				}
-				
-				case "-bin":
-				case "-b": {
-					if(i + 1 >= args.length) break;
-					binary_path = args[(i++) + 1];
-					continue;
+				case "-compile": {
+					if(i + 2 >= args.length) break;
+					source_file = args[(i++) + 1];
+					output_file = args[(i++) + 1];
+					mode = ActionType.COMPILE;
+					break;
 				}
 				
 				default: {
 					System.out.println("Invalid argument '" + str + "'\n");
 				}
-				case "?":
 				case "-?":
-				case "-h": {
+				case "-h":
+				case "-help": {
 					printHelpMessage();
 					return;
 				}
 			}
+		}
+		
+		if(working_directory == null) {
+			// TODO: Check if this is correct
+			working_directory = new File("").getAbsoluteFile();
+		} else {
+			// Make sure that this is a absolute file and not a relative file
+			working_directory = working_directory.getAbsoluteFile();
 		}
 		
 		if(isDeveloper()) {
@@ -141,38 +158,54 @@ public class CompilerMain {
 			
 			// file = "tests_2/000_assign_test.hc";
 			
+			mode = ActionType.COMPILE;
 			format = "ir";
-			source_path = "res/project/src/";
-			binary_path = "res/project/bin/";
-			file_name = file;
+			String file_name = file;
+			{
+				int index = file.lastIndexOf('.');
+				if(index < 0) {
+					file_name = file + ".lir";
+				} else {
+					file_name = file.substring(index) + "lir";
+				}
+			}
+			
+			source_file = "res/project/src/" + file;
+			output_file = "res/project/bin/" + file_name;
 		}
 		
-		System.out.println("---------------------------------------------------------");
-		System.out.println("HardCoded HCProgrammingLanguage compiler (2020-10-15) (c)");
-		System.out.println();
-		System.out.println("OutputFormat: " + format);
-		System.out.println("SourcePath  : '" + source_path + "'");
-		System.out.println("BinaryPath  : '" + binary_path + "'");
-		System.out.println("EntryFile   : '" + file_name + "'");
-		System.out.println("---------------------------------------------------------");
+		if(mode == ActionType.NONE) {
+			printHelpMessage();
+			return;
+		}
 		
-		long start = System.nanoTime();
-		
-		HCompiler compiler = new HCompiler();
-		compiler.setOutputFormat(format);
-		compiler.setSourcePath(source_path);
-		compiler.setBinaryPath(binary_path);
-		compiler.setFileName(file_name);
-		compiler.build();
-		
-		long time = System.nanoTime() - start;
-		
-		System.out.println();
-		System.out.println("---------------------------------------------------------");
-		System.out.println("COMPILE FINISHED");
-		System.out.println();
-		System.out.printf("Took: %.4f milliseconds\n", time / 1000000D);
-		System.out.println("---------------------------------------------------------");
+		if(mode == ActionType.COMPILE) {
+			System.out.println("---------------------------------------------------------");
+			System.out.println("HardCoded HCProgrammingLanguage compiler (2020-10-15) (c)");
+			System.out.println();
+			System.out.printf("WorkingDir  : '%s'\n", working_directory);
+			System.out.printf("SourceFile  : '%s'\n", source_file);
+			System.out.printf("OutputFile  : '%s'\n", output_file);
+			System.out.printf("Format      : %s\n",   Objects.toString(format, "<NONE>"));
+			System.out.println("---------------------------------------------------------");
+			
+			long start = System.nanoTime();
+			HCompiler compiler = new HCompiler();
+			compiler.setWorkingDirectory(working_directory);
+			compiler.setSourceFile(source_file);
+			compiler.setOutputFile(output_file);
+			compiler.setOutputFormat(format);
+			compiler.build();
+			
+			long time = System.nanoTime() - start;
+			
+			System.out.println();
+			System.out.println("---------------------------------------------------------");
+			System.out.println("COMPILE FINISHED");
+			System.out.println();
+			System.out.printf("Took: %.4f milliseconds\n", time / 1000000D);
+			System.out.println("---------------------------------------------------------");
+		}
 	}
 	
 	public static boolean isDeveloper() {

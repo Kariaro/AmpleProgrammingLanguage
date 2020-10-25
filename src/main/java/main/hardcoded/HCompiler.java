@@ -9,12 +9,12 @@ import hardcoded.compiler.instruction.IRProgram;
 import hardcoded.exporter.impl.CodeGeneratorImpl;
 
 public class HCompiler {
-	private HCompilerBuild builder = new HCompilerBuild();
 	private CodeGeneratorImpl codegen;
 	private OutputFormat format;
-	private File sourcePath;
-	private File binaryPath;
-	private String fileName;
+	
+	private File workingDirectory;
+	private String sourceFile;
+	private String outputFile;
 	
 	private boolean hasCompiled;
 	
@@ -26,28 +26,32 @@ public class HCompiler {
 		
 	}
 	
-	public void setSourcePath(String pathname) {
-		this.sourcePath = new File(pathname);
+	public File getWorkingDirectory() {
+		return workingDirectory;
 	}
 	
-	public void setSourcePath(File path) {
-		this.sourcePath = path;
+	/**
+	 * Set the working directory of the compiler.
+	 * @param	file	a directory
+	 */
+	public void setWorkingDirectory(File directory) {
+		this.workingDirectory = directory;
 	}
 	
-	public void setBinaryPath(String pathname) {
-		this.binaryPath = new File(pathname);
+	/**
+	 * Set the source file of the compiler.
+	 * @param	pathname	a pathname string
+	 */
+	public void setSourceFile(String pathname) {
+		this.sourceFile = pathname;
 	}
 	
-	public void setBinaryPath(File path) {
-		this.binaryPath = path;
-	}
-	
-	public void setFileName(String name) {
-		this.fileName = name;
-	}
-	
-	public File getProjectPath() {
-		return sourcePath;
+	/**
+	 * Set the output file of the compiler.
+	 * @param	pathname	a pathname string
+	 */
+	public void setOutputFile(String pathname) {
+		this.outputFile = pathname;
 	}
 	
 	public void setOutputFormat(String formatName) {
@@ -59,28 +63,26 @@ public class HCompiler {
 	}
 	
 	public void build() throws Exception {
-		if(hasCompiled)
-			throw new Exception("Unclosed resources. Try calling reset()");
+		if(hasCompiled) throw new Exception("Unclosed resources. Try calling reset()");
 		if(format == null) throw new CompilerException("No output format has been selected");
-		if(fileName == null) throw new CompilerException("Entry file name was null");
 		
+		if(sourceFile == null) throw new CompilerException("No source file was specified");
+		if(outputFile == null) throw new CompilerException("No output file was specified");
+		
+		File sourcePath = new File(workingDirectory, sourceFile);
+		File outputPath = new File(workingDirectory, outputFile);
+		
+		if(sourcePath.equals(outputPath))
+			throw new CompilerException("source and output file cannot be the same file");
+		
+		// TODO: Check if this can be reused
+		HCompilerBuild builder = new HCompilerBuild();
 		codegen = format.createNew();
-		
-		File entryFile = new File(sourcePath, fileName);
-		program = builder.build(entryFile);
+		program = builder.build(sourcePath);
 		bytes = codegen.generate(program);
 		
 		// TODO: Is this safe?
-		String outputName = fileName;
-		{
-			int index = fileName.lastIndexOf('.');
-			if(index >= 0) {
-				outputName = outputName.substring(0, index) + format.extension;
-			}
-		}
-		
-		File binaryFile = new File(binaryPath, outputName);
-		FileOutputStream stream = new FileOutputStream(binaryFile);
+		FileOutputStream stream = new FileOutputStream(outputPath);
 		stream.write(bytes, 0, bytes.length);
 		stream.close();
 		
@@ -98,15 +100,12 @@ public class HCompiler {
 	/**
 	 * Returns the compiled ir program.
 	 * @return the compiled ir program
-	 * @return
 	 */
 	public IRProgram getProgram() {
 		return program;
 	}
 	
 	public void reset() {
-		// TODO: Check if the builder is reusable or if it sill has information about the last compile
-		builder = new HCompilerBuild();
 		program = null;
 		bytes = null;
 	}

@@ -5,6 +5,30 @@ This project is not finished and is currently under construction.
 The hc syntax is simmilar to C or C++ styled code but will allow for flexible
 keywords and inline syntax changes.
 
+## Usage
+
+To use this compiler you can call it from the console. *Only tested on windows*
+
+```
+java -jar hccompiler.jar [options] -compile <sourcefile> <outputfile>
+java -jar hccompiler.jar [options] -run <sourcefile>
+
+options:
+    -? -h -help
+                  display this help message
+
+    -p <path>
+                  set the working directory
+
+    -f -format
+                  the output format type
+                  [spooky]
+                  [x86] *
+                  [ir]
+```
+
+\* Currently being worked on and/or unstable.
+
 ## Compiler
 
 The compiler will be able to generate multiple output formats.
