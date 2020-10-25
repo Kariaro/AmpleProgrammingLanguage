@@ -280,7 +280,6 @@ public class IntermediateCodeOptimizer {
 		
 		while(iter.hasNext()) {
 			IRInstruction inst = iter.next();
-			
 			switch(inst.op) {
 				case bnz:
 				case brz:
@@ -293,11 +292,11 @@ public class IntermediateCodeOptimizer {
 			
 			int index = findLabel(func, iter.index(), label);
 			
-			// Check if the index is followed by a br
+			// Check if the index is followed by a br or a label
 			if(index + 1 < list.size()) {
 				IRInstruction pass = list.get(index + 1);
 				
-				if(pass.op == IRType.br) {
+				if(pass.op == IRType.br || pass.op == IRType.label) {
 					inst.params.set(paramIndex, pass.getParam(0));
 				}
 			}

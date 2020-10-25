@@ -13,10 +13,17 @@ public class HighType {
 	private final int size;
 	private final LowType type;
 	
+	@Deprecated
 	public HighType(String name, LowType type, int size) {
 		this.name = name;
 		this.size = size;
 		this.type = type;
+	}
+	
+	public HighType(String name, LowType type) {
+		this.name = name;
+		this.type = type;
+		this.size = type.size();
 	}
 	
 	public LowType type() {
@@ -36,6 +43,11 @@ public class HighType {
 	}
 	
 	public String toString() {
+		if(type.isPointer()) {
+			StringBuilder sb = new StringBuilder().append(name);
+			for(int i = 0; i < type.depth(); i++) sb.append('*');
+			return sb.toString();
+		}
 		return name;
 	}
 }

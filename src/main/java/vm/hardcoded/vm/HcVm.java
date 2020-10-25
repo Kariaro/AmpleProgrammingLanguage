@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import hardcoded.CompilerMain;
 import hardcoded.compiler.constants.Atom;
 import hardcoded.compiler.expression.LowType;
 import hardcoded.compiler.instruction.*;
@@ -20,6 +21,10 @@ public class HcVm {
 	private final StringBuilder stdout = new StringBuilder();
 	
 	public static void run(IRProgram program) {
+		if(CompilerMain.isDeveloper()) {
+			System.out.println("----------------------------");
+		}
+		
 		new HcVm(program).run();
 	}
 	
@@ -52,7 +57,7 @@ public class HcVm {
 	
 	private void run() {
 		run(entry, consts_offset, 0);
-		System.out.println(stdout);
+		System.out.println(stdout.toString().trim());
 	}
 	
 	private void run(VmFunction func, int offset, int ip) {
@@ -177,7 +182,17 @@ public class HcVm {
 				
 				case write: {
 					Value a = read(func, offset, inst.getParam(0));
-					memory.write((int)a.longValue(), read(func, offset, inst.getParam(1)), inst.getParam(1).getSize());
+					Value b = read(func, offset, inst.getParam(1));
+					memory.write((int)a.longValue(), b, inst.getParam(1).getSize());
+					
+					if(CompilerMain.isDeveloper() || true) {
+						if(a.longValue() >= 0xb8000 && a.longValue() < 0xc0000) {
+							stdout.ensureCapacity(0x8000);
+							stdout.setLength(0x8000);
+							stdout.setCharAt((int)(a.longValue() - 0xb8000), (char)b.longValue());
+						}
+					}
+					
 					break;
 				}
 				
@@ -237,6 +252,8 @@ public class HcVm {
 		} else if(param instanceof RefReg) {
 			RefReg reg = (RefReg)param;
 			return Value.dword(pointers.get(reg.toString()));
+		} else if(param instanceof DebugParam) {
+			return Value.dword(0); // TODO: Illegal
 		}
 		
 		throw new NullPointerException("Not found: " + param.getClass());

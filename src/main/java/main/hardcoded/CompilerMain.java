@@ -4,8 +4,10 @@ import java.io.*;
 import java.util.*;
 import java.util.logging.LogManager;
 
+import hardcoded.compiler.errors.CompilerException;
 import hardcoded.utils.DomainUtils;
 import hardcoded.utils.FileUtils;
+import hardcoded.vm.HcVm;
 
 /**
  * This is the main entry point for the compiler.<br>
@@ -81,11 +83,13 @@ public class CompilerMain {
 		
 		ActionType mode = ActionType.NONE;
 		
-		File working_directory = null;
-		String source_file = null;
-		String output_file = null;
+		// Default working directory
+		File working_directory = new File("").getAbsoluteFile();
+		String sourcePath = null;
+		String outputPath = null;
 		String format = null;
 		
+		// TODO: Make sure that the command line is correctly typed
 		for(int i = 0; i < args.length; i++) {
 			String str = args[i];
 			
@@ -104,20 +108,24 @@ public class CompilerMain {
 						printHelpMessage();
 						return;
 					}
+					
+					// Make sure that the working directory has the absolute path to the file and not a relative path
+					working_directory = working_directory.getAbsoluteFile();
+					
 					break;
 				}
 				
 				case "-run": {
 					if(i + 1 >= args.length) break;
-					source_file = args[(i++) + 1];
+					sourcePath = args[(i++) + 1];
 					mode = ActionType.RUN;
 					break;
 				}
 				
 				case "-compile": {
 					if(i + 2 >= args.length) break;
-					source_file = args[(i++) + 1];
-					output_file = args[(i++) + 1];
+					sourcePath = args[(i++) + 1];
+					outputPath = args[(i++) + 1];
 					mode = ActionType.COMPILE;
 					break;
 				}
@@ -132,22 +140,19 @@ public class CompilerMain {
 					return;
 				}
 			}
+			
+			if(mode != ActionType.NONE) break;
 		}
-		
-		if(working_directory == null) {
-			// TODO: Check if this is correct
-			working_directory = new File("").getAbsoluteFile();
-		} else {
-			// Make sure that this is a absolute file and not a relative file
-			working_directory = working_directory.getAbsoluteFile();
-		}
+
+		File sourceFile = null;
+		File outputFile = null;
 		
 		if(isDeveloper()) {
 			// Developer variables and test environment
 			
 			String file = "main.hc";
 			// file = "tests/000_pointer.hc";
-			file = "prim.hc";
+			// file = "prim.hc";
 			// file = "tests/001_comma.hc";
 			// file = "tests/002_invalid_assign.hc";
 			// file = "tests/003_invalid_brackets.hc";
@@ -155,10 +160,11 @@ public class CompilerMain {
 			// file = "tests/005_assign_comma.hc";
 			// file = "tests/006_cast_test.hc";
 			// file = "test_syntax.hc";
+			file = "prog.hc";
 			
 			// file = "tests_2/000_assign_test.hc";
 			
-			mode = ActionType.COMPILE;
+			mode = ActionType.RUN;
 			format = "ir";
 			String file_name = file;
 			{
@@ -166,12 +172,13 @@ public class CompilerMain {
 				if(index < 0) {
 					file_name = file + ".lir";
 				} else {
-					file_name = file.substring(index) + "lir";
+					file_name = file.substring(0, index) + ".lir";
 				}
 			}
 			
-			source_file = "res/project/src/" + file;
-			output_file = "res/project/bin/" + file_name;
+			working_directory = new File("res/project/src").getAbsoluteFile();
+			sourcePath = file;
+			outputPath = "../bin/" + file_name;
 		}
 		
 		if(mode == ActionType.NONE) {
@@ -179,23 +186,34 @@ public class CompilerMain {
 			return;
 		}
 		
+		sourceFile = new File(working_directory, sourcePath).getCanonicalFile();
+		HCompiler compiler = new HCompiler();
+		compiler.setSourceFile(sourceFile);
+		compiler.setOutputFormat(format);
+		
 		if(mode == ActionType.COMPILE) {
+			outputFile = new File(working_directory, outputPath).getCanonicalFile();
+			
 			System.out.println("---------------------------------------------------------");
 			System.out.println("HardCoded HCProgrammingLanguage compiler (2020-10-15) (c)");
 			System.out.println();
 			System.out.printf("WorkingDir  : '%s'\n", working_directory);
-			System.out.printf("SourceFile  : '%s'\n", source_file);
-			System.out.printf("OutputFile  : '%s'\n", output_file);
+			System.out.printf("SourceFile  : '%s'\n", sourcePath);
+			System.out.printf("OutputFile  : '%s'\n", outputPath);
 			System.out.printf("Format      : %s\n",   Objects.toString(format, "<NONE>"));
 			System.out.println("---------------------------------------------------------");
 			
-			long start = System.nanoTime();
-			HCompiler compiler = new HCompiler();
-			compiler.setWorkingDirectory(working_directory);
-			compiler.setSourceFile(source_file);
-			compiler.setOutputFile(output_file);
-			compiler.setOutputFormat(format);
+			if(sourceFile.equals(outputFile))
+				throw new CompilerException("source and output file cannot be the same file");
+			
 			compiler.build();
+			long start = System.nanoTime(); {
+				// TODO: Is this a safe operation?
+				byte[] bytes = compiler.getBytes();
+				FileOutputStream stream = new FileOutputStream(outputFile);
+				stream.write(bytes, 0, bytes.length);
+				stream.close();
+			}
 			
 			long time = System.nanoTime() - start;
 			
@@ -205,6 +223,11 @@ public class CompilerMain {
 			System.out.println();
 			System.out.printf("Took: %.4f milliseconds\n", time / 1000000D);
 			System.out.println("---------------------------------------------------------");
+		}
+		
+		if(mode == ActionType.RUN) {
+			compiler.build();
+			HcVm.run(compiler.getProgram());
 		}
 	}
 	

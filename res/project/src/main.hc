@@ -22,7 +22,7 @@
 
 bool print(char* string);
 void fortest() {
-	*((char*)0xf) = 5;
+	*((int*)0xf) = 5;
 	
 	for(; *((int*)0xf) > 0; *((int*)0xf)--) {
 		print("Loop");
@@ -89,9 +89,9 @@ export void main(int input, int a, int b, int c) {
 	
 	byte chr = (byte)23;
 	
-	// if(0 && (test4 += 1)) print("Because of the zero, the rest should be removed.");
-	// if(1 || (test4 += 1)) print("Because of the one, the rest should be removed.");
-	// if(1 || (test4 += 1)) print("Because of the one, the rest should be removed.");
+	if(0 && (test4 += 1)) print("Because of the zero, the rest should be removed.");
+	if(1 || (test4 += 1)) print("Because of the one, the rest should be removed.");
+	if(1 || (test4 += 1)) print("Because of the one, the rest should be removed.");
 	
 	// Should throw an error.
 	void __0 = (byte)32;
@@ -134,12 +134,18 @@ export void main(int input, int a, int b, int c) {
 
 bool print(char* string) {
 	char* buffer = &(0xb8000);
+	int* index = (int*)0xb7ffc;
+	buffer += *index;
 	
-	while(string[0] > 0) {
+	while(string[0]) {
 		buffer[0] = string[0];
-		string++;
 		buffer++;
+		string++;
+		(*index)++;
 	}
+	
+	buffer[0] = '\n';
+	(*index)++;
 	
 	return 0;
 }

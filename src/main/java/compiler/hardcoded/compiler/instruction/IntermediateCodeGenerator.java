@@ -5,6 +5,7 @@ import static hardcoded.compiler.constants.ExprType.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import hardcoded.CompilerMain;
 import hardcoded.compiler.Block;
 import hardcoded.compiler.Block.Function;
 import hardcoded.compiler.Identifier;
@@ -14,7 +15,6 @@ import hardcoded.compiler.Program;
 import hardcoded.compiler.expression.AtomExpr;
 import hardcoded.compiler.expression.Expression;
 import hardcoded.compiler.expression.LowType;
-import hardcoded.compiler.instruction.IRInstruction;
 import hardcoded.compiler.instruction.IRInstruction.*;
 import hardcoded.compiler.statement.*;
 
@@ -226,6 +226,7 @@ public class IntermediateCodeGenerator {
 					list.addAll(compileInstructions(a, reg_0));
 				}
 				
+				// System.out.println(expr);
 				LowType next = reg_0.getSize().nextLowerPointer();
 				
 				if(!next.equals(request)) {
@@ -390,6 +391,9 @@ public class IntermediateCodeGenerator {
 				break;
 			}
 			
+			case jump: {
+				// br expression
+			}
 			default: {
 				if(expr instanceof AtomExpr) {
 					if(request != null) {
@@ -404,7 +408,9 @@ public class IntermediateCodeGenerator {
 					break;
 				}
 				
-				System.err.println("[MISSING INSTRUCTION] -> " + expr);
+				if(CompilerMain.isDeveloper()) {
+					System.err.println("[MISSING INSTRUCTION] -> " + expr);
+				}
 			}
 		}
 		
