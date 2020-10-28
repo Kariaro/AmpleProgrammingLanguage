@@ -7,6 +7,7 @@ import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -241,6 +242,7 @@ public final class IRSerializer {
 		serial.writeBytes(buffer);
 	}
 	
+	@SuppressWarnings("unused")
 	private static byte[] encodeGzip(byte[] input) throws IOException {
 		ByteArrayOutputStream output = new ByteArrayOutputStream();
 		GZIPOutputStream stream = new GZIPOutputStream(output);
@@ -249,6 +251,7 @@ public final class IRSerializer {
 		return output.toByteArray();
 	}
 	
+	@SuppressWarnings("unused")
 	private static ByteArrayInputStream decodeGzip(InputStream stream) throws IOException {
 		ByteArrayOutputStream bs = new ByteArrayOutputStream();
 		GZIPInputStream gzip = new GZIPInputStream(stream);
@@ -499,6 +502,7 @@ public final class IRSerializer {
 		if(clazz.isEnum() || clazz == Boolean.class || clazz == AtomicInteger.class) return ty + "(" + obj.toString() + ")";
 		if(clazz == String.class) return ty + "(\"" + StringUtils.escapeString(obj.toString()) + "\")";
 		if(clazz == LowType.class) return name + ": LowType (" + ((LowType)obj).type() + ", " + ((LowType)obj).depth() + ")";
+		if(clazz == Pattern.class) return name + ": Pattern (\"" + ((Pattern)obj).pattern() + "\")";
 		if(Number.class.isAssignableFrom(clazz)) return ty + "(" + obj.toString() + ")";
 		
 		if(List.class.isAssignableFrom(clazz)) {
@@ -725,6 +729,7 @@ class Converter {
 
 class IO {
 	private static Map<String, Integer> map;
+	@SuppressWarnings("unused")
 	private static final int IF_LABEL		= 0x0 << 4,
 							 FOR_LABEL		= 0x1 << 4,
 							 WHILE_LABEL	= 0x2 << 4,

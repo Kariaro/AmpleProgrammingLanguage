@@ -6,13 +6,14 @@ import java.util.Objects;
 import hardcoded.compiler.Identifier;
 import hardcoded.compiler.constants.Atom;
 import hardcoded.compiler.constants.ExprType;
+import hardcoded.utils.StringUtils;
 
 public class AtomExpr implements Expression {
 	public LowType atomType;
 	
-	public Identifier d_value;	// ident
-	public String s_value;		// string
-	public long i_value;		// number
+	private Identifier d_value;	// ident
+	private String s_value;		// string
+	private long n_value;		// number
 	
 	public AtomExpr(long value) {
 		this(value, Atom.i64);
@@ -56,9 +57,8 @@ public class AtomExpr implements Expression {
 		} else if(type == Atom.ident) {
 			d_value = (Identifier)value;
 		} else if(type.isNumber()) {
-			
-			// TODO: Signed unsigned?
-			i_value = ((Number)value).longValue();
+			// FIXME: Double/Float values??
+			n_value = ((Number)value).longValue();
 		} else {
 			throw new RuntimeException("Invalid atom type '" + type + "'");
 		}
@@ -80,28 +80,28 @@ public class AtomExpr implements Expression {
 		if(!isNumber()) return null; // Invalid
 		
 		if(type.isPointer()) {
-			AtomExpr expr = new AtomExpr((long)i_value);
+			AtomExpr expr = new AtomExpr((long)n_value);
 			expr.atomType = type;
 			return expr;
 		}
 		
 		// TODO: Signed unsigned?
-		if(type.type() == Atom.i64) return new AtomExpr((long)i_value);
-		if(type.type() == Atom.i32) return new AtomExpr((int)i_value);
-		if(type.type() == Atom.i16) return new AtomExpr((short)i_value);
-		if(type.type() == Atom.i8) return new AtomExpr((byte)i_value);
+		if(type.type() == Atom.i64) return new AtomExpr((long)n_value);
+		if(type.type() == Atom.i32) return new AtomExpr((int)n_value);
+		if(type.type() == Atom.i16) return new AtomExpr((short)n_value);
+		if(type.type() == Atom.i8) return new AtomExpr((byte)n_value);
 		
 		throw new RuntimeException("Invalid type cast '" + type + "'");
 	}
 	
 	public boolean isZero() {
 		if(!isNumber()) throw new RuntimeException("You cannot check a non number if it is zero.");
-		return i_value == 0;
+		return n_value == 0;
 	}
 	
 	public boolean isOne() {
 		if(!isNumber()) throw new RuntimeException("You cannot check a non number if it is zero.");
-		return i_value == 1;
+		return n_value == 1;
 	}
 	
 	public List<Expression> getElements() { return null; }
@@ -115,29 +115,38 @@ public class AtomExpr implements Expression {
 	public LowType atomType() { return atomType; }
 	public ExprType type() { return ExprType.atom; }
 	
-	// public LowType override_size;
-	public LowType size() {
-		// if(override_size != null) return override_size;
-		
-		return Expression.super.size();
+	
+	
+	public Identifier identifier() {
+		return d_value;
 	}
+	
+	public String string() {
+		return s_value;
+	}
+	
+	public long number() {
+		return n_value;
+	}
+	
+	
 	
 	public AtomExpr clone() {
 		AtomExpr expr = new AtomExpr(0);
 		expr.atomType = atomType;
-		// expr.override_size = override_size;
+		
 		if(isIdentifier()) {
 			expr.d_value = d_value.clone();
-			
 		}
-		expr.i_value = i_value;
+		
+		expr.n_value = n_value;
 		expr.s_value = s_value;
 		return expr;
 	}
 	
 	public String asString() { return toString() + ":" + atomType(); }
 	public String toString() {
-		if(atomType.type() == Atom.string) return '\"' + s_value + '\"';
+		if(atomType.type() == Atom.string) return '\"' + StringUtils.escapeString(s_value) + '\"';
 		if(atomType.type() == Atom.ident)  return Objects.toString(d_value);
 		
 		// TODO: Signed unsigned?
@@ -146,10 +155,10 @@ public class AtomExpr implements Expression {
 			
 			// TODO: Print unsigned values correctly.
 			switch(atomType.size()) {
-				case 8: return Long.toString(i_value) + postfix + 'L';
-				case 4: return Integer.toString((int)i_value) + postfix + 'i';
-				case 2: return Short.toString((short)i_value) + postfix + 's';
-				case 1: return Byte.toString((byte)i_value) + postfix + 'b';
+				case 8: return Long.toString(n_value) + postfix + 'L';
+				case 4: return Integer.toString((int)n_value) + postfix + 'i';
+				case 2: return Short.toString((short)n_value) + postfix + 's';
+				case 1: return Byte.toString((byte)n_value) + postfix + 'b';
 			}
 		}
 		

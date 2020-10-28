@@ -6,7 +6,7 @@ package hardcoded.compiler.errors;
  * 
  * @author HardCoded
  */
-public class CompilerException extends RuntimeException {
+public class CompilerException extends Error {
 	private static final long serialVersionUID = -3780487404643365332L;
 	
 	private final String message;

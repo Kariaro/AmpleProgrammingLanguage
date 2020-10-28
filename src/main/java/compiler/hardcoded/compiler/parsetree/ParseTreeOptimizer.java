@@ -62,7 +62,7 @@ public class ParseTreeOptimizer {
 					Expression c = ((ForStat)stat).getCondition();
 					if(c instanceof AtomExpr) {
 						AtomExpr a = (AtomExpr)c;
-						if(a.isNumber() && a.isZero()) parent.set(index, Statement.EMPTY);
+						if(a.isNumber() && a.isZero()) parent.set(index, Statement.newEmpty());
 					}
 				}
 				
@@ -70,7 +70,7 @@ public class ParseTreeOptimizer {
 					Expression c = ((WhileStat)stat).getCondition();
 					if(c instanceof AtomExpr) {
 						AtomExpr a = (AtomExpr)c;
-						if(a.isNumber() && a.isZero()) parent.set(index, Statement.EMPTY);
+						if(a.isNumber() && a.isZero()) parent.set(index, Statement.newEmpty());
 					}
 				}
 				
@@ -82,7 +82,7 @@ public class ParseTreeOptimizer {
 						if(a.isNumber()) {
 							if(a.isZero()) {
 								if(is.getElseBody() == null) {
-									parent.set(index, Statement.EMPTY);
+									parent.set(index, Statement.newEmpty());
 								} else {
 									parent.set(index, is.getElseBody());
 								}

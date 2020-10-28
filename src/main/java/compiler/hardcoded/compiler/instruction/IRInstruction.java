@@ -161,7 +161,7 @@ public class IRInstruction {
 		private final long value;
 		
 		public NumberReg(AtomExpr expr) {
-			this(expr.i_value, expr.atomType);
+			this(expr.number(), expr.atomType);
 		}
 		
 		public NumberReg(long value, LowType size) {
@@ -256,7 +256,7 @@ public class IRInstruction {
 		private final LowType size;
 		
 		public FunctionLabel(Identifier ident) {
-			this(ident.name(), ident.low_type());
+			this(ident.name(), ident.getLowType());
 		}
 		
 		public FunctionLabel(String name, LowType size) {

@@ -18,10 +18,10 @@ public class Identifier {
 	private boolean isGenerated;
 	
 	private Function function;
-	private LowType low_type;
+	private LowType lowType;
 
 	@Deprecated
-	private HighType high_type;
+	private HighType highType;
 	
 	public Function func() {
 		return function;
@@ -35,14 +35,13 @@ public class Identifier {
 		return id_type;
 	}
 	
-	@Deprecated
-	public HighType high_type() {
-		return high_type;
+	public HighType getHighType() {
+		return highType;
 	}
 	
-	public LowType low_type() {
-		if(low_type != null) return low_type;
-		return high_type == null ? null:high_type.type();
+	public LowType getLowType() {
+		if(lowType != null) return lowType;
+		return highType == null ? null:highType.type();
 	}
 	
 	public int index() {
@@ -63,8 +62,8 @@ public class Identifier {
 		ident.index = index;
 		ident.function = func;
 		ident.id_type = IdType.funct;
-		ident.high_type = func.returnType;
-		ident.low_type = ident.high_type.type();
+		ident.highType = func.returnType;
+		ident.lowType = ident.highType.type();
 		return ident;
 	}
 	
@@ -73,17 +72,18 @@ public class Identifier {
 		Identifier ident = new Identifier();
 		ident.name = name;
 		ident.index = index;
-		ident.low_type = type;
+		ident.lowType = type;
 		ident.isGenerated = temp;
 		ident.id_type = IdType.var;
 		return ident;
 	}
 	
-	public static Identifier createParamIdent(String name, int index, LowType type) {
+	public static Identifier createParamIdent(String name, int index, HighType type) {
 		Identifier ident = new Identifier();
 		ident.name = name;
 		ident.index = index;
-		ident.low_type = type;
+		ident.highType = type;
+		ident.lowType = type.type();
 		ident.id_type = IdType.param;
 		return ident;
 	}
@@ -93,8 +93,8 @@ public class Identifier {
 		a.name = name;
 		a.index = index;
 		a.id_type = id_type;
-		a.low_type = low_type;
-		a.high_type = high_type;
+		a.lowType = lowType;
+		a.highType = highType;
 		a.isGenerated = isGenerated;
 		a.function = function;
 		return a;
@@ -102,6 +102,6 @@ public class Identifier {
 	
 	@Override
 	public String toString() {
-		return name + ":" + low_type();
+		return name + ":" + getLowType();
 	}
 }

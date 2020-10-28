@@ -2,7 +2,7 @@ package hardcoded.compiler.statement;
 
 import java.util.List;
 
-public class LabelStat implements Statement {
+public class LabelStat extends Statement {
 	// TODO: Implement 'label statements'
 	
 	public boolean hasStatements() { return false; }

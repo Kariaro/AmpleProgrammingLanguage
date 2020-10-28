@@ -25,7 +25,7 @@ public class IfStat extends NestedStat {
 	
 	public boolean hasElseBody() {
 		Statement stat = getElseBody();
-		if(stat == null || stat == EMPTY) return false;
+		if(stat == null || stat.isEMPTY()) return false;
 		return stat.hasStatements() && !stat.getStatements().isEmpty();
 	}
 	

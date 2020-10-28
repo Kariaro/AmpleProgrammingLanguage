@@ -6,7 +6,7 @@ import java.util.List;
 import hardcoded.compiler.expression.Expression;
 import hardcoded.utils.StringUtils;
 
-public class ExprStat implements Statement {
+public class ExprStat extends Statement {
 	public List<Expression> list = new ArrayList<>();
 	
 	public ExprStat(Expression expr) {
