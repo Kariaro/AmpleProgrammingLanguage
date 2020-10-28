@@ -3,192 +3,39 @@ package hardcoded.lexer;
 import java.util.Objects;
 
 /**
- * This {@code Token} class contains data about syntax read from
- * a file or string.
+ * A token class.
  * 
  * @author HardCoded
  */
 public class Token {
-	// TODO: Maybe use the words trailing? leading?
-	protected final boolean discard;
-	protected final String value;
-	protected String group;
-	protected Token prev;
-	protected Token next;
+	public final String value;
+	public final String group;
+	public final int offset;
+	public final int line;
+	public final int column;
 	
-	protected int line;
-	protected int column;
-	protected int fileOffset;
-	
-	protected Token() {
-		value = null;
-		discard = true;
-	}
-	
-	protected Token(String group, String value, boolean discard, int lineIndex, int columnIndex, int fileOffset) {
-		this.group = group;
+	public Token(String value, String group, int offset, int line, int column) {
 		this.value = value;
-		this.discard = discard;
-		this.line = lineIndex;
-		this.column = columnIndex;
-		this.fileOffset = fileOffset;
+		this.group = group;
+		this.offset = offset;
+		this.line = line;
+		this.column = column;
 	}
 	
-	public int line() {
-		return line;
+	public boolean valueEquals(String string) {
+		return Objects.equals(value, string);
 	}
 	
-	public int column() {
-		return column;
-	}
-	
-	/**
-	 * Get the offset from the start of the file that this token was read from.
-	 */
-	public int fileOffset() {
-		return fileOffset;
-	}
-	
-	public String group() {
-		return group;
-	}
-	
-	public String value() {
-		return value;
-	}
-	
-	
-	/**
-	 * Get the next token.
-	 */
-	public Token next() {
-		return next;
-	}
-	
-	/**
-	 * Get the nth-next token.
-	 * @param count a value of one will give the same result as calling {@link #next()}
-	 * @return the nth-next token or {@code null} if the count was greater than the number of remaining tokens
-	 */
-	public Token next(int count) {
-		if(count <= 0)
-			return this;
-		
-		Token token = this;
-		while(count-- > 0)
-			token = token.next;
-		
-		return token;
-	}
-	
-	/**
-	 * Get the previous token.
-	 */
-	public Token prev() {
-		return prev;
-	}
-	
-	/**
-	 * Get the nth-previous token.
-	 * @param count a value of one will give the same result as calling {@link #prev()}
-	 * @return the nth-previous token or {@code null} if the count was greater than the length of the chain
-	 */
-	public Token prev(int count) {
-		if(count <= 0)
-			return this;
-		
-
-		Token token = this;
-		while(count-- > 0)
-			token = token.prev;
-		
-		return token;
-	}
-	
-	/**
-	 * Get the relative index of the passed token to this token.
-	 * @return {@code -1} if the token was not found in the chain
-	 */
-	public int indexOf(Token token) {
-		if(token == null) return -1;
-		if(token == this) return 0;
-		Token t = this;
-		
-		int index = 0;
-		while(t.next != null) {
-			t = t.next;
-			index++;
-			if(token == t) return index;
-		}
-		
-		return -1;
-	}
-	
-	/**
-	 * Get the number of remaining tokens in the chain.
-	 */
-	public int remaining() {
-		if(next == null) return 0;
-		int result = 0;
-		Token token = next;
-		while(token != null) {
-			result++;
-			token = token.next;
-		}
-		return result;
-	}
-	
-	public boolean equals(Object obj) {
-		if(obj instanceof String) return obj.equals(value);
-		return this == obj;
-	}
-	
-	public boolean groupEquals(String group) {
-		return Objects.equals(this.group, group);
-	}
-	
-	public boolean valueEquals(String value) {
-		return Objects.equals(this.value, value);
+	public boolean groupEquals(String string) {
+		return Objects.equals(group, string);
 	}
 	
 	public boolean equals(String group, String value) {
-		return groupEquals(group) && valueEquals(value);
+		return valueEquals(value)
+			&& groupEquals(group);
 	}
 	
 	public String toString() {
 		return value;
-	}
-	
-	/**
-	 * Returns the values of the next count amount of tokens concatinated together.
-	 * @param count a value of one will give the same result as calling {@link #toString()}
-	 * @return returns a string of the concatinated tokens.
-	 */
-	public String toString(int count) {
-		return toString("", count);
-	}
-	
-	/**
-	 * Returns the values of the next count amount of tokens concatinated together.
-	 * @param separator the string that will separate the concatinated tokens.
-	 * @param count a value of one will give the same result as calling {@link #toString()}
-	 * @return returns a string of the concatinated tokens.
-	 */
-	public String toString(CharSequence separator, int count) {
-		StringBuilder sb = new StringBuilder();
-		Token token = this;
-		
-		int max = Math.min(remaining(), count) + 1;
-		for(int i = 0; i < max; i++) {
-			sb.append(token.value).append(separator);
-			token = token.next;
-			if(token == null) break;
-		}
-		
-		if(sb.length() > separator.length()) {
-			sb.delete(sb.length() - separator.length(), sb.length());
-		}
-		
-		return sb.toString();
 	}
 }

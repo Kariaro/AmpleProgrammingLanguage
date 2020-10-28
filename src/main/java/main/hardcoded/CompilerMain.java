@@ -25,8 +25,7 @@ import hardcoded.vm.HcVm;
  * Stage five is to optimize the reduced instruction language.<p>
  * 
  * 
- * Stage six is to generate the assembly code.<br>
- * Stage seven is to optimize the assembly code.
+ * Stage six is optional and requires a code generator.
  * 
  * @author HardCoded
  */
@@ -160,11 +159,11 @@ public class CompilerMain {
 			// file = "tests/005_assign_comma.hc";
 			// file = "tests/006_cast_test.hc";
 			// file = "test_syntax.hc";
-			file = "prog.hc";
+			// file = "prog.hc";
 			
 			// file = "tests_2/000_assign_test.hc";
 			
-			mode = ActionType.RUN;
+			mode = ActionType.COMPILE;
 			format = "ir";
 			String file_name = file;
 			{

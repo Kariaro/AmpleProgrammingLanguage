@@ -1,6 +1,9 @@
 package hardcoded.compiler.errors;
 
 public enum CompilerError {
+	NONE("Missing error message!"),
+	
+	
 	INVALID_UNARY_EXPRESSION_OPERATION("Invalid use of a unary expression. The value you are trying to modify is not modifiable."),
 	INVALID_MODIFICATION("The value you are trying to modify is not modifiable."),
 	INVALID_CHAR_LITERAL_SIZE("Invalid character constant."),
@@ -14,6 +17,14 @@ public enum CompilerError {
 	INVALID_FUNCTION_CALL_PARAMETER("Invalid function call parameter."),
 	INVALID_FUNCTION_CALL_EXPRESSION("Invalid function call expression '%s'."),
 	INVALID_FUNCTION_DECLARATION_EXPECTED_XXX("Invalid function declaration. %s."),
+	
+	INVALID_FUNCTION_DECLARATION_EXPECTED_OPEN_PARENTHESIS("Invalid function declaration. Expected open parenthesis '(' but got '%s'"),
+	INVALID_FUNCTION_DECLARATION_EXPECTED_CLOSING_PARENTHESIS("Invalid function declaration. Expected closing parenthesis ')' but got '%s'"),
+	INVALID_FUNCTION_DECLARATION_EXPECTED_A_FUNCTION_BODY("Invalid function declaration. Expected a function body"),
+	INVALID_FUNCTION_DECLARATION_EXPECTED_OPEN_CURLYBRACKET("Invalid function declaration. Expected open bracket '{'"),
+	INVALID_FUNCTION_DECLARATION_WRONG_RETURN_TYPE("Invalid function declaration. The return type of the defined function is of the wrong type. Expected '%s'"),
+	INVALID_FUNCTION_DECLARATION_WRONG_MODIFIERS("Invalid function declaration. Modifiers are different '%s', expected '%s'"),
+	INVALID_FUNCTION_REDECLARATION("Invalid function redeclaration. A function named '%s' already exists"),
 	
 	INVALID_TERNARY_OPERATOR_MISSING_COLON("Invalid ternary operation a ? b : c. Did you forget a colon here? '%s'"),
 	INVALID_VARIABLE_DECLARATION_MISSING_COLON_OR_SEMICOLON("Invalid variable definition. Expected a comma or semicolon but got '%s'"),

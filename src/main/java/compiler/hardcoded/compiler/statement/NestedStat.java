@@ -10,7 +10,7 @@ import java.util.List;
  * 
  * @author HardCoded
  */
-public class NestedStat implements Statement {
+public class NestedStat extends Statement {
 	public List<Statement> list = new ArrayList<>();
 	
 	public NestedStat() {
@@ -24,7 +24,7 @@ public class NestedStat implements Statement {
 	
 	public NestedStat(int length) {
 		for(int i = 0; i < length; i++)
-			list.add(Statement.EMPTY);
+			list.add(Statement.newEmpty());
 	}
 	
 	public boolean hasStatements() {

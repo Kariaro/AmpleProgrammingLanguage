@@ -39,7 +39,7 @@ public class IRProgram {
 	protected IRFunction addFunction(Function func, List<IRInstruction> list) {
 		LowType[] params = new LowType[func.arguments.size()];
 		for(int i = 0; i < params.length; i++) {
-			params[i] = func.arguments.get(i).low_type();
+			params[i] = func.arguments.get(i).getLowType();
 		}
 		
 		IRFunction ir_func = new IRFunction(func.returnType.type(), func.name, params);

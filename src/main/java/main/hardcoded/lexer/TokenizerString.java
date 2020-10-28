@@ -33,7 +33,7 @@ final class TokenizerString implements CharSequence {
 	
 	int getLine() { return lineIndex; }
 	int getColumn() { return columnIndex; }
-	int getIndex() { return index; }
+	int getOffset() { return index; }
 	
 	void move(int index) {
 		if(index > 0) {

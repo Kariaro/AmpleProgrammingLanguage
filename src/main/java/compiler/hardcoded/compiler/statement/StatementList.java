@@ -5,7 +5,7 @@ import java.util.List;
 
 import hardcoded.utils.StringUtils;
 
-public class StatementList implements Statement {
+public class StatementList extends Statement {
 	public List<Statement> list;
 	
 	public StatementList() {
@@ -16,12 +16,10 @@ public class StatementList implements Statement {
 		this.list = new ArrayList<>(list);
 	}
 	
-	@Override
 	public boolean hasStatements() {
 		return true;
 	}
 	
-	@Override
 	public List<Statement> getStatements() {
 		return list;
 	}

@@ -5,13 +5,16 @@ import java.util.List;
 import java.util.Vector;
 
 import hardcoded.compiler.constants.Modifiers.Modifier;
+import hardcoded.compiler.context.NamedRange;
+import hardcoded.compiler.context.TokenContext;
 import hardcoded.compiler.expression.LowType;
 import hardcoded.compiler.statement.Statement;
 import hardcoded.compiler.statement.Variable;
 import hardcoded.compiler.types.HighType;
+import hardcoded.lexer.Token;
 import hardcoded.visualization.Printable;
 
-public interface Block extends Printable {
+public abstract class Block implements Printable, TokenContext {
 	public static final Block EMPTY = new Block() {
 		public String asString() { return ""; }
 		public Object[] asList() { return new Object[] { }; }
@@ -20,10 +23,10 @@ public interface Block extends Printable {
 		public String toString() { return "null"; }
 	};
 	
-	public boolean hasElements();
-	public List<Statement> getElements();
+	public abstract boolean hasElements();
+	public abstract List<Statement> getElements();
 	
-	public static class NestedBlock implements Block {
+	public static class NestedBlock extends Block {
 		public List<Statement> list = new ArrayList<>();
 		
 		@Override
@@ -42,10 +45,12 @@ public interface Block extends Printable {
 	public static class ClassBlock extends NestedBlock {
 		// TODO: Variables, Constructor, Methods, Operator overrides
 		
-		
+		public Token[] getTokens() {
+			return null;
+		}
 	}
 	
-	public static class Function implements Block {
+	public static class Function extends Block {
 		public Modifier modifier;
 		public HighType returnType;
 		public String name;
@@ -120,6 +125,10 @@ public interface Block extends Printable {
 			return this;
 		}
 		
+		public String getName() {
+			return name;
+		}
+		
 		public boolean isPlaceholder() {
 			return body == null;
 		}
@@ -131,7 +140,7 @@ public interface Block extends Printable {
 			sb.append(returnType).append(" ").append(name).append("(");
 			for(int i = 0; i < arguments.size(); i++) {
 				Identifier ident = arguments.get(i);
-				sb.append(ident.high_type()).append(" ").append(ident);
+				sb.append(ident.getHighType()).append(" ").append(ident);
 				if(i < arguments.size() - 1) sb.append(", ");
 			}
 			
@@ -144,5 +153,13 @@ public interface Block extends Printable {
 		public String asString() { return "function " + name + "[" + var_index + (var_index == 1 ? " variable":" variables") + "]"; }
 		public Object[] asList() { return new Object[] { body }; }
 	}
-
+	
+	private NamedRange range;
+	public NamedRange getDefinedRange() {
+		return range;
+	}
+	
+	public void setDefinedRange(NamedRange range) {
+		this.range = range;
+	}
 }

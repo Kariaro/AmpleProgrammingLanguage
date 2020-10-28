@@ -145,10 +145,10 @@ public interface Expression extends Printable {
 			AtomExpr a = (AtomExpr)this;
 			
 			if(a.isIdentifier()) {
-				Identifier ident = a.d_value;
+				Identifier ident = a.identifier();
 				
 				if(ident.hasType()) {
-					return ident.low_type();
+					return ident.getLowType();
 				}
 			}
 			

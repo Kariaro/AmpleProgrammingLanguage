@@ -22,7 +22,7 @@ public final class ExpressionParser {
 			boolean sign = !a.atomType.isSigned()
 						|| !b.atomType.isSigned();
 			
-			return new AtomExpr(o(sign, a.i_value, b.i_value)).convert(LowType.largest(a.atomType, b.atomType));
+			return new AtomExpr(o(sign, a.number(), b.number())).convert(LowType.largest(a.atomType, b.atomType));
 		}
 		
 		long o(boolean unsigned, long a, long b);
@@ -30,7 +30,7 @@ public final class ExpressionParser {
 	
 	@FunctionalInterface
 	private static interface UnFnc {
-		public default AtomExpr run(AtomExpr a) { return new AtomExpr(o(!a.atomType.isSigned(), a.i_value)).convert(a.atomType); }
+		public default AtomExpr run(AtomExpr a) { return new AtomExpr(o(!a.atomType.isSigned(), a.number())).convert(a.atomType); }
 		long o(boolean unsigned, long a);
 	}
 	

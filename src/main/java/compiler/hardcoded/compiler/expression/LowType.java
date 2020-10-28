@@ -73,6 +73,18 @@ public class LowType {
 		return new LowType(type, depth + 1);
 	}
 	
+	/**
+	 * Returns the size of the base type if this where a pointer.
+	 * The size of the data with one lower pointer.
+	 * 
+	 * @return
+	 */
+	public int baseSize() {
+		if(depth > 1) return getPointerSize();
+		// TODO: If the depth is 0 then this should return a invalid value !!
+		return type.size();
+	}
+	
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		for(int i = 0; i < depth; i++) sb.append('*');

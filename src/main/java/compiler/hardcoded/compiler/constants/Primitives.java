@@ -15,15 +15,15 @@ public final class Primitives {
 	private Primitives() {}
 	
 	private static final Set<HighType> PRIMITIVE;
-	public static final HighType VOID = new PrimitiveType("void", Atom.unf, 0); // none
-	// public static final Type DOUBLE = new PrimitiveType("double", AtomType.i64, 8, true, true);
-	// public static final Type FLOAT = new PrimitiveType("float", AtomType.i32, 4, true, true);
-	public static final HighType LONG = new PrimitiveType("long", Atom.i64, 8);
-	public static final HighType INT = new PrimitiveType("int", Atom.i32, 4);
-	public static final HighType SHORT = new PrimitiveType("short", Atom.i16, 2);
-	public static final HighType BYTE = new PrimitiveType("byte", Atom.i8, 1);
-	public static final HighType CHAR = new PrimitiveType("char", Atom.i8, 1);
-	public static final HighType BOOL = new PrimitiveType("bool", Atom.i8, 1);
+	public static final HighType VOID = new PrimitiveType("void", Atom.unf); // none
+	// public static final Type DOUBLE = new PrimitiveType("double", AtomType.i64, true, true);
+	// public static final Type FLOAT = new PrimitiveType("float", AtomType.i32, true, true);
+	public static final HighType LONG = new PrimitiveType("long", Atom.i64);
+	public static final HighType INT = new PrimitiveType("int", Atom.i32);
+	public static final HighType SHORT = new PrimitiveType("short", Atom.i16);
+	public static final HighType BYTE = new PrimitiveType("byte", Atom.i8);
+	public static final HighType CHAR = new PrimitiveType("char", Atom.i8);
+	public static final HighType BOOL = new PrimitiveType("bool", Atom.i8);
 	
 	static {
 		Set<HighType> types = new HashSet<HighType>();

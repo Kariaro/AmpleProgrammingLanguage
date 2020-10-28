@@ -1,5 +1,5 @@
 // include "test.hc";
-
+// @import "main.hc";
 
 /* This is a multiline comment.
  * 

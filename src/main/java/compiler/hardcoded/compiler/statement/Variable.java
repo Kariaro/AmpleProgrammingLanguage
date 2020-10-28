@@ -6,7 +6,7 @@ import java.util.List;
 import hardcoded.compiler.expression.Expression;
 import hardcoded.compiler.types.HighType;
 
-public class Variable implements Statement {
+public class Variable extends Statement {
 	public List<Expression> list;
 	
 	public HighType type;

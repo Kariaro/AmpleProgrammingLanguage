@@ -12,7 +12,6 @@ import hardcoded.compiler.instruction.IRInstruction.*;
 import hardcoded.compiler.numbers.Value;
 
 public class HcVm {
-	// Main memory
 	private final Memory memory = new Memory();
 	private final Map<String, VmFunction> functions;
 	private final Map<String, Integer> pointers;
@@ -124,7 +123,6 @@ public class HcVm {
 					
 					Value a = read(func, offset, inst.getParam(1));
 					Value b = read(func, offset, inst.getParam(2));
-					//System.out.println(inst.type() + "| " + a + " <op> " + b);
 					
 					switch(inst.type()) {
 						case add: a = a.add(b); break;

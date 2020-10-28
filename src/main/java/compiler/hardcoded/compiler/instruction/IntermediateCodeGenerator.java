@@ -60,7 +60,7 @@ public class IntermediateCodeGenerator {
 	}
 	
 	private Param addString(AtomExpr a) {
-		return new RefReg(".data.strings", program.getContext().getStringIndexAddIfAbsent(a.s_value));
+		return new RefReg(".data.strings", program.getContext().getStringIndexAddIfAbsent(a.string()));
 	}
 	
 	private Param createObject(Expression e) {
@@ -72,7 +72,7 @@ public class IntermediateCodeGenerator {
 			}
 			
 			if(a.isIdentifier()) {
-				Identifier ident = a.d_value;
+				Identifier ident = a.identifier();
 				String name = ident.name();
 				
 				if(variables.containsKey(name)) return variables.get(name);
@@ -80,7 +80,7 @@ public class IntermediateCodeGenerator {
 				
 				Param next;
 				if(ident.id_type() == IdType.param) {
-					next = new Reg(ident.name(), ident.low_type(), ident.index());
+					next = new Reg(ident.name(), ident.getLowType(), ident.index());
 				} else {
 					next = temp(size);
 				}
@@ -316,8 +316,8 @@ public class IntermediateCodeGenerator {
 						AtomExpr a = (AtomExpr)e;
 						
 						if(a.isIdentifier()) {
-							func = a.d_value.func();
-							params.add(new IRInstruction.FunctionLabel(a.d_value));
+							func = a.identifier().func();
+							params.add(new IRInstruction.FunctionLabel(a.identifier()));
 						}
 					} else {
 						params.add(new IRInstruction.LabelParam(e.toString()));
@@ -330,7 +330,7 @@ public class IntermediateCodeGenerator {
 					
 					if(shouldCheck(e)) {
 						// reg should be the size of the parameter for that function...
-						reg = temp(func.arguments.get(i - 1).low_type());//e.size());
+						reg = temp(func.arguments.get(i - 1).getLowType());//e.size());
 						
 						// System.out.println("Call param: " + reg + ":" + reg.getSize());
 						list.addAll(compileInstructions(e, reg));
@@ -598,7 +598,7 @@ public class IntermediateCodeGenerator {
 	}
 	
 	private List<IRInstruction> _createInstructions(Statement stat) {
-		if(stat == null || stat == Statement.EMPTY) return null;
+		if(stat == null || stat.isEMPTY()) return null;
 		
 		if(stat instanceof IfStat) {
 			return createIfInstructions((IfStat)stat);
