@@ -2,11 +2,9 @@ package hardcoded.compiler.statement;
 
 import java.util.List;
 
-import hardcoded.compiler.context.NamedRange;
-import hardcoded.compiler.context.TokenContext;
 import hardcoded.visualization.Printable;
 
-public abstract class Statement implements Printable, TokenContext {
+public abstract class Statement implements Printable {
 	@Deprecated
 	public static final Statement EMPTY = new Statement() {
 		public boolean hasStatements() {
@@ -39,15 +37,6 @@ public abstract class Statement implements Printable, TokenContext {
 	
 	public Object[] asList() {
 		return new Object[0];
-	}
-	
-	private NamedRange range;
-	public NamedRange getDefinedRange() {
-		return range;
-	}
-	
-	public void setDefinedRange(NamedRange range) {
-		this.range = range;
 	}
 	
 	public boolean isEMPTY() {

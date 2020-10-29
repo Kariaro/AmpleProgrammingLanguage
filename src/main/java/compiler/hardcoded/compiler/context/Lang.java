@@ -40,16 +40,6 @@ public class Lang {
 	}
 	
 	public Lang resetMarked() {
-//		if(!marked.isEmpty()) {
-//			System.out.println("Marked: (" + marked + ")");
-//			for(int i : marked) {
-//				Token t = list.get(i);
-//				
-//				System.out.printf("'%s' ", t);
-//			}
-//			System.out.println();
-//		}
-		
 		marked.clear();
 		return this;
 	}
@@ -158,12 +148,10 @@ public class Lang {
 		
 		Token first = list.get(idx);
 		Token token = list.get(index - 1);
-//		if(token == null) {
-//			return new NamedRange("????", -1, -1);
-//		}
+		
 		NamedRange range = new NamedRange(name, first.offset, token.offset + token.value.length() - first.offset);
 		
-		System.out.println("closeRange: [" + index + "] " + range);
+		// System.out.println("closeRange: [" + index + "] " + range);
 		return range;
 	}
 }

@@ -1,8 +1,8 @@
-# HCProgramming Language
+# Ample Programming Language
 Creating a compiler for my own programing language.
 This project is not finished and is currently under construction.
 
-The hc syntax is simmilar to C or C++ styled code but will allow for flexible
+The ample syntax is simmilar to C or C++ styled code but will allow for flexible
 keywords and inline syntax changes.
 
 ## Usage

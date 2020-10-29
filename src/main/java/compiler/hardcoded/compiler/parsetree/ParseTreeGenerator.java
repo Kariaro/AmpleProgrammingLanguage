@@ -132,18 +132,12 @@ public class ParseTreeGenerator {
 		this.sourceFile = lastFile;
 	}
 	
-	public Program nextProgram() {
+	// TODO: Redo this method
+	private void nextProgram() {
 		do {
 			Block block = nextBlock();
 			if(block == null) break;
-			
-			// TODO: We should not need to add another block here
-//			if(!currentProgram.contains(block)) {
-//				currentProgram.add(block);
-//			}
 		} while(true);
-		
-		return currentProgram;
 	}
 	
 	private Block nextBlock() {
@@ -214,7 +208,7 @@ public class ParseTreeGenerator {
 	private Function makeFunction() {
 		if(reader.remaining() < 1) return null;
 		
-		reader.beginRange("function");
+		// reader.beginRange("function");
 		
 		Function func = new Function();
 		if(Modifiers.contains(reader.value())) func.modifier = nextFuncModifier();
@@ -264,7 +258,7 @@ public class ParseTreeGenerator {
 		if(!reader.valueEqualsAdvance(")")) syntaxError(CompilerError.INVALID_FUNCTION_DECLARATION_EXPECTED_CLOSING_PARENTHESIS, reader);
 		if(reader.valueEqualsAdvance(";")) {
 			if(needsBody) syntaxError(CompilerError.INVALID_FUNCTION_DECLARATION_EXPECTED_A_FUNCTION_BODY);
-			func.setDefinedRange(reader.closeRange("function"));
+			// func.setDefinedRange(reader.closeRange("function"));
 			return func;
 		} else if(!reader.valueEquals("{")) {
 			syntaxError(CompilerError.INVALID_FUNCTION_DECLARATION_EXPECTED_OPEN_CURLYBRACKET);
@@ -273,7 +267,7 @@ public class ParseTreeGenerator {
 		currentFunction.inc_scope();
 		func.body = getStatements();
 		currentFunction.dec_scope();
-		func.setDefinedRange(reader.closeRange("function"));
+		// func.setDefinedRange(reader.closeRange("function"));
 		return func;
 	}
 	
@@ -338,8 +332,7 @@ public class ParseTreeGenerator {
 				return new ExprStat(expr);
 			}
 			
-			// TODO: Is this the correct error????
-			syntaxError(CompilerError.INVALID_XXX_EXPECTED_OPEN_PARENTHESIS, "expr statement", reader);
+			syntaxError(CompilerError.INVALID_XXX_EXPECTED_SEMICOLON, "expr statement", reader);
 			reader.nextClear();
 		}
 		
@@ -963,6 +956,8 @@ public class ParseTreeGenerator {
 			// unique meaning that they wont share any references.
 			reader.resetMarked();
 			
+			if(expr == null) return Expression.EMPTY;
+			
 			return expr.clone();
 		} catch(StackOverflowError e) {
 			fatalSyntaxError(CompilerError.EXPRESSION_NESTED_TOO_DEEP);
@@ -972,7 +967,7 @@ public class ParseTreeGenerator {
 		return Expression.EMPTY;
 	}
 	
-	public Variable nextFuncArgument() {
+	private Variable nextFuncArgument() {
 		Variable variable = new Variable(getTypeFromSymbol());
 		if(!reader.groupEquals("IDENTIFIER")) syntaxError(CompilerError.INVALID_FUNCTION_PARAMETER_NAME, reader);
 		if(currentFunction.hasIdentifier(reader.value())) syntaxError(CompilerError.REDECLARATION_OF_FUNCTION_PARAMETER, reader);
@@ -980,7 +975,7 @@ public class ParseTreeGenerator {
 		return variable;
 	}
 	
-	public Modifier nextFuncModifier() {
+	private Modifier nextFuncModifier() {
 		String value = reader.valueAdvance();
 		return Modifiers.get(value);
 	}
@@ -1018,7 +1013,7 @@ public class ParseTreeGenerator {
 		return defined_types.containsKey(value);
 	}
 	
-	public HighType getTypeFromSymbol() {
+	private HighType getTypeFromSymbol() {
 		if(!isType(reader)) syntaxError(CompilerError.INVALID_TYPE, reader);
 		HighType type = defined_types.get(reader.valueAdvance());
 		
@@ -1045,7 +1040,7 @@ public class ParseTreeGenerator {
 		return true;
 	}
 	
-	public void syntaxError(CompilerError error, Object... args) {
+	private void syntaxError(CompilerError error, Object... args) {
 		StringBuilder message = new StringBuilder();
 		
 		message.append(_caller()).append("(line:").append(reader.line()).append(", col:").append(reader.column()).append(") ")
@@ -1057,7 +1052,7 @@ public class ParseTreeGenerator {
 		System.err.println(message);
 	}
 	
-	public void fatalSyntaxError(CompilerError error, Object... args) {
+	private void fatalSyntaxError(CompilerError error, Object... args) {
 		StringBuilder message = new StringBuilder();
 		
 		message.append(_caller()).append("(line:").append(reader.line()).append(", col:").append(reader.column()).append(") ")
@@ -1070,7 +1065,7 @@ public class ParseTreeGenerator {
 		throw new CompilerException(message.toString());
 	}
 	
-	public void syntaxError(String format, Object... args) {
+	private void syntaxError(String format, Object... args) {
 		StringBuilder message = new StringBuilder();
 		
 		message.append(_caller()).append("(line:").append(reader.line()).append(", col:").append(reader.column()).append(") ")

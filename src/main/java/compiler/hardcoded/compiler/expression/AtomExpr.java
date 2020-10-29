@@ -153,6 +153,8 @@ public class AtomExpr implements Expression {
 		if(atomType.isNumber()) {
 			String postfix = (atomType.isSigned() ? "":"u");
 			
+			if(atomType.isPointer()) return String.format("0x%16x", n_value);
+			
 			// TODO: Print unsigned values correctly.
 			switch(atomType.size()) {
 				case 8: return Long.toString(n_value) + postfix + 'L';

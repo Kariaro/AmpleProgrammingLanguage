@@ -52,7 +52,11 @@ public class OpExpr implements Expression {
 	public OpExpr clone() {
 		OpExpr expr = new OpExpr(type);
 		expr.override_size = override_size;
-		for(Expression e : list) expr.add(e.clone());
+		for(Expression e : list) {
+			if(e == null) continue; // Weird???
+			expr.add(e.clone());
+		}
+		
 		return expr;
 	}
 	
