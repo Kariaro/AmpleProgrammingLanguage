@@ -10,12 +10,12 @@ import hardcoded.compiler.parsetree.ParseTreeGenerator;
 import hardcoded.compiler.parsetree.ParseTreeOptimizer;
 import hardcoded.visualization.Visualization;
 
-public class HCompilerBuild {
+public class AmpleCompilerBuild {
 	/**
 	 * The parse tree generator.
 	 */
 	private ParseTreeGenerator parse_tree_generator;
-
+	
 	/**
 	 * The parse tree optimizer.
 	 */
@@ -36,7 +36,7 @@ public class HCompilerBuild {
 	 */
 	private Visualization vs;
 	
-	public HCompilerBuild() {
+	public AmpleCompilerBuild() {
 		parse_tree_generator = new ParseTreeGenerator();
 		parse_tree_optimizer = new ParseTreeOptimizer();
 		icg = new IntermediateCodeGenerator();

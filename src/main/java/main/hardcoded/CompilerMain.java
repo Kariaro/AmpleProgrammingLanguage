@@ -7,7 +7,7 @@ import java.util.logging.LogManager;
 import hardcoded.compiler.errors.CompilerException;
 import hardcoded.utils.DomainUtils;
 import hardcoded.utils.FileUtils;
-import hardcoded.vm.HcVm;
+import hardcoded.vm.AmpleVm;
 
 /**
  * This is the main entry point for the compiler.<br>
@@ -194,7 +194,7 @@ public class CompilerMain {
 			outputFile = new File(working_directory, outputPath).getCanonicalFile();
 			
 			System.out.println("---------------------------------------------------------");
-			System.out.println("HardCoded HCProgrammingLanguage compiler (2020-10-15) (c)");
+			System.out.println("HardCoded AmpleProgrammingLanguage compiler (2020-10-15) (c)");
 			System.out.println();
 			System.out.printf("WorkingDir  : '%s'\n", working_directory);
 			System.out.printf("SourceFile  : '%s'\n", sourcePath);
@@ -229,7 +229,7 @@ public class CompilerMain {
 		
 		if(mode == ActionType.RUN) {
 			compiler.build();
-			HcVm.run(compiler.getProgram());
+			AmpleVm.run(compiler.getProgram());
 		}
 	}
 	

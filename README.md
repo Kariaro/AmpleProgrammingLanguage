@@ -10,8 +10,8 @@ keywords and inline syntax changes.
 To use this compiler you can call it from the console. *Only tested on windows*
 
 ```
-java -jar hccompiler.jar [options] -compile <sourcefile> <outputfile>
-java -jar hccompiler.jar [options] -run <sourcefile>
+java -jar amplecompiler.jar [options] -compile <sourcefile> <outputfile>
+java -jar amplecompiler.jar [options] -run <sourcefile>
 
 options:
     -? -h -help
