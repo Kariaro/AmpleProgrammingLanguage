@@ -11,7 +11,7 @@ import hardcoded.compiler.instruction.*;
 import hardcoded.compiler.instruction.IRInstruction.*;
 import hardcoded.compiler.numbers.Value;
 
-public class HcVm {
+public class AmpleVm {
 	private final Memory memory = new Memory();
 	private final Map<String, VmFunction> functions;
 	private final Map<String, Integer> pointers;
@@ -24,10 +24,10 @@ public class HcVm {
 			System.out.println("----------------------------");
 		}
 		
-		new HcVm(program).run();
+		new AmpleVm(program).run();
 	}
 	
-	private HcVm(IRProgram program) {
+	private AmpleVm(IRProgram program) {
 		this.functions = new HashMap<>();
 		this.pointers = new HashMap<>();
 		

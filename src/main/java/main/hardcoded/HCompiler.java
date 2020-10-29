@@ -2,7 +2,7 @@ package hardcoded;
 
 import java.io.*;
 
-import hardcoded.compiler.HCompilerBuild;
+import hardcoded.compiler.AmpleCompilerBuild;
 import hardcoded.compiler.errors.CompilerException;
 import hardcoded.compiler.instruction.IRProgram;
 import hardcoded.compiler.instruction.IRSerializer;
@@ -45,7 +45,7 @@ public class HCompiler {
 		if(sourceFile == null) throw new CompilerException("No source file was specified");
 		
 		// TODO: Check if this can be reused
-		HCompilerBuild builder = new HCompilerBuild();
+		AmpleCompilerBuild builder = new AmpleCompilerBuild();
 		codegen = format.createNew();
 		program = builder.build(sourceFile);
 		bytes = codegen.generate(program);

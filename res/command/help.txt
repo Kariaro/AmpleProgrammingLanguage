@@ -1,4 +1,4 @@
-Help message for HCProgrammingLanguage https://github.com/Kariaro/HCProgrammingLanguage
+Help message for AmpleProgrammingLanguage https://github.com/Kariaro/AmpleProgrammingLanguage
 
 Usage: [options] -compile <sourcefile> <outputfile>
        [options] -run <sourcefile>

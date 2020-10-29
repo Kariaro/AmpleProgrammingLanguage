@@ -1,5 +1,6 @@
 package hardcoded.exporter.x86;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -73,6 +74,8 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 		//    function blocks
 		List<AsmContainer> containers = new ArrayList<>();
 		
+		ByteArrayOutputStream stream = new ByteArrayOutputStream();
+		
 		for(IRFunction func : program.getFunctions()) {
 			System.out.println("Name -> " + func.getName());
 			containers.add(createContainer(func));
@@ -114,6 +117,9 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 		System.out.println();
 		for(AsmContainer container : containers) {
 			for(AsmBlock block : container.blocks) {
+				if(block.compiled_code != null) {
+					for(int i : block.compiled_code) stream.write(i);
+				}
 				System.out.print(StringUtils.printHexString("", block.compiled_code));
 			}
 		}
@@ -156,7 +162,7 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 		return null;
 		 */
 		
-		return null;
+		return stream.toByteArray();
 	}
 	
 	// Create a container from instructions without converting it into assembly
