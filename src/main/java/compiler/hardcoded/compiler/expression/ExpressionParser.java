@@ -2,7 +2,7 @@ package hardcoded.compiler.expression;
 
 import hardcoded.compiler.constants.ExprType;
 
-// TODO: Signed unsigned?
+// TODO: Should this class implement Value?
 public final class ExpressionParser {
 	private ExpressionParser() {}
 	

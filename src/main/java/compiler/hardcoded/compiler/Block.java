@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.Vector;
 
 import hardcoded.compiler.constants.Modifiers.Modifier;
-import hardcoded.compiler.context.NamedRange;
-import hardcoded.compiler.context.TokenContext;
 import hardcoded.compiler.expression.LowType;
 import hardcoded.compiler.statement.Statement;
 import hardcoded.compiler.statement.Variable;
@@ -14,7 +12,7 @@ import hardcoded.compiler.types.HighType;
 import hardcoded.lexer.Token;
 import hardcoded.visualization.Printable;
 
-public abstract class Block implements Printable, TokenContext {
+public abstract class Block implements Printable {
 	public static final Block EMPTY = new Block() {
 		public String asString() { return ""; }
 		public Object[] asList() { return new Object[] { }; }
@@ -152,14 +150,5 @@ public abstract class Block implements Printable, TokenContext {
 		
 		public String asString() { return "function " + name + "[" + var_index + (var_index == 1 ? " variable":" variables") + "]"; }
 		public Object[] asList() { return new Object[] { body }; }
-	}
-	
-	private NamedRange range;
-	public NamedRange getDefinedRange() {
-		return range;
-	}
-	
-	public void setDefinedRange(NamedRange range) {
-		this.range = range;
 	}
 }

@@ -205,8 +205,11 @@ public class CompilerMain {
 			if(sourceFile.equals(outputFile))
 				throw new CompilerException("source and output file cannot be the same file");
 			
-			compiler.build();
-			long start = System.nanoTime(); {
+			
+			long start = System.nanoTime();
+			{
+				compiler.build();
+				
 				// TODO: Is this a safe operation?
 				byte[] bytes = compiler.getBytes();
 				FileOutputStream stream = new FileOutputStream(outputFile);

@@ -40,7 +40,13 @@ import hardcoded.utils.StringUtils;
  * 
  */
 public final class IRSerializer {
-	private static final int MAGIC = 0x52494C48; // 'HLIR'
+	// HLIR: High level instruction file
+	// LLIR: Low level instruction file
+	
+	@SuppressWarnings("unused")
+	private static final int MAGIC_HLIR = 0x52494C48; // 'HLIR'
+	private static final int MAGIC_LLIR = 0x52494C4C; // 'LLIR'
+	
 	
 	private List<String> strings = new ArrayList<>();
 	private OutputStream out;
@@ -238,7 +244,7 @@ public final class IRSerializer {
 		// buffer = encodeGzip(buffer);
 		
 		serial.out = out;
-		serial.writeInt(MAGIC);
+		serial.writeInt(MAGIC_LLIR);
 		serial.writeBytes(buffer);
 	}
 	
@@ -477,7 +483,7 @@ public final class IRSerializer {
 		serial.in = stream;
 		
 		int magic = serial.readInt();
-		if(magic != MAGIC) {
+		if(magic != MAGIC_LLIR) {
 			throw new IOException("File magic was wrong. Expected 'HCIR' but got '" + (
 				(char)(magic & 0xff) + "" +
 				(char)((magic >> 8) & 0xff) + "" +

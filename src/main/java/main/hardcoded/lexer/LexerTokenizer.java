@@ -44,7 +44,7 @@ public class LexerTokenizer implements Serializable {
 	 */
 	public LexerGroup addGroup(String name, boolean discard) {
 		if(groups.containsKey(name))
-			throw new IllegalArgumentException("A group with the name '" + name+ "' has already been added to this tokenizer");
+			throw new IllegalArgumentException("A group with the name '" + name + "' has already been added to this tokenizer");
 		
 		LexerGroup group = new LexerGroup(name, discard);
 		groups.put(name, group);
