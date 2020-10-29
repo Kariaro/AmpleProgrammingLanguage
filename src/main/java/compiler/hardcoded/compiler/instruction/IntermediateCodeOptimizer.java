@@ -50,17 +50,17 @@ public class IntermediateCodeOptimizer {
 		for(IRFunction func : program.getFunctions()) {
 			simplify(func);
 			
-			System.out.println("\n" + func);
-			for(int i = 0, line = 0; i < func.length(); i++) {
-				IRInstruction inst = func.list.get(i);
-				
-				if(inst.op == IRType.label) {
-					System.out.printf("\n%4d: %s\n", line, inst);
-				} else {
-					System.out.printf("%4d:   %s\n", line, inst);
-					line++;
-				}
-			}
+//			System.out.println("\n" + func);
+//			for(int i = 0, line = 0; i < func.length(); i++) {
+//				IRInstruction inst = func.list.get(i);
+//				
+//				if(inst.op == IRType.label) {
+//					System.out.printf("\n%4d: %s\n", line, inst);
+//				} else {
+//					System.out.printf("%4d:   %s\n", line, inst);
+//					line++;
+//				}
+//			}
 		}
 		
 //		try {
