@@ -1,13 +1,16 @@
-package hardcoded.compiler.constants;
+package hardcoded.utils;
 
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class UnmodifiableCastedSet<E> implements Set<E> {
-	
 	private final Set<E> set;
+	
 	public UnmodifiableCastedSet(List<? extends E> list) {
+		// Prevent NPE
+		if(list == null) list = Collections.emptyList();
+		
 		set = Collections.unmodifiableSet(new LinkedHashSet<E>(
 			list.stream().map(a -> (E)a).collect(Collectors.toList())
 		));

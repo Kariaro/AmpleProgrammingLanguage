@@ -64,7 +64,7 @@ public class AmpleVm {
 			switch(func.getName()) {
 				case "print": {
 					char c = (char)(memory.read(offset, Atom.i32).longValue() & 0xff);
-					//System.out.println("Stdout: '" + StringUtils.escapeString("" + c) + "'");
+//					System.out.println("Stdout: '" + hardcoded.utils.StringUtils.escapeString("" + c) + "'");
 					stdout.append(c);
 					return;
 				}
@@ -78,13 +78,13 @@ public class AmpleVm {
 		
 		while(true) {
 //			for(int i = offset; i < offset + func.bodySize; i++) {
-//				System.out.print(StringUtils.escapeString(Character.toString((char)memory.read(i))));
+//				System.out.print(hardcoded.utils.StringUtils.escapeString(Character.toString((char)memory.read(i))));
 //			}
 //			System.out.println();
 			
 			if(ip >= func.getNumInstructions()) return;
 			IRInstruction inst = func.getInstruction(ip++);
-			//System.out.printf("%4d : %s\n", ip, inst);
+//			System.out.printf("%4d : %s\n", ip, inst);
 			
 			
 			

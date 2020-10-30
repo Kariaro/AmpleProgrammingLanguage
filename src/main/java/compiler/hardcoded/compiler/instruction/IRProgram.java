@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import hardcoded.compiler.Block.Function;
+import hardcoded.compiler.Function;
 import hardcoded.compiler.expression.LowType;
 
 public class IRProgram {

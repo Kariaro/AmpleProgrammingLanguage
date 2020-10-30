@@ -6,18 +6,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 import hardcoded.CompilerMain;
-import hardcoded.compiler.Block;
-import hardcoded.compiler.Block.Function;
+import hardcoded.compiler.Function;
 import hardcoded.compiler.Program;
 import hardcoded.compiler.constants.ExprType;
 import hardcoded.compiler.constants.Utils;
 import hardcoded.compiler.expression.*;
+import hardcoded.compiler.impl.IBlock;
 import hardcoded.compiler.statement.*;
 import hardcoded.visualization.Visualization;
 
 public class ParseTreeOptimizer {
 	
-	// TODO: Only if string is const otherwise stack....
 	// TODO: cor and cand has problems with some or operations...
 	// TODO: Check that all comma expressions are working correctly...
 	
@@ -31,7 +30,7 @@ public class ParseTreeOptimizer {
 	
 	public void do_constant_folding(Visualization vs, Program current_program) {
 		for(int i = 0; i < current_program.size(); i++) {
-			Block block = current_program.get(i);
+			IBlock block = current_program.get(i);
 			
 			if(!(block instanceof Function)) continue;
 			Function func = (Function)block;
@@ -57,30 +56,25 @@ public class ParseTreeOptimizer {
 			Utils.execute_for_all_statements(func, (parent, index, function) -> {
 				Statement stat = parent.get(index);
 				
-				// TODO: Remove empty statements
-//				if(stat.isEmptyStat()) {
-//					// Remove all empty statements
-//					parent.remove(index);
-//					return;
-//				}
-				
 				if(stat instanceof ForStat) {
 					Expression c = ((ForStat)stat).getCondition();
+					
 					if(c instanceof AtomExpr) {
 						AtomExpr a = (AtomExpr)c;
-						if(a.isNumber() && a.isZero()) parent.set(index, Statement.newEmpty());
+						if(a.isNumber() && a.isZero()) {
+							parent.set(index, Statement.newEmpty());
+						}
 					}
-				}
-				
-				if(stat instanceof WhileStat) {
+				} else if(stat instanceof WhileStat) {
 					Expression c = ((WhileStat)stat).getCondition();
+					
 					if(c instanceof AtomExpr) {
 						AtomExpr a = (AtomExpr)c;
-						if(a.isNumber() && a.isZero()) parent.set(index, Statement.newEmpty());
+						if(a.isNumber() && a.isZero()) {
+							parent.set(index, Statement.newEmpty());
+						}
 					}
-				}
-				
-				if(stat instanceof IfStat) {
+				} else if(stat instanceof IfStat) {
 					IfStat is = (IfStat)stat;
 					Expression c = is.getCondition();
 					if(c instanceof AtomExpr) {
@@ -88,7 +82,8 @@ public class ParseTreeOptimizer {
 						if(a.isNumber()) {
 							if(a.isZero()) {
 								if(!is.hasElseBody()) {
-									// TODO: We should remove the if statement and only keep the condition if it's not pure!
+									// If we do not have any else body we do not need to change anything.
+									
 									parent.set(index, Statement.newEmpty());
 								} else {
 									parent.set(index, is.getElseBody());

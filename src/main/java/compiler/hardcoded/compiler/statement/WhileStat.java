@@ -10,7 +10,7 @@ public class WhileStat extends NestedStat {
 	}
 	
 	public Expression getCondition() {
-		ExprStat stat = get(0);
+		ExprStat stat = (ExprStat)get(0);
 		return stat == null ? null:(stat.expr());
 	}
 	

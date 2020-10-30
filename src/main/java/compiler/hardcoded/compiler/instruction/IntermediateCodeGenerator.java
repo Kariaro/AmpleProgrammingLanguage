@@ -6,15 +6,15 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import hardcoded.CompilerMain;
-import hardcoded.compiler.Block;
-import hardcoded.compiler.Block.Function;
+import hardcoded.compiler.Function;
 import hardcoded.compiler.Identifier;
 import hardcoded.compiler.Identifier.IdType;
-import hardcoded.compiler.constants.ExprType;
 import hardcoded.compiler.Program;
+import hardcoded.compiler.constants.ExprType;
 import hardcoded.compiler.expression.AtomExpr;
 import hardcoded.compiler.expression.Expression;
 import hardcoded.compiler.expression.LowType;
+import hardcoded.compiler.impl.IBlock;
 import hardcoded.compiler.instruction.IRInstruction.*;
 import hardcoded.compiler.statement.*;
 
@@ -40,7 +40,7 @@ public class IntermediateCodeGenerator {
 		program = new IRProgram();
 		
 		for(int i = 0; i < prog.size(); i++) {
-			Block block = prog.get(i);
+			IBlock block = prog.get(i);
 			
 			if(!(block instanceof Function)) continue;
 			Function func = (Function)block;
@@ -573,10 +573,10 @@ public class IntermediateCodeGenerator {
 		List<IRInstruction> list = new ArrayList<>();
 		
 		if(stat.list.isEmpty()) return list;
-		list.addAll(compileInstructions((Expression)stat.list.get(0)));
+		list.addAll(compileInstructions(stat.list.get(0)));
 		
 		for(int i = 1; i < stat.list.size(); i++) {
-			list.addAll(compileInstructions((Expression)stat.list.get(i)));
+			list.addAll(compileInstructions(stat.list.get(i)));
 		}
 		
 		return list;
@@ -613,9 +613,9 @@ public class IntermediateCodeGenerator {
 		List<IRInstruction> list = new ArrayList<>();
 		list.add(new IRInstruction(IRType.nop, new DebugParam(stat.toString())));
 		
-		if(stat.hasStatements()) {
+		if(stat.hasElements()) {
 			list.clear();
-			for(Statement s : stat.getStatements()) {
+			for(Statement s : stat.getElements()) {
 				list.addAll(compileInstructions(s));
 			}
 		}

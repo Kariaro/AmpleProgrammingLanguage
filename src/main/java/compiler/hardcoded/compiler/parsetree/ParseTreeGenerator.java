@@ -6,20 +6,18 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-import hardcoded.compiler.Block;
-import hardcoded.compiler.Block.Function;
-import hardcoded.compiler.Identifier;
-import hardcoded.compiler.Program;
+import hardcoded.compiler.*;
 import hardcoded.compiler.constants.*;
-import hardcoded.compiler.constants.ExprType;
 import hardcoded.compiler.constants.Modifiers.Modifier;
 import hardcoded.compiler.context.Lang;
 import hardcoded.compiler.errors.*;
 import hardcoded.compiler.expression.*;
+import hardcoded.compiler.impl.IBlock;
 import hardcoded.compiler.statement.*;
-import hardcoded.compiler.types.PrimitiveType;
-import hardcoded.lexer.*;
 import hardcoded.compiler.types.HighType;
+import hardcoded.compiler.types.PrimitiveType;
+import hardcoded.lexer.LexerFactory;
+import hardcoded.lexer.LexerTokenizer;
 import hardcoded.utils.FileUtils;
 import hardcoded.utils.StringUtils;
 
@@ -34,7 +32,6 @@ public class ParseTreeGenerator {
 	// FIXME: Add break and continue keywords
 	// FIXME: Defined types should be a part of program and not this generator.
 	// FIXME: GLOBALS should be put inside Program and not the generator.
-	
 	
 	static {
 		LexerTokenizer lexer = null;
@@ -51,10 +48,8 @@ public class ParseTreeGenerator {
 	
 	private Map<String, Expression> GLOBAL = new LinkedHashMap<>();
 	private Map<String, HighType> defined_types = new HashMap<>();
-	
 	private Function currentFunction;
 	private Program currentProgram;
-	
 	private File projectPath;
 	private File sourceFile;
 	private Lang reader;
@@ -122,7 +117,8 @@ public class ParseTreeGenerator {
 		this.reader = next;
 		
 		try {
-			nextProgram();
+			// Read all blocks inside the file
+			while(nextBlock() != null);
 		} catch(Exception e) {
 			e.printStackTrace();
 			syntaxError("");
@@ -132,18 +128,11 @@ public class ParseTreeGenerator {
 		this.sourceFile = lastFile;
 	}
 	
-	// TODO: Redo this method
-	private void nextProgram() {
-		do {
-			Block block = nextBlock();
-			if(block == null) break;
-		} while(true);
-	}
-	
-	private Block nextBlock() {
+	private IBlock nextBlock() {
 		if(reader.valueEqualsAdvance("@")) {
 			parseCompiler();
-			return Block.EMPTY;
+			
+			return IBlock.EMPTY;
 		} else {
 			return makeFunction();
 		}
@@ -211,7 +200,8 @@ public class ParseTreeGenerator {
 		// reader.beginRange("function");
 		
 		Function func = new Function();
-		if(Modifiers.contains(reader.value())) func.modifier = nextFuncModifier();
+		if(Modifiers.contains(reader.value())) func.addModifier(nextFuncModifier());
+		
 		if(!isType(reader)) syntaxError(CompilerError.INVALID_TYPE, reader);
 		func.returnType = getTypeFromSymbol();
 		
@@ -219,35 +209,43 @@ public class ParseTreeGenerator {
 		boolean needsBody = false;
 		
 		if(currentProgram.hasFunction(reader.value())) {
-			Function def = currentProgram.getFunctionByName(reader.value());
+			Function impl = currentProgram.getFunctionByName(reader.value());
+			impl.sourceLineIndex = reader.line();
+			impl.declaredFile = sourceFile;
 			
 			// If the function was already defined we should throw a syntax error
-			if(!def.isPlaceholder()) syntaxError(CompilerError.INVALID_FUNCTION_REDECLARATION, reader);
+			if(!impl.isPlaceholder()) syntaxError(CompilerError.INVALID_FUNCTION_REDECLARATION, reader);
 			
 			
 			// Modifiers
-			if(!def.returnType.equals(func.returnType)) syntaxError(CompilerError.INVALID_FUNCTION_DECLARATION_WRONG_RETURN_TYPE, def.returnType);
-			if(def.modifier != func.modifier) syntaxError(CompilerError.INVALID_FUNCTION_DECLARATION_WRONG_MODIFIERS, func.modifier, def.modifier);
+			if(!impl.returnType.equals(func.returnType)) syntaxError(CompilerError.INVALID_FUNCTION_DECLARATION_WRONG_RETURN_TYPE, impl.returnType);
+			if(!impl.getModifiers().containsAll(func.getModifiers())) syntaxError(CompilerError.INVALID_FUNCTION_DECLARATION_WRONG_MODIFIERS, func.getModifiers(), impl.getModifiers());
 			// def must be a placeholder and this function here cannot be 
 			
-			func = def;
+			func = impl;
+			
 			// TODO: We should not clear the arguments here
 			func.arguments.clear();
 			
 			// TODO: Make this more general. What about function overloading? What should we do here?
 			needsBody = true;
 		} else {
+			func.sourceLineIndex = reader.line();
+			func.declaredFile = sourceFile;
 			func.name = reader.value();
+			
 			
 			currentProgram.addFunction(func);
 		}
-		
+
 		currentFunction = func;
 		if(!reader.next().valueEqualsAdvance("(")) syntaxError(CompilerError.INVALID_FUNCTION_DECLARATION_EXPECTED_OPEN_PARENTHESIS, reader);
 		
 		while(!reader.valueEquals(")")) {
 			Variable arg = nextFuncArgument();
-			func.arguments.add(Identifier.createParamIdent(arg.name, func.arguments.size(), arg.type));
+			
+			// Compare hightypes.
+			func.addArgument(arg);
 			
 			if(!reader.valueEquals(",")) {
 				if(reader.valueEquals(")")) break;
@@ -256,6 +254,7 @@ public class ParseTreeGenerator {
 		}
 		
 		if(!reader.valueEqualsAdvance(")")) syntaxError(CompilerError.INVALID_FUNCTION_DECLARATION_EXPECTED_CLOSING_PARENTHESIS, reader);
+		
 		if(reader.valueEqualsAdvance(";")) {
 			if(needsBody) syntaxError(CompilerError.INVALID_FUNCTION_DECLARATION_EXPECTED_A_FUNCTION_BODY);
 			// func.setDefinedRange(reader.closeRange("function"));
@@ -267,7 +266,7 @@ public class ParseTreeGenerator {
 		currentFunction.inc_scope();
 		func.body = getStatements();
 		currentFunction.dec_scope();
-		// func.setDefinedRange(reader.closeRange("function"));
+		
 		return func;
 	}
 	
@@ -279,14 +278,14 @@ public class ParseTreeGenerator {
 			
 			if(stat instanceof StatementList) {
 				StatementList list = (StatementList)stat;
-				for(int i = 0; i < list.list.size(); i++) {
-					Variable var = (Variable)list.list.get(i);
+				for(int i = 0; i < list.size(); i++) {
+					Variable var = (Variable)list.get(i);
 					Identifier ident = currentFunction.add(var);
 					
 					if(!var.isInitialized()) {
-						list.list.remove(i--);
+						list.remove(i--);
 					} else {
-						list.list.set(i, new ExprStat(new OpExpr(ExprType.set, new AtomExpr(ident), var.value())));
+						list.set(i, new ExprStat(new OpExpr(ExprType.set, new AtomExpr(ident), var.value())));
 					}
 				}
 			}
@@ -365,14 +364,14 @@ public class ParseTreeGenerator {
 				
 				if(vars instanceof StatementList) {
 					StatementList list = (StatementList)vars;
-					for(int i = 0; i < list.list.size(); i++) {
-						Variable var = (Variable)list.list.get(i);
+					for(int i = 0; i < list.size(); i++) {
+						Variable var = (Variable)list.get(i);
 						Identifier ident = currentFunction.add(var);
 						
 						if(!var.isInitialized()) {
-							list.list.remove(i--);
+							list.remove(i--);
 						} else {
-							list.list.set(i, new ExprStat(new OpExpr(ExprType.set, new AtomExpr(ident), var.value())));
+							list.set(i, new ExprStat(new OpExpr(ExprType.set, new AtomExpr(ident), var.value())));
 						}
 					}
 				}
@@ -499,19 +498,19 @@ public class ParseTreeGenerator {
 			Statement s = nextStatement();
 			if(s == null || s.isEmptyStat()) continue;
 			
-			if(s.hasStatements() && s.getStatements().size() == 0) continue;
+			if(s.hasElements() && s.size() == 0) continue;
 			if(s instanceof StatementList) {
-				stat.list.addAll(((StatementList)s).list);
+				stat.getElements().addAll(((StatementList)s).getElements());
 				continue;
 			}
 			
-			stat.list.add(s);
+			stat.add(s);
 		}
 		
 		if(!reader.valueEquals("}")) syntaxError(CompilerError.UNCLOSED_CURLY_BRACKETS_STATEMENT, reader);
 		reader.nextClear();
 		
-		if(stat.list.isEmpty()) {
+		if(stat.size() == 0) {
 			return Statement.newEmpty();
 		}
 		

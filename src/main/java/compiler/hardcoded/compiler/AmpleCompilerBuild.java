@@ -63,6 +63,11 @@ public class AmpleCompilerBuild {
 		vs.show(current_program);
 		parse_tree_optimizer.do_constant_folding(vs, current_program);
 		
+//		for(Function func : current_program.list()) {
+//			String str = Utils.printPretty(func).replace("\t", "    ");
+//			System.out.println(str);
+//		}
+		
 		IRProgram ir_program;
 		ir_program = icg.generate(current_program);
 		ir_program = ico.generate(ir_program);

@@ -49,7 +49,19 @@ public class IntermediateCodeOptimizer {
 	public IRProgram generate(IRProgram program) {
 		for(IRFunction func : program.getFunctions()) {
 			simplify(func);
-			
+		}
+		
+//		{
+//			System.out.println(".data.strings:");
+//			int index = 0;
+//			for(String s : program.context.strings) {
+//				System.out.printf("%4d:   \"%s\"\n", index, StringUtils.escapeString(s));
+//			}
+//			
+//			System.out.println();
+//		}
+//		
+//		for(IRFunction func : program.getFunctions()) {
 //			System.out.println("\n" + func);
 //			for(int i = 0, line = 0; i < func.length(); i++) {
 //				IRInstruction inst = func.list.get(i);
@@ -61,8 +73,8 @@ public class IntermediateCodeOptimizer {
 //					line++;
 //				}
 //			}
-		}
-		
+//		}
+//		
 //		try {
 //			Thread.sleep(100000);
 //		} catch (InterruptedException e) {
@@ -157,7 +169,7 @@ public class IntermediateCodeOptimizer {
 					next.op = (positive_br) ? IRType.bnz:IRType.brz;
 					iter.remove();
 				} else {
-					Param reg = inst.getLastParam();
+					Param reg = inst.getParam(inst.getNumParams() - 1);
 					if(reg instanceof NumberReg && ((NumberReg)reg).getValue() == 0) {
 						// Check if the equality result is referenced
 						
@@ -386,6 +398,7 @@ public class IntermediateCodeOptimizer {
 	}
 	
 	private int size;
+	@SuppressWarnings("unused")
 	private void logOptimization(IRFunction func, String name) {
 		if(!CompilerMain.isDeveloper()) return;
 		if(true) return;

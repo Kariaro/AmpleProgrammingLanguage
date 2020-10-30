@@ -16,6 +16,8 @@ public class Variable extends Statement {
 	public int arraySize;
 	
 	public Variable(HighType type) {
+		super(false);
+		
 		this.list = new ArrayList<>();
 		this.type = type;
 	}
@@ -31,22 +33,19 @@ public class Variable extends Statement {
 	
 	public Expression value() {
 		if(list.size() < 1) return null;
-		return (Expression)list.get(0);
+		return list.get(0);
 	}
 	
 	public boolean isInitialized() {
 		return !list.isEmpty();
 	}
 	
-	public boolean hasStatements() { return false; }
-	public List<Statement> getStatements() { return null; }
-	
-	public String asString() { return toString(); }
 	public Object[] asList() {
 		if(isArray) return new Object[] { name, arraySize };
 		if(!isInitialized()) return new Object[] { name };
 		return new Object[] { name, value() };
 	}
+	public String asString() { return toString(); }
 	
 	public String toString() {
 		if(isArray) return type + " " + name + "[" + arraySize + "];";

@@ -1,5 +1,7 @@
 package hardcoded;
 
+import java.lang.reflect.InvocationTargetException;
+
 import hardcoded.exporter.impl.CodeGeneratorImpl;
 import hardcoded.exporter.spooky.SpookyCodeGenerator;
 import hardcoded.exporter.x86.AssemblyCodeGenerator;
@@ -22,8 +24,10 @@ public enum OutputFormat {
 	
 	public CodeGeneratorImpl createNew() {
 		try {
-			return generator.newInstance();
-		} catch(InstantiationException | IllegalAccessException e) {
+			return generator.getDeclaredConstructor().newInstance();
+		} catch(InstantiationException | IllegalAccessException
+			| IllegalArgumentException | InvocationTargetException
+			| NoSuchMethodException | SecurityException e) {
 			e.printStackTrace();
 		}
 		

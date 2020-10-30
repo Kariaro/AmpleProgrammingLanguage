@@ -10,16 +10,14 @@ public class ExprStat extends Statement {
 	public List<Expression> list = new ArrayList<>();
 	
 	public ExprStat(Expression expr) {
+		super(false);
 		list.add(expr);
 	}
 	
 	public Expression expr() {
 		if(list.isEmpty()) return null;
-		return (Expression)list.get(0);
+		return list.get(0);
 	}
-	
-	public boolean hasStatements() { return false; }
-	public List<Statement> getStatements() { return null; }
 	
 	public String asString() { return toString(); }
 	public Object[] asList() { return list.toArray(); }

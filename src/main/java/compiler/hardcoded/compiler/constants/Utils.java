@@ -3,7 +3,7 @@ package hardcoded.compiler.constants;
 import java.util.List;
 import java.util.ListIterator;
 
-import hardcoded.compiler.Block.Function;
+import hardcoded.compiler.Function;
 import hardcoded.compiler.expression.Expression;
 import hardcoded.compiler.instruction.IRInstruction;
 import hardcoded.compiler.statement.*;
@@ -27,8 +27,9 @@ public final class Utils {
 	public static void getAllStatements(Function func, Statement stat, Folding<Statement> fc) {
 		if(stat == null) return; // TODO: This should not be null...
 		
-		if(stat.hasStatements()) {
-			List<Statement> list = stat.getStatements();
+		if(stat.hasElements()) {
+			List<Statement> list = stat.getElements();
+			
 			for(int i = 0; i < list.size(); i++) {
 				getAllStatements(func, list.get(i), fc);
 				fc.constantFolding(list, i, func);
@@ -39,16 +40,18 @@ public final class Utils {
 	public static void getAllExpressions(Function func, Statement stat, Folding<Expression> fc) {
 		if(stat == null) return; // TODO: This should not be null...
 		
-		if(stat.hasStatements()) {
-			for(Statement s : stat.getStatements()) getAllExpressions(func, s, fc);
+		if(stat.hasElements()) {
+			for(Statement s : stat.getElements()) getAllExpressions(func, s, fc);
 		}
 		
 		if(stat instanceof ExprStat) {
 			ExprStat es = (ExprStat)stat;
 			for(int i = 0; i < es.list.size(); i++) {
-				Expression e = (Expression) es.list.get(i);
+				Expression e = es.list.get(i);
 				getAllExpressions(func, e, fc);
 				fc.constantFolding(es.list, i, func);
+				
+				// If this is the last element this could give a array index out of bounds !
 				if(e != es.list.get(i)) i--;
 			}
 		}
@@ -56,7 +59,7 @@ public final class Utils {
 		if(stat instanceof Variable) {
 			Variable var = (Variable)stat;
 			for(int i = 0; i < var.list.size(); i++) {
-				getAllExpressions(func, (Expression)var.list.get(i), fc);
+				getAllExpressions(func, var.list.get(i), fc);
 				fc.constantFolding(var.list, i, func);
 			}
 		}
@@ -87,7 +90,7 @@ public final class Utils {
 			IfStat is = (IfStat)stat;
 			String str = is.toString();
 			sb.append(str.substring(0, str.length() - 1)).append(" {").append(printPretty(is.getBody())).append("\n}");
-			if(is.getElseBody() != null) sb.append(" else {").append(printPretty(is.getElseBody())).append("\n}");
+			if(is.hasElseBody()) sb.append(" else {").append(printPretty(is.getElseBody())).append("\n}");
 			return sb.toString();
 		}
 		
@@ -105,8 +108,8 @@ public final class Utils {
 		
 		// TODO: Switch statements
 		
-		if(stat.hasStatements()) {
-			for(Statement s : stat.getStatements()) {
+		if(stat.hasElements()) {
+			for(Statement s : stat.getElements()) {
 				String str = printPretty(s);
 				if(str.startsWith("\n\t")) str = str.substring(2);
 				sb.append("\n\t").append(str.replace("\n", "\n\t"));
