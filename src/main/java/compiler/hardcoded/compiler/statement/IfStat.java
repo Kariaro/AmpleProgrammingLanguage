@@ -11,7 +11,7 @@ public class IfStat extends NestedStat {
 	}
 	
 	public Expression getCondition() {
-		ExprStat stat = get(0);
+		ExprStat stat = (ExprStat)get(0);
 		return stat == null ? null:(stat.expr());
 	}
 	
@@ -25,8 +25,10 @@ public class IfStat extends NestedStat {
 	
 	public boolean hasElseBody() {
 		Statement stat = getElseBody();
+		
+		// TODO: Statements are never be NULL!!!
 		if(stat == null || stat.isEmptyStat()) return false;
-		return stat.hasStatements() && !stat.getStatements().isEmpty();
+		return stat.hasElements() && stat.size() > 0;
 	}
 	
 	public String asString() { return "IF"; }

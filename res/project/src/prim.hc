@@ -17,7 +17,9 @@ bool isPrime(int number) {
 
 void prints(char* chars) {
 	while(*chars != 0) {
-		print(*(chars++));
+		char b = *(chars++);
+		int a = b + (b / b) * 0;
+		print(a);
 	}
 }
 
@@ -27,6 +29,9 @@ void println(char* chars) {
 }
 
 void main() {
+	prints("Testing weird stuff Huh 11223344\nabcd");
+	
+	/*
 	for(int i = 0; i < 100; i++) {
 		prints("Is ");
 		printInt(i);
@@ -40,4 +45,5 @@ void main() {
 	}
 	
 	print('\n');
+	*/
 }

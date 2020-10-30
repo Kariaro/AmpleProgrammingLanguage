@@ -553,7 +553,7 @@ public final class IRSerializer {
 			
 			for(Field field : fields) {
 				if(Modifier.isStatic(field.getModifiers())) continue;
-				boolean acc = field.isAccessible();
+				boolean acc = field.canAccess(obj);
 				
 				field.setAccessible(true);
 				Object value = field.get(obj);

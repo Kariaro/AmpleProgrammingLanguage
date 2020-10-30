@@ -14,12 +14,12 @@ public class ForStat extends NestedStat {
 	}
 	
 	public Expression getCondition() {
-		ExprStat stat = get(1);
+		ExprStat stat = (ExprStat)get(1);
 		return stat == null ? null:(stat.expr());
 	}
 	
 	public Expression getAction() {
-		ExprStat stat = get(2);
+		ExprStat stat = (ExprStat)get(2);
 		return stat == null ? null:(stat.expr());
 	}
 	

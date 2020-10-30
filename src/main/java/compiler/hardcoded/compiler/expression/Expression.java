@@ -4,7 +4,8 @@ import java.util.*;
 
 import hardcoded.compiler.Identifier;
 import hardcoded.compiler.constants.ExprType;
-import hardcoded.compiler.constants.UnmodifiableCastedSet;
+import hardcoded.compiler.impl.IExpression;
+import hardcoded.utils.UnmodifiableCastedSet;
 import hardcoded.visualization.Printable;
 
 public abstract class Expression implements IExpression, Printable {
