@@ -31,7 +31,7 @@ public class Variable extends Statement {
 	
 	public Expression value() {
 		if(list.size() < 1) return null;
-		return list.get(0);
+		return (Expression)list.get(0);
 	}
 	
 	public boolean isInitialized() {

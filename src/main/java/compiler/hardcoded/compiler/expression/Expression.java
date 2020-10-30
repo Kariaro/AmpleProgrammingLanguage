@@ -1,100 +1,92 @@
 package hardcoded.compiler.expression;
 
-import java.util.List;
+import java.util.*;
 
 import hardcoded.compiler.Identifier;
 import hardcoded.compiler.constants.ExprType;
+import hardcoded.compiler.constants.UnmodifiableCastedSet;
 import hardcoded.visualization.Printable;
 
-public interface Expression extends Printable {
-	// FIXME: Maybe remove this 'EMPTY' expression constant.
-	public static final Expression EMPTY = new Expression() {
-		public String toString() { return "nop"; }
-		public String asString() { return "nop"; }
-		
-		public ExprType type() { return ExprType.nop; }
-		public boolean hasElements() { return false; }
-		public List<Expression> getElements() { return null; }
-		public Expression get(int index) { return null; }
-		public void set(int index, Expression e) {}
-		public void remove(int index) {}
-		public Expression clone() { return this; }
-		public int length() { return 0; }
-	};
+public abstract class Expression implements IExpression, Printable {
+	protected final List<Expression> list;
+	private ExprType type;
 	
-	/**
-	 * Returns the type of this expression.
-	 * @return the type of this expression
-	 */
-	public ExprType type();
+	protected Expression(ExprType type, boolean hasElements) {
+		this.list = hasElements ? new ArrayList<>():null;
+		this.type = Objects.requireNonNull(type, "Expression type must not be null");
+	}
 	
-	/**
-	 * Returns {@code true} if this expression contains child nodes.
-	 * @return {@code true} if this expression contains child nodes
-	 */
-	public boolean hasElements();
+	public final ExprType type() {
+		return type;
+	}
 	
-	/**
-	 * Returns a list containing all child nodes.
-	 * @return a list containing all child nodes
-	 */
-	public List<Expression> getElements();
+	protected final void setType(ExprType type) {
+		this.type = Objects.requireNonNull(type, "Expression type must not be null");
+	}
 	
-	/**
-	 * Retruns the child node at the specified position.
-	 * @param	index the index of the child node in this list
-	 * @return	the child node at the specified position
-	 */
-	public Expression get(int index);
+	// This should be separate from IExpression
+	public final Set<IExpression> getExpressions() {
+		return new UnmodifiableCastedSet<IExpression>(list);
+	}
 	
-	/**
-	 * Replaces the child node at the specified position with a new node.
-	 * @param	index	the index of the child node to be replaced
-	 * @param	expr	the child node to replace with
-	 */
-	public void set(int index, Expression expr);
+	public final boolean hasExpressions() {
+		return list != null;
+	}
 	
-	/**
-	 * Removes the child node at the specified position.
-	 * @param	index	the index of the child node to be removed
-	 */
-	public void remove(int index);
+	public final List<Expression> getElements() {
+		return list;
+	}
+	
+	public final boolean hasElements() {
+		return list != null;
+	}
+	
+	public abstract Expression clone();
 	
 	/**
 	 * Returns the number of child nodes in this list.
 	 * @return the number of child nodes in this list
 	 */
-	public int length();
-	
-	
-	public default Expression clone() {
-		return null;
-	}
-	
-	public default Expression first() {
-		if(!hasElements() || length() < 1) return null;
-		return getElements().get(0);
-	}
-	
-	public default Expression last() {
-		if(!hasElements() || length() < 1) return null;
-		return getElements().get(length() - 1);
+	public final int length() {
+		if(list != null)
+			return list.size();
+		return 0;
 	}
 	
 	/**
-	 * This is true if the expression can be reduced while compiling.
+	 * Returns the first element of this expression or {@code null} if there are no elements.
+	 * @return the first element of this expression or {@code null} if there are no elements
 	 */
-	public default boolean isPure() {
-		List<Expression> list = getElements();
+	public final Expression first() {
+		if(length() > 0)
+			return list.get(0);
+		return null;
+	}
+	
+	/**
+	 * Returns the last element of this expression or {@code null} if there are no elements.
+	 * @return the last element of this expression or {@code null} if there are no elements
+	 */
+	public final Expression last() {
+		int length = length();
+		if(length > 0)
+			return list.get(length - 1);
+		
+		return null;
+	}
+	
+	/**
+	 * Returns {@code false} if this expression modifies memory otherwise {@code true}.
+	 * @return {@code false} if this expression modifies memory otherwise {@code true}
+	 */
+	public boolean isPure() {
 		if(list != null) {
 			for(Expression expr : list) {
 				if(!expr.isPure()) return false;
 			}
 		}
 		
-		if(type() == null) return false;
-		
-		switch(type()) {
+		switch(type) {
 			case invalid:
 			case call:
 			case set:
@@ -111,8 +103,7 @@ public interface Expression extends Printable {
 	 * 
 	 * @return 
 	 */
-	public default boolean hasSideEffects() {
-		ExprType type = type();
+	public final boolean hasSideEffects() {
 		if(type == ExprType.set
 		|| type == ExprType.call) return true;
 		
@@ -126,14 +117,54 @@ public interface Expression extends Printable {
 	}
 	
 	/**
-	 * Returns the size computed from this expression.
-	 * @return the size computed from this expression
+	 * Returns the element at the specified index.
+	 * @param	index	the index of the element in this list
+	 * @return	the element at the specified index
 	 */
-	public default LowType size() {
+	public final Expression get(int index) {
+		if(list != null)
+			return list.get(index);
+		return null;
+	}
+	
+	/**
+	 * Add a new element to this expression.
+	 * @param	expr	the expression to add
+	 */
+	public final void add(Expression expr) {
+		if(list == null) throw new UnsupportedOperationException();
+		list.add(expr == null ? EMPTY:expr);
+	}
+	
+	/**
+	 * Replaces the element at the specified index with a new expression.
+	 * @param	index	the index of the element that should be replaced
+	 * @param	expr	the expression to replace with
+	 */
+	public final void set(int index, Expression expr) {
+		if(list == null) throw new UnsupportedOperationException();
+		list.set(index, expr == null ? EMPTY:expr);
+	}
+	
+	/**
+	 * Removes the element at the specified index.
+	 * @param	index	the index of the element to remove
+	 */
+	public void remove(int index) {
+		if(list == null) throw new UnsupportedOperationException();
+		list.remove(index);
+	}
+	
+	public String asString() { return "Undefined(" + this.getClass() + ")"; }
+	
+	public final Object[] asList() {
+		return list == null ? new Object[0]:list.toArray();
+	}
+	
+	public LowType size() {
 		if(this == EMPTY) return null;
 		
 		LowType curr = null;
-		
 		if(hasElements()) {
 			for(Expression expr : getElements()) {
 				LowType type = expr.size();
@@ -163,6 +194,25 @@ public interface Expression extends Printable {
 		return curr;
 	}
 	
-	public default String asString() { return "Undefined(" + this.getClass() + ")"; }
-	public default Object[] asList() { return new Object[] {}; }
+	
+	/**
+	 * An empty expression class used to indicate that an expression was absent or invalid.
+	 */
+	public static final Expression EMPTY = new Expression(ExprType.nop, false) {
+		public LowType size() {
+			return null;
+		}
+		
+		public Expression clone() {
+			return this;
+		}
+		
+		public String toString() {
+			return "nop";
+		}
+		
+		public String asString() {
+			return "nop";
+		}
+	};
 }

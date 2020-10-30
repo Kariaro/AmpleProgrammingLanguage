@@ -37,26 +37,32 @@ public class ParseTreeOptimizer {
 			Function func = (Function)block;
 			
 			Utils.execute_for_all_expressions(func, (parent, index, function) -> {
-				//String bef = "" + parent.get(index);
+//				String bef = "" + parent.get(index);
 				constantFolding(parent, index, function);
 				
 //				String now = "" + parent.get(index);
-//				
 //				if(!bef.equals(now)) {
 //					vs.show(current_program);
 //					vs.getComponent().repaint();
 //					try {
-//						// Thread.sleep(1000);
+//						Thread.sleep(100);
 //					} catch(Exception e) {
 //						e.printStackTrace();
 //					}
 //					
-//					// System.out.println("[" + index + "] (" + bef + ")\n[" + index + "] (" + now + ")\n");
+//					System.out.println("[" + index + "] (" + bef + ")\n[" + index + "] (" + now + ")\n");
 //				}
 			});
 			
 			Utils.execute_for_all_statements(func, (parent, index, function) -> {
 				Statement stat = parent.get(index);
+				
+				// TODO: Remove empty statements
+//				if(stat.isEmptyStat()) {
+//					// Remove all empty statements
+//					parent.remove(index);
+//					return;
+//				}
 				
 				if(stat instanceof ForStat) {
 					Expression c = ((ForStat)stat).getCondition();
@@ -81,7 +87,8 @@ public class ParseTreeOptimizer {
 						AtomExpr a = (AtomExpr)c;
 						if(a.isNumber()) {
 							if(a.isZero()) {
-								if(is.getElseBody() == null) {
+								if(!is.hasElseBody()) {
+									// TODO: We should remove the if statement and only keep the condition if it's not pure!
 									parent.set(index, Statement.newEmpty());
 								} else {
 									parent.set(index, is.getElseBody());
@@ -122,23 +129,23 @@ public class ParseTreeOptimizer {
 			 * Expanding expression will make it easier for the compiler to convert
 			 * to machine code later.
 			 */
-			if(e.type == add || e.type == sub || e.type == cor || e.type == cand || e.type == comma) {
+			if(e.type() == add || e.type() == sub || e.type() == cor || e.type() == cand || e.type() == comma) {
 				for(int i = e.length() - 1; i >= 0; i--) {
 					Expression ex = e.get(i);
 					if(ex instanceof OpExpr) {
 						OpExpr nx = (OpExpr)ex;
 						
-						if(nx.type == e.type) {
-							e.list.remove(i);
-							e.list.addAll(i, nx.list);
-							i += nx.list.size();
+						if(nx.type() == e.type()) {
+							e.remove(i);
+							e.getElements().addAll(i, nx.getElements());
+							i += nx.length();
 							continue;
 						}
 					}
 				}
 			}
 	
-			switch(e.type) {
+			switch(e.type()) {
 				case set: {
 					Expression a = e.first();
 					Expression b = e.last();
@@ -180,7 +187,7 @@ public class ParseTreeOptimizer {
 				
 				case comma: {
 					for(int i = 0; i < e.length() - 1; i++) {
-						if(!e.get(i).hasSideEffects()) e.list.remove(i--);
+						if(!e.get(i).hasSideEffects()) e.remove(i--);
 					}
 					
 					if(e.length() == 1) parent.set(index, e.first());
@@ -188,7 +195,7 @@ public class ParseTreeOptimizer {
 				}
 				
 				case addptr: case decptr: {
-					ExprType opp = e.type == decptr ? addptr:decptr;
+					ExprType opp = e.type() == decptr ? addptr:decptr;
 					
 					Expression ex = e.first();
 					
@@ -237,7 +244,7 @@ public class ParseTreeOptimizer {
 							
 							if(a.isNumber()) {
 								list.add(a);
-								e.list.remove(i);
+								e.remove(i);
 								i--;
 							} else {
 								//throw new RuntimeException("You cannot add a non number value");
@@ -247,13 +254,13 @@ public class ParseTreeOptimizer {
 					
 					if(!list.isEmpty()) {
 						for(; list.size() > 1;) {
-							AtomExpr c = (AtomExpr)ExpressionParser.compute(e.type, list.get(0), list.get(1));
+							AtomExpr c = (AtomExpr)ExpressionParser.compute(e.type(), list.get(0), list.get(1));
 							list.remove(0);
 							list.set(0, c);
 						}
 						
 						if(!(list.get(0).isZero() && e.length() > 0)) {
-							e.list.add(list.get(0));
+							e.add(list.get(0));
 						}
 					}
 					
@@ -277,11 +284,11 @@ public class ParseTreeOptimizer {
 								
 								if(a.isZero()) {
 									for(; i + 1 < e.length(); ) {
-										e.list.remove(i + 1);
+										e.remove(i + 1);
 									}
 								} else {
 									((OpExpr)e0).set(e0.length() - 1, new AtomExpr(1));
-									if(i < e.length() - 1) e.list.remove(i--);
+									if(i < e.length() - 1) e.remove(i--);
 								}
 							}
 						}
@@ -292,10 +299,10 @@ public class ParseTreeOptimizer {
 							if(a.isNumber()) {
 								if(a.isZero()) {
 									for(; i + 1 < e.length(); ) {
-										e.list.remove(i + 1);
+										e.remove(i + 1);
 									}
 								} else {
-									if(i < e.length() - 1) e.list.remove(i--);
+									if(i < e.length() - 1) e.remove(i--);
 								}
 							}
 						}
@@ -327,10 +334,10 @@ public class ParseTreeOptimizer {
 									// Replace the number with a one....
 									((OpExpr)e0).set(e0.length() - 1, new AtomExpr(1));
 									for(; i + 1 < e.length(); ) {
-										e.list.remove(i + 1);
+										e.remove(i + 1);
 									}
 								} else {
-									if(i < e.length() - 1) e.list.remove(i--);
+									if(i < e.length() - 1) e.remove(i--);
 								}
 							}
 						}
@@ -341,10 +348,10 @@ public class ParseTreeOptimizer {
 							if(a.isNumber()) {
 								if(!a.isZero()) {
 									for(; i + 1 < e.length(); ) {
-										e.list.remove(i + 1);
+										e.remove(i + 1);
 									}
 								} else {
-									if(i < e.length() - 1) e.list.remove(i--);
+									if(i < e.length() - 1) e.remove(i--);
 								}
 							}
 						}
@@ -370,7 +377,7 @@ public class ParseTreeOptimizer {
 				case gt: case gte:
 				case eq: case neq:
 				case mod: {
-					Expression next = ExpressionParser.compute(e.type, e);
+					Expression next = ExpressionParser.compute(e.type(), e);
 					if(next != null) parent.set(index, next); break;
 				}
 				

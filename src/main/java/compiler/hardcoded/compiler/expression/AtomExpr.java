@@ -1,6 +1,5 @@
 package hardcoded.compiler.expression;
 
-import java.util.List;
 import java.util.Objects;
 
 import hardcoded.compiler.Identifier;
@@ -8,12 +7,11 @@ import hardcoded.compiler.constants.Atom;
 import hardcoded.compiler.constants.ExprType;
 import hardcoded.utils.StringUtils;
 
-public class AtomExpr implements Expression {
-	public LowType atomType;
-	
+public class AtomExpr extends Expression {
 	private Identifier d_value;	// ident
 	private String s_value;		// string
 	private long n_value;		// number
+	public LowType atomType;
 	
 	public AtomExpr(long value) {
 		this(value, Atom.i64);
@@ -44,12 +42,13 @@ public class AtomExpr implements Expression {
 	}
 	
 	/**
-	 * Create a new atom expression type from a picked type and value.
+	 * Create a new atom expression type from a type and value.
 	 * 
-	 * @param value
-	 * @param type
+	 * @param value	the value of this atom
+	 * @param type	the type of this atom
 	 */
 	public AtomExpr(Object value, Atom type) {
+		super(ExprType.atom, false);
 		this.atomType = LowType.create(type);
 		
 		if(type == Atom.string) {
@@ -104,18 +103,10 @@ public class AtomExpr implements Expression {
 		return n_value == 1;
 	}
 	
-	public List<Expression> getElements() { return null; }
-	public boolean hasElements() { return false; }
-	public int length() { return 0; }
-	public Expression get(int index) { return null; }
-	public void remove(int index) {}
-	public void set(int index, Expression e) {}
-	
 	public boolean isPure() { return true; }
+	
+	@Deprecated
 	public LowType atomType() { return atomType; }
-	public ExprType type() { return ExprType.atom; }
-	
-	
 	
 	public Identifier identifier() {
 		return d_value;
@@ -129,9 +120,10 @@ public class AtomExpr implements Expression {
 		return n_value;
 	}
 	
+	// TODO: Return the atomtype somehow
+	// public LowType size() { return atomType; }
 	
-	
-	public AtomExpr clone() {
+	public Expression clone() {
 		AtomExpr expr = new AtomExpr(0);
 		expr.atomType = atomType;
 		
@@ -144,7 +136,7 @@ public class AtomExpr implements Expression {
 		return expr;
 	}
 	
-	public String asString() { return toString() + ":" + atomType(); }
+	public String asString() { return toString() + ":" + size(); }
 	public String toString() {
 		if(atomType.type() == Atom.string) return '\"' + StringUtils.escapeString(s_value) + '\"';
 		if(atomType.type() == Atom.ident)  return Objects.toString(d_value);
@@ -153,7 +145,7 @@ public class AtomExpr implements Expression {
 		if(atomType.isNumber()) {
 			String postfix = (atomType.isSigned() ? "":"u");
 			
-			if(atomType.isPointer()) return String.format("0x%16x", n_value);
+			if(atomType.isPointer()) return String.format("0x%016x", n_value);
 			
 			// TODO: Print unsigned values correctly.
 			switch(atomType.size()) {

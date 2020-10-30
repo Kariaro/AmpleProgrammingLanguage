@@ -15,7 +15,7 @@ public class ExprStat extends Statement {
 	
 	public Expression expr() {
 		if(list.isEmpty()) return null;
-		return list.get(0);
+		return (Expression)list.get(0);
 	}
 	
 	public boolean hasStatements() { return false; }

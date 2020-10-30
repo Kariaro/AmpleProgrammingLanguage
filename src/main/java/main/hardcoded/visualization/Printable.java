@@ -1,7 +1,7 @@
 package hardcoded.visualization;
 
 /**
- * This is a utility interface used by visualization to display node structures.
+ * This is a utility interface used by visualization classes to display node structures.
  * 
  * @author HardCoded
  */

@@ -1,5 +1,10 @@
 package hardcoded.compiler.constants;
 
+/**
+ * All expression types that this compiler uses.
+ * 
+ * @author HardCoded
+ */
 public enum ExprType {
 	// Memory
 	set,	// x = y
