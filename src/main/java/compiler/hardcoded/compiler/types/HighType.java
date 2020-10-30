@@ -4,7 +4,7 @@ import hardcoded.compiler.expression.LowType;
 
 /**
  * This is a the high representation of a type inside the programming language.<br>
- * The coresponding low level representation is a {@linkplain hardcoded.compiler.constants.LowType}
+ * The coresponding low level representation is a {@linkplain hardcoded.compiler.expression.LowType}
  * 
  * @author HardCoded
  */

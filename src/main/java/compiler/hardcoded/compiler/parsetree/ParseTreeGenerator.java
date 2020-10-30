@@ -407,10 +407,12 @@ public class ParseTreeGenerator {
 		
 		if(!reader.valueEqualsAdvance(")")) syntaxError(CompilerError.UNCLOSED_STATEMENT_PARENTHESES, reader);
 		Statement body = nextStatement();
-		Statement elseBody = null;
+		Statement elseBody;
 		
 		if(reader.valueEqualsAdvance("else")) {
 			elseBody = nextStatement();
+		} else {
+			elseBody = Statement.newEmpty();
 		}
 		
 		reader.resetMarked();
@@ -495,7 +497,7 @@ public class ParseTreeGenerator {
 			if(reader.valueEquals("}")) break;
 			
 			Statement s = nextStatement();
-			if(s == null || s.isEMPTY()) continue;
+			if(s == null || s.isEmptyStat()) continue;
 			
 			if(s.hasStatements() && s.getStatements().size() == 0) continue;
 			if(s instanceof StatementList) {
@@ -960,6 +962,7 @@ public class ParseTreeGenerator {
 			
 			return expr.clone();
 		} catch(StackOverflowError e) {
+			e.printStackTrace();
 			fatalSyntaxError(CompilerError.EXPRESSION_NESTED_TOO_DEEP);
 		}
 		
@@ -992,12 +995,12 @@ public class ParseTreeGenerator {
 		
 		if(expr instanceof OpExpr) {
 			OpExpr e = (OpExpr)expr;
-			if(e.type == comma) {
+			if(e.type() == comma) {
 				return acceptModification(e.last());
 			}
 			
-			return e.type == decptr
-				|| e.type == addptr;
+			return e.type() == decptr
+				|| e.type() == addptr;
 		}
 		
 		return false;

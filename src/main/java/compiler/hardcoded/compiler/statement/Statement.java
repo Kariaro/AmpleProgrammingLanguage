@@ -5,20 +5,6 @@ import java.util.List;
 import hardcoded.visualization.Printable;
 
 public abstract class Statement implements Printable {
-	@Deprecated
-	public static final Statement EMPTY = new Statement() {
-		public boolean hasStatements() {
-			return false;
-		}
-		
-		public List<Statement> getStatements() {
-			return null;
-		}
-		
-		public String toString() { return ""; }
-		public String asString() { return ""; }
-	};
-	
 	/**
 	 * Returns {@code true} if this statement has child nodes.
 	 * @return {@code true} if this statement has child nodes
@@ -39,7 +25,7 @@ public abstract class Statement implements Printable {
 		return new Object[0];
 	}
 	
-	public boolean isEMPTY() {
+	public boolean isEmptyStat() {
 		return false;
 	}
 	
@@ -48,9 +34,9 @@ public abstract class Statement implements Printable {
 			public boolean hasStatements() { return false; }
 			public List<Statement> getStatements() { return null; }
 			public Object[] asList() { return new Object[0]; }
-			public String asString() { return ""; }
-			public String toString() { return ""; }
-			public boolean isEMPTY() { return true; }
+			public String asString() { return "{NOP}"; }
+			public String toString() { return "{NOP}"; }
+			public boolean isEmptyStat() { return true; }
 		};
 	}
 }

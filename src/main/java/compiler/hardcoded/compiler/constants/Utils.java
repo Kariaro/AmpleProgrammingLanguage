@@ -46,7 +46,7 @@ public final class Utils {
 		if(stat instanceof ExprStat) {
 			ExprStat es = (ExprStat)stat;
 			for(int i = 0; i < es.list.size(); i++) {
-				Expression e = es.list.get(i);
+				Expression e = (Expression) es.list.get(i);
 				getAllExpressions(func, e, fc);
 				fc.constantFolding(es.list, i, func);
 				if(e != es.list.get(i)) i--;
@@ -56,7 +56,7 @@ public final class Utils {
 		if(stat instanceof Variable) {
 			Variable var = (Variable)stat;
 			for(int i = 0; i < var.list.size(); i++) {
-				getAllExpressions(func, var.list.get(i), fc);
+				getAllExpressions(func, (Expression)var.list.get(i), fc);
 				fc.constantFolding(var.list, i, func);
 			}
 		}

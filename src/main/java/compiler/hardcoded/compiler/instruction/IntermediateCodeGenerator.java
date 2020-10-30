@@ -330,7 +330,7 @@ public class IntermediateCodeGenerator {
 					
 					if(shouldCheck(e)) {
 						// reg should be the size of the parameter for that function...
-						reg = temp(func.arguments.get(i - 1).getLowType());//e.size());
+						reg = temp(func.arguments.get(i - 1).getLowType());//e.getSize());
 						
 						// System.out.println("Call param: " + reg + ":" + reg.getSize());
 						list.addAll(compileInstructions(e, reg));
@@ -573,10 +573,10 @@ public class IntermediateCodeGenerator {
 		List<IRInstruction> list = new ArrayList<>();
 		
 		if(stat.list.isEmpty()) return list;
-		list.addAll(compileInstructions(stat.list.get(0)));
+		list.addAll(compileInstructions((Expression)stat.list.get(0)));
 		
 		for(int i = 1; i < stat.list.size(); i++) {
-			list.addAll(compileInstructions(stat.list.get(i)));
+			list.addAll(compileInstructions((Expression)stat.list.get(i)));
 		}
 		
 		return list;
@@ -598,7 +598,7 @@ public class IntermediateCodeGenerator {
 	}
 	
 	private List<IRInstruction> _createInstructions(Statement stat) {
-		if(stat == null || stat.isEMPTY()) return null;
+		if(stat == null || stat.isEmptyStat()) return null;
 		
 		if(stat instanceof IfStat) {
 			return createIfInstructions((IfStat)stat);

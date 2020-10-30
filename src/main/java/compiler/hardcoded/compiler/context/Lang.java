@@ -25,8 +25,13 @@ public class Lang {
 	}
 
 	public Token token() {
-		if(remaining() < 1) return null;
-		return list.get(index);
+		if(remaining() < 1) {
+			//System.out.println("Read token: (" + index + ") " + null);
+			return null;
+		}
+		Token token = list.get(index);
+		//System.out.println("Read token: (" + index + ") " + token);
+		return token;
 	}
 	
 	public Lang mark() {
