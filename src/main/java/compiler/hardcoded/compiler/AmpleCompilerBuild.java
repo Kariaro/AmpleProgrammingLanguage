@@ -3,6 +3,7 @@ package hardcoded.compiler;
 import java.io.File;
 
 import hardcoded.compiler.errors.CompilerException;
+import hardcoded.compiler.errors.SyntaxMarker;
 import hardcoded.compiler.instruction.IRProgram;
 import hardcoded.compiler.instruction.IntermediateCodeGenerator;
 import hardcoded.compiler.instruction.IntermediateCodeOptimizer;
@@ -57,6 +58,10 @@ public class AmpleCompilerBuild {
 	public IRProgram build(File file) throws Exception {
 		Program current_program = parse_tree_generator.init(file.getParentFile(), file.getName());
 		if(current_program.hasErrors()) {
+			for(SyntaxMarker marker : current_program.getSyntaxMarkers()) {
+				System.err.println(marker.getMessage());
+			}
+			
 			throw new CompilerException("Compiler errors.");
 		}
 		

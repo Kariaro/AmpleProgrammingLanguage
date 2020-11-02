@@ -6,7 +6,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-import hardcoded.compiler.*;
+import hardcoded.compiler.Function;
+import hardcoded.compiler.Identifier;
+import hardcoded.compiler.Program;
 import hardcoded.compiler.constants.*;
 import hardcoded.compiler.constants.Modifiers.Modifier;
 import hardcoded.compiler.context.Lang;
@@ -48,29 +50,13 @@ public class ParseTreeGenerator {
 	
 	private Map<String, Expression> GLOBAL = new LinkedHashMap<>();
 	private Map<String, HighType> defined_types = new HashMap<>();
+	
 	private Function currentFunction;
 	private Program currentProgram;
 	private File projectPath;
 	private File sourceFile;
 	private Lang reader;
 	
-	
-	public Program init(File projectPath, String path) {
-		reset();
-		
-		this.currentProgram = new Program();
-		this.projectPath = projectPath;
-		importFile(path);
-		
-		if(currentProgram.hasErrors) {
-			System.out.println("=== [ SyntaxMarkers ] ===");
-			for(SyntaxMarker marker : currentProgram.syntaxMarkers) {
-				System.out.println("   " + marker);
-			}
-		}
-		
-		return this.currentProgram;
-	}
 	
 	// FIXME: Remove this method.
 	private void reset() {
@@ -86,46 +72,85 @@ public class ParseTreeGenerator {
 		}
 	}
 	
-	private void importFile(String path) {
-		File lastFile = sourceFile;
-		sourceFile = new File(projectPath, path);
+	public Program init(File projectPath, String path) {
+		reset();
+		
+//		if(projectPath == null || !projectPath.exists() || !projectPath.isDirectory()) {
+//			syntaxError(CompilerError.MESSAGE, "The project path supplied was invalid");
+//			return;
+//		}
+		
+		this.currentProgram = new Program();
+		this.projectPath = projectPath;
 		
 		try {
-			sourceFile = sourceFile.getCanonicalFile();
-		} catch(IOException e) {
-			e.printStackTrace();
+			importFile(path);
+		} catch(Throwable e) {
+			// This is a real error and was not thrown by the compiler
+			syntaxError(CompilerError.MESSAGE, e.getClass() + ": " + e.getMessage());
 		}
 		
-		/* Check the canonical path to disallow using relative paths.
-		 * 
-		 * The paths   [ "../src/file.hc" ] AND [ "file.hc" ]
-		 * could point towards the same file but only when calculating
-		 * the canonical file path we could see that they are the same.
-		 */
-		if(currentProgram.importedFiles.contains(sourceFile.getAbsolutePath())) return;
+		return currentProgram;
+	}
+	
+	// TODO: Supply more information about the token.
+	private void importFile(String path) {
+		File newSourceFile = new File(projectPath, path);
+		
+		// TODO: Disallow cannonical paths.
+		try {
+			/* Check the canonical path to disallow using relative paths.
+			 * 
+			 * The paths   [ "../src/file.hc" ] AND [ "file.hc" ]
+			 * could point towards the same file but only when calculating
+			 * the canonical file path we could see that they are the same.
+			 */
+			newSourceFile = newSourceFile.getCanonicalFile();
+		} catch(IOException e) {
+			addSyntaxError(
+				CompilerError.MESSAGE, -2, 1, "Failed to convert canonical file path: " + e.getMessage()
+			);
+			return;
+		}
+		
+		if(!newSourceFile.exists()) {
+			addSyntaxError(
+				CompilerError.MESSAGE, -2, 1, "The file '" + path + "' does not exist"
+			);
+			return;
+		}
+		
+		if(currentProgram.hasImportedFile(newSourceFile)) {
+			addSyntaxWarning(
+				CompilerError.MESSAGE, -2, 1, "The file '" + path + "' has already been imported"
+			);
+			return;
+		}
+		
+		byte[] bytes = new byte[0];
+		try {
+			bytes = FileUtils.readFileBytes(newSourceFile);
+		} catch(IOException e) {
+			syntaxError(CompilerError.INTERNAL_ERROR, e.getMessage());
+			return;
+		}
+		
+		File lastSourceFile = sourceFile;
+		sourceFile = newSourceFile;
 		currentProgram.importedFiles.add(sourceFile.getAbsolutePath());
 		
 		Lang last = this.reader;
-		Lang next = null;
-		
-		try {
-			next = Lang.wrap(LEXER.parse(FileUtils.readFileBytes(sourceFile)));
-		} catch(IOException e) {
-			e.printStackTrace();
-		}
-		
-		this.reader = next;
+		this.reader = Lang.wrap(LEXER.parse(bytes));
 		
 		try {
 			// Read all blocks inside the file
 			while(nextBlock() != null);
-		} catch(Exception e) {
-			e.printStackTrace();
-			syntaxError("");
+		} catch(CompilerException e) {
+			// Used to break free if fatal or other errors occured
 		}
 		
 		this.reader = last;
-		this.sourceFile = lastFile;
+		this.sourceFile = lastSourceFile;
 	}
 	
 	private IBlock nextBlock() {
@@ -145,30 +170,27 @@ public class ParseTreeGenerator {
 			reader.next();
 			
 			String name = reader.value();
-			if(defined_types.containsKey(name)) syntaxError("Invalid type name. That type name is already defined '%s'", name);
-			if(!isValidName(reader)) syntaxError("Invalid type name. The value '%s' is not a valid type name.", name);
+			if(defined_types.containsKey(name)) syntaxError(CompilerError.REDECLARATION_OF_TYPE, name);
+			if(!isValidName(reader)) syntaxError(CompilerError.INVALID_TYPE_NAME, name);
 			
 			reader.next();
 			HighType type = getTypeFromSymbol();
-			if(!reader.valueEqualsAdvance(";")) syntaxError("Invalid type syntax. Expected a semicolon but got '%s'", reader);
-			
-			if(defined_types.containsKey(name)) syntaxError("Type is already defined '%s'", name);
+			if(!reader.valueEqualsAdvance(";")) syntaxError(CompilerError.INVALID_TYPE_EXPECTED_SEMICOLON, reader);
 			defined_types.put(name, new HighType(name, type.type()));
-			
 			
 		} else if(value.equals("import")) {
 			reader.next();
 			
-			if(!reader.groupEquals("STRING")) syntaxError("Invalid import syntax. Expected a string but got '%s'", reader);
-			String filename = reader.value().substring(1, reader.value().length() - 1);
-			if(!reader.next().valueEqualsAdvance(";")) syntaxError("Invalid import syntax. Expected a semicolon but got '%s'", reader);
+			if(!reader.groupEquals("STRING")) syntaxError(CompilerError.INVALID_IMPORT_EXPECTED_STRING, reader.value());
+			String pathname = reader.value();
+			pathname = pathname.substring(1, pathname.length() - 1);
 			
-			importFile(filename);
-			
-			
+			if(!reader.next().valueEquals(";")) syntaxError(CompilerError.INVALID_IMPORT_EXPECTED_SEMICOLON, reader.value());
+			reader.next();
+			importFile(pathname);
 		} else if(value.equals("set")) {
 			if(!isValidName(reader.next())) syntaxError("Invalid type name. The value '%s' is not a valid type name.", reader);
-			String name = reader.value();
+			String name = reader.value(); // This should be marked...
 			reader.next();
 			Expression expr = nextExpression();
 			if(!reader.valueEqualsAdvance(";")) syntaxError("Invalid set syntax. Expected a semicolon but got '%s'", reader);
@@ -197,50 +219,75 @@ public class ParseTreeGenerator {
 	private Function makeFunction() {
 		if(reader.remaining() < 1) return null;
 		
-		// reader.beginRange("function");
-		
 		Function func = new Function();
-		if(Modifiers.contains(reader.value())) func.addModifier(nextFuncModifier());
+		while(Modifiers.contains(reader.value())) {
+			func.addModifier(nextFuncModifier());
+		}
 		
-		if(!isType(reader)) syntaxError(CompilerError.INVALID_TYPE, reader);
+		if(!isType(reader)) {
+			addSyntaxError(
+				CompilerError.INVALID_TYPE, 0, 1, reader.value()
+			);
+		}
 		func.returnType = getTypeFromSymbol();
 		
-		if(!isValidName(reader)) syntaxError(CompilerError.INVALID_FUNCTION_NAME, reader);
+		if(!isValidName(reader)) {
+			addSyntaxError(
+				CompilerError.INVALID_FUNCTION_NAME, 0, 1, reader.value()
+			);
+		}
 		boolean needsBody = false;
 		
 		if(currentProgram.hasFunction(reader.value())) {
 			Function impl = currentProgram.getFunctionByName(reader.value());
-			impl.sourceLineIndex = reader.line();
-			impl.declaredFile = sourceFile;
 			
-			// If the function was already defined we should throw a syntax error
-			if(!impl.isPlaceholder()) syntaxError(CompilerError.INVALID_FUNCTION_REDECLARATION, reader);
-			
-			
-			// Modifiers
-			if(!impl.returnType.equals(func.returnType)) syntaxError(CompilerError.INVALID_FUNCTION_DECLARATION_WRONG_RETURN_TYPE, impl.returnType);
-			if(!impl.getModifiers().containsAll(func.getModifiers())) syntaxError(CompilerError.INVALID_FUNCTION_DECLARATION_WRONG_MODIFIERS, func.getModifiers(), impl.getModifiers());
-			// def must be a placeholder and this function here cannot be 
-			
-			func = impl;
-			
-			// TODO: We should not clear the arguments here
-			func.arguments.clear();
-			
-			// TODO: Make this more general. What about function overloading? What should we do here?
-			needsBody = true;
+			if(!impl.isPlaceholder()) {
+				addSyntaxError(
+					CompilerError.INVALID_FUNCTION_REDECLARATION, 0, 1, reader.value()
+				);
+			} else {
+				// Modifiers
+				if(!impl.returnType.equals(func.returnType)) {
+					int depth = func.returnType.type().depth();
+					
+					addSyntaxError(
+						CompilerError.INVALID_FUNCTION_DECLARATION_WRONG_RETURN_TYPE,
+						-depth, depth + 1, reader.value()
+					);
+				}
+				
+				if(!impl.getModifiers().containsAll(func.getModifiers())) {
+					syntaxError(CompilerError.INVALID_FUNCTION_DECLARATION_WRONG_MODIFIERS, func.getModifiers(), impl.getModifiers());
+				}
+				
+				func = impl;
+				func.sourceLineIndex = reader.line();
+				func.sourceFileOffset = reader.fileOffset();
+				func.declaredFile = sourceFile;
+				
+				// TODO: We should not clear the arguments here
+				func.arguments.clear();
+				
+				// TODO: Make this more general. What about function overloading? What should we do here?
+				needsBody = true;
+			}
 		} else {
+			func.sourceFileOffset = reader.fileOffset();
 			func.sourceLineIndex = reader.line();
 			func.declaredFile = sourceFile;
 			func.name = reader.value();
-			
-			
 			currentProgram.addFunction(func);
 		}
-
-		currentFunction = func;
-		if(!reader.next().valueEqualsAdvance("(")) syntaxError(CompilerError.INVALID_FUNCTION_DECLARATION_EXPECTED_OPEN_PARENTHESIS, reader);
 		
+		currentFunction = func;
+		if(!reader.next().valueEquals("(")) {
+			addSyntaxError(
+				CompilerError.INVALID_FUNCTION_NAME,
+				-1, 2, reader.peakString(-1, 2)
+			);
+		}
+		
+		reader.next();
 		while(!reader.valueEquals(")")) {
 			Variable arg = nextFuncArgument();
 			
@@ -250,14 +297,17 @@ public class ParseTreeGenerator {
 			if(!reader.valueEquals(",")) {
 				if(reader.valueEquals(")")) break;
 				syntaxError(CompilerError.MISSING_FUNCTION_PARAMETER_SEPARATOR, reader);
-			} else reader.next();
+			}
+			
+			reader.next();
 		}
 		
 		if(!reader.valueEqualsAdvance(")")) syntaxError(CompilerError.INVALID_FUNCTION_DECLARATION_EXPECTED_CLOSING_PARENTHESIS, reader);
 		
-		if(reader.valueEqualsAdvance(";")) {
+		if(reader.valueEquals(";")) {
 			if(needsBody) syntaxError(CompilerError.INVALID_FUNCTION_DECLARATION_EXPECTED_A_FUNCTION_BODY);
-			// func.setDefinedRange(reader.closeRange("function"));
+			reader.next();
+			
 			return func;
 		} else if(!reader.valueEquals("{")) {
 			syntaxError(CompilerError.INVALID_FUNCTION_DECLARATION_EXPECTED_OPEN_CURLYBRACKET);
@@ -335,7 +385,7 @@ public class ParseTreeGenerator {
 			reader.nextClear();
 		}
 		
-		return null;
+		return Statement.newEmpty();
 	}
 	
 	private Statement makeWhileStatement() {
@@ -423,7 +473,7 @@ public class ParseTreeGenerator {
 		HighType type = getTypeFromSymbol();
 		
 		List<Variable> list = new ArrayList<Variable>();
-		do {
+		while(true) {
 			Variable var = new Variable(type);
 			list.add(var);
 			
@@ -470,8 +520,9 @@ public class ParseTreeGenerator {
 			
 			if(!reader.valueEqualsAdvance(",")) {
 				syntaxError(CompilerError.INVALID_VARIABLE_DECLARATION_MISSING_COLON_OR_SEMICOLON, reader);
+				break;
 			}
-		} while(true);
+		}
 		
 		return new StatementList(list);
 	}
@@ -912,7 +963,7 @@ public class ParseTreeGenerator {
 					
 					if(reader.groupEquals("IDENTIFIER")) {
 						String value = reader.value();
-						if(!currentFunction.hasIdentifier(value)) {
+						if(currentFunction == null || !currentFunction.hasIdentifier(value)) {
 							if(GLOBAL.containsKey(value)) {
 								reader.next();
 								return GLOBAL.get(value);
@@ -930,7 +981,8 @@ public class ParseTreeGenerator {
 						}
 						
 						reader.next();
-						return null;
+						// FIXME: null is not allowed. Return a error expression
+						return Expression.EMPTY;
 					}
 					
 					if(reader.valueEqualsAdvance("(")) {
@@ -939,7 +991,8 @@ public class ParseTreeGenerator {
 						return expr;
 					}
 					
-					return null;
+					// FIXME: null is not allowed. Return a error expression
+					return Expression.EMPTY;
 				}
 				
 				private long parseLong(String value) {
@@ -1042,41 +1095,79 @@ public class ParseTreeGenerator {
 		return true;
 	}
 	
+	private void addSyntaxError(CompilerError error, int offset, int count, Object... args) {
+		currentProgram.hasErrors = true;
+		currentProgram.syntaxMarkers.add(new CompilerMarker(
+			sourceFile,
+			reader,
+			offset,
+			count,
+			SyntaxMarker.ERROR,
+			String.format(error.getMessage(), args),
+			_caller(),
+			error
+		));
+	}
+	
+	private void addSyntaxWarning(CompilerError error, int offset, int count, Object... args) {
+		currentProgram.syntaxMarkers.add(new CompilerMarker(
+			sourceFile,
+			reader,
+			offset,
+			count,
+			SyntaxMarker.WARNING,
+			String.format(error.getMessage(), args),
+			_caller(),
+			error
+		));
+	}
+	
 	private void syntaxError(CompilerError error, Object... args) {
-		StringBuilder message = new StringBuilder();
-		
-		message.append(_caller()).append("(line:").append(reader.line()).append(", col:").append(reader.column()).append(") ")
-			.append(String.format(error.getMessage(), args));
+		String compilerMessage = _caller();
+		String message = String.format(error.getMessage(), args);
 		
 		currentProgram.hasErrors = true;
-		currentProgram.syntaxMarkers.add(new CompilerMarker(reader.line(), reader.column(), sourceFile, error, message.toString()));
-		
-		System.err.println(message);
+		currentProgram.syntaxMarkers.add(new CompilerMarker(
+			sourceFile,
+			reader,
+			SyntaxMarker.ERROR,
+			compilerMessage,
+			message,
+			error
+		));
 	}
 	
 	private void fatalSyntaxError(CompilerError error, Object... args) {
-		StringBuilder message = new StringBuilder();
-		
-		message.append(_caller()).append("(line:").append(reader.line()).append(", col:").append(reader.column()).append(") ")
-			.append(String.format(error.getMessage(), args));
-		
+		String compilerMessage = _caller();
+		String message = String.format(error.getMessage(), args);
 		
 		currentProgram.hasErrors = true;
-		currentProgram.syntaxMarkers.add(new CompilerMarker(reader.line(), reader.column(), sourceFile, error, message.toString()));
+		currentProgram.syntaxMarkers.add(new CompilerMarker(
+			sourceFile,
+			reader,
+			SyntaxMarker.ERROR,
+			compilerMessage,
+			message,
+			error
+		));
 		
+		// Break the execution
 		throw new CompilerException(message.toString());
 	}
 	
 	private void syntaxError(String format, Object... args) {
-		StringBuilder message = new StringBuilder();
-		
-		message.append(_caller()).append("(line:").append(reader.line()).append(", col:").append(reader.column()).append(") ")
-			.append(String.format(format, args));
+		String compilerMessage = _caller();
+		String message = String.format(format, args);
 		
 		currentProgram.hasErrors = true;
-		currentProgram.syntaxMarkers.add(new CompilerMarker(reader.line(), reader.column(), sourceFile, CompilerError.NONE, message.toString()));
-		
-		System.err.println(message);
+		currentProgram.syntaxMarkers.add(new CompilerMarker(
+			sourceFile,
+			reader,
+			SyntaxMarker.ERROR,
+			compilerMessage,
+			message,
+			CompilerError.NONE
+		));
 	}
 	
 	private String _caller() {

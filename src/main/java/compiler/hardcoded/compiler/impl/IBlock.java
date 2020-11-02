@@ -3,7 +3,7 @@ package hardcoded.compiler.impl;
 import java.io.File;
 
 /**
- * This interface is a simplified specifies all program blocks
+ * This interface is used to specify program blocks
  * such as functions, classes and data structures.
  * 
  * @author HardCoded

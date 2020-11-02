@@ -77,13 +77,13 @@ public class ParseTreeOptimizer {
 				} else if(stat instanceof IfStat) {
 					IfStat is = (IfStat)stat;
 					Expression c = is.getCondition();
+					// TODO: We should remove the IF statement if the condition is not pure. Otherwise it should be removed completely.
+					
 					if(c instanceof AtomExpr) {
 						AtomExpr a = (AtomExpr)c;
 						if(a.isNumber()) {
 							if(a.isZero()) {
 								if(!is.hasElseBody()) {
-									// If we do not have any else body we do not need to change anything.
-									
 									parent.set(index, Statement.newEmpty());
 								} else {
 									parent.set(index, is.getElseBody());

@@ -1,5 +1,6 @@
 package hardcoded.vm;
 
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -20,14 +21,18 @@ public class AmpleVm {
 	private final StringBuilder stdout = new StringBuilder();
 	
 	public static void run(IRProgram program) {
+		run(program, System.out);
+	}
+	
+	public static void run(IRProgram program, PrintStream std) {
 		if(CompilerMain.isDeveloper()) {
 			System.out.println("----------------------------");
 		}
 		
-		new AmpleVm(program).run();
+		new AmpleVm(program, std).run();
 	}
 	
-	private AmpleVm(IRProgram program) {
+	private AmpleVm(IRProgram program, PrintStream output) {
 		this.functions = new HashMap<>();
 		this.pointers = new HashMap<>();
 		

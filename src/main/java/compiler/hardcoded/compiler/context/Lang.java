@@ -4,34 +4,52 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
+import hardcoded.compiler.errors.CompilerException;
 import hardcoded.lexer.Token;
 
 public class Lang {
 	private final List<Token> list;
 	private int index;
+	private LinkedList<Integer> markedTokens;
 	private LinkedList<Integer> marked;
 	
+	// These are used to remove some NPE
+	// The start and end will be replaced by these
+	// tokens to ensure non null tokens.
+	private final Token START;
+	private final Token END;
+	
 	private Lang(List<Token> list) {
+		this.markedTokens = new LinkedList<>();
 		this.marked = new LinkedList<>();
 		this.list = list;
-	}
-	
-	public int fileOffset() {
-		return token().offset;
+		
+		if(!list.isEmpty()) {
+			Token t1 = list.get(list.size() - 1);
+			START = new Token("", ":null", 0, 0, 0);
+			END = new Token("", ":null", t1.offset, t1.line, t1.column);
+		} else {
+			START = END = new Token("", ":null", 0, 0, 0);
+		}
 	}
 	
 	public int remaining() {
 		return list.size() - index;
 	}
-
+	
+//	public void markPoint() {
+//		markedTokens.add(index);
+//	}
+//	
+//	public Token getMarkedPoint() {
+//		if(markedTokens.isEmpty()) return null;
+//		
+//		int index = markedTokens.pollLast();
+//		return list.get(index);
+//	}
+	
 	public Token token() {
-		if(remaining() < 1) {
-			//System.out.println("Read token: (" + index + ") " + null);
-			return null;
-		}
-		Token token = list.get(index);
-		//System.out.println("Read token: (" + index + ") " + token);
-		return token;
+		return peak(0);
 	}
 	
 	public Lang mark() {
@@ -46,11 +64,13 @@ public class Lang {
 	
 	public Lang resetMarked() {
 		marked.clear();
+		markedTokens.clear();
 		return this;
 	}
 	
 	public Lang next() {
 		index++;
+		if(index + 1 >= list.size()) throw new CompilerException("Reader is outside of bounds");
 		return this;
 	}
 	
@@ -60,18 +80,8 @@ public class Lang {
 		return this;
 	}
 	
-	public Lang next(int count) {
-		index += count;
-		return this;
-	}
-	
 	public Lang prev() {
 		index--;
-		return this;
-	}
-	
-	public Lang prev(int count) {
-		index -= count;
 		return this;
 	}
 	
@@ -80,29 +90,28 @@ public class Lang {
 	 * @return the current value and increments the index
 	 */
 	public String valueAdvance() {
-		if(remaining() < 1) return null;
 		String value = token().value;
 		index++;
 		return value;
 	}
 	
 	public String value() {
-		if(remaining() < 1) return null;
 		return token().value;
 	}
 	
 	public String group() {
-		if(remaining() < 1) return null;
 		return token().group;
 	}
 	
+	public int fileOffset() {
+		return token().offset;
+	}
+	
 	public int line() {
-		if(remaining() < 1) return -1;
 		return token().line;
 	}
 	
 	public int column() {
-		if(remaining() < 1) return -1;
 		return token().column;
 	}
 	
@@ -135,28 +144,22 @@ public class Lang {
 	
 	
 	
-	// TODO: EXPERIMENTAL METHODS
-	public LinkedList<Integer> ranges = new LinkedList<>();
 	
-	public void beginRange(String name) {
-		beginRange(name, 0);
-	}
-	
-	public void beginRange(String name, int offset) {
+	public Token peak(int offset) {
 		int idx = index + offset;
-		ranges.add(idx);
-		// System.out.println("beginRange: [" + idx + "] (" + name + ") " + ranges);
+		if(idx < 0) return START;
+		if(idx >= list.size()) return END;
+		return list.get(idx);
 	}
 	
-	public NamedRange closeRange(String name) {
-		int idx = ranges.pollLast();
+	public String peakString(int offset, int count) {
+		StringBuilder sb = new StringBuilder();
 		
-		Token first = list.get(idx);
-		Token token = list.get(index - 1);
+		for(int i = 0; i < count; i++) {
+			Token token = peak(offset + i);
+			sb.append(token.value).append(" ");
+		}
 		
-		NamedRange range = new NamedRange(name, first.offset, token.offset + token.value.length() - first.offset);
-		
-		// System.out.println("closeRange: [" + index + "] " + range);
-		return range;
+		return sb.toString().trim();
 	}
 }

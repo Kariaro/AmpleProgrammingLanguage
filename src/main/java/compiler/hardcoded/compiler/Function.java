@@ -26,6 +26,7 @@ public class Function implements IFunction, Printable {
 	public HighType returnType;
 	public File declaredFile;
 	public int sourceLineIndex;
+	public int sourceFileOffset;
 	
 	public List<Identifier> arguments;
 	
@@ -127,6 +128,16 @@ public class Function implements IFunction, Printable {
 	public int getLineIndex() {
 		return sourceLineIndex;
 	}
+	
+	public int getFileOffset() {
+		return sourceFileOffset;
+	}
+
+	public int getLocationLength() {
+		return name.length();
+	}
+	
+	
 	
 	public HighType getReturnType() {
 		return returnType;

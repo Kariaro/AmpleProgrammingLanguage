@@ -179,6 +179,9 @@ public abstract class Expression implements IExpression, Printable {
 			if(a.isIdentifier()) {
 				Identifier ident = a.identifier();
 				
+				// FIXME: !CRITICAL! This value should never be null.
+				if(ident == null) return null;
+				
 				if(ident.hasType()) {
 					return ident.getLowType();
 				}

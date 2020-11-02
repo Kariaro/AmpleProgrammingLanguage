@@ -25,33 +25,5 @@ public class NestedStat extends Statement {
 			list.add(Statement.newEmpty());
 	}
 	
-//	public int size() {
-//		return list.size();
-//	}
-//	
-//	@SuppressWarnings("unchecked")
-//	public <T extends Statement> T get(int index) {
-//		return (T)list.get(index);
-//	}
-//	
-//	public <T extends Statement> T getOrDefault(int index, T def) {
-//		T result = get(index);
-//		return result == null ? def:result;
-//	}
-//	
-//	public <T extends Statement> T add(T stat) {
-//		list.add(stat);
-//		return stat;
-//	}
-//	
-//	public <T extends Statement> T set(int index, T stat) {
-//		list.set(index, stat);
-//		return stat;
-//	}
-//	
-//	public void remove(int index) {
-//		list.remove(index);
-//	}
-	
 	public String asString() { return "BODY"; }
 }
