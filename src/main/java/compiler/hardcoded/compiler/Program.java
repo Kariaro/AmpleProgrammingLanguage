@@ -1,5 +1,6 @@
 package hardcoded.compiler;
 
+import java.io.File;
 import java.util.*;
 
 import hardcoded.compiler.Identifier.IdType;
@@ -81,6 +82,10 @@ public final class Program implements IProgram, Printable {
 		functions.add(func);
 		idents.add(Identifier.createFuncIdent(func.name, function_index++, func));
 		return func;
+	}
+	
+	public boolean hasImportedFile(File file) {
+		return importedFiles.contains(file.getAbsolutePath());
 	}
 	
 	public IBlock get(int index) {

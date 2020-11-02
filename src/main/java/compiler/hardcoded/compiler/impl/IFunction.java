@@ -13,7 +13,7 @@ import hardcoded.compiler.types.HighType;
  * @author HardCoded
  * @since v0.1
  */
-public interface IFunction extends IBlock, IStatement {
+public interface IFunction extends IBlock, IStatement, ILocation {
 	/**
 	 * Returns the name of this function.
 	 * @return the name of this function

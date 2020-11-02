@@ -2,22 +2,31 @@ package hardcoded.compiler.errors;
 
 public enum CompilerError {
 	NONE("Missing error message!"),
+	MESSAGE("%s"),
+	INTERNAL_ERROR("Internal error: %s"),
 	
 	
-	INVALID_UNARY_EXPRESSION_OPERATION("Invalid use of a unary expression. The value you are trying to modify is not modifiable."),
-	INVALID_MODIFICATION("The value you are trying to modify is not modifiable."),
-	INVALID_CHAR_LITERAL_SIZE("Invalid character constant."),
-	INVALID_VARIABLE_NAME("Invalid variable name. The name '%s' is not a valid variable name."),
-	INVALID_FUNCTION_NAME("Invalid function name. The name '%s' is not a valid function name."),
-	INVALID_FUNCTION_PARAMETER_NAME("Invalid function parameter name '%s'."),
-	INVALID_CAST_TYPE("Invalid cast type. You cannot cast into a '%s'."),
-	INVALID_TYPE("Invalid type '%s'."),
+	INVALID_IMPORT_EXPECTED_STRING("Invalid import syntax. Expected a string but got '%s'"),
+	INVALID_IMPORT_EXPECTED_SEMICOLON("Invalid import syntax. Expected a semicolon but got '%s'"),
+	
+	INVALID_TYPE_NAME("The value '%s' is not a valid type name"),
+	INVALID_TYPE_EXPECTED_SEMICOLON("Invalid type syntax. Expected a semicolon but got '%s'"),
+	REDECLARATION_OF_TYPE("The type '%s' has already been declared"),
+	
+	INVALID_UNARY_EXPRESSION_OPERATION("Invalid use of a unary expression. The value you are trying to modify is not modifiable"),
+	INVALID_MODIFICATION("The value you are trying to modify is not modifiable"),
+	INVALID_CHAR_LITERAL_SIZE("Invalid character constant"),
+	INVALID_VARIABLE_NAME("Invalid variable name. The name '%s' is not a valid variable name"),
+	INVALID_CAST_TYPE("Invalid cast type. You cannot cast into a '%s'"),
+	INVALID_TYPE("Invalid type '%s'"),
 	INVALID_XXX_EXPECTED_OPEN_PARENTHESIS("Invalid %s. Expected open parenthesis '(' but got '%s'"),
 	INVALID_XXX_EXPECTED_SEMICOLON("Invalid %s. Expected a semicolon ';' but got '%s'"),
-	INVALID_FUNCTION_CALL_PARAMETER("Invalid function call parameter."),
-	INVALID_FUNCTION_CALL_EXPRESSION("Invalid function call expression '%s'."),
-	INVALID_FUNCTION_DECLARATION_EXPECTED_XXX("Invalid function declaration. %s."),
+	INVALID_FUNCTION_DECLARATION_EXPECTED_XXX("Invalid function declaration. '%s'"),
 	
+	INVALID_FUNCTION_CALL_PARAMETER("Invalid function call parameter"),
+	INVALID_FUNCTION_CALL_EXPRESSION("Invalid function call expression '%s'"),
+	INVALID_FUNCTION_NAME("Invalid function name. The name '%s' is not a valid function name"),
+	INVALID_FUNCTION_PARAMETER_NAME("Invalid function parameter name '%s'"),
 	INVALID_FUNCTION_DECLARATION_EXPECTED_OPEN_PARENTHESIS("Invalid function declaration. Expected open parenthesis '(' but got '%s'"),
 	INVALID_FUNCTION_DECLARATION_EXPECTED_CLOSING_PARENTHESIS("Invalid function declaration. Expected closing parenthesis ')' but got '%s'"),
 	INVALID_FUNCTION_DECLARATION_EXPECTED_A_FUNCTION_BODY("Invalid function declaration. Expected a function body"),

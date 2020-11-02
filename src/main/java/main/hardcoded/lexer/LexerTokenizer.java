@@ -134,7 +134,7 @@ public class LexerTokenizer implements Serializable {
 			}
 			
 			// We should always discard tokens that are invalid.
-			if(token.value != null) {
+			if(!token.isInvalid()) {
 				list.add(token);
 			}
 		}
@@ -184,7 +184,7 @@ public class LexerTokenizer implements Serializable {
 				// Return an invalid token
 				
 				string.move(length);
-				return new Token(null, null, -1, -1, -1);
+				return new Token("", "", -1, -1, -1);
 			}
 			
 			Token sym = new Token(

@@ -1,9 +1,13 @@
 package hardcoded.compiler.errors;
 
-import java.io.File;
+import hardcoded.compiler.impl.ILocation;
 
-public interface SyntaxMarker {
-	public CompilerError getType();
+public interface SyntaxMarker extends ILocation {
+	public static final int ERROR = 1;
+	public static final int WARNING = 2;
+	public static final int INFO = 3;
+	
+	public CompilerError getCompilerError();
 	
 	/**
 	 * Returns the message of this marker.
@@ -12,21 +16,14 @@ public interface SyntaxMarker {
 	public String getMessage();
 	
 	/**
-	 * Returns the column index of this marker.
-	 * @return the column index of this marker
+	 * Returns the internal compilers thrown string.
+	 * @return the internal compilers thrown string
 	 */
-	public int getColumn();
+	public String getCompilerMessage();
 	
 	/**
-	 * Returns the line index of this marker.
-	 * @return the line index of this marker
+	 * Returns the severity of the marker.
+	 * @return the severity of the marker
 	 */
-	public int getLine();
-	
-
-	/**
-	 * Returns the source file this marker is located.
-	 * @return the source file that marker is located
-	 */
-	public File getSourceFile();
+	public int getSeverity();
 }
