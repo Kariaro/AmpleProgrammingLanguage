@@ -145,6 +145,13 @@ public class Lang {
 	
 	
 	
+	/**
+	 * Returns the token at the specified relative position.
+	 * <br>Note that this method will never return {@code null}.
+	 * 
+	 * @param	offset
+	 * @return	the token at the specified relative position
+	 */
 	public Token peak(int offset) {
 		int idx = index + offset;
 		if(idx < 0) return START;

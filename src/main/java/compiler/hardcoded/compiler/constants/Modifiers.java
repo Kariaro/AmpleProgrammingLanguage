@@ -11,8 +11,9 @@ public final class Modifiers {
 	private Modifiers() {}
 	
 	public static final Modifier EXPORT = new Modifier("export", 1 << 0);
+	public static final Modifier INLINE = new Modifier("inline", 1 << 1);
 	private static final Modifier[] MODIFIERS = {
-		EXPORT
+		EXPORT, INLINE
 	};
 	
 	/**

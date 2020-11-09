@@ -42,6 +42,6 @@ public class OpExpr extends Expression {
 	
 	public String asString() { return type().toString(); }
 	public String toString() {
-		return type() + "(" + StringUtils.join(", ", list) + ")" + ":" + size();
+		return type() + "(" + StringUtils.join(", ", list) + ")";// + ":" + size();
 	}
 }

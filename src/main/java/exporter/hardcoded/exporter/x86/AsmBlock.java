@@ -45,7 +45,7 @@ class AsmBlock {
 			case DATA: {
 				// TODO: Get the name of this data block together with the offset.
 				
-				Param reg = inst.getLastParam();
+				Param reg = inst.getParam(inst.getNumParams() - 1);
 				
 				if(reg instanceof DataParam) {
 					Object obj = ((DataParam)reg).getValue();

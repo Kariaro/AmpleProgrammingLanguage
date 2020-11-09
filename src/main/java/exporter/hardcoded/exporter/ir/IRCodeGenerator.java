@@ -20,4 +20,8 @@ public class IRCodeGenerator implements CodeGeneratorImpl {
 		
 		return bs.toByteArray();
 	}
+	
+	public void reset() {
+		
+	}
 }

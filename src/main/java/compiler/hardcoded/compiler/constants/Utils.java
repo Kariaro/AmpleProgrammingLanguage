@@ -25,7 +25,8 @@ public final class Utils {
 	}
 	
 	public static void getAllStatements(Function func, Statement stat, Folding<Statement> fc) {
-		if(stat == null) return; // TODO: This should not be null...
+		// FIXME: 'stat' should never be null...
+		// if(stat == null) return;
 		
 		if(stat.hasElements()) {
 			List<Statement> list = stat.getElements();
@@ -38,7 +39,8 @@ public final class Utils {
 	}
 	
 	public static void getAllExpressions(Function func, Statement stat, Folding<Expression> fc) {
-		if(stat == null) return; // TODO: This should not be null...
+		// FIXME: 'stat' should never be null...
+		// if(stat == null) return;
 		
 		if(stat.hasElements()) {
 			for(Statement s : stat.getElements()) getAllExpressions(func, s, fc);
@@ -84,7 +86,8 @@ public final class Utils {
 	
 	public static String printPretty(Statement stat) {
 		StringBuilder sb = new StringBuilder();
-		if(stat == null) return "?";
+		// FIXME: 'stat' should never be null...
+		// if(stat == null) return "?";
 		
 		if(stat instanceof IfStat) {
 			IfStat is = (IfStat)stat;

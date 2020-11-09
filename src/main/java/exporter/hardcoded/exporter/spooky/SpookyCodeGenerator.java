@@ -34,6 +34,10 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 	// When another function is called it will write the function structure again
 	// [ ip_pointer ] [ main_args ] [ main_stack ] [ ip_pointer ] [ func_args ] [ func_stack ]
 	
+	public void reset() {
+		
+	}
+	
 	public byte[] generate(IRProgram program) {
 		System.out.println("\nInside the spooky code generator");
 		

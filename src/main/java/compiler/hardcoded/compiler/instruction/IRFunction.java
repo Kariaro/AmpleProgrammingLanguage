@@ -8,7 +8,7 @@ import hardcoded.compiler.expression.LowType;
 import hardcoded.utils.StringUtils;
 
 public class IRFunction {
-	// TODO: Keep param names for easier use
+	// TODO: Keep function parameter names for easier use
 	private final LowType[] params;
 	private final LowType type;
 	private final String name;
@@ -38,8 +38,7 @@ public class IRFunction {
 		return params;
 	}
 	
-	// FIXME: Change to getReturn() maybe?
-	public LowType getType() {
+	public LowType getReturnType() {
 		return type;
 	}
 	

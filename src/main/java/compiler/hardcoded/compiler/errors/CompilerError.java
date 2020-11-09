@@ -44,7 +44,7 @@ public enum CompilerError {
 	
 	MISSING_FUNCTION_PARAMETER_SEPARATOR("Invalid function parameter separator. Expected a comma ',' but got '%s'"),
 	
-	REDECLARATION_OF_FUNCTION_PARAMETER("Redeclaration of function parameter '%s'."),
+	REDECLARATION_OF_FUNCTION_PARAMETER("Redeclaration of function parameter '%s'"),
 	REDECLARATION_OF_LOCAL_VARIABLE("Redeclaration of a local variable '%s'"),
 	
 	UNDECLARED_VARIABLE_OR_FUNCTION("Could not find the variable or function '%s'"),
@@ -61,7 +61,7 @@ public enum CompilerError {
 	
 	FLOATING_TYPES_NOT_IMPLEMENTED("Float data types are not implemented yet"),
 	
-	EXPRESSION_NESTED_TOO_DEEP("Expression was nested too deep.");
+	EXPRESSION_NESTED_TOO_DEEP("Expression was nested too deep");
 	;
 	
 	public final String message;

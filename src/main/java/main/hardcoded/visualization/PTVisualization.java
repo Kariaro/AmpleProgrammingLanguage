@@ -10,15 +10,15 @@ import java.util.Objects;
 
 import javax.swing.JPanel;
 
-import hardcoded.compiler.*;
+import hardcoded.compiler.Program;
 
 /**
  * @author HardCoded
  */
-public final class HCVisualization extends Visualization {
+public final class PTVisualization extends Visualization {
 	private PTPanel panel;
 	
-	public HCVisualization() {
+	public PTVisualization() {
 		super("ParseTree - Visualization", 2);
 		panel = new PTPanel();
 		panel.setOpaque(true);
@@ -45,13 +45,8 @@ public final class HCVisualization extends Visualization {
 				
 				{
 					Point mouse = event.getPoint();
-					double xx = mouse.x * (scroll - last);
-					double yy = mouse.y * (scroll - last);
-					panel.xpos += xx;
-					panel.ypos += yy;
-					
-					//selectedX = mouse.x * scroll - panel.xpos;
-					//selectedY = mouse.y * scroll - panel.ypos;
+					panel.xpos += mouse.x * (scroll - last);
+					panel.ypos += mouse.y * (scroll - last);
 				}
 				
 				panel.zoom = 1.0 / scroll;
@@ -127,6 +122,14 @@ public final class HCVisualization extends Visualization {
 		}
 	}
 	
+//	private FontRenderContext _frc;
+//	private double getStringWidth(String string) {
+//		if(_frc == null) {
+//			_frc = new FontRenderContext(new AffineTransform(), true, true);
+//		}
+//		return panel.font.getStringBounds(string, _frc).getWidth();
+//	}
+	
 	private class Element {
 		public double x;
 		public double y;
@@ -168,6 +171,8 @@ public final class HCVisualization extends Visualization {
 		
 		public void setContent(String value) {
 			content = value;
+			
+			//width = (int)getStringWidth(content) + 10;
 			width = content.length() * 12 + 10;
 			height = 20;
 			offset = width + 1;

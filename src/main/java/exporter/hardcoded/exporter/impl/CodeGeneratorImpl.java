@@ -12,4 +12,9 @@ public interface CodeGeneratorImpl {
 	 * @throws	CodeGenException
 	 */
 	public byte[] generate(IRProgram program) throws CodeGenException;
+	
+	/**
+	 * Called uppon reseting the code generator.
+	 */
+	public void reset();
 }

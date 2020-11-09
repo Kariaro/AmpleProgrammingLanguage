@@ -44,9 +44,7 @@ public class HighType {
 	
 	public String toString() {
 		if(type.isPointer()) {
-			StringBuilder sb = new StringBuilder().append(name);
-			for(int i = 0; i < type.depth(); i++) sb.append('*');
-			return sb.toString();
+			return name + "*".repeat(type.depth());
 		}
 		return name;
 	}

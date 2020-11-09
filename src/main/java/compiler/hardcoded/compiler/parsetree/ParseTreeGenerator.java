@@ -20,6 +20,7 @@ import hardcoded.compiler.types.HighType;
 import hardcoded.compiler.types.PrimitiveType;
 import hardcoded.lexer.LexerFactory;
 import hardcoded.lexer.LexerTokenizer;
+import hardcoded.resource.SourceFolders;
 import hardcoded.utils.FileUtils;
 import hardcoded.utils.StringUtils;
 
@@ -51,29 +52,37 @@ public class ParseTreeGenerator {
 	private Map<String, Expression> GLOBAL = new LinkedHashMap<>();
 	private Map<String, HighType> defined_types = new HashMap<>();
 	
+	private SourceFolders sourceLookup;
 	private Function currentFunction;
 	private Program currentProgram;
-	private File projectPath;
 	private File sourceFile;
 	private Lang reader;
 	
 	
 	// FIXME: Remove this method.
-	private void reset() {
-		currentProgram = null;
-		projectPath = null;
-		reader = null;
-		
-		defined_types.clear();
-		GLOBAL.clear();
+//	private void reset() {
+//		currentProgram = null;
+//		reader = null;
+//		
+//		defined_types.clear();
+//		GLOBAL.clear();
+//		
+//		for(HighType t : Primitives.getAllTypes()) {
+//			defined_types.put(t.name(), t);
+//		}
+//	}
+	
+	
+	private boolean ran = false;
+	public Program init(SourceFolders sourceFolders, File mainFile) {
+		if(ran) throw new CompilerException("ParseTreeGenerator is not reusable");
+		ran = true;
 		
 		for(HighType t : Primitives.getAllTypes()) {
 			defined_types.put(t.name(), t);
 		}
-	}
-	
-	public Program init(File projectPath, String path) {
-		reset();
+		
+		this.sourceLookup = sourceFolders;
 		
 //		if(projectPath == null || !projectPath.exists() || !projectPath.isDirectory()) {
 //			syntaxError(CompilerError.MESSAGE, "The project path supplied was invalid");
@@ -81,10 +90,9 @@ public class ParseTreeGenerator {
 //		}
 		
 		this.currentProgram = new Program();
-		this.projectPath = projectPath;
 		
 		try {
-			importFile(path);
+			importFile(mainFile);
 		} catch(Throwable e) {
 			// This is a real error and was not thrown by the compiler
 			syntaxError(CompilerError.MESSAGE, e.getClass() + ": " + e.getMessage());
@@ -93,39 +101,59 @@ public class ParseTreeGenerator {
 		return currentProgram;
 	}
 	
-	// TODO: Supply more information about the token.
 	private void importFile(String path) {
-		File newSourceFile = new File(projectPath, path);
-		
-		// TODO: Disallow cannonical paths.
-		try {
-			/* Check the canonical path to disallow using relative paths.
-			 * 
-			 * The paths   [ "../src/file.hc" ] AND [ "file.hc" ]
-			 * could point towards the same file but only when calculating
-			 * the canonical file path we could see that they are the same.
-			 */
-			newSourceFile = newSourceFile.getCanonicalFile();
-		} catch(IOException e) {
-			addSyntaxError(
-				CompilerError.MESSAGE, -2, 1, "Failed to convert canonical file path: " + e.getMessage()
-			);
-			return;
-		}
-		
-		if(!newSourceFile.exists()) {
+		List<File> files = sourceLookup.lookupFile(path);
+		if(files.isEmpty()) {
 			addSyntaxError(
 				CompilerError.MESSAGE, -2, 1, "The file '" + path + "' does not exist"
 			);
 			return;
 		}
 		
-		if(currentProgram.hasImportedFile(newSourceFile)) {
+		if(files.size() > 1) {
+			addSyntaxError(
+				CompilerError.MESSAGE, -2, 1, "The file '" + path + "' has multiple definitions\n" + files
+			);
+			return;
+		}
+
+		// TODO: Disallow cannonical paths.
+		/* Check the canonical path to disallow using relative paths.
+		 * 
+		 * The paths   [ "../src/file.hc" ] AND [ "file.hc" ]
+		 * could point towards the same file but only when calculating
+		 * the canonical file path we could see that they are the same.
+		 */
+		File sourceFile = files.get(0);
+		
+		if(!sourceFile.exists()) {
+			addSyntaxError(
+				CompilerError.MESSAGE, -2, 1, "The file '" + path + "' does not exist"
+			);
+			return;
+		}
+		
+		if(currentProgram.hasImportedFile(sourceFile)) {
 			addSyntaxWarning(
 				CompilerError.MESSAGE, -2, 1, "The file '" + path + "' has already been imported"
 			);
 			return;
 		}
+		
+		importFile(sourceFile);
+	}
+	
+	// TODO: Supply more information about the token.
+	private void importFile(File newSourceFile) {
+//		try {
+//			
+//			newSourceFile = newSourceFile.getCanonicalFile();
+//		} catch(IOException e) {
+//			addSyntaxError(
+//				CompilerError.MESSAGE, -2, 1, "Failed to convert canonical file path: " + e.getMessage()
+//			);
+//			return;
+//		}
 		
 		byte[] bytes = new byte[0];
 		try {
@@ -141,6 +169,11 @@ public class ParseTreeGenerator {
 		
 		Lang last = this.reader;
 		this.reader = Lang.wrap(LEXER.parse(bytes));
+		
+		if(reader == null) {
+			syntaxError(CompilerError.INTERNAL_ERROR, "this.reader was null");
+			return;
+		}
 		
 		try {
 			// Read all blocks inside the file
@@ -189,7 +222,7 @@ public class ParseTreeGenerator {
 			reader.next();
 			importFile(pathname);
 		} else if(value.equals("set")) {
-			if(!isValidName(reader.next())) syntaxError("Invalid type name. The value '%s' is not a valid type name.", reader);
+			if(!isValidName(reader.next())) syntaxError("Invalid type name. The value '%s' is not a valid type name", reader);
 			String name = reader.value(); // This should be marked...
 			reader.next();
 			Expression expr = nextExpression();
@@ -1059,10 +1092,10 @@ public class ParseTreeGenerator {
 	}
 	
 	private boolean isType(Lang reader) {
-		String value = reader.value(); // ????
-		if(reader.valueEqualsAdvance("unsigned") || reader.valueEqualsAdvance("signed")) {
-			value = reader.value();
-			reader.prev();
+		String value = reader.value();
+		if(reader.valueEquals("unsigned")
+		|| reader.valueEquals("signed")) {
+			value = reader.peak(1).value;
 		}
 		
 		return defined_types.containsKey(value);

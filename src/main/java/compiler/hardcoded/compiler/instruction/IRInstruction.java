@@ -181,7 +181,7 @@ public class IRInstruction {
 		}
 		
 		public String toString() {
-			// TODO: Print this value depending on the LowType
+			// TODO: Change how this value will be returned depending on the current LowType
 			return Long.toString(value);
 		}
 	}

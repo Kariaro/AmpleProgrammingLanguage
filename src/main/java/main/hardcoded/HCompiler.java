@@ -1,17 +1,17 @@
 package hardcoded;
 
 import java.io.*;
+import java.util.List;
 
 import hardcoded.compiler.AmpleCompilerBuild;
 import hardcoded.compiler.errors.CompilerException;
 import hardcoded.compiler.instruction.IRProgram;
 import hardcoded.compiler.instruction.IRSerializer;
-import hardcoded.exporter.impl.CodeGeneratorImpl;
+import hardcoded.resource.SourceFolders;
 
 public class HCompiler {
-	private CodeGeneratorImpl codegen;
+	private SourceFolders folders = new SourceFolders();
 	private OutputFormat format;
-	
 	private File sourceFile;
 	private boolean hasCompiled;
 	
@@ -23,12 +23,12 @@ public class HCompiler {
 		
 	}
 	
-	/**
-	 * Set the source file of the compiler.
-	 * @param	pathname	a pathname string
-	 */
 	public void setSourceFile(File file) {
 		this.sourceFile = file;
+	}
+	
+	public void setSourceFolders(List<String> folders) {
+		this.folders.addSourceFolders(folders);
 	}
 	
 	public void setOutputFormat(String formatName) {
@@ -43,13 +43,11 @@ public class HCompiler {
 		if(hasCompiled) throw new Exception("Unclosed resources. Try calling reset()");
 		if(format == null) throw new CompilerException("No output format was specified");
 		if(sourceFile == null) throw new CompilerException("No source file was specified");
+		if(folders.isEmpty()) throw new CompilerException("No code folders was specified");
 		
-		// TODO: Check if this can be reused
 		AmpleCompilerBuild builder = new AmpleCompilerBuild();
-		codegen = format.createNew();
-		program = builder.build(sourceFile);
-		bytes = codegen.generate(program);
-		
+		program = builder.build(folders, sourceFile);
+		bytes = format.createNew().generate(program);
 		hasCompiled = true;
 		
 //		if(CompilerMain.isDeveloper()) {

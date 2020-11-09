@@ -25,11 +25,11 @@ public class Token {
 	}
 	
 	public boolean valueEquals(String string) {
-		return Objects.equals(value, string);
+		return value.equals(string);
 	}
 	
 	public boolean groupEquals(String string) {
-		return Objects.equals(group, string);
+		return group.equals(string);
 	}
 	
 	public boolean equals(String group, String value) {

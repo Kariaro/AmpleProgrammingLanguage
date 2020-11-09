@@ -245,7 +245,7 @@ public class IntermediateCodeOptimizer {
 						iter.next();
 						iter.remove();
 						
-						// TODO???
+						// TODO: ???
 						continue;
 					}
 				}
@@ -340,7 +340,7 @@ public class IntermediateCodeOptimizer {
 	}
 	
 	private void simplify(IRFunction func) {
-		if(func.length() < 1) return; // TODO: Do not simplify empty functions
+		if(func.length() < 1) return; // We should not simplify empty functions
 		
 		// TODO: Find a way to check if any changes has been made to the instruction block
 		

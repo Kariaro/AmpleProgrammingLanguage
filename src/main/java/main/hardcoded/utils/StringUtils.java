@@ -54,23 +54,23 @@ public final class StringUtils {
 	 * method with a base of {@code "012346789abcdef"} will return a hexadecimal string
 	 * and will do the same thing as calling {@code Long.toString(value, 16)}.
 	 * 
-	 * <p>If {@code hasZero} is {@code false} then the first character will be treated as a
-	 * non zero character and will always be included in the output. The following is an
-	 * example of how the base {@code "01"} would convert the input number depending on the
-	 * {@code hazZero} parameter.
+	 * <p>If {@code isAlphabetical} is {@code false} then the first character will be
+	 * treated as a non zero character and will always be included in the output. The
+	 * following is an example of how the base {@code "ab"} and {@code "01"} would convert
+	 * the input number depending on the {@code isAlphabetical} parameter.
 	 *<PRE>
-	 *value:   hasZero = false / hasZero = true
-	 *   0     "0"               "0"
-	 *   1     "1"               "1"
-	 *   2     "00"              "10"
-	 *   3     "01"              "11"
-	 *   4     "10"              "100"
-	 *   5     "11"              "101"
+	 *value:   false          true
+	 *   0     [a ]:[0 ]      [a  ]:[0  ]
+	 *   1     [b ]:[1 ]      [b  ]:[1  ]
+	 *   2     [aa]:[00]      [ba ]:[10 ]
+	 *   3     [ab]:[01]      [bb ]:[11 ]
+	 *   4     [ba]:[10]      [baa]:[100]
+	 *   5     [bb]:[11]      [bab]:[101]
 	 *</PRE>
 	 *
 	 * @param	value	the input number
 	 * @param	base	the custom base
-	 * @param	hasZero	if {@code false} will always treat the zero character as part of the number
+	 * @param	isAlphabetical	if {@code false} will always treat the zero character as part of the number
 	 * 					
 	 * @return	a string of a {@code number} written in a custom base
 	 * @throws	NullPointerException
@@ -78,13 +78,13 @@ public final class StringUtils {
 	 * @throws	IllegalArgumentException
 	 * 			if the base string had a length less than 2
 	 */
-	public static String toStringCustomBase(long value, String base, boolean hasZero) {
+	public static String toStringCustomBase(long value, String base, boolean isAlphabetical) {
 		if(base == null) throw new NullPointerException();
 		if(base.length() < 2) throw new IllegalArgumentException();
 		
 		StringBuilder sb = new StringBuilder();
 		int length = base.length();
-		int offset = hasZero ? 0:1;
+		int offset = isAlphabetical ? 0:1;
 		
 		// Allow negative values to be outputed. Will always turn a negative value positive
 		// because the smallest allowed base is 2 and that base and all bases greater than 2
@@ -111,7 +111,7 @@ public final class StringUtils {
 	 * Convertes all instances of <code>[\'] [\"] [\\] [\r] [\n] [\b] [\t] [\x..] [&bsol;u....]</code> to the correct character.
 	 * 
 	 * @param	string
-	 * @return	the unescaped string
+	 * @return	a unescaped string
 	 * @throws	MalformedEscapeException
 	 */
 	public static String unescapeString(String string) {
@@ -276,7 +276,7 @@ public final class StringUtils {
 	 * 
 	 * @param	value	the value to be converted to a hex string
 	 * @param	length	the minimum length of that hex string
-	 * @return	the returned hex string
+	 * @return	a hex string
 	 */
 	public static String toHexString(long value, int length) {
 		if(length < 1) throw new IllegalArgumentException("The minimum length of the returned string cannot be less than one.");

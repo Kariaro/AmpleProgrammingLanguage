@@ -1,6 +1,5 @@
 package hardcoded.utils;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -15,8 +14,8 @@ public final class FileUtils {
 	
 	/**
 	 * This method will read all bytes available inside a inputstream
-	 * and return them as a byte array. This function will not close
-	 * the inputstream.
+	 * and return them as a byte array. This function does not close
+	 * the input stream.
 	 * 
 	 * @param	stream	the inputstream to read
 	 * @return	the content of the inputstream
@@ -27,16 +26,17 @@ public final class FileUtils {
 	public static byte[] readInputStream(InputStream stream) throws IOException {
 		if(stream == null) throw new NullPointerException("The stream was null");
 		
-		ByteArrayOutputStream bs = new ByteArrayOutputStream();
-		byte[] buffer = new byte[65536];
-		int readBytes = 0;
-		
-		while((readBytes = stream.read(buffer, 0, Math.min(stream.available(), buffer.length))) != -1) {
-			bs.write(buffer, 0, readBytes);
-			if(stream.available() < 1) break;
-		}
-		
-		return bs.toByteArray();
+		return stream.readAllBytes();
+//		ByteArrayOutputStream bs = new ByteArrayOutputStream();
+//		byte[] buffer = new byte[65536];
+//		int readBytes = 0;
+//		
+//		while((readBytes = stream.read(buffer, 0, Math.min(stream.available(), buffer.length))) != -1) {
+//			bs.write(buffer, 0, readBytes);
+//			if(stream.available() < 1) break;
+//		}
+//		
+//		return bs.toByteArray();
 	}
 	
 	public static byte[] readFileBytes(File parent, String fileName) throws IOException {
@@ -55,5 +55,18 @@ public final class FileUtils {
 		} finally {
 			stream.close();
 		}
+	}
+	
+	public static String getAbsolutePathString(String path) {
+		if(path == null) return null;
+		File file = new File(path);
+		file = file.getAbsoluteFile();
+		
+		try {
+			file = file.getCanonicalFile();
+		} catch(IOException e) {
+		}
+		
+		return file.getAbsolutePath();
 	}
 }
