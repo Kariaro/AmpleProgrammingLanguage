@@ -1,18 +1,15 @@
 package hardcoded;
 
 import java.io.*;
-import java.util.List;
 
 import hardcoded.compiler.AmpleCompilerBuild;
+import hardcoded.compiler.BuildConfiguration;
 import hardcoded.compiler.errors.CompilerException;
 import hardcoded.compiler.instruction.IRProgram;
 import hardcoded.compiler.instruction.IRSerializer;
-import hardcoded.resource.SourceFolders;
 
 public class HCompiler {
-	private SourceFolders folders = new SourceFolders();
-	private OutputFormat format;
-	private File sourceFile;
+	private BuildConfiguration config;
 	private boolean hasCompiled;
 	
 	// Information about the compiled code
@@ -23,30 +20,25 @@ public class HCompiler {
 		
 	}
 	
-	public void setSourceFile(File file) {
-		this.sourceFile = file;
-	}
-	
-	public void setSourceFolders(List<String> folders) {
-		this.folders.addSourceFolders(folders);
-	}
-	
-	public void setOutputFormat(String formatName) {
-		setOutputFormat(OutputFormat.get(formatName));
-	}
-	
-	public void setOutputFormat(OutputFormat format) {
-		this.format = format;
+	public void setConfiguration(BuildConfiguration config) {
+		this.config = config;
 	}
 	
 	public void build() throws Exception {
 		if(hasCompiled) throw new Exception("Unclosed resources. Try calling reset()");
-		if(format == null) throw new CompilerException("No output format was specified");
-		if(sourceFile == null) throw new CompilerException("No source file was specified");
-		if(folders.isEmpty()) throw new CompilerException("No code folders was specified");
+		
+		if(config == null) {
+			throw new CompilerException("Configuration was not valid: config was null");
+		}
+		
+		if(!config.isValid()) {
+			throw new CompilerException("Configuration was not valid: " + config.getLastError());
+		}
 		
 		AmpleCompilerBuild builder = new AmpleCompilerBuild();
-		program = builder.build(folders, sourceFile);
+		program = builder.build(config);
+		
+		OutputFormat format = config.getOutputFormat();
 		bytes = format.createNew().generate(program);
 		hasCompiled = true;
 		
@@ -77,6 +69,7 @@ public class HCompiler {
 	
 	public void reset() {
 		program = null;
+		config = null;
 		bytes = null;
 	}
 	

@@ -6,9 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-import hardcoded.compiler.Function;
-import hardcoded.compiler.Identifier;
-import hardcoded.compiler.Program;
+import hardcoded.compiler.*;
 import hardcoded.compiler.constants.*;
 import hardcoded.compiler.constants.Modifiers.Modifier;
 import hardcoded.compiler.context.Lang;
@@ -20,7 +18,6 @@ import hardcoded.compiler.types.HighType;
 import hardcoded.compiler.types.PrimitiveType;
 import hardcoded.lexer.LexerFactory;
 import hardcoded.lexer.LexerTokenizer;
-import hardcoded.resource.SourceFolders;
 import hardcoded.utils.FileUtils;
 import hardcoded.utils.StringUtils;
 
@@ -52,7 +49,7 @@ public class ParseTreeGenerator {
 	private Map<String, Expression> GLOBAL = new LinkedHashMap<>();
 	private Map<String, HighType> defined_types = new HashMap<>();
 	
-	private SourceFolders sourceLookup;
+	private BuildConfiguration config;
 	private Function currentFunction;
 	private Program currentProgram;
 	private File sourceFile;
@@ -74,7 +71,7 @@ public class ParseTreeGenerator {
 	
 	
 	private boolean ran = false;
-	public Program init(SourceFolders sourceFolders, File mainFile) {
+	public Program init(BuildConfiguration config, File mainFile) {
 		if(ran) throw new CompilerException("ParseTreeGenerator is not reusable");
 		ran = true;
 		
@@ -82,12 +79,7 @@ public class ParseTreeGenerator {
 			defined_types.put(t.name(), t);
 		}
 		
-		this.sourceLookup = sourceFolders;
-		
-//		if(projectPath == null || !projectPath.exists() || !projectPath.isDirectory()) {
-//			syntaxError(CompilerError.MESSAGE, "The project path supplied was invalid");
-//			return;
-//		}
+		this.config = config;
 		
 		this.currentProgram = new Program();
 		
@@ -102,7 +94,7 @@ public class ParseTreeGenerator {
 	}
 	
 	private void importFile(String path) {
-		List<File> files = sourceLookup.lookupFile(path);
+		List<File> files = config.lookupFile(path);
 		if(files.isEmpty()) {
 			addSyntaxError(
 				CompilerError.MESSAGE, -2, 1, "The file '" + path + "' does not exist"

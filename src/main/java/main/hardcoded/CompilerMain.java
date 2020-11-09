@@ -4,6 +4,7 @@ import java.io.*;
 import java.util.*;
 import java.util.logging.LogManager;
 
+import hardcoded.compiler.BuildConfiguration;
 import hardcoded.compiler.errors.CompilerException;
 import hardcoded.utils.DomainUtils;
 import hardcoded.utils.FileUtils;
@@ -82,6 +83,7 @@ public class CompilerMain {
 		
 		ActionType mode = ActionType.NONE;
 		
+		// TODO: The working directory should be absolute
 		File working_directory = new File("").getAbsoluteFile();
 		List<String> sourceFolders = new ArrayList<>();
 		
@@ -103,6 +105,7 @@ public class CompilerMain {
 				case "-p": {
 					if(i + 1 >= args.length) break;
 					working_directory = new File(args[(i++) + 1]);
+					
 					if(!working_directory.exists()) {
 						System.out.println("Path does not exist");
 						printHelpMessage();
@@ -126,7 +129,7 @@ public class CompilerMain {
 					if(i + 1 >= args.length) break;
 					String string = args[(i++) + 1];
 					for(String path : string.split(";")) {
-						sourceFolders.add(FileUtils.getAbsolutePathString(path));
+						sourceFolders.add(path);
 					}
 					
 					break;
@@ -153,9 +156,6 @@ public class CompilerMain {
 			
 			if(mode != ActionType.NONE) break;
 		}
-
-		File sourceFile = null;
-		File outputFile = null;
 		
 		if(isDeveloper()) {
 			// Developer variables and test environment
@@ -198,26 +198,33 @@ public class CompilerMain {
 			return;
 		}
 		
-		sourceFile = new File(working_directory, sourcePath).getCanonicalFile();
+		BuildConfiguration config = new BuildConfiguration();
+		config.setOutputFormat(OutputFormat.get(format));
+		config.setWorkingDirectory(working_directory);
+		for(String path : sourceFolders) {
+			config.addSourceFolder(path);
+		}
+		config.setStartFile(sourcePath);
+		config.setOutputFile(outputPath);
+		
 		HCompiler compiler = new HCompiler();
-		compiler.setSourceFile(sourceFile);
-		compiler.setSourceFolders(sourceFolders);
-		compiler.setOutputFormat(format);
+		compiler.setConfiguration(config);
 		
 		if(mode == ActionType.COMPILE) {
-			outputFile = new File(working_directory, outputPath).getCanonicalFile();
-			
 			System.out.println("---------------------------------------------------------");
 			System.out.println("HardCoded AmpleProgrammingLanguage compiler (2020-10-15) (c)");
 			System.out.println();
-			System.out.printf("WorkingDir  : '%s'\n", working_directory);
+			System.out.printf("WorkingDir  : '%s'\n", config.getWorkingDirectory());
 			System.out.printf("SourceFile  : '%s'\n", sourcePath);
 			System.out.printf("OutputFile  : '%s'\n", outputPath);
-			System.out.printf("InputFolders: '%s'\n", sourceFolders);
+			System.out.printf("Paths       : '%s'\n", sourceFolders);
 			System.out.printf("Format      : %s\n",   Objects.toString(format, "<NONE>"));
 			System.out.println("---------------------------------------------------------");
 			
-			if(sourceFile.equals(outputFile))
+			if(!config.isValid())
+				throw new CompilerException("Configuration error: " + config.getLastError());
+			
+			if(Objects.equals(config.getStartFile(), config.getOutputFile()))
 				throw new CompilerException("source and output file cannot be the same file");
 			
 			
@@ -227,7 +234,7 @@ public class CompilerMain {
 				
 				// TODO: Is this a safe operation?
 				byte[] bytes = compiler.getBytes();
-				FileOutputStream stream = new FileOutputStream(outputFile);
+				FileOutputStream stream = new FileOutputStream(config.getOutputFile());
 				stream.write(bytes, 0, bytes.length);
 				stream.close();
 			}
