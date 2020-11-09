@@ -6,14 +6,13 @@ import hardcoded.compiler.constants.Atom;
 
 public class LowType {
 	/**
-	 * The type of this {@code AtomField}
+	 * The type of this {@code LowType}
 	 */
 	private final Atom type;
 	
 	/**
-	 * If this atomType is a pointer type this will be its size.
-	 * The maximum allowed size is 255 after that it needs to be
-	 * casted.
+	 * The size of this pointer.
+	 * The maximum allowed size is 255.
 	 */
 	private final int depth;
 	
@@ -35,7 +34,7 @@ public class LowType {
 		return hashCode() == obj.hashCode();
 	}
 	
-	// TODO: This should return the default pointer type
+	// TODO: LowType - Should we return the converted atom type?
 	public Atom type() {
 		return type;
 	}
@@ -86,9 +85,7 @@ public class LowType {
 	}
 	
 	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		for(int i = 0; i < depth; i++) sb.append('*');
-		return type + sb.toString();
+		return type + "*".repeat(depth);
 	}
 	
 	public static LowType getPointer(LowType type, int length) {

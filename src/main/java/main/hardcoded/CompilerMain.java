@@ -82,8 +82,9 @@ public class CompilerMain {
 		
 		ActionType mode = ActionType.NONE;
 		
-		// Default working directory
 		File working_directory = new File("").getAbsoluteFile();
+		List<String> sourceFolders = new ArrayList<>();
+		
 		String sourcePath = null;
 		String outputPath = null;
 		String format = null;
@@ -118,6 +119,16 @@ public class CompilerMain {
 					if(i + 1 >= args.length) break;
 					sourcePath = args[(i++) + 1];
 					mode = ActionType.RUN;
+					break;
+				}
+				
+				case "-sf": {
+					if(i + 1 >= args.length) break;
+					String string = args[(i++) + 1];
+					for(String path : string.split(";")) {
+						sourceFolders.add(FileUtils.getAbsolutePathString(path));
+					}
+					
 					break;
 				}
 				
@@ -175,9 +186,11 @@ public class CompilerMain {
 				}
 			}
 			
-			working_directory = new File("res/project/src").getAbsoluteFile();
-			sourcePath = file;
-			outputPath = "../bin/" + file_name;
+			working_directory = new File("res/project").getAbsoluteFile();
+			sourcePath = "src/" + file;
+			outputPath = "bin/" + file_name;
+			
+			sourceFolders.add("src");
 		}
 		
 		if(mode == ActionType.NONE) {
@@ -188,6 +201,7 @@ public class CompilerMain {
 		sourceFile = new File(working_directory, sourcePath).getCanonicalFile();
 		HCompiler compiler = new HCompiler();
 		compiler.setSourceFile(sourceFile);
+		compiler.setSourceFolders(sourceFolders);
 		compiler.setOutputFormat(format);
 		
 		if(mode == ActionType.COMPILE) {
@@ -199,6 +213,7 @@ public class CompilerMain {
 			System.out.printf("WorkingDir  : '%s'\n", working_directory);
 			System.out.printf("SourceFile  : '%s'\n", sourcePath);
 			System.out.printf("OutputFile  : '%s'\n", outputPath);
+			System.out.printf("InputFolders: '%s'\n", sourceFolders);
 			System.out.printf("Format      : %s\n",   Objects.toString(format, "<NONE>"));
 			System.out.println("---------------------------------------------------------");
 			

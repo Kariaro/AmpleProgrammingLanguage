@@ -15,3 +15,6 @@ options:
                   [spooky]
                   [x86]
                   [ir]
+
+    -sf "<path 1>;<path 2>; ..."
+                  add source folder paths

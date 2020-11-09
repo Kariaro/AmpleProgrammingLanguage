@@ -107,7 +107,7 @@ class VmFunction {
 	}
 
 	public LowType getType() {
-		return func.getType();
+		return func.getReturnType();
 	}
 
 	public LowType getParamSize(int i) {

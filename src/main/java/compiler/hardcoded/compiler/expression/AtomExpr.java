@@ -5,6 +5,7 @@ import java.util.Objects;
 import hardcoded.compiler.Identifier;
 import hardcoded.compiler.constants.Atom;
 import hardcoded.compiler.constants.ExprType;
+import hardcoded.compiler.errors.CompilerException;
 import hardcoded.utils.StringUtils;
 
 public class AtomExpr extends Expression {
@@ -59,7 +60,7 @@ public class AtomExpr extends Expression {
 			// FIXME: Double/Float values??
 			n_value = ((Number)value).longValue();
 		} else {
-			throw new RuntimeException("Invalid atom type '" + type + "'");
+			throw new CompilerException("Invalid atom type '" + type + "'");
 		}
 	}
 	
@@ -94,12 +95,12 @@ public class AtomExpr extends Expression {
 	}
 	
 	public boolean isZero() {
-		if(!isNumber()) throw new RuntimeException("You cannot check a non number if it is zero.");
+		if(!isNumber()) throw new CompilerException("You cannot check a non number if it is zero");
 		return n_value == 0;
 	}
 	
 	public boolean isOne() {
-		if(!isNumber()) throw new RuntimeException("You cannot check a non number if it is zero.");
+		if(!isNumber()) throw new CompilerException("You cannot check a non number if it is zero");
 		return n_value == 1;
 	}
 	
@@ -119,9 +120,6 @@ public class AtomExpr extends Expression {
 	public long number() {
 		return n_value;
 	}
-	
-	// TODO: Return the atomtype somehow
-	// public LowType size() { return atomType; }
 	
 	public Expression clone() {
 		AtomExpr expr = new AtomExpr(0);

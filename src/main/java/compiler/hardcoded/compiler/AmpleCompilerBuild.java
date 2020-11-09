@@ -9,6 +9,7 @@ import hardcoded.compiler.instruction.IntermediateCodeGenerator;
 import hardcoded.compiler.instruction.IntermediateCodeOptimizer;
 import hardcoded.compiler.parsetree.ParseTreeGenerator;
 import hardcoded.compiler.parsetree.ParseTreeOptimizer;
+import hardcoded.resource.SourceFolders;
 import hardcoded.visualization.Visualization;
 
 public class AmpleCompilerBuild {
@@ -42,21 +43,21 @@ public class AmpleCompilerBuild {
 		parse_tree_optimizer = new ParseTreeOptimizer();
 		icg = new IntermediateCodeGenerator();
 		ico = new IntermediateCodeOptimizer();
-		vs = Visualization.DUMMY; // vs = new hardcoded.visualization.HCVisualization(); vs.hide();
+		vs = Visualization.DUMMY; vs = new hardcoded.visualization.PTVisualization(); vs.hide();
 	}
 	
 	/**
 	 * Compile the file at the specified file into a {@code IRProgram}.
 	 * 
-	 * @param	file	a file
+	 * @param	folders		a list with code paths
 	 * @throws	Exception
 	 * @throws	CompilerException
 	 * 			if the compilation failed
 	 * 
 	 * @return a {@code IRProgram}
 	 */
-	public IRProgram build(File file) throws Exception {
-		Program current_program = parse_tree_generator.init(file.getParentFile(), file.getName());
+	public IRProgram build(SourceFolders folders, File file) throws Exception {
+		Program current_program = parse_tree_generator.init(folders, file);
 		if(current_program.hasErrors()) {
 			for(SyntaxMarker marker : current_program.getSyntaxMarkers()) {
 				System.err.println(marker.getMessage());
@@ -68,10 +69,10 @@ public class AmpleCompilerBuild {
 		vs.show(current_program);
 		parse_tree_optimizer.do_constant_folding(vs, current_program);
 		
-//		for(Function func : current_program.list()) {
-//			String str = Utils.printPretty(func).replace("\t", "    ");
-//			System.out.println(str);
-//		}
+		for(Function func : current_program.list()) {
+			String str = hardcoded.compiler.constants.Utils.printPretty(func).replace("\t", "    ");
+			System.out.println(str);
+		}
 		
 		IRProgram ir_program;
 		ir_program = icg.generate(current_program);

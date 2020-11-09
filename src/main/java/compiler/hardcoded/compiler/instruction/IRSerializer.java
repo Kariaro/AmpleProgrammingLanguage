@@ -17,7 +17,6 @@ import hardcoded.compiler.instruction.IRInstruction.*;
 import hardcoded.utils.StringUtils;
 
 /**
- * TODO: Generated strings should be put into categories like
  *<PRE>
  *Each compiler made label should be written with this pattern
  *
@@ -198,7 +197,7 @@ public final class IRSerializer {
 		for(LowType type : params)
 			writeLowType(type);
 		
-		writeLowType(func.getType());
+		writeLowType(func.getReturnType());
 		writeString(func.getName());
 		
 		IRInstruction[] array = func.getInstructions();

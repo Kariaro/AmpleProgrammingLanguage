@@ -13,6 +13,8 @@ import hardcoded.utils.StringUtils;
  * This {@code Tokenizer} class reads an input string and outputs a {@code Token}
  * generated from each rule inside this tokenizer.
  * 
+ * <p>The default group name is </code>:null</code>
+ * 
  * @author HardCoded
  */
 public class LexerTokenizer implements Serializable {
@@ -115,8 +117,8 @@ public class LexerTokenizer implements Serializable {
 				// If we didn't read a token we should add a new "null token"
 				if(!hasNull) {
 					offset = string.getOffset();
-					line = string.getLine();
 					column = string.getColumn();
+					line = string.getLine();
 					hasNull = true;
 				}
 				
@@ -150,7 +152,7 @@ public class LexerTokenizer implements Serializable {
 		LexerGroup g = null;
 		int length = 0;
 		
-		// We should never match zero lengthed patterns!
+		// FIXME: We should never match zero lengthed patterns!
 		for(LexerGroup group : groups.values()) {
 			for(Rule rule : group.rules) {
 				int len = -1;
@@ -204,7 +206,6 @@ public class LexerTokenizer implements Serializable {
 	
 	public static final class LexerGroup implements Serializable {
 		private static final long serialVersionUID = 6252614685302203463L;
-		
 		private final List<Rule> rules;
 		private final boolean discard;
 		private final String name; 
@@ -214,7 +215,6 @@ public class LexerTokenizer implements Serializable {
 			this.discard = discard;
 			this.name = name;
 		}
-		
 		
 		public LexerGroup addString(String string) {
 			rules.add(new Rule(string));

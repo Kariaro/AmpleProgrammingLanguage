@@ -9,13 +9,11 @@ package hardcoded.compiler.errors;
 public class CompilerException extends Error {
 	private static final long serialVersionUID = -3780487404643365332L;
 	
-	private final String message;
-	
 	/**
 	 * Construct a new compiler exception with no message.
 	 */
 	public CompilerException() {
-		this.message = "";
+		super("");
 	}
 	
 	/**
@@ -23,11 +21,6 @@ public class CompilerException extends Error {
 	 * @param	message
 	 */
 	public CompilerException(String message) {
-		this.message = message;
-	}
-	
-	@Override
-	public String getMessage() {
-		return message;
+		super(message);
 	}
 }

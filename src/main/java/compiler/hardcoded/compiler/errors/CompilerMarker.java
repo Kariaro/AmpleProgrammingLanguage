@@ -66,12 +66,19 @@ public class CompilerMarker implements SyntaxMarker {
 		this.severity = severity;
 		this.error = error;
 		
-		Token t0 = reader.peak(offs);
-		Token t1 = reader.peak(offs + count - 1);
-		this.offset = t0.offset;
-		this.length = t1.offset - t0.offset + t1.value.length();
-		this.column = t0.column;
-		this.line = t0.line;
+		if(reader != null) {
+			Token t0 = reader.peak(offs);
+			Token t1 = reader.peak(offs + count - 1);
+			this.offset = t0.offset;
+			this.length = t1.offset - t0.offset + t1.value.length();
+			this.column = t0.column;
+			this.line = t0.line;
+		} else {
+			this.offset = INVALID;
+			this.length = INVALID;
+			this.column = INVALID;
+			this.line = INVALID;
+		}
 	}
 
 	public CompilerError getCompilerError() {

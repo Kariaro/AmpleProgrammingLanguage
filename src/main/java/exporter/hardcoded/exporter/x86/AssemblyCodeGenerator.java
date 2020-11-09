@@ -52,6 +52,10 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 		
 	}
 	
+	public void reset() {
+		
+	}
+	
 	public byte[] generate(IRProgram program) {
 		System.out.println("\nInside the asm code generator");
 		
@@ -259,7 +263,8 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 			if(block.isJumpBlock()) {
 				LabelParam label = null;
 				try {
-					label = (LabelParam)block.list.get(0).getLastParam();
+					IRInstruction firstInst = block.list.get(0);
+					label = (LabelParam)firstInst.getParam(firstInst.getNumParams() - 1);
 				} catch(Exception e) {
 					// FIXME SUPER TEMPORARY EXCEPTION CATCH
 					continue;
@@ -313,6 +318,7 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 		
 	}
 	
+	@SuppressWarnings("unused")
 	private void compileSecond(AsmContainer container, int index, AsmBlock block) {
 		// Each jump instruction is 6 bytes we say.
 		// Smallest is 2 bytes.
@@ -320,7 +326,7 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 		IRInstruction inst = block.list.get(0);
 		IRType type = inst.type();
 		
-		LabelParam label = (LabelParam)inst.getLastParam();
+		LabelParam label = (LabelParam)inst.getParam(inst.getNumParams() - 1);
 		int idx = findLabelIndex(container, label);
 		System.out.println("Jump -> " + inst);
 		System.out.println("     :> index = " + idx);

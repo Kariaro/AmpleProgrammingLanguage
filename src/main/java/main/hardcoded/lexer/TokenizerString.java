@@ -16,7 +16,7 @@ final class TokenizerString implements CharSequence {
 	 * @throws	NullPointerException
 	 * 			if the array was {@code null}
 	 */
-	public TokenizerString(byte[] bytes) {
+	TokenizerString(byte[] bytes) {
 		this.bytes = bytes.clone();
 	}
 	

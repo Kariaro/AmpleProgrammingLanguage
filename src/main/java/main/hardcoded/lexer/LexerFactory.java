@@ -179,7 +179,7 @@ public final class LexerFactory {
 				continue;
 			} else if(token.equals("SPECIAL", "%DELIMITER")) {
 				if(i + 7 >= list.size()) {
-					throw new LexicalException(token, "Not enough arguments to create a delimiter.");
+					throw new LexicalException(token, "Not enough arguments to create a delimiter");
 				}
 				
 				if(!list.get(i + 1).equals("DELIMITER", "(")) {

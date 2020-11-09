@@ -19,6 +19,7 @@ public class AmpleVm {
 	private final int consts_offset;
 	private final VmFunction entry;
 	private final StringBuilder stdout = new StringBuilder();
+	private final PrintStream output_stream;
 	
 	public static void run(IRProgram program) {
 		run(program, System.out);
@@ -35,6 +36,7 @@ public class AmpleVm {
 	private AmpleVm(IRProgram program, PrintStream output) {
 		this.functions = new HashMap<>();
 		this.pointers = new HashMap<>();
+		this.output_stream = output;
 		
 		for(IRFunction func : program.getFunctions()) {
 			functions.put(func.getName(), new VmFunction(func));
@@ -61,7 +63,7 @@ public class AmpleVm {
 	
 	private void run() {
 		run(entry, consts_offset, 0);
-		System.out.println(stdout.toString().trim());
+		output_stream.println(stdout.toString().trim());
 	}
 	
 	private void run(VmFunction func, int offset, int ip) {
