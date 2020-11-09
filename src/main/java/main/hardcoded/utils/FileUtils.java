@@ -1,9 +1,6 @@
 package hardcoded.utils;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 
 /**
  * This is a utility class used to read files and inputstreams.
@@ -68,5 +65,38 @@ public final class FileUtils {
 		}
 		
 		return file.getAbsolutePath();
+	}
+	
+	public static boolean isCanonical(File file) {
+		if(file == null) return false;
+		file = file.getAbsoluteFile();
+		
+		try {
+			String absolute_path = file.getAbsolutePath();
+			String canonical_path = file.getCanonicalPath();
+			return !absolute_path.equals(canonical_path);
+		} catch(IOException e) {
+			return true;
+		}
+	}
+	
+	public static File makeAbsolute(File file) {
+		if(file == null) return null;
+		file = file.getAbsoluteFile();
+		
+		try {
+			return file.getCanonicalFile();
+		} catch(IOException e) {
+			return file;
+		}
+	}
+
+	public static boolean isValidPath(File file) {
+		try {
+			file.toPath();
+			return true;
+		} catch(Throwable e) {
+			return false;
+		}
 	}
 }

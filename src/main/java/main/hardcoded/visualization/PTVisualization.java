@@ -4,10 +4,12 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 
 import hardcoded.compiler.Program;
@@ -20,6 +22,13 @@ public final class PTVisualization extends Visualization {
 	
 	public PTVisualization() {
 		super("ParseTree - Visualization", 2);
+		
+		try {
+			frame.setIconImage(ImageIO.read(PTVisualization.class.getResourceAsStream("/icons/parsetree.png")));
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
+		
 		panel = new PTPanel();
 		panel.setOpaque(true);
 		

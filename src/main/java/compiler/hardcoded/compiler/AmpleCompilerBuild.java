@@ -1,7 +1,5 @@
 package hardcoded.compiler;
 
-import java.io.File;
-
 import hardcoded.compiler.errors.CompilerException;
 import hardcoded.compiler.errors.SyntaxMarker;
 import hardcoded.compiler.instruction.IRProgram;
@@ -9,7 +7,6 @@ import hardcoded.compiler.instruction.IntermediateCodeGenerator;
 import hardcoded.compiler.instruction.IntermediateCodeOptimizer;
 import hardcoded.compiler.parsetree.ParseTreeGenerator;
 import hardcoded.compiler.parsetree.ParseTreeOptimizer;
-import hardcoded.resource.SourceFolders;
 import hardcoded.visualization.Visualization;
 
 public class AmpleCompilerBuild {
@@ -49,15 +46,17 @@ public class AmpleCompilerBuild {
 	/**
 	 * Compile the file at the specified file into a {@code IRProgram}.
 	 * 
-	 * @param	folders		a list with code paths
+	 * @param	config
+	 * 
 	 * @throws	Exception
 	 * @throws	CompilerException
 	 * 			if the compilation failed
 	 * 
 	 * @return a {@code IRProgram}
 	 */
-	public IRProgram build(SourceFolders folders, File file) throws Exception {
-		Program current_program = parse_tree_generator.init(folders, file);
+	public IRProgram build(BuildConfiguration config) throws Exception {
+		Program current_program = parse_tree_generator.init(config, config.getStartFile());
+		
 		if(current_program.hasErrors()) {
 			for(SyntaxMarker marker : current_program.getSyntaxMarkers()) {
 				System.err.println(marker.getMessage());
