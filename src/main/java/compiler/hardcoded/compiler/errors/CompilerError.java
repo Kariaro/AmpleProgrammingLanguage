@@ -13,7 +13,6 @@ public enum CompilerError {
 	INVALID_TYPE_EXPECTED_SEMICOLON("Invalid type syntax. Expected a semicolon but got '%s'"),
 	REDECLARATION_OF_TYPE("The type '%s' has already been declared"),
 	
-	INVALID_UNARY_EXPRESSION_OPERATION("Invalid use of a unary expression. The value you are trying to modify is not modifiable"),
 	INVALID_MODIFICATION("The value you are trying to modify is not modifiable"),
 	INVALID_CHAR_LITERAL_SIZE("Invalid character constant"),
 	INVALID_VARIABLE_NAME("Invalid variable name. The name '%s' is not a valid variable name"),
@@ -22,6 +21,9 @@ public enum CompilerError {
 	INVALID_XXX_EXPECTED_OPEN_PARENTHESIS("Invalid %s. Expected open parenthesis '(' but got '%s'"),
 	INVALID_XXX_EXPECTED_SEMICOLON("Invalid %s. Expected a semicolon ';' but got '%s'"),
 	INVALID_FUNCTION_DECLARATION_EXPECTED_XXX("Invalid function declaration. '%s'"),
+	
+	INVALID_UNARY_EXPRESSION_OPERATION("Invalid use of a unary expression. The value you are trying to modify is not modifiable"),
+	INVALID_EXPRESSION("Invalid expression"),
 	
 	INVALID_FUNCTION_CALL_PARAMETER("Invalid function call parameter"),
 	INVALID_FUNCTION_CALL_EXPRESSION("Invalid function call expression '%s'"),

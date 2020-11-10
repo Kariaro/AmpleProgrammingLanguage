@@ -10,16 +10,19 @@ public class BuildConfiguration {
 	public static final int ERROR_WDIR_NULL			= 1;
 	public static final int ERROR_WDIR_NOT_FOUND	= 2;
 	public static final int ERROR_WDIR_NOT_DIR		= 3;
+	@Deprecated
 	public static final int ERROR_WDIR_CANONICAL	= 4;
 	
 	public static final int ERROR_SFILE_NULL		= 5;
 	public static final int ERROR_SFILE_NOT_FOUND	= 6;
 	public static final int ERROR_SFILE_NOT_FILE	= 7;
+	@Deprecated
 	public static final int ERROR_SFILE_CANONICAL	= 8;
 	
 	public static final int ERROR_OFILE_NULL		= 9;
 	public static final int ERROR_OFILE_WAS_DIR		= 10;
 	public static final int ERROR_OFILE_BAD_NAME	= 11;
+	@Deprecated
 	public static final int ERROR_OFILE_CANONICAL	= 12;
 	
 	public static final int ERROR_SFOLDERS_EMPTY	= 13;

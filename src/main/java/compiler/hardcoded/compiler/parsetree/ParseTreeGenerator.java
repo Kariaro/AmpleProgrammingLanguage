@@ -1016,6 +1016,7 @@ public class ParseTreeGenerator {
 						return expr;
 					}
 					
+					syntaxError(CompilerError.INVALID_EXPRESSION, reader);
 					// FIXME: null is not allowed. Return a error expression
 					return Expression.EMPTY;
 				}
@@ -1197,6 +1198,6 @@ public class ParseTreeGenerator {
 	
 	private String _caller() {
 		StackTraceElement element = Thread.currentThread().getStackTrace()[3];
-		return "(" + element.getFileName() + ":" + element.getLineNumber() + ") ";
+		return "(" + element.getFileName() + ":" + element.getLineNumber() + ")";
 	}
 }

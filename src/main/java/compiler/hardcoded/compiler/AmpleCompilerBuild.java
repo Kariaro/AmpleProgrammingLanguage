@@ -59,7 +59,12 @@ public class AmpleCompilerBuild {
 		
 		if(current_program.hasErrors()) {
 			for(SyntaxMarker marker : current_program.getSyntaxMarkers()) {
-				System.err.println(marker.getMessage());
+				System.err.printf("%s (%s:%s) : %s\n",
+					marker.getCompilerMessage(),
+					marker.getLineIndex(),
+					marker.getColumnIndex(),
+					marker.getMessage()
+				);
 			}
 			
 			throw new CompilerException("Compiler errors.");

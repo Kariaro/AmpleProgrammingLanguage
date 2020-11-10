@@ -161,6 +161,7 @@ public class CompilerMain {
 			// Developer variables and test environment
 			
 			String file = "main.hc";
+			file = "test3.ample";
 			// file = "tests/000_pointer.hc";
 			// file = "prim.hc";
 			// file = "tests/001_comma.hc";
