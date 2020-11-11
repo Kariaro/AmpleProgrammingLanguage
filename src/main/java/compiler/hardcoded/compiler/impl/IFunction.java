@@ -1,6 +1,6 @@
 package hardcoded.compiler.impl;
 
-import java.util.Set;
+import java.util.List;
 
 import hardcoded.compiler.constants.Modifiers.Modifier;
 import hardcoded.compiler.types.HighType;
@@ -30,13 +30,13 @@ public interface IFunction extends IBlock, IStatement, ILocation {
 	 * Returns a unmodifiable set of modifiers.
 	 * @return a unmodifiable set of modifiers
 	 */
-	Set<Modifier> getModifiers();
+	List<Modifier> getModifiers();
 	
 	/**
 	 * Returns a unmodifiable set of statements inside of this function.
 	 * @return a unmodifiable set of statements inside of this function
 	 */
-	Set<IStatement> getStatements();
+	List<IStatement> getStatements();
 	
 	/**
 	 * Always returns {@code true}.

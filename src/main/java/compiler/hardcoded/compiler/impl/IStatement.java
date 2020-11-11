@@ -1,6 +1,6 @@
 package hardcoded.compiler.impl;
 
-import java.util.Set;
+import java.util.List;
 
 /**
  * This interface is a simplified version of the internal statement class.
@@ -17,7 +17,7 @@ public interface IStatement {
 	 * The returned set does not update if the internal list gets modified.
 	 * @return a set of elements inside of this statement
 	 */
-	Set<IStatement> getStatements();
+	List<IStatement> getStatements();
 	
 	/**
 	 * Returns {@code true} if this statement has elements.

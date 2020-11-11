@@ -67,6 +67,7 @@ public final class FileUtils {
 		return file.getAbsolutePath();
 	}
 	
+	// FIXME: This method is not true on mac
 	public static boolean isCanonical(File file) {
 		if(file == null) return false;
 		file = file.getAbsoluteFile();

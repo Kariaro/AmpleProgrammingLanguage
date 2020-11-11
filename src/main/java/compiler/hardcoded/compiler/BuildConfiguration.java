@@ -6,6 +6,12 @@ import java.util.*;
 import hardcoded.OutputFormat;
 import hardcoded.utils.FileUtils;
 
+/**
+ * A build configuration class.
+ * 
+ * @author HardCoded
+ * @since v0.1
+ */
 public class BuildConfiguration {
 	public static final int ERROR_WDIR_NULL			= 1;
 	public static final int ERROR_WDIR_NOT_FOUND	= 2;

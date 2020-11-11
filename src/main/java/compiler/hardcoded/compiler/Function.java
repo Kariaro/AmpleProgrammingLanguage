@@ -1,7 +1,9 @@
 package hardcoded.compiler;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Vector;
 
 import hardcoded.compiler.constants.Modifiers.Modifier;
 import hardcoded.compiler.expression.LowType;
@@ -11,7 +13,6 @@ import hardcoded.compiler.statement.Statement;
 import hardcoded.compiler.statement.Variable;
 import hardcoded.compiler.types.HighType;
 import hardcoded.utils.StringUtils;
-import hardcoded.utils.UnmodifiableCastedSet;
 import hardcoded.visualization.Printable;
 
 public class Function implements IFunction, Printable {
@@ -117,8 +118,8 @@ public class Function implements IFunction, Printable {
 		return name;
 	}
 	
-	public Set<Modifier> getModifiers() {
-		return new UnmodifiableCastedSet<Modifier>(modifiers);
+	public List<Modifier> getModifiers() {
+		return List.copyOf(modifiers);
 	}
 	
 	public File getDeclaringFile() {
@@ -143,10 +144,8 @@ public class Function implements IFunction, Printable {
 		return returnType;
 	}
 	
-	public Set<IStatement> getStatements() {
-		Set<IStatement> set = new HashSet<>();
-		set.add(body);
-		return Collections.unmodifiableSet(set);
+	public List<IStatement> getStatements() {
+		return List.of(body);
 	}
 	
 	

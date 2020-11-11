@@ -2,10 +2,8 @@ package hardcoded.compiler.statement;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import hardcoded.compiler.impl.IStatement;
-import hardcoded.utils.UnmodifiableCastedSet;
 import hardcoded.visualization.Printable;
 
 public class Statement implements IStatement, Printable {
@@ -15,8 +13,9 @@ public class Statement implements IStatement, Printable {
 		list = hasElements ? new ArrayList<>():null;
 	}
 	
-	public final Set<IStatement> getStatements() {
-		return new UnmodifiableCastedSet<IStatement>(list);
+	public final List<IStatement> getStatements() {
+		return List.copyOf(list);
+		// return new UnmodifiableCastedSet<IStatement>(list);
 	}
 
 	public final boolean hasStatements() {

@@ -4,6 +4,8 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
+import java.awt.font.FontRenderContext;
+import java.awt.geom.AffineTransform;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +15,7 @@ import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 
 import hardcoded.compiler.Program;
+import hardcoded.compiler.impl.IExpression;
 
 /**
  * @author HardCoded
@@ -84,7 +87,10 @@ public final class PTVisualization extends Visualization {
 	
 	public void show(Object... args) {
 		if(args.length != 1) throw new IllegalArgumentException("Expected one argument.");
-		panel.display((Program)args[0]);
+		Object object = args[0];
+		if(!(object instanceof Program)) throw new IllegalArgumentException("Expected a Program object");
+		Program program = (Program)object;
+		panel.display(program);
 		frame.setVisible(true);
 	}
 	
@@ -96,7 +102,7 @@ public final class PTVisualization extends Visualization {
 		private static final long serialVersionUID = 1L;
 		
 		private List<Element> elements = new ArrayList<>();
-		private Font font = new Font("Monospaced", Font.PLAIN, 18);
+		private Font font = new Font("Consolas", Font.PLAIN, 18);
 		
 		private double zoom = 1;
 		private double xpos = 0;
@@ -118,6 +124,15 @@ public final class PTVisualization extends Visualization {
 				for(Element e : elements) e.paintLines(g);
 				for(Element e : elements) e.paint(g);
 			}
+			
+//			Font[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts();
+//			for(int i = 0; i < fonts.length; i++) {
+//				Font font = fonts[i];
+//				g.setFont(font.deriveFont(32.0f));
+//				
+//				g.drawString("The brown fox jumped over the lazy dog", 0, i * 100);
+//				g.drawString(font.getName(), 1000, i * 100);
+//			}
 		}
 		
 		public void display(Program program) {
@@ -131,13 +146,13 @@ public final class PTVisualization extends Visualization {
 		}
 	}
 	
-//	private FontRenderContext _frc;
-//	private double getStringWidth(String string) {
-//		if(_frc == null) {
-//			_frc = new FontRenderContext(new AffineTransform(), true, true);
-//		}
-//		return panel.font.getStringBounds(string, _frc).getWidth();
-//	}
+	private FontRenderContext _frc;
+	private double getStringWidth(String string) {
+		if(_frc == null) {
+			_frc = new FontRenderContext(new AffineTransform(), true, true);
+		}
+		return panel.font.getStringBounds(string, _frc).getWidth();
+	}
 	
 	private class Element {
 		public double x;
@@ -148,9 +163,14 @@ public final class PTVisualization extends Visualization {
 		
 		private List<Element> elements;
 		private String content;
+		private Color body = Color.lightGray;
 		
 		private Element(Element parent, Object object) {
 			this.elements = new ArrayList<>();
+			
+			if(object instanceof IExpression) {
+				body = Color.white;
+			}
 			
 			if(object instanceof Printable) {
 				Printable stab = (Printable)object;
@@ -181,8 +201,8 @@ public final class PTVisualization extends Visualization {
 		public void setContent(String value) {
 			content = value;
 			
-			//width = (int)getStringWidth(content) + 10;
 			width = content.length() * 12 + 10;
+			width = (int)getStringWidth(content) + 10;
 			height = 20;
 			offset = width + 1;
 		}
@@ -209,7 +229,7 @@ public final class PTVisualization extends Visualization {
 			|| (y - 5 - (height + 10) + panel.ypos > panel.getHeight() / panel.zoom)) {
 				
 			} else {
-				g.setColor(Color.lightGray);
+				g.setColor(body);
 				g.fillRoundRect(xp, y - 5, width, height + 10, 10, 10);
 				
 				g.setColor(Color.black);
@@ -221,7 +241,7 @@ public final class PTVisualization extends Visualization {
 				g.setColor(Color.black);
 				FontMetrics fm = g.getFontMetrics(); {
 					Rectangle rect = fm.getStringBounds(content, g).getBounds();
-					g.drawString(content, x - rect.x + ((int)offset - rect.width) / 2, y - rect.y + (height - rect.height) / 2);
+					g.drawString(content, x - rect.x + ((int)offset - rect.width) / 2, y - rect.y + (height - rect.height) / 2 + 3);
 				}
 			}
 			

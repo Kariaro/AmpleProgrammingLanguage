@@ -1,6 +1,6 @@
 package hardcoded.compiler.impl;
 
-import java.util.Set;
+import java.util.List;
 
 import hardcoded.compiler.constants.ExprType;
 import hardcoded.compiler.expression.LowType;
@@ -31,7 +31,7 @@ public interface IExpression {
 	 * The returned list does not update if the internal list gets modified.
 	 * @return a list of elements inside of this expression
 	 */
-	Set<IExpression> getExpressions();
+	List<IExpression> getExpressions();
 	
 	/**
 	 * Returns {@code true} if this expression has elements.
