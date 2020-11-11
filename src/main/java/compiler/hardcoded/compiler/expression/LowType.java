@@ -17,7 +17,7 @@ public class LowType {
 	private final int depth;
 	
 	LowType(Atom type, int depth) {
-		Objects.requireNonNull(type, "LowType type can never be null"); // Type can never be null.
+		Objects.requireNonNull(type, "LowType type must not be null"); // Type can never be null.
 		if(depth < 0 || depth > 255) throw new AssertionError("LowType pointer depth was outside bounds. (0 < depth < 256). Got '" + depth + "'");
 		
 		this.type = type;
@@ -98,11 +98,6 @@ public class LowType {
 		return new LowType(Atom.largest(a.type, b.type), 0);
 	}
 	
-	@Deprecated
-	public static LowType get(int size, int depth) {
-		return new LowType(Atom.get(0, true, false), depth);
-	}
-
 	public static LowType create(Atom type) {
 		return new LowType(type, 0);
 	}

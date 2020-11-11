@@ -17,12 +17,6 @@ public class BuildConfigurationTest {
 		return new File(LOCAL, path);
 	}
 	
-//	private static void dump(BuildConfiguration config) {
-//		System.out.println("Message: " + config.getLastError());
-//		System.out.println("Code   : " + config.getLastCode());
-//		System.out.println(config.toString(true));
-//	}
-	
 	@Test
 	public void test_working_directory() {
 		BuildConfiguration config = new BuildConfiguration();

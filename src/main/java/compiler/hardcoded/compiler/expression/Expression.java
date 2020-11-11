@@ -1,11 +1,12 @@
 package hardcoded.compiler.expression;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 import hardcoded.compiler.Identifier;
 import hardcoded.compiler.constants.ExprType;
 import hardcoded.compiler.impl.IExpression;
-import hardcoded.utils.UnmodifiableCastedSet;
 import hardcoded.visualization.Printable;
 
 public abstract class Expression implements IExpression, Printable {
@@ -25,9 +26,8 @@ public abstract class Expression implements IExpression, Printable {
 		this.type = Objects.requireNonNull(type, "Expression type must not be null");
 	}
 	
-	// This should be separate from IExpression
-	public final Set<IExpression> getExpressions() {
-		return new UnmodifiableCastedSet<IExpression>(list);
+	public final List<IExpression> getExpressions() {
+		return List.copyOf(list);
 	}
 	
 	public final boolean hasExpressions() {

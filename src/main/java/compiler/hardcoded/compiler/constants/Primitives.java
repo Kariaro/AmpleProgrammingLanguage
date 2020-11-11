@@ -1,10 +1,9 @@
 package hardcoded.compiler.constants;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
 import hardcoded.compiler.types.PrimitiveType;
+
+import java.util.*;
+
 import hardcoded.compiler.types.HighType;
 
 /**
@@ -14,10 +13,11 @@ import hardcoded.compiler.types.HighType;
 public final class Primitives {
 	private Primitives() {}
 	
-	private static final Set<HighType> PRIMITIVE;
+	private static final Map<String, HighType> PRIMITIVES;
+	
 	public static final HighType VOID = new PrimitiveType("void", Atom.unf); // none
-	// public static final Type DOUBLE = new PrimitiveType("double", AtomType.i64, true, true);
-	// public static final Type FLOAT = new PrimitiveType("float", AtomType.i32, true, true);
+	// public static final HighType DOUBLE = new PrimitiveType("double", Atom.f64);
+	// public static final HighType FLOAT = new PrimitiveType("float", Atom.f32);
 	public static final HighType LONG = new PrimitiveType("long", Atom.i64);
 	public static final HighType INT = new PrimitiveType("int", Atom.i32);
 	public static final HighType SHORT = new PrimitiveType("short", Atom.i16);
@@ -26,18 +26,17 @@ public final class Primitives {
 	public static final HighType BOOL = new PrimitiveType("bool", Atom.i8);
 	
 	static {
-		Set<HighType> types = new HashSet<HighType>();
-		types.add(VOID);
-		// types.add(DOUBLE);
-		// types.add(FLOAT);
-		types.add(LONG);
-		types.add(INT);
-		types.add(SHORT);
-		types.add(BYTE);
-		types.add(CHAR);
-		types.add(BOOL);
-		
-		PRIMITIVE = Collections.unmodifiableSet(types);
+		PRIMITIVES = Map.of(
+			VOID.name(),	VOID,
+//			DOUBLE.name(),	DOUBLE,
+//			FLOAT.name(),	FLOAT,
+			LONG.name(),	LONG,
+			INT.name(),		INT,
+			SHORT.name(),	SHORT,
+			BYTE.name(),	BYTE,
+			CHAR.name(),	CHAR,
+			BOOL.name(),	BOOL
+		);
 	}
 	
 	/**
@@ -46,11 +45,7 @@ public final class Primitives {
 	 * @return	{@code true} if the string was a primitive type
 	 */
 	public static boolean contains(String value) {
-		for(HighType t : PRIMITIVE) {
-			if(t.name().equals(value)) return true;
-		}
-		
-		return false;
+		return PRIMITIVES.containsKey(value);
 	}
 	
 	/**
@@ -59,11 +54,7 @@ public final class Primitives {
 	 * @return	the primitive if found otherwise {@code null}
 	 */
 	public static HighType getType(String value) {
-		for(HighType t : PRIMITIVE) {
-			if(t.name().equals(value)) return t;
-		}
-		
-		return null;
+		return PRIMITIVES.get(value);
 	}
 	
 	/**
@@ -71,6 +62,6 @@ public final class Primitives {
 	 * @return a unmodifiable set with all primitives inside of it
 	 */
 	public static Set<HighType> getAllTypes() {
-		return PRIMITIVE;
+		return Set.copyOf(PRIMITIVES.values());
 	}
 }

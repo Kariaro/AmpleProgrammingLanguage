@@ -41,15 +41,15 @@ public final class Modifiers {
 	 * @return a list with all modifiers
 	 */
 	public static List<Modifier> getAllModifiers() {
-		return Collections.unmodifiableList(Arrays.asList(MODIFIERS));
+		return List.of(MODIFIERS);
 	}
 	
 	public static class Modifier {
-		private String name;
-		private int mask;
+		private final String name;
+		private final int mask;
 		
 		private Modifier(String name) {
-			this.name = name;
+			this(name, 0);
 		}
 		
 		private Modifier(String name, int mask) {
@@ -65,7 +65,6 @@ public final class Modifiers {
 			return name;
 		}
 		
-		@Override
 		public String toString() {
 			return name;
 		}

@@ -1,5 +1,6 @@
 package hardcoded.compiler.impl;
 
+import java.util.List;
 import java.util.Set;
 
 import hardcoded.compiler.errors.SyntaxMarker;
@@ -14,10 +15,10 @@ import hardcoded.compiler.errors.SyntaxMarker;
  */
 public interface IProgram {
 	/**
-	 * Returns a unmodifiable set of functions.
-	 * @return a unmodifiable set of functions
+	 * Returns a unmodifiable list of functions.
+	 * @return a unmodifiable list of functions
 	 */
-	Set<IFunction> getFunctions();
+	List<IFunction> getFunctions();
 	
 	/**
 	 * Returns a unmodifiable set of all imported files.
@@ -26,10 +27,10 @@ public interface IProgram {
 	Set<String> getImportedFiles();
 	
 	/**
-	 * Returns a unmodifiable set of syntax markers.
-	 * @return a unmodifiable set of syntax markers
+	 * Returns a unmodifiable list of syntax markers.
+	 * @return a unmodifiable list of syntax markers
 	 */
-	Set<SyntaxMarker> getSyntaxMarkers();
+	List<SyntaxMarker> getSyntaxMarkers();
 	
 	/**
 	 * Returns {@code true} if this program has errors.

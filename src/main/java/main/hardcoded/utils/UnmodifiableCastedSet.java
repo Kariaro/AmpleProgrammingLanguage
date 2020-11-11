@@ -4,6 +4,8 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+// The java 9 contains List.copyOf that can replace this class. And list is easier to use than set.
+@Deprecated
 public class UnmodifiableCastedSet<E> implements Set<E> {
 	private final Set<E> set;
 	

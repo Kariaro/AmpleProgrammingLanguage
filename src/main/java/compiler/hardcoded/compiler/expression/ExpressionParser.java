@@ -40,13 +40,7 @@ public final class ExpressionParser {
 	@UnsignedSafe private static final BiFnc ADD = ($, a, b) -> (a + b);
 	@UnsignedSafe private static final BiFnc SUB = ($, a, b) -> (a - b);
 	
-	private static final BiFnc MUL = (unsigned, a, b) -> {
-		if(unsigned) {
-			// calculate a * b with overflow
-		}
-		
-		return a * b;
-	};
+	@UnsignedSafe private static final BiFnc MUL = ($, a, b) -> (a * b);
 	private static final BiFnc DIV = (sign, a, b) -> (a / b);
 	private static final BiFnc MOD = (sign, a, b) -> (a % b);
 	

@@ -8,7 +8,6 @@ import hardcoded.compiler.errors.SyntaxMarker;
 import hardcoded.compiler.impl.IBlock;
 import hardcoded.compiler.impl.IFunction;
 import hardcoded.compiler.impl.IProgram;
-import hardcoded.utils.UnmodifiableCastedSet;
 import hardcoded.visualization.Printable;
 
 /**
@@ -32,16 +31,17 @@ public final class Program implements IProgram, Printable {
 		functions = new ArrayList<>();
 	}
 	
-	public Set<IFunction> getFunctions() {
-		return new UnmodifiableCastedSet<IFunction>(functions);
+	public List<IFunction> getFunctions() {
+		return List.copyOf(functions);
 	}
 	
-	public Set<SyntaxMarker> getSyntaxMarkers() {
-		return new UnmodifiableCastedSet<SyntaxMarker>(syntaxMarkers);
+	public List<SyntaxMarker> getSyntaxMarkers() {
+		return List.copyOf(syntaxMarkers);
 	}
 	
 	public Set<String> getImportedFiles() {
-		return Collections.unmodifiableSet(importedFiles);
+		// Import order does not really matter when it's already compiled
+		return Set.copyOf(importedFiles);
 	}
 	
 	public boolean hasErrors() {
@@ -77,7 +77,6 @@ public final class Program implements IProgram, Printable {
 		return functions.size();
 	}
 	
-	// TODO: Use this function
 	public Function addFunction(Function func) {
 		functions.add(func);
 		idents.add(Identifier.createFuncIdent(func.name, function_index++, func));
