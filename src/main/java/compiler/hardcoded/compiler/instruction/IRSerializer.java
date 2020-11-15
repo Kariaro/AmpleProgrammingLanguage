@@ -1,20 +1,14 @@
 package hardcoded.compiler.instruction;
 
 import java.io.*;
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import hardcoded.compiler.constants.Atom;
 import hardcoded.compiler.expression.LowType;
 import hardcoded.compiler.instruction.IRInstruction.*;
-import hardcoded.utils.StringUtils;
 
 /**
  *<PRE>
@@ -483,7 +477,7 @@ public final class IRSerializer {
 		
 		int magic = serial.readInt();
 		if(magic != MAGIC_LLIR) {
-			throw new IOException("File magic was wrong. Expected 'HCIR' but got '" + (
+			throw new IOException("File magic was wrong. Expected 'LLIR' but got '" + (
 				(char)(magic & 0xff) + "" +
 				(char)((magic >> 8) & 0xff) + "" +
 				(char)((magic >> 16) & 0xff) + "" +
@@ -492,81 +486,6 @@ public final class IRSerializer {
 		}
 		
 		return processRead(serial, stream);
-	}
-	
-	// ================================================================================================ //
-	// ================================================================================================ //
-	
-	public static String deepPrint(String name, Object obj, int depth) throws Exception {
-		if(obj == null || depth < 1) return name + ": " + Objects.toString(obj, "null");
-		
-		Class<?> clazz = obj.getClass();
-		String ty = name + ": " + clazz.getSimpleName() + " ";
-		
-		// clazz.isPrimitive()
-		if(clazz.isEnum() || clazz == Boolean.class || clazz == AtomicInteger.class) return ty + "(" + obj.toString() + ")";
-		if(clazz == String.class) return ty + "(\"" + StringUtils.escapeString(obj.toString()) + "\")";
-		if(clazz == LowType.class) return name + ": LowType (" + ((LowType)obj).type() + ", " + ((LowType)obj).depth() + ")";
-		if(clazz == Pattern.class) return name + ": Pattern (\"" + ((Pattern)obj).pattern() + "\")";
-		if(Number.class.isAssignableFrom(clazz)) return ty + "(" + obj.toString() + ")";
-		
-		if(List.class.isAssignableFrom(clazz)) {
-			Collection<?> list = (Collection<?>)obj;
-			StringBuilder sb = new StringBuilder();
-			sb.append(clazz.getSimpleName()).append(" ").append(name).append(":\n");
-			
-			Object[] array = list.toArray();
-			for(int i = 0; i < array.length; i++) {
-				Object value = array[i];
-				String string = deepPrint(Integer.toString(i), value, depth - 1);
-				sb.append("\t+ ");
-				if(string.indexOf('\n') != -1) sb.append(string.trim().replace("\n", "\n\t| "));
-				else sb.append(string);
-				sb.append("\n");
-			}
-			
-			return sb.toString();
-		}
-		
-		if(clazz.isArray()) {
-			StringBuilder sb = new StringBuilder();
-			sb.append(name).append(":\n");
-			
-			int len = Array.getLength(obj);
-			for(int i = 0; i < len; i++) {
-				Object value = Array.get(obj, i);
-				String string = deepPrint(Integer.toString(i), value, depth - 1);
-				sb.append("\t+ ");
-				if(string.indexOf('\n') != -1) sb.append(string.trim().replace("\n", "\n\t| "));
-				else sb.append(string);
-				sb.append("\n");
-			}
-			
-			return sb.toString();
-		}
-		
-		{
-			Field[] fields = clazz.getDeclaredFields();
-			StringBuilder sb = new StringBuilder();
-			sb.append(name).append(":\n");
-			
-			for(Field field : fields) {
-				if(Modifier.isStatic(field.getModifiers())) continue;
-				boolean acc = field.canAccess(obj);
-				
-				field.setAccessible(true);
-				Object value = field.get(obj);
-				field.setAccessible(acc);
-				
-				String string = deepPrint(field.getName(), value, depth - 1);
-				sb.append("\t+ ");
-				if(string.indexOf('\n') != -1) sb.append(string.trim().replace("\n", "\n\t| "));
-				else sb.append(string);
-				sb.append("\n");
-			}
-			
-			return sb.toString();
-		}
 	}
 }
 
