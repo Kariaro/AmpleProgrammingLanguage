@@ -1,10 +1,7 @@
 package hardcoded.compiler.instruction;
 
-import java.sql.Date;
 import java.text.DateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * Context class for IRPrograms.

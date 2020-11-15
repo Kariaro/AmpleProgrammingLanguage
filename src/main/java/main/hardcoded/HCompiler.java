@@ -7,6 +7,7 @@ import hardcoded.compiler.BuildConfiguration;
 import hardcoded.compiler.errors.CompilerException;
 import hardcoded.compiler.instruction.IRProgram;
 import hardcoded.compiler.instruction.IRSerializer;
+import hardcoded.utils.ObjectUtils;
 
 public class HCompiler {
 	private BuildConfiguration config;
@@ -105,8 +106,8 @@ public class HCompiler {
 		IRProgram result = IRSerializer.read(new ByteArrayInputStream(out.toByteArray()));
 		
 		int depth = 5;
-		String deep_0 = IRSerializer.deepPrint("Deep(0)", program, depth).replace("\t", "    ");
-		String deep_1 = IRSerializer.deepPrint("Deep(0)", result, depth).replace("\t", "    ");
+		String deep_0 = ObjectUtils.deepPrint(program, depth).replace("\t", "    ");
+		String deep_1 = ObjectUtils.deepPrint(result, depth).replace("\t", "    ");
 		
 //		System.out.println("--------------------------------------------------------------");
 //		System.out.println();
