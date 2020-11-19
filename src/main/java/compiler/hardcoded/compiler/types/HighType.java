@@ -34,12 +34,20 @@ public class HighType {
 		return name;
 	}
 	
+	public int depth() {
+		return type.depth();
+	}
+	
 	public int size() {
 		return size;
 	}
 	
 	public boolean isSigned() {
 		return type.isSigned();
+	}
+	
+	public boolean isPointer() {
+		return type.isPointer();
 	}
 	
 	public String toString() {

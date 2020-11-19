@@ -281,11 +281,11 @@ public class IRInstruction {
 	}
 	
 	public IRInstruction(IRType op) {
-		this.op = op;
+		this.op = Objects.requireNonNull(op, "IRInstruction type must be non null");
 	}
 	
 	public IRInstruction(IRType op, Param... regs) {
-		this.op = op;
+		this.op = Objects.requireNonNull(op, "IRInstruction type must be non null");
 		this.params.addAll(Arrays.asList(regs));
 	}
 	

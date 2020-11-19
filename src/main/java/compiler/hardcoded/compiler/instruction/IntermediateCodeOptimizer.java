@@ -61,19 +61,19 @@ public class IntermediateCodeOptimizer {
 //			System.out.println();
 //		}
 //		
-//		for(IRFunction func : program.getFunctions()) {
-//			System.out.println("\n" + func);
-//			for(int i = 0, line = 0; i < func.length(); i++) {
-//				IRInstruction inst = func.list.get(i);
-//				
-//				if(inst.op == IRType.label) {
-//					System.out.printf("\n%4d: %s\n", line, inst);
-//				} else {
-//					System.out.printf("%4d:   %s\n", line, inst);
-//					line++;
-//				}
-//			}
-//		}
+		for(IRFunction func : program.getFunctions()) {
+			System.out.println("\n" + func);
+			for(int i = 0, line = 0; i < func.length(); i++) {
+				IRInstruction inst = func.list.get(i);
+				
+				if(inst.op == IRType.label) {
+					System.out.printf("\n%4d: %s\n", line, inst);
+				} else {
+					System.out.printf("%4d:   %s\n", line, inst);
+					line++;
+				}
+			}
+		}
 //		
 //		try {
 //			Thread.sleep(100000);
@@ -186,6 +186,22 @@ public class IntermediateCodeOptimizer {
 		}
 	}
 	
+	private void mov_bnz_optimization(IRFunction func) {
+		IRListIterator iter = Utils.createIterator(func.list);
+		
+		while(iter.hasNext()) {
+			IRInstruction inst = iter.next();
+			if(!iter.hasNext()) break;
+			
+			if(inst.op != IRType.mov) continue;
+			IRInstruction next = iter.peakNext();
+			
+			if(next.op == IRType.brz) {
+				next.params.set(0, inst.getParam(1));
+			}
+		}
+	}
+	
 	/**
 	 * This optimization reduces the amount of registers to
 	 * the lowest amount possible by counting and replacing.
@@ -226,7 +242,7 @@ public class IntermediateCodeOptimizer {
 			// add [a], [b], [c]
 			// check if a has been used inside the block..
 			
-
+			
 			if(iter.hasNext()) {
 				IRInstruction next = iter.peakNext();
 				
@@ -356,6 +372,9 @@ public class IntermediateCodeOptimizer {
 		
 		while(true) {
 			int size = func.list.size();
+			
+			mov_bnz_optimization(func);
+			logOptimization(func, "mov_bnz");
 			
 			flow_optimization(func);
 			logOptimization(func, "flow");

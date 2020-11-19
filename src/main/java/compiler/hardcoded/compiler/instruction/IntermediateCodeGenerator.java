@@ -202,6 +202,19 @@ public class IntermediateCodeGenerator {
 				break;
 			}
 			
+			case cast: {
+				Expression a = expr.first();
+				
+				Param reg_0 = createObject(a);
+				if(shouldCheck(a)) {
+					reg_0 = temp(expr.size());
+					list.addAll(compileInstructions(a, reg_0));
+				}
+				
+				list.add(new IRInstruction(IRType.mov, request, reg_0));
+				break;
+			}
+			
 			case addptr: {
 				// TODO: ?? Remember that we need to write and not mov !!!!
 				
@@ -226,7 +239,6 @@ public class IntermediateCodeGenerator {
 					list.addAll(compileInstructions(a, reg_0));
 				}
 				
-				// System.out.println(expr);
 				LowType next = reg_0.getSize().nextLowerPointer();
 				
 				if(!next.equals(request)) {
@@ -234,7 +246,6 @@ public class IntermediateCodeGenerator {
 					list.add(new IRInstruction(IRType.read, temp, reg_0));
 					list.add(new IRInstruction(IRType.mov, request, temp));
 				} else {
-					// System.out.println("Read instruction: " + request + ":" + request.getSize() + " / " + reg_0 + ":" + reg_0.getSize());
 					list.add(new IRInstruction(IRType.read, request, reg_0));
 				}
 				
@@ -421,6 +432,14 @@ public class IntermediateCodeGenerator {
 			list.remove(0); // Remove nop instruction
 			// return inst.first().remove();
 		}
+		
+//		if(request != null && !list.isEmpty()) {
+//			System.out.println();
+//			System.out.println(request + "\t\t\t" + request.getSize());
+//			System.out.println(list);
+//		} else {
+//			System.out.println(list);
+//		}
 		
 		return list;
 	}
