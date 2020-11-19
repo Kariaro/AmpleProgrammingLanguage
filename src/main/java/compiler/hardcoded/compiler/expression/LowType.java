@@ -5,6 +5,8 @@ import java.util.Objects;
 import hardcoded.compiler.constants.Atom;
 
 public class LowType {
+	public static final LowType INVALID = new LowType(Atom.unf, 0);
+	
 	/**
 	 * The type of this {@code LowType}
 	 */
@@ -65,10 +67,12 @@ public class LowType {
 	}
 	
 	public LowType nextLowerPointer() {
+		if(this == INVALID) return INVALID;
 		return new LowType(type, depth - 1);
 	}
 	
 	public LowType nextHigherPointer() {
+		if(this == INVALID) return INVALID;
 		return new LowType(type, depth + 1);
 	}
 	
@@ -121,5 +125,13 @@ public class LowType {
 	 */
 	public static Atom getPointerType() {
 		return Atom.i64;
+	}
+	
+	/**
+	 * Returns {@code true} if this type is invalid.
+	 * @return {@code true} if this type is invalid
+	 */
+	public boolean isInvalid() {
+		return this == INVALID;
 	}
 }

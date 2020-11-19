@@ -4,7 +4,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
-import hardcoded.compiler.errors.CompilerException;
 import hardcoded.lexer.Token;
 
 public class Lang {
@@ -37,17 +36,6 @@ public class Lang {
 		return list.size() - index;
 	}
 	
-//	public void markPoint() {
-//		markedTokens.add(index);
-//	}
-//	
-//	public Token getMarkedPoint() {
-//		if(markedTokens.isEmpty()) return null;
-//		
-//		int index = markedTokens.pollLast();
-//		return list.get(index);
-//	}
-	
 	public Token token() {
 		return peak(0);
 	}
@@ -70,7 +58,8 @@ public class Lang {
 	
 	public Lang next() {
 		index++;
-		if(index + 1 >= list.size()) throw new CompilerException("Reader is outside of bounds");
+		// TODO: Do we need this to keep from getting stuck?
+		//if(index + 1 >= list.size()) throw new CompilerException("Reader is outside of bounds");
 		return this;
 	}
 	
@@ -141,8 +130,6 @@ public class Lang {
 	public static Lang wrap(List<Token> list) {
 		return new Lang(list);
 	}
-	
-	
 	
 	
 	/**

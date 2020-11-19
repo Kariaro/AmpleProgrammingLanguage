@@ -163,7 +163,7 @@ public abstract class Expression implements IExpression, Printable {
 	}
 	
 	public LowType size() {
-		if(this == EMPTY) return null;
+		if(this == EMPTY) return LowType.INVALID;
 		
 		LowType curr = null;
 		if(hasElements()) {
@@ -178,9 +178,7 @@ public abstract class Expression implements IExpression, Printable {
 			
 			if(a.isIdentifier()) {
 				Identifier ident = a.identifier();
-				
-				// FIXME: !CRITICAL! This value should never be null.
-				if(ident == null) return null;
+				if(ident == null) return LowType.INVALID;
 				
 				if(ident.hasType()) {
 					return ident.getLowType();
@@ -195,6 +193,7 @@ public abstract class Expression implements IExpression, Printable {
 			// curr = a.atomType();
 		}
 		
+		if(curr == null) curr = LowType.INVALID;
 		return curr;
 	}
 	
@@ -204,7 +203,7 @@ public abstract class Expression implements IExpression, Printable {
 	 */
 	public static final Expression EMPTY = new Expression(ExprType.nop, false) {
 		public LowType size() {
-			return null;
+			return LowType.INVALID;
 		}
 		
 		public Expression clone() {

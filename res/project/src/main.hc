@@ -94,10 +94,10 @@ export void main(int input, int a, int b, int c) {
 	if(1 || (test4 += 1)) print("Because of the one, the rest should be removed.");
 	
 	// Should throw an error.
-	void __0 = (byte)32;
-	void __1 = (short)32;
-	void __2 = (int)32;
-	void __3 = (long)32;
+	// void __0 = (byte)32;
+	// void __1 = (short)32;
+	// void __2 = (int)32;
+	// void __3 = (long)32;
 	// void __4 = (float)32;
 	// void __5 = (double)32;
 	

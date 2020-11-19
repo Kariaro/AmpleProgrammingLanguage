@@ -13,6 +13,7 @@ import hardcoded.compiler.context.Lang;
 import hardcoded.compiler.errors.*;
 import hardcoded.compiler.expression.*;
 import hardcoded.compiler.impl.IBlock;
+import hardcoded.compiler.impl.IProgram;
 import hardcoded.compiler.statement.*;
 import hardcoded.compiler.types.HighType;
 import hardcoded.compiler.types.PrimitiveType;
@@ -85,9 +86,10 @@ public class ParseTreeGenerator {
 		
 		try {
 			importFile(mainFile);
-		} catch(Throwable e) {
+		} catch(Throwable t) {
 			// This is a real error and was not thrown by the compiler
-			syntaxError(CompilerError.MESSAGE, e.getClass() + ": " + e.getMessage());
+			syntaxError(CompilerError.MESSAGE, t.getClass() + ": " + t.getMessage());
+			t.printStackTrace();
 		}
 		
 		return currentProgram;
@@ -401,8 +403,14 @@ public class ParseTreeGenerator {
 			return getStatements();
 		} else {
 			Expression expr = nextExpression();
+			
+			if(!hasModifications(expr)) {
+				expr = Expression.EMPTY;
+				syntaxError(CompilerError.INVALID_EXPRESSION_MESSAGE, "The expression was empty or has weird syntax", reader);
+			}
 			if(reader.valueEquals(";")) {
 				reader.nextClear();
+				
 				return new ExprStat(expr);
 			}
 			
@@ -411,6 +419,29 @@ public class ParseTreeGenerator {
 		}
 		
 		return Statement.newEmpty();
+	}
+	
+	// Check if a expression does any modification
+	private boolean hasModifications(Expression expr) {
+		switch(expr.type()) {
+			case call:
+			case jump:
+			case label:
+			case loop:
+			case leave:
+			case set: return true;
+			
+			default: {
+				// Check if any element does any thing..
+				if(expr.hasElements()) {
+					for(Expression e : expr.getElements()) {
+						if(hasModifications(e)) return true;
+					}
+				}
+				
+				return false;
+			}
+		}
 	}
 	
 	private Statement makeWhileStatement() {
@@ -497,6 +528,10 @@ public class ParseTreeGenerator {
 		reader.mark();
 		HighType type = getTypeFromSymbol();
 		
+		if(type.type().equals(Atom.unf)) {
+			syntaxError(CompilerError.INVALID_VARIABLE_TYPE, type);
+		}
+		
 		List<Variable> list = new ArrayList<Variable>();
 		while(true) {
 			Variable var = new Variable(type);
@@ -535,7 +570,24 @@ public class ParseTreeGenerator {
 				reader.nextClear();
 				break;
 			} else if(reader.valueEqualsAdvance("=")) {
-				var.setValue(nextExpression(true));
+				Expression expr = nextExpression(true);
+				LowType e_size = expr.size();
+				
+				if(!type.isPointer()) {
+					if(e_size.isPointer()) {
+						syntaxError(CompilerError.INVALID_VARIABLE_ASSIGNMENT, "Pointer sizes are different (Type:" + type.depth() + " != Got:" + e_size.depth() + ")");
+					} else {
+						if(type.size() != e_size.size()) {
+							OpExpr next = new OpExpr(ExprType.cast, expr);
+							next.override_size = type.type();
+							expr = next;
+							// syntaxError(CompilerError.INVALID_VARIABLE_ASSIGNMENT, "Expression sizes are different (Type:" + type.size() + " != Got:" + e_size.size() + ")");
+						}
+					}
+				}
+				
+				
+				var.setValue(expr);
 				
 				if(reader.valueEquals(";")) {
 					reader.nextClear();
@@ -820,7 +872,7 @@ public class ParseTreeGenerator {
 							// TODO: Use the same solution as the assignment operators.
 							// FIXME: This should scale with the size of the baseSize of a lowType !!!
 							
-							AtomExpr ident2 = new AtomExpr(currentFunction.temp(lhs.size()));
+							AtomExpr ident2 = new AtomExpr(currentFunction.temp(lhs.size().nextHigherPointer()));
 							if(!lhs.isPure()) {
 								AtomExpr ident1 = new AtomExpr(currentFunction.temp(lhs.size()));
 								
@@ -833,7 +885,6 @@ public class ParseTreeGenerator {
 									new OpExpr(set, ident2, new OpExpr(addptr, lhs)),
 									new OpExpr(set, ident1, new OpExpr(decptr, ident2)),
 									new OpExpr(set, new OpExpr(decptr, ident2), new OpExpr(dir, new OpExpr(decptr, ident2), new AtomExpr(1))),
-									new OpExpr(set, lhs, new OpExpr(dir, lhs, new AtomExpr(1))),
 									ident1
 								);
 							}
@@ -864,6 +915,26 @@ public class ParseTreeGenerator {
 								if(result.type() == comma) lhs = lhs.last();
 								
 								LowType type = lhs.size();
+								if(!type.isPointer() && lhs.type() != ExprType.decptr) {
+									syntaxError(CompilerError.INVALID_ARRAY_NOT_A_POINTER, reader);
+								}
+								
+								if(lhs instanceof AtomExpr) {
+									AtomExpr atom = (AtomExpr)lhs;
+									
+									if(atom.isNumber()) {
+										syntaxError(CompilerError.INVALID_ARRAY_NOT_A_POINTER, reader);
+									} else if(atom.isIdentifier()) {
+										Identifier ident = atom.identifier();
+										
+										switch(ident.id_type()) {
+											case clazz:
+											case funct: syntaxError(CompilerError.INVALID_ARRAY_NOT_A_POINTER, reader);
+											default:
+										}
+									}
+								}
+								
 								expr = new OpExpr(mul, expr, new AtomExpr(type.baseSize()));
 								lhs = new OpExpr(decptr, new OpExpr(add, lhs, expr));
 								
@@ -933,8 +1004,35 @@ public class ParseTreeGenerator {
 					String value = reader.value();
 					
 					switch(value) {
+						// TODO: Error for globals
 						case "&": { reader.next(); return new OpExpr(addptr, e1()); }
-						case "*": { reader.next(); return new OpExpr(decptr, e1()); }
+						case "*": {
+							reader.next();
+							Expression rhs = e1();
+							if(!rhs.size().isPointer()) {
+								syntaxError(CompilerError.INVALID_DEREFERENCE_EXPRESSION);
+							}
+							
+							if(rhs instanceof AtomExpr) {
+								AtomExpr atom = (AtomExpr)rhs;
+								
+								if(atom.isNumber()) {
+									if(!atom.size().isPointer()) {
+										syntaxError(CompilerError.INVALID_DEREFERENCE_EXPRESSION);
+									}
+								} else if(atom.isIdentifier()) {
+									Identifier ident = atom.identifier();
+									
+									switch(ident.id_type()) {
+										case clazz:
+										case funct: syntaxError(CompilerError.INVALID_DEREFERENCE_EXPRESSION);
+										default:
+									}
+								}
+							}
+							
+							return new OpExpr(decptr, rhs);
+						}
 						case "+": { reader.next(); return e1(); }
 						
 						case "!": { reader.next(); return new OpExpr(not, e1()); }
@@ -1068,6 +1166,12 @@ public class ParseTreeGenerator {
 			if(!e.isIdentifier()) return false;
 			Identifier ident = e.identifier();
 			
+			switch(ident.id_type()) {
+				case clazz:
+				case funct: return false;
+				default:
+			}
+			
 			return !ident.isGenerated();
 		}
 		
@@ -1199,5 +1303,34 @@ public class ParseTreeGenerator {
 	private String _caller() {
 		StackTraceElement element = Thread.currentThread().getStackTrace()[3];
 		return "(" + element.getFileName() + ":" + element.getLineNumber() + ")";
+	}
+	
+	
+	/**
+	 * Create a Program from a single byte array. Any attempts to import other files will fail.
+	 * @param bytes
+	 * @return
+	 */
+	public static IProgram loadParseTreeFromBytes(byte[] bytes) {
+		ParseTreeGenerator generator = new ParseTreeGenerator();
+		Program program = new Program();
+		
+		try {
+			for(HighType t : Primitives.getAllTypes()) {
+				generator.defined_types.put(t.name(), t);
+			}
+			
+			generator.reader = Lang.wrap(LEXER.parse(bytes));
+			generator.sourceFile = new File("null");
+			generator.currentProgram = program;
+			
+			// Read all blocks inside the file
+			while(generator.nextBlock() != null);
+		} catch(Throwable t) {
+			t.printStackTrace();
+			program.hasErrors = true;
+		}
+		
+		return program;
 	}
 }

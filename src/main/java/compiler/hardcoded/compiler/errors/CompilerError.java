@@ -15,15 +15,21 @@ public enum CompilerError {
 	
 	INVALID_MODIFICATION("The value you are trying to modify is not modifiable"),
 	INVALID_CHAR_LITERAL_SIZE("Invalid character constant"),
-	INVALID_VARIABLE_NAME("Invalid variable name. The name '%s' is not a valid variable name"),
 	INVALID_CAST_TYPE("Invalid cast type. You cannot cast into a '%s'"),
 	INVALID_TYPE("Invalid type '%s'"),
 	INVALID_XXX_EXPECTED_OPEN_PARENTHESIS("Invalid %s. Expected open parenthesis '(' but got '%s'"),
 	INVALID_XXX_EXPECTED_SEMICOLON("Invalid %s. Expected a semicolon ';' but got '%s'"),
 	INVALID_FUNCTION_DECLARATION_EXPECTED_XXX("Invalid function declaration. '%s'"),
 	
+	INVALID_VARIABLE_NAME("Invalid variable name. The name '%s' is not a valid variable name"),
+	INVALID_VARIABLE_TYPE("Invalid variable type. The type '%s' is not a valid variable type"),
+	INVALID_VARIABLE_ASSIGNMENT("Invalid variable definition. %s"),
+	
 	INVALID_UNARY_EXPRESSION_OPERATION("Invalid use of a unary expression. The value you are trying to modify is not modifiable"),
+	INVALID_DECPTR_EXPRESSION_OPERATION("Invalid decptr expression. You cannot dereference a non pointer value"),
+	INVALID_DEREFERENCE_EXPRESSION("Invalid expression. Cannot dereference a non pointer value"),
 	INVALID_EXPRESSION("Invalid expression"),
+	INVALID_EXPRESSION_MESSAGE("Invalid expression %s"),
 	
 	INVALID_FUNCTION_CALL_PARAMETER("Invalid function call parameter"),
 	INVALID_FUNCTION_CALL_EXPRESSION("Invalid function call expression '%s'"),
@@ -39,7 +45,9 @@ public enum CompilerError {
 	
 	INVALID_TERNARY_OPERATOR_MISSING_COLON("Invalid ternary operation a ? b : c. Did you forget a colon here? '%s'"),
 	INVALID_VARIABLE_DECLARATION_MISSING_COLON_OR_SEMICOLON("Invalid variable definition. Expected a comma or semicolon but got '%s'"),
+	
 	INVALID_ARRAY_VARIABLE_DECLARATION_EXPECTED_INTEGER("Invalid array variable definition. Expected an integer expression but got '%s'"),
+	INVALID_ARRAY_NOT_A_POINTER("Invalid array access. The value you are trying to read from is not a pointer"),
 	
 	TOO_MANY_FUNCTION_CALL_ARGUMENTS("Too many arguments calling function '%s' expected %s"),
 	NOT_ENOUGH_FUNCTION_CALL_ARGUMENTS("Not enough arguments to call function '%s' expected %s but got %d"),
@@ -63,7 +71,7 @@ public enum CompilerError {
 	
 	FLOATING_TYPES_NOT_IMPLEMENTED("Float data types are not implemented yet"),
 	
-	EXPRESSION_NESTED_TOO_DEEP("Expression was nested too deep");
+	EXPRESSION_NESTED_TOO_DEEP("Expression was nested too deep"),
 	;
 	
 	public final String message;

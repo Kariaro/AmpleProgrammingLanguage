@@ -189,9 +189,18 @@ public class ParseTreeOptimizer {
 					break;
 				}
 				
+				case cast: {
+					Expression first = expr.first();
+					
+					if(first.size().equals(expr.size())) {
+						parent.set(index, first);
+					}
+					
+					break;
+				}
+				
 				case addptr: case decptr: {
 					ExprType opp = e.type() == decptr ? addptr:decptr;
-					
 					Expression ex = e.first();
 					
 					if(ex.type() == opp) {

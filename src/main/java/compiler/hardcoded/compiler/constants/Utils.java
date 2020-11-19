@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.ListIterator;
 
 import hardcoded.compiler.Function;
+import hardcoded.compiler.Program;
 import hardcoded.compiler.expression.Expression;
 import hardcoded.compiler.instruction.IRInstruction;
 import hardcoded.compiler.statement.*;
@@ -76,6 +77,15 @@ public final class Utils {
 			}
 		}
 	}
+	
+	public static String printPretty(Program prog) {
+		StringBuilder sb = new StringBuilder();
+		for(Function func : prog.list()) {
+			sb.append(printPretty(func)).append("\n");
+		}
+		return sb.toString().trim();
+	}
+	
 	
 	public static String printPretty(Function func) {
 		String str = func.toString();

@@ -105,8 +105,7 @@ public class Identifier {
 		return a;
 	}
 	
-	// TODO: Should we display what type this identifier is?
 	public String toString() {
-		return name; // + ":" + getLowType();
+		return name;
 	}
 }

@@ -54,6 +54,8 @@ public enum Atom {
 	public static Atom largest(Atom a, Atom b) {
 		if(a == null) return (b == null ? null:(b.isNumber ? b:null));
 		if(b == null) return (a == null ? null:(a.isNumber ? a:null));
+		if(!a.isNumber() && !b.isNumber()) return Atom.unf;
+		
 		return get(Math.max(a.size, b.size), a.isSigned && b.isSigned, a.isFloating || b.isFloating);
 	}
 	

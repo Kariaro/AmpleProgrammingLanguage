@@ -18,12 +18,28 @@ public class OpExpr extends Expression {
 	public LowType size() {
 		ExprType type = type();
 		if(type == ExprType.cast) {
+			if(override_size.isInvalid()) {
+				throw new NullPointerException();
+			}
+			
 			return override_size;
 		}
 		
+		if(type == ExprType.comma) {
+			return last().size();
+		}
+		
+		if(type == ExprType.call) {
+			return first().size();
+		}
+		
 		LowType lowType = super.size();
-		if(type == ExprType.decptr) return lowType.nextLowerPointer();
-		if(type == ExprType.addptr) return lowType.nextHigherPointer();
+		if(lowType.isPointer() || lowType.isNumber()) {
+			if(type == ExprType.decptr) return lowType.isPointer() ? lowType.nextLowerPointer():LowType.INVALID;
+			if(type == ExprType.addptr) return lowType.nextHigherPointer();
+		} else {
+			return LowType.INVALID;
+		}
 		
 		return lowType;
 	}
@@ -42,6 +58,10 @@ public class OpExpr extends Expression {
 	
 	public String asString() { return type().toString(); }
 	public String toString() {
+		if(type() == ExprType.cast) {
+			return type() + "(" +StringUtils.join(", ", list) + ", " + override_size + ")";
+		}
+		
 		return type() + "(" + StringUtils.join(", ", list) + ")";// + ":" + size();
 	}
 }
