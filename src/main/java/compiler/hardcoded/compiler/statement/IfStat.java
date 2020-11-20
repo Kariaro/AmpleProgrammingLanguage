@@ -31,6 +31,10 @@ public class IfStat extends NestedStat {
 		return stat.hasElements() && stat.size() > 0;
 	}
 	
+	public Object[] asList() {
+		if(hasElseBody()) return super.asList();
+		return new Object[] { get(0), get(1) };
+	}
 	public String asString() { return "IF"; }
 	public String toString() { return "if(" + getCondition() + ");"; }
 }

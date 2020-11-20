@@ -1,9 +1,7 @@
 package hardcoded.compiler;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Vector;
+import java.util.*;
 
 import hardcoded.compiler.constants.Modifiers.Modifier;
 import hardcoded.compiler.expression.LowType;
@@ -12,6 +10,7 @@ import hardcoded.compiler.impl.IStatement;
 import hardcoded.compiler.statement.Statement;
 import hardcoded.compiler.statement.Variable;
 import hardcoded.compiler.types.HighType;
+import hardcoded.lexer.Token;
 import hardcoded.utils.StringUtils;
 import hardcoded.visualization.Printable;
 
@@ -32,11 +31,19 @@ public class Function implements IFunction, Printable {
 	public List<Identifier> arguments;
 	
 	public Statement body = Statement.newEmpty();
+	public Map<String, Token> requiredLabels;
+	public List<String> labels;
 	
 	public Function() {
 		modifiers = new ArrayList<>();
 		arguments = new ArrayList<>();
+		requiredLabels = new LinkedHashMap<>();
+		labels = new ArrayList<>();
 		scopes = new Vector<>();
+	}
+	
+	public boolean hasLabel(String name) {
+		return labels.contains(name);
 	}
 	
 	public Scope getScope() {

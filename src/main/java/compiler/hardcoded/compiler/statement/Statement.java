@@ -15,7 +15,6 @@ public class Statement implements IStatement, Printable {
 	
 	public final List<IStatement> getStatements() {
 		return List.copyOf(list);
-		// return new UnmodifiableCastedSet<IStatement>(list);
 	}
 
 	public final boolean hasStatements() {
@@ -58,7 +57,7 @@ public class Statement implements IStatement, Printable {
 	 */
 	public final void add(Statement stat) {
 		if(list == null) throw new UnsupportedOperationException();
-		list.add(stat == null ? newEmpty():stat);
+		list.add(stat);
 	}
 	
 	/**
@@ -68,7 +67,7 @@ public class Statement implements IStatement, Printable {
 	 */
 	public final void set(int index, Statement stat) {
 		if(list == null) throw new UnsupportedOperationException();
-		list.set(index, stat == null ? newEmpty():stat);
+		list.set(index, stat);
 	}
 	
 	/**

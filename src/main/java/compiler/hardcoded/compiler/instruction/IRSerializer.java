@@ -187,9 +187,12 @@ public final class IRSerializer {
 	
 	private void writeFunction(IRFunction func) throws IOException {
 		LowType[] params = func.getParams();
+		String[] paramNames = func.getParamNames();
 		writeByte(params.length);
-		for(LowType type : params)
-			writeLowType(type);
+		for(int i = 0; i < params.length; i++) {
+			writeLowType(params[i]);
+			writeString(paramNames[i]);
+		}
 		
 		writeLowType(func.getReturnType());
 		writeString(func.getName());
@@ -432,14 +435,23 @@ public final class IRSerializer {
 	}
 	
 	private IRFunction readFunction() throws IOException {
-		LowType[] params = new LowType[readUByte()];
-		for(int i = 0; i < params.length; i++)
-			params[i] = readLowType();
+		LowType[] params;
+		String[] paramNames;
+		{
+			int length = readUByte();
+			params = new LowType[length];
+			paramNames = new String[length];
+			
+			for(int i = 0; i < length; i++) {
+				params[i] = readLowType();
+				paramNames[i] = readString();
+			}
+		}
 		
 		LowType type = readLowType();
 		String name = readString();
 		
-		IRFunction func = new IRFunction(type, name, params);
+		IRFunction func = new IRFunction(type, name, params, paramNames);
 		
 		int len = readVarInt();
 		for(int i = 0; i < len; i++)
