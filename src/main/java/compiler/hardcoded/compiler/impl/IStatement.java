@@ -13,9 +13,9 @@ import java.util.List;
 public interface IStatement {
 	
 	/**
-	 * Returns a set of elements inside of this statement or {@code null} if {@link #hasStatements} was {@code false}.
-	 * The returned set does not update if the internal list gets modified.
-	 * @return a set of elements inside of this statement
+	 * Returns a list of elements inside of this statement or {@code null} if {@link #hasStatements} was {@code false}.
+	 * The returned list does not update if the internal list gets modified.
+	 * @return a list of elements inside of this statement
 	 */
 	List<IStatement> getStatements();
 	

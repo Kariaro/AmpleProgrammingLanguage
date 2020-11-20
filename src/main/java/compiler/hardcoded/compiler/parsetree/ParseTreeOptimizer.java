@@ -15,6 +15,11 @@ import hardcoded.compiler.impl.IBlock;
 import hardcoded.compiler.statement.*;
 import hardcoded.visualization.Visualization;
 
+/**
+ * 
+ * @author HardCoded
+ * @since v0.0
+ */
 public class ParseTreeOptimizer {
 	
 	// TODO: cor and cand has problems with some or operations...
@@ -209,32 +214,6 @@ public class ParseTreeOptimizer {
 						parent.set(index, ex.first());
 					}
 					
-					// TODO: I do not know if this even does anything?
-//					else {
-//						LowType type = ex.size();
-//						System.out.println(parent + " -> " + type);
-//						LowType size;
-//						
-//						// TODO: Last is never null
-//						
-//						if(e.type() == ExprType.decptr) {
-//							size = type.nextLowerPointer();
-//						} else {
-//							size = type.nextHigherPointer();
-//						}
-//						
-//						if(ex instanceof OpExpr) {
-//							((OpExpr)ex).override_size = size;
-//							parent.set(index, ex);
-//						} else {
-//							((AtomExpr)ex).atomType = size;
-//							parent.set(index, ex);
-//						}
-//						
-//						System.out.println(parent + " -> " + ex + ":" + size);
-//						System.out.println();
-//					}
-					
 					break;
 				}
 				
@@ -385,6 +364,10 @@ public class ParseTreeOptimizer {
 					if(next != null) parent.set(index, next); break;
 				}
 				
+				case jump:
+				case leave:
+				case loop:
+				case label:
 				case ret:
 				case call: {
 					/* There is nothing we can do here.
@@ -393,17 +376,7 @@ public class ParseTreeOptimizer {
 				}
 //			case atom:
 //				break;
-//			case cast:
-//				break;
 //			case invalid:
-//				break;
-//			case jump:
-//				break;
-//			case label:
-//				break;
-//			case leave:
-//				break;
-//			case loop:
 //				break;
 //			case nop:
 //				break;

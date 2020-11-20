@@ -115,6 +115,28 @@ export void main(int input, int a, int b, int c) {
 			break;
 		}
 	}
+	{
+		print("Before loop\n========================\n");
+		int idx = 0;
+		Label0: {
+			idx += 1;
+			print("Testing if this semi while loop works\n");
+			if(idx < 3) goto Label0;
+		}
+		print("Outside loop\n========================\n");
+		
+		goto Label1;
+		goto Label2;
+		goto Label3;
+		goto Label4;
+		goto Label5;
+		
+		Label5:
+		Label4:
+		Label3:
+		Label2:
+		Label1:
+	}
 	
 	if(input > 3) {
 		print("This is a \" \" \"static message!");

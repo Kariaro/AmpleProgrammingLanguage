@@ -42,7 +42,7 @@ public class IRProgram {
 			params[i] = func.arguments.get(i).getLowType();
 		}
 		
-		IRFunction ir_func = new IRFunction(func.returnType.type(), func.name, params);
+		IRFunction ir_func = new IRFunction(func.returnType.type(), func.name, func.arguments);
 		
 		for(IRInstruction inst : list) {
 			ir_func.list.add(inst);

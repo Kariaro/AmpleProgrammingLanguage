@@ -32,6 +32,14 @@ public class Lang {
 		}
 	}
 	
+	public int readerIndex() {
+		return index;
+	}
+	
+	public int indexOf(Token token) {
+		return list.indexOf(token);
+	}
+	
 	public int remaining() {
 		return list.size() - index;
 	}

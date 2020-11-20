@@ -55,7 +55,6 @@ public class IntermediateCodeGenerator {
 	
 	private boolean shouldCheck(Expression e) {
 		if(e.type() == ExprType.nop) return false;
-		
 		return !(e instanceof AtomExpr);
 	}
 	
@@ -171,6 +170,32 @@ public class IntermediateCodeGenerator {
 					System.out.println("Operation?!?!?!?" + a + ", " + b);
 				}
 				
+				break;
+			}
+			
+			case jump: {
+				AtomExpr atom = (AtomExpr)expr.first();
+				list.add(new IRInstruction(IRType.br, new LabelParam(atom.string(), false)));
+				break;
+			}
+			
+			case label: {
+				AtomExpr atom = (AtomExpr)expr.first();
+				list.add(new IRInstruction(IRType.label, new LabelParam(atom.string(), false)));
+				break;
+			}
+			
+			case leave: {
+				if(break_label != null) {
+					list.add(new IRInstruction(IRType.br, break_label));
+				}
+				break;
+			}
+			
+			case loop: {
+				if(continue_label != null) {
+					list.add(new IRInstruction(IRType.br, continue_label));
+				}
 				break;
 			}
 			
@@ -402,9 +427,6 @@ public class IntermediateCodeGenerator {
 				break;
 			}
 			
-			case jump: {
-				// br expression
-			}
 			default: {
 				if(expr instanceof AtomExpr) {
 					if(request != null) {
@@ -443,6 +465,9 @@ public class IntermediateCodeGenerator {
 		
 		return list;
 	}
+	
+	private LabelParam continue_label;
+	private LabelParam break_label;
 	
 	private List<IRInstruction> createIfInstructions(IfStat stat) {
 		List<IRInstruction> list = new ArrayList<>();
@@ -505,6 +530,12 @@ public class IntermediateCodeGenerator {
 		LabelParam label_end = new LabelParam("while.end");
 		List<IRInstruction> list = new ArrayList<>();
 		
+		LabelParam old_continue = continue_label;
+		LabelParam old_break = break_label;
+		{
+			continue_label = label_next;
+			break_label = label_end;
+		}
 		Param temp = temp(stat.getCondition().size());
 		
 		list.add(new IRInstruction(IRType.label, label_next));
@@ -515,6 +546,9 @@ public class IntermediateCodeGenerator {
 		list.add(new IRInstruction(IRType.br, label_next));
 		list.add(new IRInstruction(IRType.label, label_end));
 		
+		continue_label = old_continue;
+		break_label = old_break;
+		
 		return list;
 	}
 	
@@ -524,6 +558,13 @@ public class IntermediateCodeGenerator {
 		LabelParam label_next = new LabelParam("for.next");
 		LabelParam label_loop = new LabelParam("for.loop");
 		LabelParam label_end = new LabelParam("for.end");
+		
+		LabelParam old_continue = continue_label;
+		LabelParam old_break = break_label;
+		{
+			continue_label = label_next;
+			break_label = label_end;
+		}
 		
 		if(stat.getVariables() != null) {
 			list.addAll(compileInstructions(stat.getVariables()));
@@ -584,6 +625,9 @@ public class IntermediateCodeGenerator {
 		list.addAll(compileInstructions(stat.getBody()));
 		list.add(new IRInstruction(IRType.br, label_next));
 		list.add(new IRInstruction(IRType.label, label_end));
+		
+		continue_label = old_continue;
+		break_label = old_break;
 		
 		return list;
 	}
