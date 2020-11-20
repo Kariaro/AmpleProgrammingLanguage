@@ -119,16 +119,19 @@ public class HCompiler {
 //		System.out.println();
 //		System.out.println("--------------------------------------------------------------");
 		System.out.println("Equals: " + deep_0.equals(deep_1));
-		
 		int lim = Math.min(deep_0.length(), deep_1.length());
 		
+		int errors = 0;
 		for(int i = 0; i < lim; i++) {
 			if(deep_0.charAt(i) != deep_1.charAt(i)) {
 				int min = Math.max(i - 10, 0);
 				int max = Math.min(i + 10, lim);
 				System.out.println(deep_0.substring(min, max) + " != " + deep_1.substring(min, max));
+				System.out.println("----------");
 				
 				i += 10;
+				
+				if(errors++ > 5) break;
 			}
 		}
 	}

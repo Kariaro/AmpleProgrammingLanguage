@@ -14,8 +14,7 @@ public final class Keywords {
 	//       the keyword is 'lbreak' or 'lbreak <expr>' leaves <expr> branches.
 	//       lbreak, break out of a branch directly. Jump to end of branch..
 	static {
-		Set<String> keywords = new HashSet<>();
-		keywords.addAll(Arrays.asList(
+		KEYWORDS = Set.of(
 			"switch", "case", "default",
 			"signed", "unsigned",
 			"true", "false",
@@ -25,10 +24,9 @@ public final class Keywords {
 			"return",
 			"break",
 			"continue",
+			"goto",
 			"asm"
-		));
-		
-		KEYWORDS = Collections.unmodifiableSet(keywords);
+		);
 	}
 	
 	/**

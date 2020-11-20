@@ -14,7 +14,7 @@ import java.util.*;
 public class IRContext {
 	protected final List<String> strings = new ArrayList<>();
 	protected String programName;
-	protected long creationDate;
+	public long creationDate;
 	
 	protected IRContext() {
 		creationDate = System.currentTimeMillis();
