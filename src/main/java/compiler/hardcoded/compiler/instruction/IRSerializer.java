@@ -11,7 +11,7 @@ import hardcoded.compiler.expression.LowType;
 import hardcoded.compiler.instruction.IRInstruction.*;
 
 /**
- *<PRE>
+ *<pre>
  *Each compiler made label should be written with this pattern
  *
  *First byte:
@@ -29,16 +29,17 @@ import hardcoded.compiler.instruction.IRInstruction.*;
  *=========
  *VarInt string_index
  *
- *</PRE>
+ *</pre>
  * 
+ * @author HardCoded
+ * @since v0.0
  */
 public final class IRSerializer {
-	// HLIR: High level instruction file
-	// LLIR: Low level instruction file
-	
 	@SuppressWarnings("unused")
 	private static final int MAGIC_HLIR = 0x52494C48; // 'HLIR'
 	private static final int MAGIC_LLIR = 0x52494C4C; // 'LLIR'
+	// HLIR: High level instruction file
+	// LLIR: Low level instruction file
 	
 	
 	private List<String> strings = new ArrayList<>();
@@ -79,7 +80,7 @@ public final class IRSerializer {
 	private void writeVarLong(long value) throws IOException {
 		do {
 			long temp = (value & 0b01111111);
-			value >>>= 7;
+			value >>>= 7L;
 			if(value != 0) {
 				temp |= 0b10000000;
 			}
@@ -94,7 +95,8 @@ public final class IRSerializer {
 	}
 	
 	private void writeLowType(LowType type) throws IOException {
-		writeByte(Converter.getLowType(type));
+		writeByte(type.type().ordinal());
+		writeByte(type.depth());
 	}
 	
 	private void writeString(String string) throws IOException {
@@ -127,6 +129,7 @@ public final class IRSerializer {
 			writeByte(parts[0]);
 			writeVarInt(parts[1]);
 		} else {
+			writeByte(IO.USER_LABEL);
 			writeString(param.getName());
 		}
 	}
@@ -271,7 +274,7 @@ public final class IRSerializer {
 	// ================================================================================================ //
 	
 	private LowType readLowType() throws IOException {
-		return Converter.getLowType(readUByte());
+		return LowType.create(Atom.values()[readUByte()], readUByte());
 	}
 	
 	private int readUByte() throws IOException {
@@ -286,8 +289,9 @@ public final class IRSerializer {
 	}
 	
 	private long readLong() throws IOException {
-		return((long)readInt() <<  0L)
-			| ((long)readInt() << 32L);
+		long a = readInt() & 0xffffffffL;
+		long b = readInt() & 0xffffffffL;
+		return (b << 32L) | a;
 	}
 	
 	private byte[] readBytes(int length) throws IOException {
@@ -329,7 +333,7 @@ public final class IRSerializer {
 		do {
 			read = in.read();
 			long value = (read & 0b01111111);
-			result |= (value << (7 * numRead));
+			result |= (value << (7L * numRead));
 			
 			numRead++;
 			if(numRead > 10) {
@@ -358,7 +362,7 @@ public final class IRSerializer {
 		
 		if(type == 0xf) {
 			// USER LABEL
-			return new LabelParam(readString(), false, null);
+			return new LabelParam(readString(), false);
 		} else {
 			String name = "_" + IO.getStringFromType(head)
 						+ "_" + readVarInt();
@@ -452,7 +456,6 @@ public final class IRSerializer {
 		String name = readString();
 		
 		IRFunction func = new IRFunction(type, name, params, paramNames);
-		
 		int len = readVarInt();
 		for(int i = 0; i < len; i++)
 			func.list.add(readInstruction());
@@ -597,83 +600,83 @@ class Converter {
 		throw new IllegalArgumentException("The type '" + getLabelTypeName(type) + "' does not have the id '" + id + "'");
 	}
 	
-	static byte getLowType(LowType type) {
-		// ..          : type   I, U, F, <object>
-		//    .        : is_pointer
-		//      ...    : size   0, 8, 16, 32, 64, 128, 256, 512
-		//          .. : reserved
-		
-		int serial = 0;
-		
-		if(type.isNumber()) {
-			if(type.isFloating()) {
-				serial = 0b10_000000;
-			} else if(!type.isSigned()) {
-				serial = 0b01_000000;
-			}
-		} else {
-			serial = 0b11_000000;
-		}
-		
-		if(type.isPointer()) {
-			serial |= 0b1_00000;
-		}
-		
-		{
-			switch(type.size()) {
-				case 0:  serial |= 0b000_00; break;
-				case 1:  serial |= 0b001_00; break;
-				case 2:  serial |= 0b010_00; break;
-				case 4:  serial |= 0b011_00; break;
-				case 8:  serial |= 0b100_00; break;
-				case 16: serial |= 0b101_00; break;
-				case 32: serial |= 0b110_00; break;
-				case 64: serial |= 0b111_00; break;
-			}
-			
-			// Last two bytes are reserved
-		}
-		
-		return (byte)serial;
-	}
+//	static byte getLowType(LowType type) {
+//		// ..          : type   I, U, F, <object>
+//		//    .        : is_pointer
+//		//      ...    : size   0, 8, 16, 32, 64, 128, 256, 512
+//		//          .. : reserved
+//		
+//		int serial = 0;
+//		
+//		if(type.isNumber()) {
+//			if(type.isFloating()) {
+//				serial = 0b10_000000;
+//			} else if(!type.isSigned()) {
+//				serial = 0b01_000000;
+//			}
+//		} else {
+//			serial = 0b11_000000;
+//		}
+//		
+//		if(type.isPointer()) {
+//			serial |= 0b1_00000;
+//		}
+//		
+//		{
+//			switch(type.size()) {
+//				case 0:  serial |= 0b000_00; break;
+//				case 1:  serial |= 0b001_00; break;
+//				case 2:  serial |= 0b010_00; break;
+//				case 4:  serial |= 0b011_00; break;
+//				case 8:  serial |= 0b100_00; break;
+//				case 16: serial |= 0b101_00; break;
+//				case 32: serial |= 0b110_00; break;
+//				case 64: serial |= 0b111_00; break;
+//			}
+//			
+//			// Last two bytes are reserved
+//		}
+//		
+//		return (byte)serial;
+//	}
 	
-	static LowType getLowType(int field) {
-		// ..          : type   I, U, F, <object>
-		//    .        : is_pointer
-		//      ...    : size   0, 8, 16, 32, 64, 128, 256, 512
-		//          .. : reserved
-		
-		int type_field = (field & 0b11_000000) >>> 6;
-		int size_field = (field & 0b111_00) >>> 2;
-		int size = ((int)Math.pow(2, size_field)) / 2;
-		boolean isPointer = (field & 0b1_00000) != 0;
-		
-		if(type_field == 3) {
-			// Custom one..
-			return LowType.create(Atom.unf, isPointer ? 1:0);
-		}
-		
-		boolean isFloating = (type_field == 2);
-		boolean isUnsigned = (type_field == 1);
-		
-		return LowType.create(
-			Atom.get(size, !isUnsigned, isFloating),
-			isPointer ? 1:0
-		);
-	}
+//	static LowType getLowType(int field) {
+//		// ..          : type   I, U, F, <object>
+//		//    .        : is_pointer
+//		//      ...    : size   0, 8, 16, 32, 64, 128, 256, 512
+//		//          .. : reserved
+//		
+//		int type_field = (field & 0b11_000000) >>> 6;
+//		int size_field = (field & 0b111_00) >>> 2;
+//		int size = ((int)Math.pow(2, size_field)) / 2;
+//		boolean isPointer = (field & 0b1_00000) != 0;
+//		
+//		if(type_field == 3) {
+//			// Custom one..
+//			return LowType.create(Atom.unf, isPointer ? 1:0);
+//		}
+//		
+//		boolean isFloating = (type_field == 2);
+//		boolean isUnsigned = (type_field == 1);
+//		
+//		return LowType.create(
+//			Atom.get(size, !isUnsigned, isFloating),
+//			isPointer ? 1:0
+//		);
+//	}
 }
 
 class IO {
 	private static Map<String, Integer> map;
 	@SuppressWarnings("unused")
-	private static final int IF_LABEL		= 0x0 << 4,
-							 FOR_LABEL		= 0x1 << 4,
-							 WHILE_LABEL	= 0x2 << 4,
-							 SWITCH_LABEL	= 0x3 << 4,
-							 COR_LABEL		= 0x4 << 4,
-							 CAND_LABEL		= 0x5 << 4,
-							 /* Reserved */
-							 USER_LABEL		= 0xf << 4;
+	static final int IF_LABEL		= 0x0 << 4,
+					 FOR_LABEL		= 0x1 << 4,
+					 WHILE_LABEL	= 0x2 << 4,
+					 SWITCH_LABEL	= 0x3 << 4,
+					 COR_LABEL		= 0x4 << 4,
+					 CAND_LABEL		= 0x5 << 4,
+					 /* Reserved */
+					 USER_LABEL		= 0xf << 4;
 	
 	static {
 		Map<String, Integer> m = new HashMap<>();
@@ -713,6 +716,7 @@ class IO {
 			if(map.get(key) == read) return key;
 		}
 		
+		System.out.println(map);
 		throw new NullPointerException("Could not find label '" + read + "' /");
 	}
 }
