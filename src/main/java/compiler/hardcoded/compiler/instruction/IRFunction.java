@@ -1,10 +1,11 @@
 package hardcoded.compiler.instruction;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 import hardcoded.compiler.Identifier;
 import hardcoded.compiler.expression.LowType;
-import hardcoded.utils.StringUtils;
 
 public class IRFunction {
 	private final LowType[] params;
@@ -32,12 +33,13 @@ public class IRFunction {
 	}
 	
 	protected IRFunction(LowType type, String name, LowType[] params, String[] paramNames) {
-		if(list.size() > 255)
-			throw new IllegalArgumentException("Function argument length cannot exceed 255");
 		if(params == null || paramNames == null)
 			throw new IllegalArgumentException("'params' and 'paramNames' must not be null");
 		if(params.length != paramNames.length)
 			throw new IllegalArgumentException("'params' and 'paramNames' must have equal lengths");
+		if(params.length > 255)
+			throw new IllegalArgumentException("'params' or 'paramNames' length cannot exceed 255");
+			
 		
 		this.type = Objects.requireNonNull(type);
 		this.name = Objects.requireNonNull(name);

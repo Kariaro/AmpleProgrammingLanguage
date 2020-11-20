@@ -175,7 +175,7 @@ public class CompilerMain {
 			
 			// file = "tests_2/000_assign_test.hc";
 			
-			mode = ActionType.RUN;
+			mode = ActionType.COMPILE;
 			format = "ir";
 			String file_name = file;
 			{
