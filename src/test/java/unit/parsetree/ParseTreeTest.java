@@ -227,4 +227,10 @@ public class ParseTreeTest {
 		check("char _ = fb();", PASS, "set(_, call(fb))");
 	}
 	
+	@Test
+	public void test_labels() {
+		check("goto Label0;\nLabel0:", PASS);
+		check("goto Label1;\nLabel0:", ERROR);
+	}
+	
 }
