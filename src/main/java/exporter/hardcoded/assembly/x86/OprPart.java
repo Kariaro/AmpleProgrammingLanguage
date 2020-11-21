@@ -1,7 +1,5 @@
 package hardcoded.assembly.x86;
 
-import hardcoded.utils.NumberUtils;
-
 /**
  * This class defines all objects used to define assembly operators.
  * 

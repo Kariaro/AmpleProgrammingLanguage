@@ -23,8 +23,6 @@ import hardcoded.lexer.Token;
 import hardcoded.utils.FileUtils;
 import hardcoded.utils.StringUtils;
 
-// NOTE: Try unrolling parsetree recursion.
-// TODO: Create error messages inside the enum for each error message in this class.
 /**
  * 
  * @author HardCoded
@@ -33,10 +31,8 @@ import hardcoded.utils.StringUtils;
 public class ParseTreeGenerator {
 	private static final LexerTokenizer LEXER;
 	
-	// FIXME: Keep all token information inside the parsetree and remove it in the ir stage
 	// FIXME: Add global variables
 	// FIXME: Add non const arrays
-	// FIXME: Add break and continue keywords
 	// FIXME: Defined types should be a part of program and not this generator.
 	// FIXME: GLOBALS should be put inside Program and not the generator.
 	
@@ -56,6 +52,8 @@ public class ParseTreeGenerator {
 	private Map<String, Expression> GLOBAL = new LinkedHashMap<>();
 	private Map<String, HighType> defined_types = new HashMap<>();
 	
+	// TODO: This build config is only used for searching for imported files!
+	//       Could we maybe break this into another file or remove it?
 	private BuildConfiguration config;
 	private Function currentFunction;
 	private Program currentProgram;
@@ -286,6 +284,7 @@ public class ParseTreeGenerator {
 			if(!reader.valueEquals(",")) {
 				if(reader.valueEquals(")")) break;
 				syntaxError(CompilerError.MISSING_FUNCTION_PARAMETER_SEPARATOR, reader);
+				break;
 			}
 			
 			reader.next();
@@ -1201,7 +1200,11 @@ public class ParseTreeGenerator {
 	}
 	
 	private HighType getTypeFromSymbol() {
-		if(!isType(reader)) syntaxError(CompilerError.INVALID_TYPE, reader);
+		if(!isType(reader)) {
+			syntaxError(CompilerError.INVALID_TYPE, reader);
+			return HighType.INVALID;
+		}
+		
 		HighType type = defined_types.get(reader.valueAdvance());
 		
 		if(reader.valueEquals("*")) {

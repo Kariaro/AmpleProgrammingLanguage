@@ -9,6 +9,8 @@ import hardcoded.compiler.expression.LowType;
  * @author HardCoded
  */
 public class HighType {
+	public static final HighType INVALID = new HighType(":INVALID", LowType.INVALID);
+	
 	private final String name;
 	private final int size;
 	private final LowType type;

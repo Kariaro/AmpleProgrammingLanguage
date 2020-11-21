@@ -9,7 +9,24 @@ import java.util.regex.Pattern;
 
 import hardcoded.compiler.expression.LowType;
 
+/**
+ * This class is used to print a java objects content. It will print all private,
+ * protected and public fields and return it in a tree type string.
+ * 
+ * @author HardCoded
+ * @since v0.1
+ */
 public class ObjectUtils {
+	private ObjectUtils() {}
+	
+	public static String deepPrint(Object obj, int depth) throws Exception {
+		return deepPrint0("", obj, depth, false);
+	}
+	
+	public static String deepPrint(String name, Object obj, int depth) throws Exception {
+		return deepPrint0(name, obj, depth, true);
+	}
+	
 	private static Set<Class<?>> getAllClasses(Class<?> clazz) {
 		Set<Class<?>> set = new HashSet<>();
 		
@@ -30,14 +47,6 @@ public class ObjectUtils {
 		}
 		
 		return fields;
-	}
-	
-	public static String deepPrint(Object obj, int depth) throws Exception {
-		return deepPrint0("", obj, depth, false);
-	}
-	
-	public static String deepPrint(String name, Object obj, int depth) throws Exception {
-		return deepPrint0(name, obj, depth, true);
 	}
 	
 	private static String deepPrint0(String name, Object obj, int depth, boolean showName) throws Exception {

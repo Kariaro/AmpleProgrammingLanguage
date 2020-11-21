@@ -1,0 +1,47 @@
+ // @import "src/test2.ample";
+
+void println(char* str) {
+	char* buffer = &(0xb8000);
+	
+	while(*str) {
+		*buffer = *str;
+		str++;
+		buffer ++;
+	}
+}
+
+
+void main() {
+	char* string = "Hello World:::: TESTING THIS COMPILER";
+	
+	// This is a bug and should be fixed!!!
+	
+	
+	int idx = 3;
+	int j = 0;
+	Label:
+		println("Looping foreverLooping foreverLooping foreverLooping foreverLooping foreverLooping foreverLooping foreverLooping forever\n");
+		idx -= 1;
+		for(int i = 3; i < 1000000; i++) {
+			j++;
+		}
+		if(idx > 0) goto Label;
+	
+	
+	println(string);
+}
+
+/*
+void test2() {
+	// Testing...
+	int a = 32;
+	int b = 12;
+	
+	int c = a ? b:32;
+	
+}
+
+int test3() {
+	return 3;
+}
+*/

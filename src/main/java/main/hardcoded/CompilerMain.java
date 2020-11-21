@@ -6,6 +6,7 @@ import java.util.logging.LogManager;
 
 import hardcoded.compiler.BuildConfiguration;
 import hardcoded.compiler.errors.CompilerException;
+import hardcoded.configuration.ConfigurationTest;
 import hardcoded.utils.DomainUtils;
 import hardcoded.utils.FileUtils;
 import hardcoded.vm.AmpleVm;
@@ -161,6 +162,7 @@ public class CompilerMain {
 			// Developer variables and test environment
 			
 			String file = "main.hc";
+			file = "crash.ample";
 			//file = "test3.ample";
 			// file = "tests/000_pointer.hc";
 			// file = "prim.hc";
@@ -175,7 +177,7 @@ public class CompilerMain {
 			
 			// file = "tests_2/000_assign_test.hc";
 			
-			mode = ActionType.COMPILE;
+			mode = ActionType.RUN;
 			format = "ir";
 			String file_name = file;
 			{
@@ -192,11 +194,44 @@ public class CompilerMain {
 			outputPath = "bin/" + file_name;
 			
 			sourceFolders.add("src");
+			
+//			final Thread mainThread = Thread.currentThread();
+//			Thread thread = new Thread(() -> {
+//				String last = "";
+//				try {
+//					while(true) {
+//						StackTraceElement[] array = Thread.getAllStackTraces().get(mainThread);
+//						String curr = Arrays.deepToString(array);
+//						
+//						if(!last.equals(curr)) {
+//							last = curr;
+//							
+//							System.out.println("=".repeat(100));
+//							System.out.println(curr.replace(", ", "\n"));
+//						}
+//					}
+//				} catch(Exception e) {
+//					e.printStackTrace();
+//				}
+//			});
+//			thread.setDaemon(true);
+//			thread.start();
 		}
 		
 		if(mode == ActionType.NONE) {
 			printHelpMessage();
 			return;
+		}
+		
+		if(isDeveloper()) {
+			ConfigurationTest test = new ConfigurationTest();
+			
+			test.set("compiler.format", format);
+			test.set("compiler.directory", working_directory);
+			test.set("compiler.sourcefile", sourcePath);
+			test.set("compiler.outputfile", outputPath);
+			
+			System.out.println(test);
 		}
 		
 		BuildConfiguration config = new BuildConfiguration();

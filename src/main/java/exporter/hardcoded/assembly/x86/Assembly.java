@@ -5,7 +5,6 @@ import java.util.List;
 
 import hardcoded.exporter.x86.AssemblyConsts.AsmOp;
 import hardcoded.exporter.x86.AssemblyConsts.OprTy;
-import hardcoded.utils.NumberUtils;
 import hardcoded.utils.buffer.IntBuffer;
 
 public final class Assembly {

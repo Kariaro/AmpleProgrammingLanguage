@@ -40,7 +40,7 @@ public class AmpleCompilerBuild {
 		parse_tree_optimizer = new ParseTreeOptimizer();
 		icg = new IntermediateCodeGenerator();
 		ico = new IntermediateCodeOptimizer();
-		vs = Visualization.DUMMY; vs = new hardcoded.visualization.PTVisualization(); vs.hide();
+		vs = Visualization.DUMMY; // vs = new hardcoded.visualization.PTVisualization(); vs.hide();
 	}
 	
 	/**

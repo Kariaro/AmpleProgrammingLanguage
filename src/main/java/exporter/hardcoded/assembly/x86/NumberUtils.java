@@ -1,6 +1,6 @@
-package hardcoded.utils;
+package hardcoded.assembly.x86;
 
-public final class NumberUtils {
+final class NumberUtils {
 	private NumberUtils() {}
 	
 	public static int getBitsSize(long value) {
