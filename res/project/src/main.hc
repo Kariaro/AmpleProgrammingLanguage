@@ -118,9 +118,13 @@ export void main(int input, int a, int b, int c) {
 	{
 		print("Before loop\n========================\n");
 		int idx = 0;
+		int jjj = 0;
 		Label0: {
 			idx += 1;
 			print("Testing if this semi while loop works\n");
+			for(int iii = 3; iii < 100; iii ++) {
+				jjj++;
+			}
 			if(idx < 3) goto Label0;
 		}
 		print("Outside loop\n========================\n");

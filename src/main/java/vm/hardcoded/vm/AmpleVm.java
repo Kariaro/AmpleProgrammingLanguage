@@ -1,6 +1,5 @@
 package hardcoded.vm;
 
-import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,30 +12,30 @@ import hardcoded.compiler.instruction.IRInstruction.*;
 import hardcoded.compiler.numbers.Value;
 
 public class AmpleVm {
+	public static void run(IRProgram program) throws VmException { run(program, new StdAmpleBufferStream(), null); }
+	public static void run(IRProgram program, AmpleBufferStream stream, AmpleBufferCallback callback) throws VmException {
+		AmpleVm vm = new AmpleVm(program, stream, callback);
+		vm.start();
+		
+		if(callback != null) {
+			callback.bufferChanged(vm.buffer, AmpleBufferCallback.BUFFER_CLOSED);
+		}
+	}
+	
 	private final Memory memory = new Memory();
 	private final Map<String, VmFunction> functions;
 	private final Map<String, Integer> pointers;
 	private final int consts_offset;
 	private final VmFunction entry;
-	private final StringBuilder stdout = new StringBuilder();
-	private final PrintStream output_stream;
 	
-	public static void run(IRProgram program) {
-		run(program, System.out);
-	}
+	private final AmpleBufferCallback callback;
+	private final AmpleBufferStream buffer;
 	
-	public static void run(IRProgram program, PrintStream std) {
-		if(CompilerMain.isDeveloper()) {
-			System.out.println("----------------------------");
-		}
-		
-		new AmpleVm(program, std).run();
-	}
-	
-	private AmpleVm(IRProgram program, PrintStream output) {
+	private AmpleVm(IRProgram program, AmpleBufferStream stream, AmpleBufferCallback callback) {
 		this.functions = new HashMap<>();
 		this.pointers = new HashMap<>();
-		this.output_stream = output;
+		this.callback = callback;
+		this.buffer = stream;
 		
 		for(IRFunction func : program.getFunctions()) {
 			functions.put(func.getName(), new VmFunction(func));
@@ -59,53 +58,28 @@ public class AmpleVm {
 		
 		consts_offset = offset;
 		entry = functions.get("main");
+		if(entry == null)
+			throw new VmException("Cound not find start function 'main'");
 	}
 	
-	private void run() {
+	private void start() {
 		run(entry, consts_offset, 0);
-		output_stream.println(stdout.toString().trim());
 	}
 	
 	private void run(VmFunction func, int offset, int ip) {
-		if(func.getNumInstructions() < 1) {
-			switch(func.getName()) {
-				case "print": {
-					char c = (char)(memory.read(offset, Atom.i32).longValue() & 0xff);
-//					System.out.println("Stdout: '" + hardcoded.utils.StringUtils.escapeString("" + c) + "'");
-					stdout.append(c);
-					return;
-				}
-				case "printInt": {
-					stdout.append((int)(memory.read(offset, Atom.i32).longValue()));
-					return;
-				}
-			}
-			return;
-		}
-		
 		while(true) {
-//			for(int i = offset; i < offset + func.bodySize; i++) {
-//				System.out.print(hardcoded.utils.StringUtils.escapeString(Character.toString((char)memory.read(i))));
-//			}
-//			System.out.println();
-			
 			if(ip >= func.getNumInstructions()) return;
 			IRInstruction inst = func.getInstruction(ip++);
-//			System.out.printf("%4d : %s\n", ip, inst);
 			
 			
-			
-			switch(inst.type()) {	
-				default: {
-					//System.out.println("[Missing] type: " + inst);
-				}
+			switch(inst.type()) {
+				case data:
 				case nop:
 				case label: break;
 				
 				case mov: {
 					Reg target = (Reg)inst.getParam(0);
 					Value v = read(func, offset, inst.getParam(1));
-					//System.out.println("mov: " + target + " = " + v);
 					write(func, offset, target, v);
 					break;
 				}
@@ -152,9 +126,6 @@ public class AmpleVm {
 					}
 
 					write(func, offset, target, a);
-					
-//					Value read = read(func, offset, target);
-//					if(!read.toString().equals(a.toString())) throw new AssertionError("'" + read + "' != '" + a + "'");
 					break;
 				}
 				
@@ -180,7 +151,6 @@ public class AmpleVm {
 					
 					Value a = read(func, offset, inst.getParam(1));
 					a = memory.read((int)a.longValue(), inst.getSize());
-					//System.out.println("mov: " + target + " = " + a);
 					write(func, offset, target, a);
 					break;
 				}
@@ -192,9 +162,11 @@ public class AmpleVm {
 					
 					if(CompilerMain.isDeveloper() || true) {
 						if(a.longValue() >= 0xb8000 && a.longValue() < 0xc0000) {
-							stdout.ensureCapacity(0x8000);
-							stdout.setLength(0x8000);
-							stdout.setCharAt((int)(a.longValue() - 0xb8000), (char)b.longValue());
+							buffer.write((int)(a.longValue() - 0xb8000), (char)b.longValue());
+							
+							if(callback != null) {
+								callback.bufferChanged(buffer, AmpleBufferCallback.BUFFER_CHANGED);
+							}
 						}
 					}
 					
@@ -225,7 +197,6 @@ public class AmpleVm {
 				
 				case call: {
 					VmFunction next = functions.get(inst.getParam(1).getName());
-					//System.out.println("Calling -> " + next + " / " + next.bodySize);
 					boolean hasReturn = inst.getParam(0) != IRInstruction.NONE;
 					
 					for(int i = 2; i < inst.getNumParams(); i++) {
@@ -253,23 +224,20 @@ public class AmpleVm {
 			return memory.read(offset + func.getRegister(reg), param.getSize());
 		} else if(param instanceof NumberReg) {
 			NumberReg reg = (NumberReg)param;
-			return Value.get(reg.getValue(), get(reg.getSize()));
+			LowType type = reg.getSize();
+			if(type.isPointer()) return Value.get(reg.getValue(), Atom.i64);
+			return Value.get(reg.getValue(), type.type());
 		} else if(param instanceof RefReg) {
 			RefReg reg = (RefReg)param;
 			return Value.dword(pointers.get(reg.toString()));
 		} else if(param instanceof DebugParam) {
-			return Value.dword(0); // TODO: Illegal
+			return Value.dword(0); // T O D O: Illegal
 		}
 		
-		throw new NullPointerException("Not found: " + param.getClass());
+		throw new VmException("Not found: " + param.getClass());
 	}
 	
 	private void write(VmFunction func, int offset, Reg reg, Value value) {
 		memory.write(offset + func.getRegister(reg), value.convert(reg.getSize()), reg.getSize());
-	}
-	
-	private Atom get(LowType type) {
-		if(type.isPointer()) return Atom.i64;
-		return type.type();
 	}
 }
