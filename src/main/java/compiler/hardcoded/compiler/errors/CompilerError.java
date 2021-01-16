@@ -5,6 +5,9 @@ public enum CompilerError {
 	MESSAGE("%s"),
 	INTERNAL_ERROR("Internal error: %s"),
 	
+	INTEGER_VALUE_TOO_LARGE("The value '%s' is too large for a integer value"),
+	LONG_VALUE_TOO_LARGE("The value '%s' is too large for a long value"),
+	
 	
 	INVALID_IMPORT_EXPECTED_STRING("Invalid import syntax. Expected a string but got '%s'"),
 	INVALID_IMPORT_EXPECTED_SEMICOLON("Invalid import syntax. Expected a semicolon but got '%s'"),

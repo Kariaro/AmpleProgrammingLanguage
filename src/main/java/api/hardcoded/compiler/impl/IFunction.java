@@ -27,14 +27,14 @@ public interface IFunction extends IBlock, IStatement, ILocation {
 	HighType getReturnType();
 	
 	/**
-	 * Returns a unmodifiable set of modifiers.
-	 * @return a unmodifiable set of modifiers
+	 * Returns a unmodifiable list of modifiers.
+	 * @return a unmodifiable list of modifiers
 	 */
 	List<Modifier> getModifiers();
 	
 	/**
-	 * Returns a unmodifiable set of statements inside of this function.
-	 * @return a unmodifiable set of statements inside of this function
+	 * Returns a unmodifiable list of statements inside of this function.
+	 * @return a unmodifiable list of statements inside of this function
 	 */
 	List<IStatement> getStatements();
 	

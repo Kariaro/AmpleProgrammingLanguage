@@ -201,6 +201,14 @@ public class ParseTreeOptimizer {
 						parent.set(index, first);
 					}
 					
+					if(first instanceof AtomExpr) {
+						AtomExpr a = (AtomExpr)first;
+						
+						if(a.isNumber()) {
+							parent.set(index, a.convert(expr.size()));
+						}
+					}
+					
 					break;
 				}
 				

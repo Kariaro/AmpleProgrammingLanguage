@@ -6,6 +6,8 @@ import java.util.logging.LogManager;
 
 import hardcoded.compiler.BuildConfiguration;
 import hardcoded.compiler.errors.CompilerException;
+import hardcoded.compiler.instruction.IRProgram;
+import hardcoded.compiler.instruction.IRSerializer;
 import hardcoded.configuration.ConfigurationTest;
 import hardcoded.utils.DomainUtils;
 import hardcoded.utils.FileUtils;
@@ -60,12 +62,6 @@ public class CompilerMain {
 		}
 	}
 	
-	private static enum ActionType {
-		COMPILE,
-		RUN,
-		NONE
-	}
-	
 	private static void printHelpMessage() {
 		try {
 			System.out.println(new String(FileUtils.readInputStream(
@@ -80,82 +76,6 @@ public class CompilerMain {
 		if(!isDeveloper() && args.length < 1) {
 			printHelpMessage();
 			return;
-		}
-		
-		ActionType mode = ActionType.NONE;
-		
-		// TODO: The working directory should be absolute
-		File working_directory = new File("").getAbsoluteFile();
-		List<String> sourceFolders = new ArrayList<>();
-		
-		String sourcePath = null;
-		String outputPath = null;
-		String format = null;
-		
-		// TODO: Make sure that the command line is correctly typed
-		for(int i = 0; i < args.length; i++) {
-			String str = args[i];
-			
-			switch(str) {
-				case "-f": case "-format": {
-					if(i + 1 >= args.length) break;
-					format = args[(i++) + 1];
-					break;
-				}
-				
-				case "-p": {
-					if(i + 1 >= args.length) break;
-					working_directory = new File(args[(i++) + 1]);
-					
-					if(!working_directory.exists()) {
-						System.out.println("Path does not exist");
-						printHelpMessage();
-						return;
-					}
-					
-					// Make sure that the working directory has the absolute path to the file and not a relative path
-					working_directory = working_directory.getAbsoluteFile();
-					
-					break;
-				}
-				
-				case "-run": {
-					if(i + 1 >= args.length) break;
-					sourcePath = args[(i++) + 1];
-					mode = ActionType.RUN;
-					break;
-				}
-				
-				case "-sf": {
-					if(i + 1 >= args.length) break;
-					String string = args[(i++) + 1];
-					for(String path : string.split(";")) {
-						sourceFolders.add(path);
-					}
-					
-					break;
-				}
-				
-				case "-compile": {
-					if(i + 2 >= args.length) break;
-					sourcePath = args[(i++) + 1];
-					outputPath = args[(i++) + 1];
-					mode = ActionType.COMPILE;
-					break;
-				}
-				
-				default: {
-					System.out.println("Invalid argument '" + str + "'\n");
-				}
-				case "-?":
-				case "-h":
-				case "-help": {
-					printHelpMessage();
-					return;
-				}
-			}
-			
-			if(mode != ActionType.NONE) break;
 		}
 		
 		if(isDeveloper()) {
@@ -177,8 +97,6 @@ public class CompilerMain {
 			
 			// file = "tests_2/000_assign_test.hc";
 			
-			mode = ActionType.RUN;
-			format = "ir";
 			String file_name = file;
 			{
 				int index = file.lastIndexOf('.');
@@ -189,11 +107,22 @@ public class CompilerMain {
 				}
 			}
 			
-			working_directory = new File("res/project").getAbsoluteFile();
-			sourcePath = "src/" + file;
-			outputPath = "bin/" + file_name;
+//			mode = ActionType.RUN;
+//			format = "ir";
+//			working_directory = new File("res/project").getAbsoluteFile();
+//			sourcePath = "src/" + file;
+//			outputPath = "bin/" + file_name;
+//			
+//			sourceFolders.add("src");
 			
-			sourceFolders.add("src");
+			file = "main.ample";
+			args = new String[] {
+				"--compile", file,
+				"--dir", new File("res/TEST").getAbsolutePath(),
+				"--paths", "src/;incl/",
+				"--format", "ir",
+				"--output", "bin/" + file_name
+			};
 			
 //			final Thread mainThread = Thread.currentThread();
 //			Thread thread = new Thread(() -> {
@@ -218,76 +147,83 @@ public class CompilerMain {
 //			thread.start();
 		}
 		
-		if(mode == ActionType.NONE) {
-			printHelpMessage();
+		ConfigurationTest config = CommandLine.load(args);
+		System.out.println(config);
+		// ActionType mode = ActionType.valueOf(config.get("compiler.mode").toString().toUpperCase());
+		
+		String mode = config.get("compiler.mode");
+		if(mode.equals("none")) {
+			// Not a correct command
 			return;
 		}
 		
-		if(isDeveloper()) {
-			ConfigurationTest test = new ConfigurationTest();
+		if(mode.equals("run")) {
+			String inputfile = config.get("compiler.inputfile");
+			File file = new File(inputfile);
 			
-			test.set("compiler.format", format);
-			test.set("compiler.directory", working_directory);
-			test.set("compiler.sourcefile", sourcePath);
-			test.set("compiler.outputfile", outputPath);
-			
-			System.out.println(test);
-		}
-		
-		BuildConfiguration config = new BuildConfiguration();
-		config.setOutputFormat(OutputFormat.get(format));
-		config.setWorkingDirectory(working_directory);
-		for(String path : sourceFolders) {
-			config.addSourceFolder(path);
-		}
-		config.setStartFile(sourcePath);
-		config.setOutputFile(outputPath);
-		
-		HCompiler compiler = new HCompiler();
-		compiler.setConfiguration(config);
-		
-		if(mode == ActionType.COMPILE) {
-			System.out.println("---------------------------------------------------------");
-			System.out.println("HardCoded AmpleProgrammingLanguage compiler (2020-10-15) (c)");
-			System.out.println();
-			System.out.printf("WorkingDir  : '%s'\n", config.getWorkingDirectory());
-			System.out.printf("SourceFile  : '%s'\n", sourcePath);
-			System.out.printf("OutputFile  : '%s'\n", outputPath);
-			System.out.printf("Paths       : '%s'\n", sourceFolders);
-			System.out.printf("Format      : %s\n",   Objects.toString(format, "<NONE>"));
-			System.out.println("---------------------------------------------------------");
-			
-			if(!config.isValid())
-				throw new CompilerException("Configuration error: " + config.getLastError());
-			
-			if(Objects.equals(config.getStartFile(), config.getOutputFile()))
-				throw new CompilerException("source and output file cannot be the same file");
-			
-			
-			long start = System.nanoTime();
-			{
-				compiler.build();
-				
-				// TODO: Is this a safe operation?
-				byte[] bytes = compiler.getBytes();
-				FileOutputStream stream = new FileOutputStream(config.getOutputFile());
-				stream.write(bytes, 0, bytes.length);
-				stream.close();
+			try(FileInputStream stream = new FileInputStream(file)) {
+				IRProgram program = IRSerializer.read(stream);
+				AmpleVm.run(program);
+			} catch(IOException e) {
+				System.err.println("Failed to read program '" + file + "'");
+			}
+		} else if(mode.equals("compile")) {
+			BuildConfiguration build_config = new BuildConfiguration();
+			build_config.setOutputFormat(OutputFormat.get(config.get("compiler.format")));
+			build_config.setWorkingDirectory((String)config.get("compiler.directory"));
+			Set<String> paths = config.get("compiler.paths");
+			for(String path : paths) {
+				build_config.addSourceFolder(path);
 			}
 			
-			long time = System.nanoTime() - start;
+			String sourceName = config.get("compiler.inputfile");
+			List<File> startFile = build_config.lookupFile(sourceName);
+			if(startFile.isEmpty()) {
+				System.err.println("The file '" + sourceName + "' does not exist in paths");
+				return;
+			}
 			
-			System.out.println();
-			System.out.println("---------------------------------------------------------");
-			System.out.println("COMPILE FINISHED");
-			System.out.println();
-			System.out.printf("Took: %.4f milliseconds\n", time / 1000000D);
-			System.out.println("---------------------------------------------------------");
-		}
-		
-		if(mode == ActionType.RUN) {
-			compiler.build();
-			AmpleVm.run(compiler.getProgram());
+			build_config.setStartFile(startFile.get(0));
+			build_config.setOutputFile((String)config.get("compiler.outputfile"));
+			
+			HCompiler compiler = new HCompiler();
+			compiler.setConfiguration(build_config);
+			
+			{
+				System.out.println("---------------------------------------------------------");
+				System.out.println("HardCoded AmpleProgrammingLanguage compiler (2020-10-15) (c)");
+				System.out.println();
+				System.out.printf("WorkingDir  : '%s'\n", config.<Object>get("compiler.directory"));
+				System.out.printf("SourceFile  : '%s'\n", config.<Object>get("compiler.inputfile"));
+				System.out.printf("OutputFile  : '%s'\n", config.<Object>get("compiler.outputfile"));
+				System.out.printf("Paths       : '%s'\n", config.<Object>get("compiler.paths"));
+				System.out.printf("Format      : %s\n",   config.<Object>get("compiler.format"));
+				System.out.println("---------------------------------------------------------");
+				
+				if(Objects.equals(build_config.getStartFile(), build_config.getOutputFile()))
+					throw new CompilerException("source and output file cannot be the same file");
+				
+				
+				long start = System.nanoTime();
+				{
+					compiler.build();
+					
+					// TODO: Is this a safe operation?
+					byte[] bytes = compiler.getBytes();
+					FileOutputStream stream = new FileOutputStream(build_config.getOutputFile());
+					stream.write(bytes, 0, bytes.length);
+					stream.close();
+				}
+				
+				long time = System.nanoTime() - start;
+				
+				System.out.println();
+				System.out.println("---------------------------------------------------------");
+				System.out.println("COMPILE FINISHED");
+				System.out.println();
+				System.out.printf("Took: %.4f milliseconds\n", time / 1000000D);
+				System.out.println("---------------------------------------------------------");
+			}
 		}
 	}
 	

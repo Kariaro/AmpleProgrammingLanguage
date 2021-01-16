@@ -162,7 +162,13 @@ public class AmpleVm {
 					
 					if(CompilerMain.isDeveloper() || true) {
 						if(a.longValue() >= 0xb8000 && a.longValue() < 0xc0000) {
-							buffer.write((int)(a.longValue() - 0xb8000), (char)b.longValue());
+							// buffer.write((int)(a.longValue() - 0xb8000), (char)b.longValue());
+							int idx_offset = (int)(a.longValue() - 0xb8000);
+							long idx_value = b.longValue();
+							for(int i = 0; i < b.size(); i++) {
+								char c = (char)((idx_value >>> (i * 8L)) & 0xff);
+								buffer.write(idx_offset + i, c);
+							}
 							
 							if(callback != null) {
 								callback.bufferChanged(buffer, AmpleBufferCallback.BUFFER_CHANGED);
