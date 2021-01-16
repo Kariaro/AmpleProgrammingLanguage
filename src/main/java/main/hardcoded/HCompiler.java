@@ -32,10 +32,6 @@ public class HCompiler {
 			throw new CompilerException("Configuration was not valid: config was null");
 		}
 		
-		if(!config.isValid()) {
-			throw new CompilerException("Configuration was not valid: " + config.getLastError());
-		}
-		
 		AmpleCompilerBuild builder = new AmpleCompilerBuild();
 		program = builder.build(config);
 		

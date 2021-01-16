@@ -12,6 +12,7 @@ import hardcoded.compiler.constants.Modifiers.Modifier;
 import hardcoded.compiler.context.Lang;
 import hardcoded.compiler.errors.*;
 import hardcoded.compiler.expression.*;
+import hardcoded.compiler.file.FirFile;
 import hardcoded.compiler.impl.IBlock;
 import hardcoded.compiler.impl.IProgram;
 import hardcoded.compiler.statement.*;
@@ -59,6 +60,11 @@ public class ParseTreeGenerator {
 	private Program currentProgram;
 	private File sourceFile;
 	private Lang reader;
+	private FirFile fir;
+	
+	public ParseTreeGenerator() {
+		fir = new FirFile("");
+	}
 	
 	private boolean ran = false;
 	public Program init(BuildConfiguration config, File mainFile) {
@@ -189,7 +195,8 @@ public class ParseTreeGenerator {
 			
 			if(!reader.next().valueEquals(";")) syntaxError(CompilerError.INVALID_IMPORT_EXPECTED_SEMICOLON, reader.value());
 			reader.next();
-			importFile(pathname);
+			fir.imports.add(pathname);
+			//importFile(pathname);
 		} else if(value.equals("set")) {
 			if(!isValidName(reader.next())) syntaxError(CompilerError.INVALID_SET_PROCESSOR_NAME, reader);
 			String name = reader.value(); // This should be marked...
@@ -1121,13 +1128,23 @@ public class ParseTreeGenerator {
 				}
 				
 				private long parseLong(String value) {
-					if(value.startsWith("0x")) return Long.parseLong(value.substring(2, value.length() - 1), 16);
-					else return Long.parseLong(value.substring(0, value.length() - 1));
+					try {
+						if(value.startsWith("0x")) return Long.parseLong(value.substring(2, value.length() - 1), 16);
+						else return Long.parseLong(value.substring(0, value.length() - 1));
+					} catch(NumberFormatException e) {
+						syntaxError(CompilerError.LONG_VALUE_TOO_LARGE, value);
+						return 0;
+					}
 				}
 				
 				private int parseInteger(String value) {
-					if(value.startsWith("0x")) return Integer.parseInt(value.substring(2), 16);
-					else return Integer.parseInt(value);
+					try {
+						if(value.startsWith("0x")) return Integer.parseInt(value.substring(2), 16);
+						else return Integer.parseInt(value);
+					} catch(NumberFormatException e) {
+						syntaxError(CompilerError.INTEGER_VALUE_TOO_LARGE, value);
+						return 0;
+					}
 				}
 			}.parse();
 			

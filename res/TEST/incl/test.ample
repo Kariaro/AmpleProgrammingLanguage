@@ -1,0 +1,7 @@
+
+void test_check() {
+	*((char*)(0xb800c)) = ' ';
+	*((char*)(0xb800d)) = '1';
+	*((char*)(0xb800e)) = '0';
+	*((char*)(0xb800f)) = '1';
+}
