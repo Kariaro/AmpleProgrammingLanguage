@@ -29,5 +29,6 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="lib" path="res"/>
+	<classpathentry kind="lib" path="res_project"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

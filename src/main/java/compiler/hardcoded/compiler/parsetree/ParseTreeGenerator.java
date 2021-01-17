@@ -55,7 +55,7 @@ public class ParseTreeGenerator {
 	
 	// TODO: This build config is only used for searching for imported files!
 	//       Could we maybe break this into another file or remove it?
-	private BuildConfiguration config;
+	// private BuildConfiguration config;
 	private Function currentFunction;
 	private Program currentProgram;
 	private File sourceFile;
@@ -75,7 +75,7 @@ public class ParseTreeGenerator {
 			defined_types.put(t.name(), t);
 		}
 		
-		this.config = config;
+		//this.config = config;
 		this.currentProgram = new Program();
 		
 		try {
@@ -89,39 +89,39 @@ public class ParseTreeGenerator {
 		return currentProgram;
 	}
 	
-	private void importFile(String path) {
-		List<File> files = config.lookupFile(path);
-		if(files.isEmpty()) {
-			addSyntaxError(CompilerError.MESSAGE, -2, 1, "The file '" + path + "' does not exist");
-			return;
-		}
-		
-		if(files.size() > 1) {
-			addSyntaxError(CompilerError.MESSAGE, -2, 1, "The file '" + path + "' has multiple definitions\n" + files);
-			return;
-		}
-
-		// TODO: Disallow cannonical paths.
-		/* Check the canonical path to disallow using relative paths.
-		 * 
-		 * The paths   [ "../src/file.hc" ] AND [ "file.hc" ]
-		 * could point towards the same file but only when calculating
-		 * the canonical file path we could see that they are the same.
-		 */
-		File sourceFile = files.get(0);
-		
-		if(!sourceFile.exists()) {
-			addSyntaxError(CompilerError.MESSAGE, -2, 1, "The file '" + path + "' does not exist");
-			return;
-		}
-		
-		if(currentProgram.hasImportedFile(sourceFile)) {
-			addSyntaxWarning(CompilerError.MESSAGE, -2, 1, "The file '" + path + "' has already been imported");
-			return;
-		}
-		
-		importFile(sourceFile);
-	}
+//	private void importFile(String path) {
+//		List<File> files = config.lookupFile(path);
+//		if(files.isEmpty()) {
+//			addSyntaxError(CompilerError.MESSAGE, -2, 1, "The file '" + path + "' does not exist");
+//			return;
+//		}
+//		
+//		if(files.size() > 1) {
+//			addSyntaxError(CompilerError.MESSAGE, -2, 1, "The file '" + path + "' has multiple definitions\n" + files);
+//			return;
+//		}
+//
+//		// TODO: Disallow cannonical paths.
+//		/* Check the canonical path to disallow using relative paths.
+//		 * 
+//		 * The paths   [ "../src/file.hc" ] AND [ "file.hc" ]
+//		 * could point towards the same file but only when calculating
+//		 * the canonical file path we could see that they are the same.
+//		 */
+//		File sourceFile = files.get(0);
+//		
+//		if(!sourceFile.exists()) {
+//			addSyntaxError(CompilerError.MESSAGE, -2, 1, "The file '" + path + "' does not exist");
+//			return;
+//		}
+//		
+//		if(currentProgram.hasImportedFile(sourceFile)) {
+//			addSyntaxWarning(CompilerError.MESSAGE, -2, 1, "The file '" + path + "' has already been imported");
+//			return;
+//		}
+//		
+//		importFile(sourceFile);
+//	}
 	
 	// TODO: Supply more information about the token.
 	private void importFile(File newSourceFile, byte... optionalBytes) {
@@ -195,7 +195,7 @@ public class ParseTreeGenerator {
 			
 			if(!reader.next().valueEquals(";")) syntaxError(CompilerError.INVALID_IMPORT_EXPECTED_SEMICOLON, reader.value());
 			reader.next();
-			fir.imports.add(pathname);
+			fir.addImport(pathname);
 			//importFile(pathname);
 		} else if(value.equals("set")) {
 			if(!isValidName(reader.next())) syntaxError(CompilerError.INVALID_SET_PROCESSOR_NAME, reader);
@@ -1261,6 +1261,7 @@ public class ParseTreeGenerator {
 		));
 	}
 	
+	@SuppressWarnings("unused")
 	private void addSyntaxWarning(CompilerError error, int offset, int count, Object... args) {
 		currentProgram.syntaxMarkers.add(new CompilerMarker(
 			sourceFile,
