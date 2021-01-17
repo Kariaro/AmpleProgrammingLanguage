@@ -4,13 +4,15 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-import hardcoded.configuration.ConfigurationTest;
+import hardcoded.configuration.AmpleOptions;
+import hardcoded.configuration.Config;
 import hardcoded.utils.FileUtils;
 
 /**
- * Testing some code
+ * Util class for parsing command line options
  * 
  * @author HardCoded
+ * @since v0.2
  */
 public class CommandLine {
 	
@@ -41,9 +43,9 @@ public class CommandLine {
 	 *[--dir, -d]       "project directory"
 	 *</pre>
 	 */
-	public static ConfigurationTest load(String[] args) {
-		ConfigurationTest config = new ConfigurationTest();
-		config.set("compiler.mode", "none");
+	public static Config load(String[] args) {
+		Config config = new Config();
+		config.set(AmpleOptions.COMPILER_MODE, "none");
 		
 		if(args.length < 1) {
 			help();
@@ -60,10 +62,10 @@ public class CommandLine {
 		return config;
 	}
 	
-	private static ConfigurationTest load_run(ListIterator<String> args) {
-		ConfigurationTest config = new ConfigurationTest();
-		config.set("compiler.directory", "");
-		config.set("compiler.mode", "none");
+	private static Config load_run(ListIterator<String> args) {
+		Config config = new Config();
+		config.set(AmpleOptions.COMPILER_DIRECTORY, "");
+		config.set(AmpleOptions.COMPILER_MODE, "none");
 		
 		if(!args.hasNext()) {
 			System.err.println("No file specified. [--run]");
@@ -78,17 +80,17 @@ public class CommandLine {
 			return config;
 		}
 		
-		config.set("compiler.mode", "run");
-		config.set("compiler.input", file.getAbsolutePath());
+		config.set(AmpleOptions.COMPILER_MODE, "run");
+		config.set(AmpleOptions.COMPILER_INPUT_FILE, file.getAbsolutePath());
 		return config;
 	}
 	
-	private static ConfigurationTest load_compile(ListIterator<String> args) {
-		ConfigurationTest config = new ConfigurationTest();
-		config.set("compiler.mode", "none");
-		config.set("compiler.paths", new LinkedHashSet<String>());
-		config.set("compiler.directory", "");
-		config.set("compiler.format", "ir");
+	private static Config load_compile(ListIterator<String> args) {
+		Config config = new Config();
+		config.set(AmpleOptions.COMPILER_MODE, "none");
+		config.set(AmpleOptions.COMPILER_SOURCE_PATHS, new LinkedHashSet<String>());
+		config.set(AmpleOptions.COMPILER_DIRECTORY, "");
+		config.set(AmpleOptions.COMPILER_FORMAT, "ir");
 		
 		if(!args.hasNext()) {
 			System.err.println("Expected a paths relative file. [--compile]");
@@ -96,7 +98,7 @@ public class CommandLine {
 		}
 		
 		String cmd = args.next();
-		config.set("compiler.inputfile", cmd);
+		config.set(AmpleOptions.COMPILER_INPUT_FILE, cmd);
 		
 		while(args.hasNext()) {
 			cmd = args.next().toLowerCase();
@@ -105,7 +107,7 @@ public class CommandLine {
 				case "-p":
 				case "--paths": {
 					if(args.hasNext()) {
-						Set<String> set = config.get("compiler.paths");
+						Set<String> set = config.get(AmpleOptions.COMPILER_SOURCE_PATHS);
 						String str = args.next();
 						set.addAll(List.of(str.split(";")));
 					}
@@ -114,19 +116,19 @@ public class CommandLine {
 				
 				case "-d":
 				case "--dir": {
-					if(args.hasNext()) config.set("compiler.directory", args.next());
+					if(args.hasNext()) config.set(AmpleOptions.COMPILER_DIRECTORY, args.next());
 					break;
 				}
 				
 				case "-x":
 				case "--format": {
-					if(args.hasNext()) config.set("compiler.format", args.next());
+					if(args.hasNext()) config.set(AmpleOptions.COMPILER_FORMAT, args.next());
 					break;
 				}
 				
 				case "-o":
 				case "--output": {
-					if(args.hasNext()) config.set("compiler.outputfile", args.next());
+					if(args.hasNext()) config.set(AmpleOptions.COMPILER_OUTPUT_FILE, args.next());
 					break;
 				}
 				
@@ -147,11 +149,11 @@ public class CommandLine {
 		}
 		
 		File directory; {
-			String target = config.get("compiler.directory");
+			String target = config.get(AmpleOptions.COMPILER_DIRECTORY);
 			
 			if(target.isBlank()) {
 				System.err.println("Project directory was not specified. [--dir, -d]");
-				config.set("compiler.mode", "none");
+				config.set(AmpleOptions.COMPILER_MODE, "none");
 				help();
 				return config;
 			}
@@ -159,7 +161,7 @@ public class CommandLine {
 			directory = new File(target);
 			if(!directory.isAbsolute()) {
 				System.err.println("Project directory must be an absolute path. [--dir, -d]");
-				config.set("compiler.mode", "none");
+				config.set(AmpleOptions.COMPILER_MODE, "none");
 				help();
 				return config;
 			}
@@ -167,7 +169,7 @@ public class CommandLine {
 		
 		{
 			Set<String> converted = new LinkedHashSet<>();
-			Set<String> paths = config.get("compiler.paths");
+			Set<String> paths = config.get(AmpleOptions.COMPILER_SOURCE_PATHS);
 			
 			for(String path : paths) {
 				try {
@@ -188,7 +190,7 @@ public class CommandLine {
 		}
 		
 		{
-			String target = config.get("compiler.outputfile");
+			String target = config.get(AmpleOptions.COMPILER_OUTPUT_FILE);
 			if(target.isBlank()) {
 				System.err.println("Output file was not specified. [--output, -o]");
 				return config;
@@ -196,11 +198,11 @@ public class CommandLine {
 			
 			File output = new File(target);
 			if(!output.isAbsolute()) {
-				config.set("compiler.outputfile", new File(directory, target).getAbsolutePath());
+				config.set(AmpleOptions.COMPILER_OUTPUT_FILE, new File(directory, target).getAbsolutePath());
 			}
 		}
 
-		config.set("compiler.mode", "compile");
+		config.set(AmpleOptions.COMPILER_MODE, "compile");
 		return config;
 	}
 }

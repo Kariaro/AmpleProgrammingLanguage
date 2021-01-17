@@ -1,6 +1,7 @@
 package hardcoded.compiler.file;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,7 +11,10 @@ import java.util.List;
  * @author HardCoded
  * @since v0.2
  */
-public class FirFile implements IFile {
+public class FirFile implements IFile, Serializable {
+	private static final long serialVersionUID = -5144763224012186961L;
+	
+	// TODO: Types
 	public static final String EXTENSION = ".fir";
 	
 	private final File file;
@@ -47,5 +51,9 @@ public class FirFile implements IFile {
 	@Override
 	public boolean isDirectory() {
 		return file.isDirectory();
+	}
+	
+	public void addImport(String name) {
+		imports.add(name);
 	}
 }

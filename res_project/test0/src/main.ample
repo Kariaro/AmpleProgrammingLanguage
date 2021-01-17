@@ -1,0 +1,6 @@
+@import "test";
+
+void main() {
+	
+	return;
+}

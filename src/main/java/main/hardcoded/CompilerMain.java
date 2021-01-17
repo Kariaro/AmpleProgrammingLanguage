@@ -8,9 +8,11 @@ import hardcoded.compiler.BuildConfiguration;
 import hardcoded.compiler.errors.CompilerException;
 import hardcoded.compiler.instruction.IRProgram;
 import hardcoded.compiler.instruction.IRSerializer;
-import hardcoded.configuration.ConfigurationTest;
+import hardcoded.configuration.AmpleOptions;
+import hardcoded.configuration.Config;
 import hardcoded.utils.DomainUtils;
 import hardcoded.utils.FileUtils;
+import hardcoded.utils.PathUtils;
 import hardcoded.vm.AmpleVm;
 
 /**
@@ -72,93 +74,69 @@ public class CompilerMain {
 		}
 	}
 	
+	public static boolean isDeveloper() {
+		return "true".equalsIgnoreCase(System.getProperty("hardcoded.developer"))
+			&& !DomainUtils.isJarRuntime();
+	}
+	
+//	final Thread mainThread = Thread.currentThread();
+//	Thread thread = new Thread(() -> {
+//		String last = "";
+//		try {
+//			while(true) {
+//				StackTraceElement[] array = Thread.getAllStackTraces().get(mainThread);
+//				String curr = Arrays.deepToString(array);
+//				
+//				if(!last.equals(curr)) {
+//					last = curr;
+//					
+//					System.out.println("=".repeat(100));
+//					System.out.println(curr.replace(", ", "\n"));
+//				}
+//			}
+//		} catch(Exception e) {
+//			e.printStackTrace();
+//		}
+//	});
+//	thread.setDaemon(true);
+//	thread.start();
+	
+	private static String[] getDevArgs() {
+		String file = "main.hc";
+		file = "crash.ample";
+		file = "main.ample";
+		
+		String file_name = PathUtils.getFileName(file) + ".lir";
+		
+		String[] array = new String[] {
+			"--compile", file,
+			"--dir", new File("res_project/test0").getAbsolutePath(),
+			"--paths", "src/;incl/",
+			"--format", "ir",
+			"--output", "bin/" + file_name
+		};
+		
+		return array;
+	}
+	
 	public static void main(String[] args) throws Exception {
-		if(!isDeveloper() && args.length < 1) {
+		if(isDeveloper()) {
+			args = getDevArgs();
+		} else if(args.length < 1) {
 			printHelpMessage();
 			return;
 		}
 		
-		if(isDeveloper()) {
-			// Developer variables and test environment
-			
-			String file = "main.hc";
-			file = "crash.ample";
-			//file = "test3.ample";
-			// file = "tests/000_pointer.hc";
-			// file = "prim.hc";
-			// file = "tests/001_comma.hc";
-			// file = "tests/002_invalid_assign.hc";
-			// file = "tests/003_invalid_brackets.hc";
-			// file = "tests/004_cor_cand.hc";
-			// file = "tests/005_assign_comma.hc";
-			// file = "tests/006_cast_test.hc";
-			// file = "test_syntax.hc";
-			// file = "prog.hc";
-			
-			// file = "tests_2/000_assign_test.hc";
-			
-			String file_name = file;
-			{
-				int index = file.lastIndexOf('.');
-				if(index < 0) {
-					file_name = file + ".lir";
-				} else {
-					file_name = file.substring(0, index) + ".lir";
-				}
-			}
-			
-//			mode = ActionType.RUN;
-//			format = "ir";
-//			working_directory = new File("res/project").getAbsoluteFile();
-//			sourcePath = "src/" + file;
-//			outputPath = "bin/" + file_name;
-//			
-//			sourceFolders.add("src");
-			
-			file = "main.ample";
-			args = new String[] {
-				"--compile", file,
-				"--dir", new File("res/TEST").getAbsolutePath(),
-				"--paths", "src/;incl/",
-				"--format", "ir",
-				"--output", "bin/" + file_name
-			};
-			
-//			final Thread mainThread = Thread.currentThread();
-//			Thread thread = new Thread(() -> {
-//				String last = "";
-//				try {
-//					while(true) {
-//						StackTraceElement[] array = Thread.getAllStackTraces().get(mainThread);
-//						String curr = Arrays.deepToString(array);
-//						
-//						if(!last.equals(curr)) {
-//							last = curr;
-//							
-//							System.out.println("=".repeat(100));
-//							System.out.println(curr.replace(", ", "\n"));
-//						}
-//					}
-//				} catch(Exception e) {
-//					e.printStackTrace();
-//				}
-//			});
-//			thread.setDaemon(true);
-//			thread.start();
-		}
-		
-		ConfigurationTest config = CommandLine.load(args);
+		Config config = CommandLine.load(args);
 		System.out.println(config);
-		// ActionType mode = ActionType.valueOf(config.get("compiler.mode").toString().toUpperCase());
 		
-		String mode = config.get("compiler.mode");
-		if(mode.equals("none")) {
-			// Not a correct command
-			return;
-		}
+		String mode = config.get(AmpleOptions.COMPILER_MODE);
+		
+		// Stop the compiler if no mode was specified
+		if(mode.equals("none")) return;
 		
 		if(mode.equals("run")) {
-			String inputfile = config.get("compiler.inputfile");
+			String inputfile = config.get(AmpleOptions.COMPILER_INPUT_FILE);
 			File file = new File(inputfile);
 			
 			try(FileInputStream stream = new FileInputStream(file)) {
@@ -169,14 +147,14 @@ public class CompilerMain {
 			}
 		} else if(mode.equals("compile")) {
 			BuildConfiguration build_config = new BuildConfiguration();
-			build_config.setOutputFormat(OutputFormat.get(config.get("compiler.format")));
-			build_config.setWorkingDirectory((String)config.get("compiler.directory"));
-			Set<String> paths = config.get("compiler.paths");
+			build_config.setOutputFormat(OutputFormat.get(config.get(AmpleOptions.COMPILER_FORMAT)));
+			build_config.setWorkingDirectory((String)config.get(AmpleOptions.COMPILER_DIRECTORY));
+			Set<String> paths = config.get(AmpleOptions.COMPILER_SOURCE_PATHS);
 			for(String path : paths) {
 				build_config.addSourceFolder(path);
 			}
 			
-			String sourceName = config.get("compiler.inputfile");
+			String sourceName = config.get(AmpleOptions.COMPILER_INPUT_FILE);
 			List<File> startFile = build_config.lookupFile(sourceName);
 			if(startFile.isEmpty()) {
 				System.err.println("The file '" + sourceName + "' does not exist in paths");
@@ -184,20 +162,20 @@ public class CompilerMain {
 			}
 			
 			build_config.setStartFile(startFile.get(0));
-			build_config.setOutputFile((String)config.get("compiler.outputfile"));
+			build_config.setOutputFile((String)config.get(AmpleOptions.COMPILER_OUTPUT_FILE));
 			
 			HCompiler compiler = new HCompiler();
 			compiler.setConfiguration(build_config);
 			
 			{
 				System.out.println("---------------------------------------------------------");
-				System.out.println("HardCoded AmpleProgrammingLanguage compiler (2020-10-15) (c)");
+				System.out.println("HardCoded AmpleProgrammingLanguage compiler (2021-01-17) (c)");
 				System.out.println();
-				System.out.printf("WorkingDir  : '%s'\n", config.<Object>get("compiler.directory"));
-				System.out.printf("SourceFile  : '%s'\n", config.<Object>get("compiler.inputfile"));
-				System.out.printf("OutputFile  : '%s'\n", config.<Object>get("compiler.outputfile"));
-				System.out.printf("Paths       : '%s'\n", config.<Object>get("compiler.paths"));
-				System.out.printf("Format      : %s\n",   config.<Object>get("compiler.format"));
+				System.out.printf("WorkingDir  : '%s'\n", config.<Object>get(AmpleOptions.COMPILER_DIRECTORY));
+				System.out.printf("SourceFile  : '%s'\n", config.<Object>get(AmpleOptions.COMPILER_INPUT_FILE));
+				System.out.printf("OutputFile  : '%s'\n", config.<Object>get(AmpleOptions.COMPILER_OUTPUT_FILE));
+				System.out.printf("Paths       : '%s'\n", config.<Object>get(AmpleOptions.COMPILER_SOURCE_PATHS));
+				System.out.printf("Format      : %s\n",   config.<Object>get(AmpleOptions.COMPILER_FORMAT));
 				System.out.println("---------------------------------------------------------");
 				
 				if(Objects.equals(build_config.getStartFile(), build_config.getOutputFile()))
@@ -225,10 +203,5 @@ public class CompilerMain {
 				System.out.println("---------------------------------------------------------");
 			}
 		}
-	}
-	
-	public static boolean isDeveloper() {
-		return "true".equalsIgnoreCase(System.getProperty("hardcoded.developer"))
-			&& !DomainUtils.isJarRuntime();
 	}
 }
