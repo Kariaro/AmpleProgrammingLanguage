@@ -27,9 +27,9 @@ import hardcoded.utils.StringUtils;
 /**
  * 
  * @author HardCoded
- * @since v0.2
+ * @since v0.0
  */
-public class ParseTreeGenerator {
+public class ParseTreeGeneratorOld {
 	private static final LexerTokenizer LEXER;
 	
 	// FIXME: Add global variables
@@ -41,7 +41,7 @@ public class ParseTreeGenerator {
 		LexerTokenizer lexer = null;
 		
 		try {
-			lexer = LexerFactory.load(ParseTreeGenerator.class.getResourceAsStream("/lexer/lexer.lex"));
+			lexer = LexerFactory.load(ParseTreeGeneratorOld.class.getResourceAsStream("/lexer/lexer.lex"));
 		} catch(IOException e) {
 			e.printStackTrace();
 		}
@@ -62,17 +62,14 @@ public class ParseTreeGenerator {
 	private Lang reader;
 	private FirFile fir;
 	
-	public ParseTreeGenerator() {
-		
+	public ParseTreeGeneratorOld() {
+		fir = new FirFile("");
 	}
 	
-	// TODO: Make this class reusable
 	private boolean ran = false;
 	public Program init(BuildConfiguration config, File mainFile) {
 		if(ran) throw new CompilerException("ParseTreeGenerator is not reusable");
 		ran = true;
-		
-		this.fir = new FirFile(mainFile);
 		
 		for(HighType t : Primitives.getAllTypes()) {
 			defined_types.put(t.name(), t);
@@ -91,6 +88,40 @@ public class ParseTreeGenerator {
 		
 		return currentProgram;
 	}
+	
+//	private void importFile(String path) {
+//		List<File> files = config.lookupFile(path);
+//		if(files.isEmpty()) {
+//			addSyntaxError(CompilerError.MESSAGE, -2, 1, "The file '" + path + "' does not exist");
+//			return;
+//		}
+//		
+//		if(files.size() > 1) {
+//			addSyntaxError(CompilerError.MESSAGE, -2, 1, "The file '" + path + "' has multiple definitions\n" + files);
+//			return;
+//		}
+//
+//		// TODO: Disallow cannonical paths.
+//		/* Check the canonical path to disallow using relative paths.
+//		 * 
+//		 * The paths   [ "../src/file.hc" ] AND [ "file.hc" ]
+//		 * could point towards the same file but only when calculating
+//		 * the canonical file path we could see that they are the same.
+//		 */
+//		File sourceFile = files.get(0);
+//		
+//		if(!sourceFile.exists()) {
+//			addSyntaxError(CompilerError.MESSAGE, -2, 1, "The file '" + path + "' does not exist");
+//			return;
+//		}
+//		
+//		if(currentProgram.hasImportedFile(sourceFile)) {
+//			addSyntaxWarning(CompilerError.MESSAGE, -2, 1, "The file '" + path + "' has already been imported");
+//			return;
+//		}
+//		
+//		importFile(sourceFile);
+//	}
 	
 	// TODO: Supply more information about the token.
 	private void importFile(File newSourceFile, byte... optionalBytes) {
@@ -402,7 +433,6 @@ public class ParseTreeGenerator {
 	// Check if a expression does any modification
 	private boolean hasModifications(Expression expr) {
 		switch(expr.type()) {
-			case placeholder_call:
 			case call:
 			case jump:
 			case label:
@@ -632,7 +662,9 @@ public class ParseTreeGenerator {
 		reader.mark();
 		
 		try {
-			// This is a recursive descent parser.
+			/*
+			 * This is a recursive descent parser.
+			 */
 			Expression expr = new Object() {
 				private ExprType[] _e(ExprType... array) { return array; }
 				private String[] _s(String... array) { return array; }
@@ -935,61 +967,32 @@ public class ParseTreeGenerator {
 									break;
 								}
 								
-								OpExpr o;
+								OpExpr o = new OpExpr(call, lhs);
 								reader.next();
 								
-								// TODO: If the function was defined inside this file we do this otherwise we do that during hte linking stage
+								// Calling a function
+								Function func = currentProgram.getFunctionByName(
+									((AtomExpr)lhs).identifier().name()
+								);
 								
 								boolean closed = false;
 								
-								if(((AtomExpr)lhs).identifier() == null) {
-									o = new OpExpr(placeholder_call, lhs);
+								int length = func.arguments.size();
+								for(int i = 0; i < length; i++) {
+									Expression arg = e14();
+									if(arg == null) syntaxError(CompilerError.INVALID_FUNCTION_CALL_PARAMETER);
+									o.add(arg);
 									
-									if(reader.valueEquals(")")) {
-										reader.next();
-										closed = true;
-									} else {
-										// Link this function
-										while(true) {
-											Expression arg = e14();
-											
-											if(arg == Expression.EMPTY) syntaxError(CompilerError.INVALID_FUNCTION_CALL_PARAMETER);
-											o.add(arg);
-											
-											if(reader.valueEqualsAdvance(",")) {
-												continue;
-											}
-											
-											if(!reader.valueEqualsAdvance(")")) syntaxError(CompilerError.UNCLOSED_CALL_PARENTHESES, reader);
-											closed = true;
-											break;
-										}
+									if(reader.valueEqualsAdvance(",")) {
+										if(i == length - 1) syntaxError(CompilerError.TOO_MANY_FUNCTION_CALL_ARGUMENTS, func.name, length + (length == 1 ? " argument":"arguments"));
+										continue;
 									}
-								} else {
-									// Calling a function
-									Function func = currentProgram.getFunctionByName(
-										((AtomExpr)lhs).identifier().name()
-									);
 									
-									o = new OpExpr(call, lhs);
+									if(i != length - 1) syntaxError(CompilerError.NOT_ENOUGH_FUNCTION_CALL_ARGUMENTS, func.name, length + (length == 1 ? " argument":"arguments"), i + 1);
 									
-									int length = func.arguments.size();
-									for(int i = 0; i < length; i++) {
-										Expression arg = e14();
-										if(arg == Expression.EMPTY) syntaxError(CompilerError.INVALID_FUNCTION_CALL_PARAMETER);
-										o.add(arg);
-										
-										if(reader.valueEqualsAdvance(",")) {
-											if(i == length - 1) syntaxError(CompilerError.TOO_MANY_FUNCTION_CALL_ARGUMENTS, func.name, length + (length == 1 ? " argument":"arguments"));
-											continue;
-										}
-										
-										if(i != length - 1) syntaxError(CompilerError.NOT_ENOUGH_FUNCTION_CALL_ARGUMENTS, func.name, length + (length == 1 ? " argument":"arguments"), i + 1);
-										
-										if(!reader.valueEqualsAdvance(")")) syntaxError(CompilerError.UNCLOSED_CALL_PARENTHESES, reader);
-										closed = true;
-										break;
-									}
+									if(!reader.valueEqualsAdvance(")")) syntaxError(CompilerError.UNCLOSED_CALL_PARENTHESES, reader);
+									closed = true;
+									break;
 								}
 								
 								if(!closed) {
@@ -1000,7 +1003,6 @@ public class ParseTreeGenerator {
 								continue;
 							}
 						}
-						
 						break;
 					}
 					
@@ -1104,19 +1106,15 @@ public class ParseTreeGenerator {
 								return new AtomExpr(currentProgram.getFunction(value));
 							}
 							
-							// NOTE: This is a placeholder expression
-							// syntaxError(CompilerError.UNDECLARED_VARIABLE_OR_FUNCTION, value);
-							addSyntaxWarning(CompilerError.UNDECLARED_VARIABLE_OR_FUNCTION, 0, 1, value);
-							reader.next();
-							return new AtomExpr(value);
+							syntaxError(CompilerError.UNDECLARED_VARIABLE_OR_FUNCTION, value);
 						} else {
 							reader.next();
 							return new AtomExpr(currentFunction.getIdentifier(value));
 						}
 						
-						// reader.next();
+						reader.next();
 						// FIXME: null is not allowed. Return a error expression
-						// return Expression.EMPTY;
+						return Expression.EMPTY;
 					}
 					
 					if(reader.valueEqualsAdvance("(")) {
@@ -1263,6 +1261,7 @@ public class ParseTreeGenerator {
 		));
 	}
 	
+	@SuppressWarnings("unused")
 	private void addSyntaxWarning(CompilerError error, int offset, int count, Object... args) {
 		currentProgram.syntaxMarkers.add(new CompilerMarker(
 			sourceFile,
@@ -1337,7 +1336,7 @@ public class ParseTreeGenerator {
 	 * @return
 	 */
 	public static IProgram loadParseTreeFromBytes(byte[] bytes) {
-		ParseTreeGenerator generator = new ParseTreeGenerator();
+		ParseTreeGeneratorOld generator = new ParseTreeGeneratorOld();
 		Program program = new Program();
 		
 		try {

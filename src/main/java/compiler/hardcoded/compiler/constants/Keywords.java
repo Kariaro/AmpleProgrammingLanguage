@@ -13,6 +13,9 @@ public final class Keywords {
 	// TODO: Design feature. A break statement can break out of any nested branch. if, switch, while, for
 	//       the keyword is 'lbreak' or 'lbreak <expr>' leaves <expr> branches.
 	//       lbreak, break out of a branch directly. Jump to end of branch..
+	
+	// TODO: This file should contain all other keywords such as
+	//       'int', 'long' .. because they represent words not usable in names.
 	static {
 		KEYWORDS = Set.of(
 			"switch", "case", "default",

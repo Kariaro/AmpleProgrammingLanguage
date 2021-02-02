@@ -1,7 +1,6 @@
 package hardcoded.compiler.impl;
 
 import java.util.List;
-import java.util.Set;
 
 import hardcoded.compiler.errors.SyntaxMarker;
 
@@ -11,7 +10,7 @@ import hardcoded.compiler.errors.SyntaxMarker;
  * <p>The internal class is implemented here {@linkplain hardcoded.compiler.Program}
  * 
  * @author HardCoded
- * @since v0.1
+ * @since v0.2
  */
 public interface IProgram {
 	/**
@@ -21,10 +20,10 @@ public interface IProgram {
 	List<IFunction> getFunctions();
 	
 	/**
-	 * Returns a unmodifiable set of all imported files.
-	 * @return a unmodifiable set of all imported files
+	 * Returns a unmodifiable list of imported files.
+	 * @return a unmodifiable list of imported files
 	 */
-	Set<String> getImportedFiles();
+	List<String> getImportedFiles();
 	
 	/**
 	 * Returns a unmodifiable list of syntax markers.

@@ -61,6 +61,7 @@ public class Function implements IFunction, Printable {
 		return null;
 	}
 	
+	// TODO: Rename to hasLocalVariable
 	public boolean hasIdentifier(String name) {
 		for(Identifier var : arguments) {
 			if(var.name().equals(name)) return true;

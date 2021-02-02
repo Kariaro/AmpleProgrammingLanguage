@@ -12,20 +12,24 @@ import hardcoded.visualization.Printable;
 
 /**
  * A program class that contains blocks.
+ * 
+ * @author HardCoded
+ * @since v0.1
  */
 public final class Program implements IProgram, Printable {
+	// TODO: We should not save identifiers like this!
 	private List<Identifier> idents;
 	private int function_index;
 	
 	public List<SyntaxMarker> syntaxMarkers;
-	public Set<String> importedFiles;
+	public List<String> importedFiles;
 	public List<Function> functions;
 	public boolean hasErrors;
 	
 	
 	public Program() {
 		syntaxMarkers = new ArrayList<>();
-		importedFiles = new HashSet<>();
+		importedFiles = new ArrayList<>();
 		
 		idents = new ArrayList<>();
 		functions = new ArrayList<>();
@@ -39,9 +43,8 @@ public final class Program implements IProgram, Printable {
 		return List.copyOf(syntaxMarkers);
 	}
 	
-	public Set<String> getImportedFiles() {
-		// Import order does not really matter when it's already compiled
-		return Set.copyOf(importedFiles);
+	public List<String> getImportedFiles() {
+		return List.copyOf(importedFiles);
 	}
 	
 	public boolean hasErrors() {

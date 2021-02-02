@@ -1,4 +1,4 @@
-package hardcoded.compiler.parsetree;
+package hardcoded.compiler.parsetree.test;
 
 import static hardcoded.compiler.constants.ExprType.*;
 
@@ -14,7 +14,6 @@ import hardcoded.compiler.errors.*;
 import hardcoded.compiler.expression.*;
 import hardcoded.compiler.file.FirFile;
 import hardcoded.compiler.impl.IBlock;
-import hardcoded.compiler.impl.IProgram;
 import hardcoded.compiler.statement.*;
 import hardcoded.compiler.types.HighType;
 import hardcoded.compiler.types.PrimitiveType;
@@ -29,19 +28,14 @@ import hardcoded.utils.StringUtils;
  * @author HardCoded
  * @since v0.2
  */
-public class ParseTreeGenerator {
+class ParseTreeGeneratorTest {
 	private static final LexerTokenizer LEXER;
-	
-	// FIXME: Add global variables
-	// FIXME: Add non const arrays
-	// FIXME: Defined types should be a part of program and not this generator.
-	// FIXME: GLOBALS should be put inside Program and not the generator.
 	
 	static {
 		LexerTokenizer lexer = null;
 		
 		try {
-			lexer = LexerFactory.load(ParseTreeGenerator.class.getResourceAsStream("/lexer/lexer.lex"));
+			lexer = LexerFactory.load(ParseTreeGeneratorTest.class.getResourceAsStream("/lexer/lexer.lex"));
 		} catch(IOException e) {
 			e.printStackTrace();
 		}
@@ -53,16 +47,13 @@ public class ParseTreeGenerator {
 	private Map<String, Expression> GLOBAL = new LinkedHashMap<>();
 	private Map<String, HighType> defined_types = new HashMap<>();
 	
-	// TODO: This build config is only used for searching for imported files!
-	//       Could we maybe break this into another file or remove it?
-	// private BuildConfiguration config;
 	private Function currentFunction;
 	private Program currentProgram;
 	private File sourceFile;
 	private Lang reader;
 	private FirFile fir;
 	
-	public ParseTreeGenerator() {
+	public ParseTreeGeneratorTest() {
 		
 	}
 	
@@ -78,7 +69,6 @@ public class ParseTreeGenerator {
 			defined_types.put(t.name(), t);
 		}
 		
-		//this.config = config;
 		this.currentProgram = new Program();
 		
 		try {
@@ -92,7 +82,6 @@ public class ParseTreeGenerator {
 		return currentProgram;
 	}
 	
-	// TODO: Supply more information about the token.
 	private void importFile(File newSourceFile, byte... optionalBytes) {
 		byte[] bytes = new byte[0];
 		
@@ -131,6 +120,10 @@ public class ParseTreeGenerator {
 	}
 	
 	private IBlock nextBlock() {
+		// FIXME: Maybe the preprocessor should handle this?
+		// TODO: Global variable
+		// TODO: Structures
+		
 		if(reader.valueEqualsAdvance("@")) {
 			parseCompiler();
 			
@@ -165,7 +158,10 @@ public class ParseTreeGenerator {
 			if(!reader.next().valueEquals(";")) syntaxError(CompilerError.INVALID_IMPORT_EXPECTED_SEMICOLON, reader.value());
 			reader.next();
 			fir.addImport(pathname);
-			//importFile(pathname);
+			
+			// This will be used by the linker
+			currentProgram.importedFiles.add(pathname);
+			
 		} else if(value.equals("set")) {
 			if(!isValidName(reader.next())) syntaxError(CompilerError.INVALID_SET_PROCESSOR_NAME, reader);
 			String name = reader.value(); // This should be marked...
@@ -196,9 +192,7 @@ public class ParseTreeGenerator {
 		if(reader.remaining() < 1) return null;
 		
 		Function func = new Function();
-		while(Modifiers.contains(reader.value())) {
-			func.addModifier(nextFuncModifier());
-		}
+		while(Modifiers.contains(reader.value())) func.addModifier(nextFuncModifier());
 		
 		if(!isType(reader)) addSyntaxError(CompilerError.INVALID_FUNCTION_TYPE, 0, 1, reader.value());
 		func.returnType = getTypeFromSymbol();
@@ -1242,7 +1236,17 @@ public class ParseTreeGenerator {
 	
 	private boolean isValidName(Lang reader) {
 		if(!reader.groupEquals("IDENTIFIER")) return false;
-		if(defined_types.containsKey(reader.value())) return false;
+		
+		// TODO: This should only be for primitive types!
+		if(Primitives.contains(reader.value())) return false;
+		
+		// if(defined_types.containsKey(reader.value())) return false;
+		
+		// We should really just be hiding the types instead of not allowing the name
+		// Imagine the code:
+		// @type word int;
+		// word word = 32; // This should be valid and should not block the type
+		// int test = (word)32; // This should be valid
 		if(GLOBAL.containsKey(reader.value())) return false; // Should only be for globals... 
 		if(Modifiers.contains(reader.value())) return false;
 		if(Keywords.contains(reader.value())) return false;
@@ -1328,30 +1332,5 @@ public class ParseTreeGenerator {
 	private String _caller() {
 		StackTraceElement element = Thread.currentThread().getStackTrace()[3];
 		return "(" + element.getFileName() + ":" + element.getLineNumber() + ")";
-	}
-	
-	
-	/**
-	 * Create a Program from a single byte array. Any attempts to import other files will fail.
-	 * @param bytes
-	 * @return
-	 */
-	public static IProgram loadParseTreeFromBytes(byte[] bytes) {
-		ParseTreeGenerator generator = new ParseTreeGenerator();
-		Program program = new Program();
-		
-		try {
-			for(HighType t : Primitives.getAllTypes()) {
-				generator.defined_types.put(t.name(), t);
-			}
-			
-			generator.currentProgram = program;
-			generator.importFile(new File("null"), bytes);
-		} catch(Throwable t) {
-			t.printStackTrace();
-			program.hasErrors = true;
-		}
-		
-		return program;
 	}
 }

@@ -1,6 +1,9 @@
-@import "test";
+@import "test.ample";
 
 void main() {
+	int test = linker();
+	// TODO: Preprocess types
+	// TEST abcd = 32;
 	
 	return;
 }
