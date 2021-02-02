@@ -26,4 +26,14 @@ public interface SyntaxMarker extends ILocation {
 	 * @return the severity of the marker
 	 */
 	int getSeverity();
+	
+	
+	default String getSeverityString() {
+		switch(getSeverity()) {
+			case ERROR: return "ERROR";
+			case WARNING: return "WARNING";
+			case INFO: return "INFO";
+			default: return "UNKNOWN";
+		}
+	}
 }

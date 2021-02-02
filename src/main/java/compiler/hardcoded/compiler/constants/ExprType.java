@@ -56,4 +56,7 @@ public enum ExprType {
 	cast,	// Cast
 	comma,	// Comma
 	invalid, // Invalid expression type
+	
+	// Placeholders for the linker
+	placeholder_call,
 }

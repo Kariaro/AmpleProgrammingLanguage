@@ -59,7 +59,8 @@ public class AmpleCompilerBuild {
 		
 		if(current_program.hasErrors()) {
 			for(SyntaxMarker marker : current_program.getSyntaxMarkers()) {
-				System.err.printf("%s (%s:%s) : %s\n",
+				System.err.printf("[%-7s] %s (%s:%s) : %s\n",
+					marker.getSeverityString(),
 					marker.getCompilerMessage(),
 					marker.getLineIndex(),
 					marker.getColumnIndex(),
