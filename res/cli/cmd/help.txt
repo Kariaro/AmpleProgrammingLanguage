@@ -1,0 +1,20 @@
+Usage: ...
+
+Options:
+    -h -?
+        display this help message
+
+    -f <format>
+        ir
+
+    -xml <projectxml>   (Compile multiple files)
+        the projects xml file
+
+    -i <sourcefile>     (Compile a single file)
+        the input source file
+
+    -o <outputfile>     (Compile a single file)
+        the output file
+
+    -r <binaryfile>
+        run a binary file

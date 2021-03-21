@@ -1,5 +1,0 @@
-@type TEST int;
-
-int linker() {
-	return 32;
-}
