@@ -1,0 +1,11 @@
+// Example file
+import "io.ample";
+
+number main() {
+	number a = 32;
+	number b = a + 32;
+	number c = b + 32;
+	number d = c + 32;
+	
+	return d;
+}

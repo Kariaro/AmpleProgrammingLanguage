@@ -1,20 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry including="**/*.java" kind="src" output="target/classes" path="src/main/java/main">
-		<attributes>
-			<attribute name="optional" value="true"/>
-			<attribute name="maven.pomderived" value="true"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="src" path="src/main/java/api"/>
-	<classpathentry kind="src" path="src/main/java/compiler"/>
-	<classpathentry kind="src" path="src/main/java/exporter"/>
-	<classpathentry kind="src" path="src/main/java/vm"/>
-	<classpathentry excluding="unit_res/" kind="src" output="target/test-classes" path="src/test/java">
+	<classpathentry kind="src" path="src/main/java"/>
+	<classpathentry kind="src" path="src/main/compiler"/>
+	<classpathentry kind="src" path="src/main/api"/>
+	<classpathentry kind="src" output="target/test-classes" path="src/test/java">
 		<attributes>
 			<attribute name="test" value="true"/>
-			<attribute name="optional" value="true"/>
-			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="con" path="org.eclipse.m2e.MAVEN2_CLASSPATH_CONTAINER">
@@ -29,6 +20,5 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="lib" path="res"/>
-	<classpathentry kind="lib" path="res_project"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
