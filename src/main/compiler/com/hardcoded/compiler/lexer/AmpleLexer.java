@@ -29,7 +29,7 @@ public class AmpleLexer {
 		lexer.addGroup("NUMBER").addRegexes(
 			"0x[0-9a-fA-F]+",
 			"0b[0-1]+",
-			"[0-9]+[.][0-9]",
+			"[0-9]+[.][0-9]+",
 			"[0-9]+"
 		);
 		lexer.addGroup("BOOL").addStrings("true", "false");
