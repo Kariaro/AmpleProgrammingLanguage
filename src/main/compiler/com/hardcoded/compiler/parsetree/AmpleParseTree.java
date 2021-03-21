@@ -99,11 +99,7 @@ public class AmpleParseTree {
 	ImportStat makeImport(Token path) {
 		ImportStat stat = ImportStat.get(lang.token());
 		lang.next();
-		// ';'
-		if(!lang.valueEquals(";")) {
-			throw_exception("Expected ';' but got '%s'", lang.value());
-		}
-		lang.next();
+		check_or_throw(";");
 		// $
 		return stat;
 	}
@@ -112,8 +108,7 @@ public class AmpleParseTree {
 	FuncStat makeFunction(Token type, Token name) {
 		FuncStat stat = FuncStat.get(type, name);
 		
-		if(!lang.valueEquals("(")) throw_exception("Expected '(' but got '%s'", lang.value());
-		lang.next();
+		check_or_throw("(");
 		// [args] or ')'
 		if(lang.valueEquals(")")) {
 			lang.next();
@@ -226,20 +221,19 @@ public class AmpleParseTree {
 		if(lang.valueEquals("break")) return makeBreak(lang.next());
 		if(lang.valueEquals("goto")) return makeGoto(lang.next());
 		// label
-		if(lang.valueEquals("while")) { return makeWhile(lang.next()); }
-		if(lang.valueEquals("do")) { return makeDoWhile(lang.next()); }
-		if(lang.valueEquals("for")) { return makeFor(lang.next()); }
-		if(lang.valueEquals("if")) { return makeIf(lang.next()); }
+		if(lang.valueEquals("while")) return makeWhile(lang.next());
+		if(lang.valueEquals("do")) return makeDoWhile(lang.next());
+		if(lang.valueEquals("for")) return makeFor(lang.next());
+		if(lang.valueEquals("if")) return makeIf(lang.next());
 		
 		if(isType()) {
 			Token def_type = lang.next();
 			if(!isName()) throw_exception("Expected '[name]' but got '%s'", lang.value());
 			Token def_name = lang.next();
-			
 			return makeDefine(def_type, def_name);
 		}
 		
-		return EmptyStat.get();
+		return makeExprStat();
 	}
 	
 	ReturnStat makeReturn(Token token) {
