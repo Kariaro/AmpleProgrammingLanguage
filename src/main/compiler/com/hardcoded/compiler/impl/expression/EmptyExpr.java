@@ -16,6 +16,10 @@ public class EmptyExpr implements Expression {
 		
 	}
 	
+	public EmptyExpr clone() {
+		return EMPTY;
+	}
+	
 	@Override
 	public Type getType() {
 		return Type.NOP;

@@ -39,6 +39,14 @@ public class AtomExpr extends Expr {
 		this.ref = ref;
 	}
 	
+	private AtomExpr(Token token, AtomType type, double a, String b, Reference c) {
+		super(token, true);
+		this.type = type;
+		this.number = a;
+		this.string = b;
+		this.ref = c;
+	}
+	
 	@Override
 	public Type getType() {
 		return Type.ATOM;
@@ -61,6 +69,14 @@ public class AtomExpr extends Expr {
 		return type == AtomType.string;
 	}
 	
+	public void set(Reference ref) {
+		this.ref = ref;
+	}
+	
+	public Reference getReference() {
+		return ref;
+	}
+	
 	@Override
 	public String toString() {
 		switch(type) {
@@ -81,5 +97,12 @@ public class AtomExpr extends Expr {
 	
 	public static AtomExpr get(Token token, Reference ref) {
 		return new AtomExpr(token, ref);
+	}
+	
+	/**
+	 * Create a copy of a AtomExpr
+	 */
+	public static AtomExpr get(AtomExpr atom) {
+		return new AtomExpr(atom.token, atom.type, atom.number, atom.string, atom.ref == null ? null:atom.ref.clone()).end(atom.end);
 	}
 }

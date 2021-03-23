@@ -42,7 +42,7 @@ public final class Log {
 		return new Log(name);
 	}
 	
-	private void log(Level level, int line_index, String format, Object... args) {
+	private void internal_log(Level level, int line_index, String format, Object... args) {
 		if(!shouldLog(level)) return;
 		if(format == null) format = "";
 		
@@ -54,38 +54,38 @@ public final class Log {
 	}
 	
 	public void log(Level level, String format, Object... args) {
-		log(level, getLineIndex(), format, args);
+		internal_log(level, getLineIndex(), format, args);
 	}
 	
 	public void info() {
-		log(Level.INFO, getLineIndex(), "");
+		internal_log(Level.INFO, getLineIndex(), "");
 	}
 	
 	public void info(String format, Object... args) {
-		log(Level.INFO, getLineIndex(), format, args);
+		internal_log(Level.INFO, getLineIndex(), format, args);
 	}
 	
 	public void debug() {
-		log(Level.DEBUG, getLineIndex(), "");
+		internal_log(Level.DEBUG, getLineIndex(), "");
 	}
 	
 	public void debug(Object format, Object... args) {
-		log(Level.DEBUG, Objects.toString(format), args);
+		internal_log(Level.DEBUG, getLineIndex(), Objects.toString(format), args);
 	}
 	
 	public void warn(String format, Object... args) {
-		log(Level.WARNING, getLineIndex(), format, args);
+		internal_log(Level.WARNING, getLineIndex(), format, args);
 	}
 	
 	public void error(String format, Object... args) {
-		log(Level.ERROR, getLineIndex(), format, args);
+		internal_log(Level.ERROR, getLineIndex(), format, args);
 	}
 	
 	public void throwing(Throwable t) {
 		StringWriter sw = new StringWriter();
 		PrintWriter pw = new PrintWriter(sw);
 		t.printStackTrace(pw);
-		log(Level.ERROR, getLineIndex(), sw.toString());
+		internal_log(Level.ERROR, getLineIndex(), sw.toString());
 	}
 	
 	private boolean shouldLog(Level level) {
@@ -97,7 +97,7 @@ public final class Log {
 		
 		StackTraceElement[] stack = Thread.getAllStackTraces().get(Thread.currentThread());
 		if(stack == null) return -1;
-		StackTraceElement last = stack[stack.length - 1];
+		StackTraceElement last = stack[4];
 		return last.getLineNumber();
 	}
 	

@@ -1,30 +1,51 @@
 num a = 3;
+num b = 3;
 
 // Example file
 import "io.ample";
 
+num func() {
+	return 0;
+}
 // test
 
 num main(num a, num b, num c) {
-	num a = awesome ( 32);
-	num b = a + 32;
-	num c = b + 32;
+	num a2 = awesome ( 32);
+	awesome;
+	{
+		num awesome = 3;
+		awesome;
+		awesome;
+	}
+	awesome;
+	
+	num b2 = a + a + a + 32;
+	num c2 = b + 32 + asdfcerw;
 	
 	num d = 3232;
 	
 	
 	str q = asdf[32];
-	str q = 0 ? 1:2;
+	str q2 = 0 ? 1:2;
+	str q3 = 0 ? 1:2;
+	str q4 = 0 ? 1:2;
+	str q5 = 0 ? 1:2;
+	str q6 = 0 ? 1:2;
+	str q7 = 0 ? 1:2;
+	str q8 = 0 ? 1:2;
+	str q9 = 0 ? 1:2;
 	
 	func(1, 0xAAAA, "text", 0.1234);
-	for(str a = 3; a < 43;);
-	while(true) { str a; }
-	do { str a; } while(false);
+	for(str a3 = 3; a3 < 43;);
+	while(true) { str a3; { str a4; } }
+	do { str a3; } while(false);
 	goto label;
 	label:
 	continue;
 	break;
 	return;
+	if(true) { str a3; }
+	if(false) { str a3; } else { str b3; }
 	
 	a + 1 <= 0;
 	a >= 0;

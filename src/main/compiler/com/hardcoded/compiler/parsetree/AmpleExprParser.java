@@ -5,6 +5,7 @@ import java.util.function.Supplier;
 
 import com.hardcoded.compiler.api.Expression;
 import com.hardcoded.compiler.impl.context.Reference;
+import com.hardcoded.compiler.impl.context.Reference.Type;
 import com.hardcoded.compiler.impl.expression.*;
 import com.hardcoded.compiler.lexer.Lang;
 import com.hardcoded.compiler.lexer.Token;
@@ -85,7 +86,7 @@ public class AmpleExprParser {
 		return false;
 	}
 	
-	Reference temp() {
+	Reference temp(Reference.Type type) {
 		return Reference.get(temp_index++);
 	}
 	
@@ -134,7 +135,7 @@ public class AmpleExprParser {
 
 			Token empty = type.getToken().empty();
 			if(!lhs.isPure()) {
-				AtomExpr temp = AtomExpr.get(empty, temp());
+				AtomExpr temp = AtomExpr.get(empty, temp(Reference.Type.VAR));
 				
 				type.add(CommaExpr.get(empty).add(
 					SetExpr.get(empty).add(temp, lhs),
@@ -167,7 +168,7 @@ public class AmpleExprParser {
 		Expr c = order_12();
 		
 		Token empty = token.empty();
-		AtomExpr temp = AtomExpr.get(empty, temp());
+		AtomExpr temp = AtomExpr.get(empty, temp(Reference.Type.VAR));
 		return CommaExpr.get(a.getToken()).add(
 			CorExpr.get(empty).add(
 				CandExpr.get(empty).add(
@@ -249,6 +250,11 @@ public class AmpleExprParser {
 				case "(": {
 					if(!(lhs instanceof AtomExpr)) {
 						throw_exception("Left hand side was not a function name '%s'", lhs);
+					}
+					
+					AtomExpr atom = (AtomExpr)lhs;
+					if(atom.isReference()) {
+						atom.set(atom.getReference().as(Type.FUN));
 					}
 					
 					CallExpr call = CallExpr.get(lhs.getToken());
