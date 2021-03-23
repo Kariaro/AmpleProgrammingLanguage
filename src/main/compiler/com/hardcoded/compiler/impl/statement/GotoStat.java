@@ -1,9 +1,5 @@
 package com.hardcoded.compiler.impl.statement;
 
-import java.util.Collections;
-import java.util.List;
-
-import com.hardcoded.compiler.api.Statement;
 import com.hardcoded.compiler.lexer.Token;
 
 /**
@@ -17,10 +13,11 @@ import com.hardcoded.compiler.lexer.Token;
  * @author HardCoded
  * @since 0.2.0
  */
-public class GotoStat implements Statement {
+public class GotoStat extends Stat {
 	protected final Token label;
 	
-	private GotoStat(Token label) {
+	private GotoStat(Token token, Token label) {
+		super(token);
 		this.label = label;
 	}
 	
@@ -29,22 +26,7 @@ public class GotoStat implements Statement {
 		return Type.GOTO;
 	}
 	
-	@Override
-	public List<Statement> getStatements() {
-		return Collections.emptyList();
-	}
-	
-	@Override
-	public int getLineIndex() {
-		return label.line;
-	}
-	
-	@Override
-	public int getColumnIndex() {
-		return label.column;
-	}
-	
-	public Token getPath() {
+	public Token getLabel() {
 		return label;
 	}
 	
@@ -53,7 +35,7 @@ public class GotoStat implements Statement {
 		return String.format("goto %s;", label);
 	}
 	
-	public static GotoStat get(Token label) {
-		return new GotoStat(label);
+	public static GotoStat get(Token token, Token label) {
+		return new GotoStat(token, label);
 	}
 }

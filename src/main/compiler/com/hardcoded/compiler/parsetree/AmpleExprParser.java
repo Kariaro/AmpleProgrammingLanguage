@@ -26,16 +26,19 @@ public class AmpleExprParser {
 	@SafeVarargs
 	final <T> T[] a(final T... array) { return array; }
 	
-	<T extends Expression> Expression for_each_array(String[] values, Function<Token, Expr>[] init, Supplier<Expression> next) { return for_each_array(values, init, next, next); }
-	<T extends Expression> Expression for_each_array(String[] values, Function<Token, Expr>[] init, Supplier<Expression> first, Supplier<Expression> next) {
-		Expression expr = first.get();
+	Expr for_each_array(String[] values, Function<Token, Expr>[] init, Supplier<Expr> next) { return for_each_array(values, init, next, next); }
+	Expr for_each_array(String[] values, Function<Token, Expr>[] init, Supplier<Expr> first, Supplier<Expr> next) {
+		Expr expr = first.get();
 		
 		while(true) {
 			boolean found = false;
 			for(int i = 0; i < values.length; i++) {
 				if(lang.valueEquals(values[i])) {
 					found = true;
-					expr = init[i].apply(lang.next()).add(expr, next.get());
+					Expr tmp = init[i].apply(expr.getToken());
+					lang.next();
+					tmp.add(expr, next.get());
+					expr = tmp.end(lang.peek(-1));
 					break;
 				}
 			}
@@ -44,9 +47,9 @@ public class AmpleExprParser {
 		}
 	}
 	
-	<T extends Expression> Expression for_each(String value, Function<Token, Expr> init, Supplier<Expression> next) { return for_each(value, init, next, next); }
-	<T extends Expression> Expression for_each(String value, Function<Token, Expr> init, Supplier<Expression> first, Supplier<Expression> next) {
-		Expression expr = first.get();
+	Expr for_each(String value, Function<Token, Expr> init, Supplier<Expr> next) { return for_each(value, init, next, next); }
+	Expr for_each(String value, Function<Token, Expr> init, Supplier<Expr> first, Supplier<Expr> next) {
+		Expr expr = first.get();
 		
 		if(!lang.valueEquals(value)) return expr;
 		Expr last = init.apply(lang.next());
@@ -93,17 +96,17 @@ public class AmpleExprParser {
 		return parse(use_comma);
 	}
 	
-	Expression parse(boolean use_comma) {
+	Expr parse(boolean use_comma) {
 		return use_comma ? order_15():order_14();
 	}
 	
-	Expression order_15() {
+	Expr order_15() {
 		return for_each(",", CommaExpr::get, this::order_14);
 	}
 	
 	// Left associative
-	Expression order_14() {
-		Expression lhs = order_13();
+	Expr order_14() {
+		Expr lhs = order_13();
 		
 		if(lang.valueEquals("=")) {
 			Expr expr = SetExpr.get(lang.next());
@@ -128,16 +131,17 @@ public class AmpleExprParser {
 			
 			if(type == null) return lhs;
 			if(!acceptModification(lhs)) throw_exception("Left hand side is not modifiable '%s'", lhs);
-			
+
+			Token empty = type.getToken().empty();
 			if(!lhs.isPure()) {
-				AtomExpr temp = AtomExpr.get(temp());
+				AtomExpr temp = AtomExpr.get(empty, temp());
 				
-				type.add(CommaExpr.get(type.getToken()).add(
-					SetExpr.get(type.getToken()).add(temp, lhs),
+				type.add(CommaExpr.get(empty).add(
+					SetExpr.get(empty).add(temp, lhs),
 					temp
 				).add(order_13()));
 				
-				SetExpr expr = SetExpr.get(type.getToken());
+				SetExpr expr = SetExpr.get(empty);
 				expr.add(temp);
 				expr.add(type);
 				return expr;
@@ -146,82 +150,82 @@ public class AmpleExprParser {
 			type.add(lhs);
 			type.add(order_13());
 			
-			SetExpr expr = SetExpr.get(type.getToken());
+			SetExpr expr = SetExpr.get(empty);
 			expr.add(lhs);
 			expr.add(type);
 			return expr;
 		}
 	}
 	
-	Expression order_13() {
-		Expression a = order_12();
+	Expr order_13() {
+		Expr a = order_12();
 		if(!lang.valueEquals("?")) return a;
 		Token token = lang.next();
 		// ternary_operator
-		Expression b = order_12();
+		Expr b = order_12();
 		check_or_throw(":");
-		Expression c = order_12();
+		Expr c = order_12();
 		
-		AtomExpr temp = AtomExpr.get(temp());
-		
-		return CommaExpr.get(token).add(
-			CorExpr.get(token).add(
-				CandExpr.get(token).add(
+		Token empty = token.empty();
+		AtomExpr temp = AtomExpr.get(empty, temp());
+		return CommaExpr.get(a.getToken()).add(
+			CorExpr.get(empty).add(
+				CandExpr.get(empty).add(
 					a,
-					CommaExpr.get(token).add(
-						SetExpr.get(token).add(temp, b),
-						AtomExpr.get(1)
+					CommaExpr.get(empty).add(
+						SetExpr.get(empty).add(temp, b),
+						AtomExpr.get(empty, 1)
 					)
 				),
-				CommaExpr.get(token).add(
-					SetExpr.get(token).add(temp, c)
+				CommaExpr.get(empty.empty()).add(
+					SetExpr.get(empty).add(temp, c)
 				)
 			),
 			temp
-		);
+		).end(lang.peek(-1));
 	}
 	
-	Expression order_12() {
+	Expr order_12() {
 		return for_each("||", CorExpr::get, this::order_11, this::order_12);
 	}
 	
-	Expression order_11() {
+	Expr order_11() {
 		return for_each("&&", CandExpr::get, this::order_10, this::order_11);
 	}
 	
-	Expression order_10() {
+	Expr order_10() {
 		return for_each("|", OrExpr::get, this::order_9);
 	}
 	
-	Expression order_9() {
+	Expr order_9() {
 		return for_each("^", XorExpr::get, this::order_8);
 	}
 	
-	Expression order_8() {
+	Expr order_8() {
 		return for_each("&", AndExpr::get, this::order_7);
 	}
 	
-	Expression order_7() {
+	Expr order_7() {
 		return for_each_array(a("==", "!="), a(EqExpr::get, NeqExpr::get), this::order_6, this::order_7);
 	}
 	
-	Expression order_6() {
+	Expr order_6() {
 		return for_each_array(a("<", "<=", ">", ">="), a(LtExpr::get, LteExpr::get, GtExpr::get, GteExpr::get), this::order_5);
 	}
 	
-	Expression order_5() {
+	Expr order_5() {
 		return for_each_array(a("<<", ">>"), a(ShlExpr::get, ShrExpr::get), this::order_4);
 	}
 	
-	Expression order_4() {
+	Expr order_4() {
 		return for_each_array(a("+", "-"), a(AddExpr::get, SubExpr::get), this::order_3);
 	}
 	
-	Expression order_3() {
+	Expr order_3() {
 		return for_each_array(a("*", "/", "%"), a(MulExpr::get, DivExpr::get, ModExpr::get), this::order_2_2);
 	}
 	
-	Expression order_2_2() {
+	Expr order_2_2() {
 		
 		// lhs or rhs
 		// ++, --
@@ -229,17 +233,16 @@ public class AmpleExprParser {
 		return order_2_3();
 	}
 	
-	Expression order_2_3() {
-		Expression lhs = order_2();
+	Expr order_2_3() {
+		Expr lhs = order_2();
 		
 		while(true) {
 			switch(lang.value()) {
 				case "[": {
 					Token token = lang.next();
 					Expression expr = order_15();
+					lhs = ArrayExpr.get(token).add(lhs, expr).end(lang.token());
 					check_or_throw("]");
-					
-					lhs = ArrayExpr.get(token).add(lhs, expr);
 					continue;
 				}
 				
@@ -248,12 +251,12 @@ public class AmpleExprParser {
 						throw_exception("Left hand side was not a function name '%s'", lhs);
 					}
 					
-					CallExpr call = CallExpr.get(lang.next());
+					CallExpr call = CallExpr.get(lhs.getToken());
 					call.add(lhs);
+					lang.next();
 					
 					if(lang.valueEquals(")")) {
-						lang.next();
-						return call;
+						return call.end(lang.next());
 					}
 					
 					while(true) {
@@ -261,8 +264,7 @@ public class AmpleExprParser {
 						call.add(arg);
 						
 						if(lang.valueEquals(")")) {
-							lang.next();
-							return call;
+							return call.end(lang.next());
 						}
 						
 						check_or_throw(",");
@@ -276,7 +278,7 @@ public class AmpleExprParser {
 		return lhs;
 	}
 	
-	Expression order_2() {
+	Expr order_2() {
 		String value = lang.value();
 		
 		switch(value) {
@@ -290,25 +292,31 @@ public class AmpleExprParser {
 	}
 	
 
-	Expression order_1() {
-		if(lang.groupEquals("NUMBER")) return AtomExpr.get(parseNumber(lang.next().value));
+	Expr order_1() {
+		if(lang.groupEquals("NUMBER")) return AtomExpr.get(lang.token(), parseNumber(lang.next().value)).end(lang.peek(-1));
 		if(lang.groupEquals("STRING")) {
-			String value = lang.next().value;
-			return AtomExpr.get(StringUtils.unescapeString(value.substring(1, value.length() - 1)));
+			Token token = lang.next();
+			String value = token.value;
+			return AtomExpr.get(token, StringUtils.unescapeString(value.substring(1, value.length() - 1)));
 		}
 		
 		if(lang.groupEquals("CHAR")) {
-			String value = lang.next().value;
+			Token token = lang.next();
+			String value = token.value;
 			value = StringUtils.unescapeString(value.substring(1, value.length() - 1));
 			if(value.length() != 1) throw_exception("Expected a single char but got '%s'", value);
-			return AtomExpr.get(value.charAt(0));
+			return AtomExpr.get(token, value.charAt(0));
 		}
 		
-		if(lang.groupEquals("IDENTIFIER")) return AtomExpr.get(Reference.get(lang.next().value));
+		if(lang.groupEquals("BOOL")) {
+			return AtomExpr.get(lang.token(), Boolean.parseBoolean(lang.next().value) ? 1:0);
+		}
+		
+		if(lang.groupEquals("IDENTIFIER")) return AtomExpr.get(lang.token(), Reference.get(lang.next().value));
 		
 		if(lang.valueEquals("(")) {
 			lang.next();
-			Expression expr = order_15();
+			Expr expr = order_15();
 			check_or_throw(")");
 			return expr;
 		}
@@ -426,7 +434,7 @@ public class AmpleExprParser {
 	
 	<T> T throw_stuck_exception() {
 		String extra = String.format("(line: %d, column: %d) ", lang.line(), lang.column());
-		String contn = String.format("[%s] %s", lang.peakString(-5, 5), lang.peakString(0, 10));
+		String contn = String.format("[%s] %s", lang.peekString(-5, 5), lang.peekString(0, 10));
 		throw new ParseTreeException(extra + "Compiler got stuck on line:%d\n%s", getLineIndex(), contn);
 	}
 	
