@@ -2,9 +2,11 @@ package com.hardcoded.compiler;
 
 import java.io.IOException;
 
+import com.hardcoded.compiler.impl.statement.ProgramStat;
 import com.hardcoded.compiler.lexer.AmpleLexer;
 import com.hardcoded.compiler.lexer.Lang;
 import com.hardcoded.compiler.parsetree.AmpleParseTree;
+import com.hardcoded.compiler.parsetree.AmpleTreeValidator;
 import com.hardcoded.logger.Log;
 import com.hardcoded.options.Options;
 import com.hardcoded.options.Options.Key;
@@ -35,6 +37,12 @@ public class AmpleCompiler {
 		
 		LOGGER.info("Starting build");
 		AmpleParseTree parse_tree = new AmpleParseTree();
-		parse_tree.process(options, lang);
+		ProgramStat stat = parse_tree.process(options, lang);
+		
+		AmpleTreeValidator tree_validator = new AmpleTreeValidator();
+		tree_validator.process(options, stat);
+		
+		//AmpleLinker linker = new AmpleLinker();
+		//linker.process(options, stat);
 	}
 }

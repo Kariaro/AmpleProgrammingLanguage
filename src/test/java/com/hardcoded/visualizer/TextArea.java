@@ -4,12 +4,13 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
-import java.awt.image.BufferStrategy;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TextArea extends Canvas {
+import javax.swing.JPanel;
+
+public class TextArea extends JPanel {
 	private static final long serialVersionUID = 1L;
 	
 	private Font font = new Font("Courier New", Font.PLAIN, 14);
@@ -18,16 +19,26 @@ public class TextArea extends Canvas {
 	private Point mouse;
 	private int scroll;
 	private int visible_rows = 37;
+	private int tab_size = 4;
 	
 	public TextArea() {
 		Dimension dim = new Dimension(1000, 629);
 		setMinimumSize(dim);
 		setPreferredSize(dim);
+		setBackground(Color.white);
 		setFontSize(14);
-		
+		setDoubleBuffered(true);
 		MouseAdapter adapter = new MouseAdapter() {
+			@Override
 			public void mouseMoved(MouseEvent e) {
 				mouse = e.getPoint();
+				repaint();
+			}
+			
+			@Override
+			public void mouseExited(MouseEvent e) {
+				mouse = null;
+				repaint();
 			}
 			
 			@Override
@@ -39,8 +50,11 @@ public class TextArea extends Canvas {
 				if(scroll >= index.length) {
 					scroll = index.length - 1;
 				}
+				
+				repaint();
 			}
 		};
+		addMouseListener(adapter);
 		addMouseMotionListener(adapter);
 		addMouseWheelListener(adapter);
 	}
@@ -70,7 +84,8 @@ public class TextArea extends Canvas {
 			
 			if(c == '\t') {
 				//sb.append('\u00bb');
-				sb.append(' ');
+				//sb.append(' ');
+				sb.append('\t');
 			} else {
 				sb.append(c);
 			}
@@ -101,18 +116,11 @@ public class TextArea extends Canvas {
 		ranges.add(range);
 	}
 	
-	private BufferStrategy bs;
-	public void paint(Graphics gr) {
-		if(getBufferStrategy() == null) {
-			createBufferStrategy(2);
-			bs = getBufferStrategy();
-		}
+	public void paintComponent(Graphics gr) {
+		if(scroll >= index.length) scroll = index.length - 1;
+		if(scroll < 0) scroll = 0;
 		
-		if(scroll >= index.length) {
-			scroll = index.length - 1;
-		}
-		
-		Graphics2D g = (Graphics2D)bs.getDrawGraphics();//(Graphics2D)gr.create();
+		Graphics2D g = (Graphics2D)gr;
 		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
 		g.setFont(font);
@@ -120,7 +128,7 @@ public class TextArea extends Canvas {
 		g.setColor(Color.white);
 		g.fillRect(0, 0, getWidth(), getHeight());
 		
-		g.translate(30, 0);
+		g.translate(33, 0);
 		g.setColor(Color.gray);
 		g.drawLine(0, 0, 0, getHeight());
 		String[] array = this.lines;
@@ -129,7 +137,7 @@ public class TextArea extends Canvas {
 			int i = j - scroll;
 			
 			g.setColor(Color.black);
-			g.drawString(line, 0, i * font_h + font_offset);
+			drawString(g, line, 0, i * font_h + font_offset);
 			
 			g.setColor(Color.lightGray);
 			//g.drawRect(0, (int)(i * font_h), (int)(line.length() * font_w), (int)font_h);
@@ -145,7 +153,7 @@ public class TextArea extends Canvas {
 				inside_range = range;
 			}
 		}
-		g.translate(-30, 0);
+		g.translate(-33, 0);
 		
 		if(inside_range != null) {
 			Point m = mouse;
@@ -173,13 +181,15 @@ public class TextArea extends Canvas {
 			g.drawString(line, 0, (i - scroll) * font_h + font_offset);
 		}
 		
-		bs.show();
+		//gr.drawImage(bi, 0, 0, null);
+		//g.dispose();
 	}
 	
 	private boolean drawRange(Graphics2D g, Range range) {
 		g.setColor(range.color);
 		int s = range.start;
 		int e = range.end;
+		if(s == e) return false;
 		
 		// ....###
 		// #######
@@ -189,7 +199,6 @@ public class TextArea extends Canvas {
 		int[] index = this.index.clone();
 		
 		boolean inside = false;
-		
 		for(int i = scroll; i < Math.min(scroll + visible_rows, index.length); i++) {
 			int A = index[i];
 			int len = lines[i].length();
@@ -197,32 +206,25 @@ public class TextArea extends Canvas {
 			
 			// A....s##eB
 			if(s >= A && e <= B) {
-				int cs = s - A;
-				int ce = Math.min(e - s, len);
-				inside |= fillRect(g, cs * font_w, i * font_h, ce * font_w, font_h);
+				inside |= fillStringRect(g, lines[i], i * font_h, s - A, e - A);
 				break;
 			}
 			
 			// A....s###B
-			if(s >= A && e >= B) {
-				int cs = s - A;
-				int ce = Math.min(e - cs, len - cs);
-				inside |= fillRect(g, cs * font_w, i * font_h, ce * font_w, font_h);
+			if(s >= A && s < B && e >= B) {
+				inside |= fillStringRect(g, lines[i], i * font_h, s - A, len);
+				continue;
 			}
 			
 			// A########B
-			if(s <= A && e >= B) {
-				inside |= fillRect(g, 0, i * font_h, len * font_w, font_h);
+			if(s < A && e >= B) {
+				inside |= fillStringRect(g, lines[i], i * font_h, 0, len);
 				continue;
 			}
 			
 			// A####e...B
-			if(s <= A && e <= B) {
-				// The text is inside the range
-				// Our thing is above the start line
-				int ce = Math.min(e - A, len);
-				
-				inside |= fillRect(g, 0, i * font_h, ce * font_w, font_h);
+			if(s <= A && e > A && e <= B) {
+				inside |= fillStringRect(g, lines[i], i * font_h, 0, e - A);
 				break;
 			}
 		}
@@ -230,6 +232,22 @@ public class TextArea extends Canvas {
 		return inside;
 	}
 	
+	private void drawString(Graphics2D g, String s, float x, float y) {
+		byte[] bytes = s.getBytes();
+		//g.drawString(s, x, y);
+		
+		int ox = 0;
+		for(int i = 0; i < bytes.length; i++) {
+			char c = (char)(((int)bytes[i] & 0xff));
+			
+			if(c == '\t') {
+				ox += (tab_size - (ox % tab_size));
+				continue;
+			}
+			
+			g.drawString("" + c, (ox++) * font_w, y);
+		}
+	}
 	
 	boolean drawRect(Graphics2D g, float x, float y, float w, float h) {
 		g.drawRect((int)x, (int)y, (int)w, (int)h);
@@ -241,12 +259,32 @@ public class TextArea extends Canvas {
 		
 		Point m = mouse;
 		if(m != null) {
-			int mx = m.x - 30;
+			int mx = m.x - 33;
 			int my = (int)(m.y + scroll * font_h);
 			
 			return (mx >= x && my >= y && (mx < x + w) && (my < y + h));
 		}
 		
 		return false;
+	}
+	
+	boolean fillStringRect(Graphics2D g, String line, float y, int s, int e) {
+		int oxs = 0;
+		int oxe = 0;
+		int ox = 0;
+		for(int i = 0; i < e; i++) {
+			if(i == s) oxs = ox;
+			
+			if(line.charAt(i) == '\t') {
+				ox += (tab_size - (ox % tab_size));
+				continue;
+			}
+			
+			ox++;
+		}
+		
+		oxe = ox;
+		
+		return fillRect(g, (oxs) * font_w, y, (oxe - oxs) * font_w, font_h);
 	}
 }

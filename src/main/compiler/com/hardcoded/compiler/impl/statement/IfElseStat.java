@@ -25,8 +25,8 @@ public class IfElseStat extends Stat {
 	
 	@Override
 	public String toString() {
-		if(list.isEmpty()) return "if([INVALID]) else;";
-		return String.format("if(%s) else;", list.get(0));
+		if(list.isEmpty()) return "if else([INVALID]);";
+		return String.format("if else(%s);", list.get(0));
 	}
 	
 	public static IfElseStat get(Token token) {

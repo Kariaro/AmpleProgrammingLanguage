@@ -16,6 +16,7 @@ import com.hardcoded.options.Options;
  * @since 0.2.0
  */
 public class AmpleParseTree {
+	@SuppressWarnings("unused")
 	private static final Log LOGGER = Log.getLogger(AmpleParseTree.class);
 	
 	public AmpleParseTree() {
@@ -29,19 +30,23 @@ public class AmpleParseTree {
 	protected AmpleExprParser expression_parser;
 	protected Options options;
 	protected Lang lang;
-	public void process(Options options, Lang lang) {
+	public ProgramStat process(Options options, Lang lang) {
 		this.expression_parser = new AmpleExprParser();
 		this.options = options;
 		this.lang = lang;
 		
 		ProgramStat stat = begin();
 		
+		/*
 		LOGGER.debug("Root: %s", stat);
 		
 		String str = TreeUtils.printTree(stat).replace("\t", "    ");
 		System.out.println("################################################");
 		System.out.println(str);
 		System.out.println("################################################");
+		*/
+		
+		return stat;
 	}
 	
 	public ProgramStat process(Options options, byte[] bytes) {
@@ -79,14 +84,14 @@ public class AmpleParseTree {
 				if(lang.valueEquals("(")) {
 					// FUNCTION
 					root.add(makeFunction(type, name));
-					LOGGER.debug("function [%s]", root.last());
+					// LOGGER.debug("function [%s]", root.last());
 					continue;
 				}
 				
 				if(lang.valueEquals("=") || lang.valueEquals(";")) {
 					// DEFINE
 					root.add(makeDefine(type, name));
-					LOGGER.debug("define [%s]", root.last());
+					// LOGGER.debug("define [%s]", root.last());
 					continue;
 				}
 				
@@ -99,7 +104,7 @@ public class AmpleParseTree {
 					throw_exception("Classes are not implemented yet");
 				} else if(lang.valueEquals("import")) {
 					root.add(makeImport(lang.next(), lang.next()));
-					LOGGER.debug("import [%s]", root.last());
+					// LOGGER.debug("import [%s]", root.last());
 					continue;
 				} else {
 					throw_exception("Expected either 'class' or 'import' but got '%s'", lang.value());
@@ -107,7 +112,6 @@ public class AmpleParseTree {
 			}
 			
 			if(start_index == lang.readerIndex()) {
-				// /* This wont work for xml projects */ throw_exception("Compiler got stuck reading the file '%s'", options.get(Key.INPUT_FILE));
 				throw_stuck_exception();
 			}
 		}
@@ -169,7 +173,7 @@ public class AmpleParseTree {
 			return throw_exception("Expected ';' or '{' but got '%s'", lang.value());
 		}
 		
-		return stat.end(lang.token());
+		return stat.end(lang.peek(-1));
 	}
 	
 	// Used in functions
@@ -222,7 +226,7 @@ public class AmpleParseTree {
 			}
 			
 			check_or_throw("}");
-			return stat;
+			return stat.end(lang.peek(-1));
 		}
 		
 		if(lang.valueEquals(";")) {
@@ -262,7 +266,7 @@ public class AmpleParseTree {
 		// [expr]
 		stat.add(makeExprStat(true));
 		check_or_throw(";");
-		return stat.end(lang.token());
+		return stat.end(lang.peek(-1));
 	}
 	
 	LabelStat makeLabel(Token token) {
@@ -350,31 +354,26 @@ public class AmpleParseTree {
 	
 	Statement makeIf(Token token) {
 		IfStat stat = IfStat.get(token);
-		
 		check_or_throw("(");
 		stat.add(makeExprStat(true));
 		check_or_throw(")");
-		
 		stat.add(makeStatement());
-		
 		if(lang.valueEquals("else")) {
 			lang.next();
 			
 			IfElseStat if_else = IfElseStat.get(token);
 			if_else.getStatements().addAll(stat.getStatements());
 			if_else.add(makeStatement());
-			return if_else;
+			return if_else.end(lang.peek(-1));
 		}
 		
-		return stat.end(lang.token());
+		return stat.end(lang.peek(-1));
 	}
 	
 	ExprStat makeExprStat() { return makeExprStat(false); }
 	ExprStat makeExprStat(boolean without_semicolon) {
-		// [expr]
 		ExprStat stat = ExprStat.get(lang.token());
 		stat.add(makeExpression());
-		
 		if(without_semicolon) return stat;
 		check_or_throw(";");
 		return stat.end(lang.peek(-1));

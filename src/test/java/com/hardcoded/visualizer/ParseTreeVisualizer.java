@@ -1,6 +1,7 @@
 package com.hardcoded.visualizer;
 
 import java.awt.*;
+import java.util.Arrays;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -13,6 +14,7 @@ import com.hardcoded.compiler.impl.statement.ProgramStat;
 import com.hardcoded.compiler.impl.statement.Stat;
 import com.hardcoded.compiler.lexer.Token;
 import com.hardcoded.compiler.parsetree.AmpleParseTree;
+import com.hardcoded.compiler.parsetree.AmpleTreeValidator;
 import com.hardcoded.utils.FileUtils;
 
 /**
@@ -64,19 +66,28 @@ public class ParseTreeVisualizer extends JPanel {
 	
 	private ProgramStat stat;
 	private byte[] bytes = new byte[0];
-	private int count = 0;
 	public void start() {
+		boolean need_update = false;
+		
 		try {
+			byte[] last = bytes;
 			bytes = FileUtils.readFileBytes("res/main.ample");
-			area.setText(bytes);
 			
-			AmpleParseTree tree = new AmpleParseTree();
-			stat = tree.process(null, bytes);
-			updateStatRect(stat);
+			if(!Arrays.equals(last, bytes)) {
+				area.setText(bytes);
+				
+				AmpleParseTree tree = new AmpleParseTree();
+				stat = tree.process(null, bytes);
+				AmpleTreeValidator validator = new AmpleTreeValidator();
+				validator.process(null, stat);
+				
+				updateStatRect(stat);
+				need_update = true;
+			}
 		} catch(Exception e) {
 			e.printStackTrace();
 		} finally {
-			area.repaint();
+			if(need_update) area.repaint();
 		}
 	}
 	
@@ -90,8 +101,8 @@ public class ParseTreeVisualizer extends JPanel {
 			Token s = st.getToken();
 			Token e = st.getEnd();
 			
-			int hash = stat.getClass().toString().hashCode() & 0xffffff;
-			Color c = new Color(0xff0000 | (0x30 << 24), true);
+			//int hash = stat.getClass().toString().hashCode() & 0xffffff;
+			Color c = new Color(0x00 | (0x20 << 24), true);
 			area.addRange(Range.get(s.offset, e.offset + e.value.length(), c, st.toString()));
 		}
 		
@@ -117,8 +128,8 @@ public class ParseTreeVisualizer extends JPanel {
 				e = s;
 			}
 			
-			int hash = expr.getClass().toString().hashCode() & 0xffffff;
-			Color c = new Color(0x0000ff | (0x30 << 24), true);
+			//int hash = expr.getClass().toString().hashCode() & 0xffffff;
+			Color c = new Color(0x0000ff | (0x20 << 24), true);
 			area.addRange(Range.get(s.offset, e.offset + e.value.length(), c, ex.toString()));
 		}
 		
