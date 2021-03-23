@@ -3,32 +3,32 @@ package com.hardcoded.compiler.impl.statement;
 import com.hardcoded.compiler.lexer.Token;
 
 /**
- * A continue statement
+ * A label statement
  * 
  * <pre>
  * Valid syntax:
- *   'continue' ';'
+ *   [name] ':'
  * </pre>
  * 
  * @author HardCoded
  * @since 0.2.0
  */
-public class ContinueStat extends Stat {
-	private ContinueStat(Token token) {
+public class LabelStat extends Stat {
+	private LabelStat(Token token) {
 		super(token);
 	}
 	
 	@Override
 	public Type getType() {
-		return Type.CONTINUE;
+		return Type.LABEL;
 	}
 	
 	@Override
 	public String toString() {
-		return "continue;";
+		return String.format("%s:", token);
 	}
 	
-	public static ContinueStat get(Token token) {
-		return new ContinueStat(token);
+	public static LabelStat get(Token start) {
+		return new LabelStat(start);
 	}
 }

@@ -1,11 +1,9 @@
 package com.hardcoded.compiler.impl.statement;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import com.hardcoded.compiler.api.Expression;
-import com.hardcoded.compiler.api.Statement;
 import com.hardcoded.compiler.lexer.Token;
 
 /**
@@ -19,37 +17,21 @@ import com.hardcoded.compiler.lexer.Token;
  * @author HardCoded
  * @since 0.2.0
  */
-public class ExprStat implements Statement {
+public class ExprStat extends Stat {
 	protected final List<Expression> list;
-	protected final Token token;
 	
 	private ExprStat(Token token) {
+		super(token);
 		this.list = new ArrayList<>();
-		this.token = token;
 	}
-
+	
 	@Override
 	public Type getType() {
 		return Type.EXPR;
 	}
-
-	@Override
-	public List<Statement> getStatements() {
-		return Collections.emptyList();
-	}
 	
 	public List<Expression> getExpressions() {
 		return list;
-	}
-	
-	@Override
-	public int getLineIndex() {
-		return token.line;
-	}
-
-	@Override
-	public int getColumnIndex() {
-		return token.column;
 	}
 	
 	public void add(Expression expr) {
@@ -58,7 +40,7 @@ public class ExprStat implements Statement {
 	
 	@Override
 	public String toString() {
-		return String.format("%s;", list);
+		return String.format("%s", list);
 	}
 	
 	public static ExprStat get(Token token) {

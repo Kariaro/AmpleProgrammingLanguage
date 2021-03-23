@@ -9,6 +9,12 @@ import java.util.Objects;
  * @since 0.2.0
  */
 public class Token {
+	/**
+	 * A default token that can be used instead of {@code null}.
+	 * <p><b>This should not be a replacement for tokens and should only be used as a non null value<b>
+	 */
+	public static final Token EMPTY = new Token("", "", 0, 0, 0);
+	
 	/** This value will never be {@code null}. */
 	public final String value;
 	/** This value will never be {@code null}. */
@@ -44,5 +50,13 @@ public class Token {
 	
 	public String toString() {
 		return value;
+	}
+	
+	/**
+	 * Create a new empty version of this token.
+	 * @return a empty version of this token
+	 */
+	public Token empty() {
+		return new Token("", group, offset, line, column);
 	}
 }

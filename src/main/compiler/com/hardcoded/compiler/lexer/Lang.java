@@ -39,7 +39,7 @@ public class Lang {
 	}
 	
 	public Token token() {
-		return peak(0);
+		return peek(0);
 	}
 	
 	public Token next() {
@@ -103,18 +103,18 @@ public class Lang {
 	 * @param	offset
 	 * @return	the token at the specified relative position
 	 */
-	public Token peak(int offset) {
+	public Token peek(int offset) {
 		int idx = index + offset;
 		if(idx < 0) return START;
 		if(idx >= list.size()) return END;
 		return list.get(idx);
 	}
 	
-	public String peakString(int offset, int count) {
+	public String peekString(int offset, int count) {
 		StringBuilder sb = new StringBuilder();
 		
 		for(int i = 0; i < count; i++) {
-			Token token = peak(offset + i);
+			Token token = peek(offset + i);
 			sb.append(token.value).append(" ");
 		}
 		

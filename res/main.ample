@@ -1,12 +1,40 @@
+num a = 3;
+
 // Example file
 import "io.ample";
 
-number main() {
-	number a = 32;
-	number b = a + 32;
-	number c = b + 32;
-	number d = c + 32;
+// test
+
+num main(num a, num b, num c) {
+	num a = awesome ( 32);
+	num b = a + 32;
+	num c = b + 32;
 	
-	main(32, 1, 1, 1, 0x232, 0.4324);
+	num d = 3232;
+	
+	
+	str q = asdf[32];
+	str q = 0 ? 1:2;
+	
+	func(1, 0xAAAA, "text", 0.1234);
+	for(str a = 3; a < 43;);
+	while(true) { str a; }
+	do { str a; } while(false);
+	goto label;
+	label:
+	continue;
+	break;
+	return;
+	
+	a + 1 <= 0;
+	a >= 0;
+	((a + 1,(((2))),3,4));
+	a[32];
+	
 	return d;
 }
+
+// ample
+
+
+// test

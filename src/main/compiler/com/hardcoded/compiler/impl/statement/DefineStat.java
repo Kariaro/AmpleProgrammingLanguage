@@ -1,9 +1,5 @@
 package com.hardcoded.compiler.impl.statement;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import com.hardcoded.compiler.api.Statement;
 import com.hardcoded.compiler.lexer.Token;
 
 /**
@@ -18,13 +14,12 @@ import com.hardcoded.compiler.lexer.Token;
  * @author HardCoded
  * @since 0.2.0
  */
-public class DefineStat implements Statement {
-	protected final List<Statement> list;
+public class DefineStat extends Stat {
 	protected final Token type;
 	protected final Token name;
 	
 	private DefineStat(Token type, Token name) {
-		this.list = new ArrayList<>();
+		super(type, true);
 		this.type = type;
 		this.name = name;
 	}
@@ -32,21 +27,6 @@ public class DefineStat implements Statement {
 	@Override
 	public Type getType() {
 		return Type.DEFINE;
-	}
-
-	@Override
-	public List<Statement> getStatements() {
-		return list;
-	}
-	
-	@Override
-	public int getLineIndex() {
-		return type.line;
-	}
-	
-	@Override
-	public int getColumnIndex() {
-		return type.column;
 	}
 	
 	public Token getValueType() {
@@ -57,13 +37,13 @@ public class DefineStat implements Statement {
 		return name;
 	}
 	
-	public void add(Statement stat) {
-		list.add(stat);
-	}
-	
 	@Override
 	public String toString() {
-		return String.format("%s %s;", type, name);
+		if(list.isEmpty()) {
+			return String.format("%s %s;", type, name);
+		}
+		
+		return String.format("%s %s = %s;", type, name, list.get(0));
 	}
 	
 	public static DefineStat get(Token type, Token name) {

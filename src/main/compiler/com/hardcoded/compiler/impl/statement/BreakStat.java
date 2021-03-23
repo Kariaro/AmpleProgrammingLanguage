@@ -1,9 +1,5 @@
 package com.hardcoded.compiler.impl.statement;
 
-import java.util.Collections;
-import java.util.List;
-
-import com.hardcoded.compiler.api.Statement;
 import com.hardcoded.compiler.lexer.Token;
 
 /**
@@ -17,31 +13,14 @@ import com.hardcoded.compiler.lexer.Token;
  * @author HardCoded
  * @since 0.2.0
  */
-public class BreakStat implements Statement {
-	protected final Token token;
-	
+public class BreakStat extends Stat {
 	private BreakStat(Token token) {
-		this.token = token;
+		super(token);
 	}
 	
 	@Override
 	public Type getType() {
 		return Type.BREAK;
-	}
-
-	@Override
-	public List<Statement> getStatements() {
-		return Collections.emptyList();
-	}
-
-	@Override
-	public int getLineIndex() {
-		return token.line;
-	}
-
-	@Override
-	public int getColumnIndex() {
-		return token.column;
 	}
 	
 	@Override
@@ -49,7 +28,7 @@ public class BreakStat implements Statement {
 		return "break;";
 	}
 	
-	public static BreakStat get(Token token) {
-		return new BreakStat(token);
+	public static BreakStat get(Token start) {
+		return new BreakStat(start);
 	}
 }

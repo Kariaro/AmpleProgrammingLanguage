@@ -18,14 +18,13 @@ import com.hardcoded.compiler.lexer.Token;
  * @author HardCoded
  * @since 0.2.0
  */
-public class FuncStat implements Statement {
-	protected final List<Statement> list;
+public class FuncStat extends Stat {
 	protected final List<DefineStat> args;
 	protected final Token type;
 	protected final Token name;
 	
 	private FuncStat(Token type, Token name) {
-		this.list = new ArrayList<>();
+		super(type, true);
 		this.args = new ArrayList<>();
 		this.type = type;
 		this.name = name;
@@ -36,21 +35,6 @@ public class FuncStat implements Statement {
 		return Type.FUNCTION;
 	}
 
-	@Override
-	public List<Statement> getStatements() {
-		return list;
-	}
-
-	@Override
-	public int getLineIndex() {
-		return type.line;
-	}
-
-	@Override
-	public int getColumnIndex() {
-		return type.column;
-	}
-	
 	public List<DefineStat> getArguments() {
 		return args;
 	}

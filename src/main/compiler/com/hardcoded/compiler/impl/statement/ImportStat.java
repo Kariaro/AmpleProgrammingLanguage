@@ -1,9 +1,5 @@
 package com.hardcoded.compiler.impl.statement;
 
-import java.util.Collections;
-import java.util.List;
-
-import com.hardcoded.compiler.api.Statement;
 import com.hardcoded.compiler.lexer.Token;
 
 /**
@@ -17,31 +13,17 @@ import com.hardcoded.compiler.lexer.Token;
  * @author HardCoded
  * @since 0.2.0
  */
-public class ImportStat implements Statement {
+public class ImportStat extends Stat {
 	protected final Token path;
 	
-	private ImportStat(Token path) {
+	private ImportStat(Token token, Token path) {
+		super(token);
 		this.path = path;
 	}
 	
 	@Override
 	public Type getType() {
 		return Type.IMPORT;
-	}
-	
-	@Override
-	public List<Statement> getStatements() {
-		return Collections.emptyList();
-	}
-	
-	@Override
-	public int getLineIndex() {
-		return path.line;
-	}
-	
-	@Override
-	public int getColumnIndex() {
-		return path.column;
 	}
 	
 	public Token getPath() {
@@ -53,7 +35,7 @@ public class ImportStat implements Statement {
 		return String.format("import %s;", path);
 	}
 	
-	public static ImportStat get(Token path) {
-		return new ImportStat(path);
+	public static ImportStat get(Token token, Token path) {
+		return new ImportStat(token, path);
 	}
 }

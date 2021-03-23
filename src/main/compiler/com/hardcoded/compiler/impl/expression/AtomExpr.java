@@ -7,6 +7,7 @@ import java.util.Objects;
 import com.hardcoded.compiler.api.AtomType;
 import com.hardcoded.compiler.api.Expression;
 import com.hardcoded.compiler.impl.context.Reference;
+import com.hardcoded.compiler.lexer.Token;
 
 /**
  * A atom expression
@@ -14,25 +15,28 @@ import com.hardcoded.compiler.impl.context.Reference;
  * @author HardCoded
  * @since 0.2.0
  */
-public class AtomExpr implements Expression {
+public class AtomExpr extends Expr {
 	protected AtomType type;
 	protected double number = 0d;
 	protected String string = "";
 	protected Reference ref;
 	
-	private AtomExpr(double value) {
-		this.number = value;
+	private AtomExpr(Token token, double value) {
+		super(token, true);
 		this.type = AtomType.number;
+		this.number = value;
 	}
 	
-	private AtomExpr(String value) {
-		this.string = value;
+	private AtomExpr(Token token, String value) {
+		super(token, true);
 		this.type = AtomType.string;
+		this.string = value;
 	}
 	
-	private AtomExpr(Reference ref) {
-		this.ref = ref;
+	private AtomExpr(Token token, Reference ref) {
+		super(token, true);
 		this.type = AtomType.ref;
+		this.ref = ref;
 	}
 	
 	@Override
@@ -67,15 +71,15 @@ public class AtomExpr implements Expression {
 		}
 	}
 	
-	public static AtomExpr get(double value) {
-		return new AtomExpr(value);
+	public static AtomExpr get(Token token, double value) {
+		return new AtomExpr(token, value);
 	}
 	
-	public static AtomExpr get(String string) {
-		return new AtomExpr(string);
+	public static AtomExpr get(Token token, String string) {
+		return new AtomExpr(token, string);
 	}
 	
-	public static AtomExpr get(Reference ref) {
-		return new AtomExpr(ref);
+	public static AtomExpr get(Token token, Reference ref) {
+		return new AtomExpr(token, ref);
 	}
 }
