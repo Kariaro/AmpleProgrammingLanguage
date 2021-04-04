@@ -1,0 +1,11 @@
+num awesome() {
+	return 0;
+}
+
+num func() {
+	return 1;
+}
+
+num awesome = 3;
+num asdfcerw = 3;
+num asdf = 3;

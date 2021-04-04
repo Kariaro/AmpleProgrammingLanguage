@@ -1,5 +1,7 @@
 package com.hardcoded.compiler.impl.statement;
 
+import com.hardcoded.compiler.impl.context.IRefContainer;
+import com.hardcoded.compiler.impl.context.Reference;
 import com.hardcoded.compiler.lexer.Token;
 
 /**
@@ -13,8 +15,9 @@ import com.hardcoded.compiler.lexer.Token;
  * @author HardCoded
  * @since 0.2.0
  */
-public class GotoStat extends Stat {
+public class GotoStat extends Stat implements IRefContainer {
 	protected final Token label;
+	protected Reference ref;
 	
 	private GotoStat(Token token, Token label) {
 		super(token);
@@ -27,6 +30,21 @@ public class GotoStat extends Stat {
 	}
 	
 	public Token getLabel() {
+		return label;
+	}
+	
+	@Override
+	public Reference getReference() {
+		return ref;
+	}
+
+	@Override
+	public void setReference(Reference ref) {
+		this.ref =  ref;
+	}
+
+	@Override
+	public Token getRefToken() {
 		return label;
 	}
 	

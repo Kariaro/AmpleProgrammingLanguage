@@ -5,36 +5,29 @@ import com.hardcoded.compiler.impl.context.Reference;
 import com.hardcoded.compiler.lexer.Token;
 
 /**
- * A define statment
+ * A class statement
  * 
  * <pre>
  * Valid syntax:
- *   [type] [name] '=' [expr] ';'
- *   [type] [name] ';'
+ *   'class' [name] '{' [class-body] '}'
  * </pre>
  * 
  * @author HardCoded
  * @since 0.2.0
  */
-public class DefineStat extends Stat implements IRefContainer {
-	protected final Token type;
+public class ClassStat extends Stat implements IRefContainer {
 	protected final Token name;
 	protected Reference ref;
 	
-	private DefineStat(Token type, Token name) {
-		super(type, true);
-		this.type = type;
+	private ClassStat(Token token, Token name) {
+		super(token);
 		this.name = name;
-		this.ref = Reference.get(name.value, Reference.Type.VAR);
+		this.ref = Reference.get(token.value, Reference.Type.CLASS);
 	}
 	
 	@Override
 	public Type getType() {
-		return Type.DEFINE;
-	}
-	
-	public Token getValueType() {
-		return type;
+		return Type.CLASS;
 	}
 	
 	public Token getName() {
@@ -58,14 +51,10 @@ public class DefineStat extends Stat implements IRefContainer {
 	
 	@Override
 	public String toString() {
-		if(list.isEmpty()) {
-			return String.format("%s %s;", type, name);
-		}
-		
-		return String.format("%s %s = %s;", type, name, list.get(0));
+		return String.format("class %s;", name);
 	}
 	
-	public static DefineStat get(Token type, Token name) {
-		return new DefineStat(type, name);
+	public static ClassStat get(Token token, Token name) {
+		return new ClassStat(token, name);
 	}
 }

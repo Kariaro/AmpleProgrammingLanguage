@@ -1,16 +1,11 @@
 package com.hardcoded.compiler.parsetree;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.List;
 
 import com.hardcoded.compiler.api.Expression;
 import com.hardcoded.compiler.api.Statement;
-import com.hardcoded.compiler.impl.expression.AtomExpr;
-import com.hardcoded.compiler.impl.expression.EmptyExpr;
-import com.hardcoded.compiler.impl.expression.Expr;
+import com.hardcoded.compiler.impl.expression.*;
 import com.hardcoded.compiler.impl.statement.*;
-import com.hardcoded.compiler.lexer.Token;
 
 public class TreeUtils {
 	private static String remove_last(String str) {
@@ -71,7 +66,7 @@ public class TreeUtils {
 			return remove_last(stat.toString()) + " " + printTree(list.get(0));
 		}
 		
-		if(stat instanceof ListStat) {
+		if(stat instanceof ScopeStat) {
 			List<Statement> list = stat.getStatements();
 			if(!list.isEmpty()) {
 				sb.append("{");
@@ -118,24 +113,27 @@ public class TreeUtils {
 	protected static Expression deepCopy(Expression elm) {
 		if(EmptyExpr.isEmpty(elm)) return EmptyExpr.get();
 		if(elm instanceof AtomExpr) return AtomExpr.get((AtomExpr)elm);
-		if(elm instanceof Expr) {
-			Expr ex = (Expr)elm;
-			try {
-				Method method = elm.getClass().getDeclaredMethod("get", Token.class);
-				Expr expr = (Expr)method.invoke(null, ex.getToken());
-				
-				for(Expression e : ex.getExpressions()) {
-					expr.add(deepCopy(e));
-				}
-				
-				expr.end(ex.getEnd());
-				return expr;
-			} catch(NoSuchMethodException | SecurityException | IllegalAccessException
-			   | IllegalArgumentException | InvocationTargetException e) {
-				e.printStackTrace();
+		if(elm instanceof UnaryExpr) {
+			UnaryExpr ex = (UnaryExpr)elm;
+			
+			UnaryExpr expr = UnaryExpr.get(ex.getType(), ex.getToken());
+			for(Expression e : ex.getExpressions()) {
+				expr.add(deepCopy(e));
 			}
+			expr.end(ex.getEnd());
+			return expr;
+		}
+		if(elm instanceof BinaryExpr) {
+			BinaryExpr ex = (BinaryExpr)elm;
+			
+			BinaryExpr expr = BinaryExpr.get(ex.getType(), ex.getToken());
+			for(Expression e : ex.getExpressions()) {
+				expr.add(deepCopy(e));
+			}
+			expr.end(ex.getEnd());
+			return expr;
 		}
 		
-		throw new NullPointerException("Failed to clone expression");
+		throw new NullPointerException("Failed to clone expression: " + ((elm == null) ? "<null>":elm.getClass()));
 	}
 }

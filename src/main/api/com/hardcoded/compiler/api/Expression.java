@@ -6,6 +6,12 @@ public interface Expression {
 	public enum Type {
 		ATOM,
 		
+		// UNARY
+		NOT,
+		NOR,
+		NEG,
+		
+		// BINARY
 		ADD,
 		SUB,
 		MUL,
@@ -23,10 +29,6 @@ public interface Expression {
 		CAND,
 		COR,
 		
-		NOT,
-		NOR,
-		NEG,
-		
 		COMMA,
 		
 		// equality operation
@@ -37,8 +39,12 @@ public interface Expression {
 		GT,
 		GTE,
 		
+		// class operation
+		MEMBER,
+		
 		// pointer operation
 		ARRAY, // []
+		
 		
 		// changing operation
 		CALL,
@@ -48,20 +54,7 @@ public interface Expression {
 		NOP,
 	}
 	
-	// Get the type of this expression
 	Type getType();
-	
 	List<Expression> getExpressions();
-	
-	default boolean isPure() {
-		switch(getType()) {
-			case SET:
-			case CALL:
-				return false;
-			
-			default:
-				return true;
-		}
-	}
-	
+	boolean isPure();
 }

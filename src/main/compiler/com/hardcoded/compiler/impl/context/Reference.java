@@ -1,5 +1,7 @@
 package com.hardcoded.compiler.impl.context;
 
+import java.util.Comparator;
+
 /**
  * A reference value to a function, variable or temporary value
  * 
@@ -9,8 +11,16 @@ package com.hardcoded.compiler.impl.context;
 public class Reference {
 	// private static final AtomicInteger counter = new AtomicInteger();
 	public enum Type {
+		/** Function */
 		FUN,
-		VAR
+		/** Variable */
+		VAR,
+		/** Element */
+		MEMBER,
+		/** Class */
+		CLASS,
+		/** Label */
+		LABEL,
 	}
 	
 	protected final String name;
@@ -40,7 +50,7 @@ public class Reference {
 		this.unique_index = unique_index;
 	}
 	
-	private Reference(String name, Type type, int temp_index, int unique_index) {
+	public Reference(String name, Type type, int temp_index, int unique_index) {
 		this.name = name;
 		this.type = type;
 		this.temp_index = temp_index;
@@ -61,6 +71,10 @@ public class Reference {
 	
 	public String getName() {
 		return name;
+	}
+	
+	public int getTempIndex() {
+		return temp_index;
 	}
 	
 	public int getUniqueIndex() {
@@ -86,9 +100,12 @@ public class Reference {
 	}
 	
 	@Override
+	public int hashCode() {
+		return type.ordinal() | ((unique_index + temp_index * 0x323145 + name.hashCode()) << 5);
+	}
+	
+	@Override
 	public String toString() {
-		// if(unique_index != -1) return String.format("[REG:%02x]", unique_index);
-		// if(unique_index == -1) return String.format("(%s:%s)", type, name);
 		return String.format("(%s:%s:%d)", type, name, unique_index);
 	}
 	
@@ -107,4 +124,17 @@ public class Reference {
 	public static Reference unique(String name, Type type, int unique) {
 		return new Reference(name, type, -1, unique);
 	}
+
+	public static Reference get(String name, Type type) {
+		return new Reference(name, type, -1, -1);
+	}
+	
+	
+	protected static final Comparator<Reference> COMPARATOR = new Comparator<Reference>() {
+		public int compare(Reference o1, Reference o2) {
+			int result = Integer.compare(o1.type.ordinal(), o2.type.ordinal());
+			if(result == 0) return Integer.compare(o1.unique_index, o2.unique_index);
+			return result;
+		};
+	};
 }

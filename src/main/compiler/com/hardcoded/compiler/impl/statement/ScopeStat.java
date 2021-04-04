@@ -9,17 +9,18 @@ import com.hardcoded.compiler.lexer.Token;
  * Valid syntax:
  *   '{' [stat] '}'
  * </pre>
+ * 
  * @author HardCoded
  * @since 0.2.0
  */
-public class ListStat extends Stat {
-	private ListStat(Token token) {
+public class ScopeStat extends Stat {
+	private ScopeStat(Token token) {
 		super(token, true);
 	}
 	
 	@Override
 	public Type getType() {
-		return Type.NONE;
+		return Type.SCOPE;
 	}
 	
 	@Override
@@ -27,7 +28,7 @@ public class ListStat extends Stat {
 		return String.format("{%s}", list);
 	}
 	
-	public static ListStat get(Token token) {
-		return new ListStat(token);
+	public static ScopeStat get(Token token) {
+		return new ScopeStat(token);
 	}
 }

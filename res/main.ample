@@ -1,25 +1,38 @@
 num a = 3;
 num b = 3;
+num func = 32;
 
 // Example file
 import "io.ample";
 
-num func() {
-	return 0;
-}
+class Testing;
+	// Class contents
+
+//num func() { return 0; }
 // test
 
 num main(num a, num b, num c) {
 	num a2 = awesome ( 32);
 	awesome;
-	{
+	//awesome.testing();
+	//awesome.testing.cool();
+	
+	//testing.asdfing.testing();
+	{{{{{{{{{{{{
 		num awesome = 3;
 		awesome;
-		awesome;
-	}
+		//awesome.test = 3;
+		//awesome.testing();
+		
+		
+		{{
+			num awesome2 = 5;
+			awesome2;
+		}}
+	}}}}}}}}}}}}
 	awesome;
 	
-	num b2 = a + a + a + 32;
+	num b2 = func + a + a + a + 32;
 	num c2 = b + 32 + asdfcerw;
 	
 	num d = 3232;
@@ -28,10 +41,10 @@ num main(num a, num b, num c) {
 	str q = asdf[32];
 	str q2 = 0 ? 1:2;
 	str q3 = 0 ? 1:2;
-	str q4 = 0 ? 1:2;
-	str q5 = 0 ? 1:2;
-	str q6 = 0 ? 1:2;
-	str q7 = 0 ? 1:2;
+	str q4 = -1;
+	str q5 = -q;
+	str q6 = !q;
+	str q7 = +q;
 	str q8 = 0 ? 1:2;
 	str q9 = 0 ? 1:2;
 	
