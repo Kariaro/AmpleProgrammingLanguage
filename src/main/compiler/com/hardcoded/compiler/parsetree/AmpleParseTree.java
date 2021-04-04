@@ -2,6 +2,7 @@ package com.hardcoded.compiler.parsetree;
 
 import com.hardcoded.compiler.api.Expression;
 import com.hardcoded.compiler.api.Statement;
+import com.hardcoded.compiler.impl.context.Reference;
 import com.hardcoded.compiler.impl.statement.*;
 import com.hardcoded.compiler.lexer.AmpleLexer;
 import com.hardcoded.compiler.lexer.Lang;
@@ -100,11 +101,11 @@ public class AmpleParseTree {
 				// IMPORT
 				
 				if(lang.valueEquals("class")) {
-					// CLASS
-					throw_exception("Classes are not implemented yet");
+					Token token = lang.next();
+					if(!isName()) throw_exception("Expected '[name]' but got '%s'", lang.value());
+					root.add(makeClass(token, lang.next()));
 				} else if(lang.valueEquals("import")) {
 					root.add(makeImport(lang.next(), lang.next()));
-					// LOGGER.debug("import [%s]", root.last());
 					continue;
 				} else {
 					throw_exception("Expected either 'class' or 'import' but got '%s'", lang.value());
@@ -119,6 +120,25 @@ public class AmpleParseTree {
 		return root;
 	}
 	
+	ClassStat makeClass(Token token, Token name) {
+		ClassStat stat = ClassStat.get(token, name);
+		// ';' or [class-body]
+		if(lang.valueEquals(";")) {
+			return stat.end(lang.next());
+		}
+		
+		if(lang.valueEquals("{")) {
+			lang.next();
+			// [class-body]
+			
+			check_or_throw("}");
+			return stat.end(lang.peek(-1));
+		}
+		
+		throw_exception("Not implemented");
+		return stat;
+	}
+
 	// Starts at [string]
 	ImportStat makeImport(Token token, Token path) {
 		ImportStat stat = ImportStat.get(token, path);
@@ -168,7 +188,7 @@ public class AmpleParseTree {
 			lang.next();
 		} else if(lang.valueEquals("{")) {
 			// [stat]
-			stat.setBody(makeStatement());
+			stat.add(makeStatement());
 		} else {
 			return throw_exception("Expected ';' or '{' but got '%s'", lang.value());
 		}
@@ -202,7 +222,7 @@ public class AmpleParseTree {
 	Statement makeStatement() {
 		// '{' or [stat]
 		if(lang.valueEquals("{")) {
-			ListStat stat = ListStat.get(lang.next());
+			ScopeStat stat = ScopeStat.get(lang.next());
 			
 			if(lang.valueEquals("}")) {
 				lang.next();
@@ -271,6 +291,7 @@ public class AmpleParseTree {
 	
 	LabelStat makeLabel(Token token) {
 		LabelStat stat = LabelStat.get(token);
+		stat.setReference(Reference.get(token.value, Reference.Type.LABEL));
 		check_or_throw(":");
 		return stat.end(lang.peek(-1));
 	}
@@ -288,7 +309,9 @@ public class AmpleParseTree {
 	}
 	
 	GotoStat makeGoto(Token token) {
-		GotoStat stat = GotoStat.get(token, lang.next());
+		Token label = lang.next();
+		GotoStat stat = GotoStat.get(token, label);
+		stat.setReference(Reference.get(label.value, Reference.Type.LABEL));
 		check_or_throw(";");
 		return stat.end(lang.peek(-1));
 	}

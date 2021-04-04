@@ -37,7 +37,8 @@ public interface Statement {
 		PROGRAM,
 		
 		// None statement. Does nothing
-		NONE
+		NONE,
+		SCOPE
 	}
 
 	

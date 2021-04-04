@@ -20,7 +20,7 @@ public class ProgramStat implements Statement {
 	
 	@Override
 	public Type getType() {
-		return Type.DEFINE;
+		return Type.PROGRAM;
 	}
 
 	@Override

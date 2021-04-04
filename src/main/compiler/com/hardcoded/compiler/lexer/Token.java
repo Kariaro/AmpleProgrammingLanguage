@@ -48,8 +48,27 @@ public class Token {
 		return column < 0 || offset < 0 || line < 0;
 	}
 	
+	@Override
 	public String toString() {
 		return value;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if(!(obj instanceof Token)) return false;
+		Token that = (Token)obj;
+		return this.value.equals(that.value)
+			&& this.group.equals(that.group)
+			&& this.offset == that.offset
+			&& this.line == that.line
+			&& this.column == that.column;
+	}
+	
+	@Override
+	public int hashCode() {
+		return (offset * 0x16136123)
+			 + (column * 0x41234)
+			 + (line * 0x135885);
 	}
 	
 	/**

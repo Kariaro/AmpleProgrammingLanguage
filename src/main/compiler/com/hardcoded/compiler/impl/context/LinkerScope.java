@@ -1,6 +1,7 @@
 package com.hardcoded.compiler.impl.context;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import com.hardcoded.compiler.impl.context.Reference.Type;
 
@@ -11,21 +12,25 @@ import com.hardcoded.compiler.impl.context.Reference.Type;
  * @since 0.2.0
  */
 public class LinkerScope {
-	private final List<Reference> importing;
-	private final List<Reference> exporting;
+	// Have a scope for FUN/VAR references
+	private final Map<Reference.Type, Map<String, Reference>> imported;
+	private final Map<Reference.Type, Map<String, Reference>> exported;
+	private final Map<Reference.Type, Map<String, Reference>> globals;
+	private final Map<Reference.Type, Map<String, Reference>> locals;
 	private int unique;
 	
-	// Have a scope for FUN/VAR references
 	private final LinkedList<Map<String, Integer>> scopes;
 	private final Map<Integer, Reference> references;
-	private final Map<Integer, String> map;
+	private final List<String> imported_files;
 	
 	public LinkerScope() {
-		this.references = new HashMap<Integer, Reference>();
-		this.importing = new ArrayList<>();
-		this.exporting = new ArrayList<>();
+		this.imported_files = new ArrayList<>();
+		this.references = new HashMap<>();
 		this.scopes = new LinkedList<>();
-		this.map = new HashMap<>();
+		this.imported = new HashMap<>();
+		this.exported = new HashMap<>();
+		this.globals = new HashMap<>();
+		this.locals = new HashMap<>();
 	}
 	
 	public void push() {
@@ -36,39 +41,32 @@ public class LinkerScope {
 		scopes.removeLast();
 	}
 	
-	public Map<Integer, String> map() {
-		return map;
+	public List<String> getImportedFiles() {
+		return imported_files;
 	}
 	
 	public List<Reference> getImport() {
-		return importing;
+		List<Reference> list = imported.values().stream().flatMap(x -> x.values().stream()).collect(Collectors.toList());
+		list.sort(Reference.COMPARATOR);
+		return list;
 	}
 	
 	public List<Reference> getExport() {
-		return exporting;
+		List<Reference> list = exported.values().stream().flatMap(x -> x.values().stream()).collect(Collectors.toList());
+		list.sort(Reference.COMPARATOR);
+		return list;
 	}
 	
-	// IMPORTED
-	public boolean hasImported(String name, Type type) { return getImported0(name, type) != -1; }
-	public Reference getImported(String name, Type type) {
-		int index = getImported0(name, type);
-		if(index < 0) throw new NullPointerException("The imported " + (type == Type.VAR ? "variable":"function") + " '" + name + "' has not been defined");
-		return importing.get(index);
-	}
-	protected int getImported0(String name, Type type) {
-		for(int i = 0; i < importing.size(); i++) {
-			Reference ref = importing.get(i);
-			if(ref.name.equals(name) && ref.type == type) return i;
-		}
-		return -1;
-	}
-	public Reference addImported(String name, Type type) {
-		if(hasImported(name, type)) throw new NullPointerException("The imported " + (type == Type.VAR ? "variable":"function") + " '" + name + "' has already been defined");
-		Reference ref = Reference.unique(name, type, unique++);
-		importing.add(ref);
-		return ref;
+	public List<Reference> getGlobals() {
+		List<Reference> list = globals.values().stream().flatMap(x -> x.values().stream()).collect(Collectors.toList());
+		list.sort(Reference.COMPARATOR);
+		return list;
 	}
 	
+	// FILES
+	public void addImportedFile(String path) {
+		imported_files.add(path);
+	}
 	
 	// LOCAL
 	public boolean hasLocal(String name) { return getLocal0(name) != -1; }
@@ -87,30 +85,59 @@ public class LinkerScope {
 	public Reference addLocal(String name) {
 		if(hasLocal(name)) throw new NullPointerException("The local variable '" + name + "' already exists");
 		scopes.getLast().put(name, unique);
-		map.put(unique, name);
 		Reference ref = Reference.unique(name, unique);
 		references.put(unique++, ref);
 		return ref;
 	}
 	
+	// LOCALS_NON_VARIABLE
+	public boolean hasLocals(String name, Type type) { return _has(locals, name, type); }
+	public Reference getLocals(String name, Type type) { return _get(locals, "local", name, type); }
+	public Reference addLocals(String name, Type type) { return _add(locals, "local", name, type); }
 	
-	// GLOBAL
-	public boolean hasGlobal(String name) { return getGlobal0(name) != -1; }
-	protected int getGlobal0(String name) {
-		if(scopes.isEmpty()) return -1;
-		return scopes.get(0).getOrDefault(name, -1);
+	// EXPORTING
+	public boolean hasExported(String name, Type type) { return _has(exported, name, type); }
+	public Reference getExported(String name, Type type) { return _get(exported, "exported", name, type); }
+	public Reference addExported(String name, Type type) { return _add(exported, "exported", name, type); }
+	public Reference addDirectExported(Reference ref) { return _add_direct(exported, "exported", ref); }
+	
+	// IMPORTING
+	public boolean hasImported(String name, Type type) { return _has(imported, name, type); }
+	public Reference getImported(String name, Type type) { return _get(imported, "imported", name, type); }
+	public Reference addImported(String name, Type type) { return _add(imported, "imported", name, type); }
+	public Reference addDirectImported(Reference ref) { return _add_direct(imported, "imported", ref); }
+	
+	// GLOBALS
+	public boolean hasGlobal(String name, Type type) { return _has(globals, name, type); }
+	public Reference getGlobal(String name, Type type) { return _get(globals, "global", name, type); }
+	public Reference addGlobal(String name, Type type) { return _add(globals, "global", name, type); }
+	public Reference addDirectGlobal(Reference ref) { return _add_direct(globals, "global", ref); }
+	
+	// Generic
+	private boolean _has(Map<Type, Map<String, Reference>> map, String name, Type type) { return _get0(map, name, type) != null; }
+	private Reference _get(Map<Type, Map<String, Reference>> map, String called, String name, Type type) {
+		Reference ref = _get0(map, name, type);
+		if(ref == null) throw new NullPointerException("The " + called + " " + (type == Type.VAR ? "variable":"function") + " '" + name + "' has not been defined");
+		return ref;
 	}
-	public Reference getGlobal(String name) {
-		int index = getGlobal0(name);
-		if(index < 0) throw new NullPointerException("The global variable '" + name + "' does not exist");
-		return references.get(index);
+	private Reference _get0(Map<Type, Map<String, Reference>> map, String name, Type type) {
+		Map<String, Reference> m = map.get(type);
+		if(m == null) return null;
+		return m.get(name);
 	}
-	public Reference addGlobal(String name) {
-		if(hasGlobal(name)) throw new NullPointerException("The global variable '" + name + "' already exists");
-		scopes.get(0).put(name, unique);
-		map.put(unique, name);
-		Reference ref = Reference.unique(name, unique);
-		references.put(unique++, ref);
+	private Reference _add(Map<Type, Map<String, Reference>> map, String called, String name, Type type) {
+		if(hasGlobal(name, type)) throw new NullPointerException("The " + called + " " + (type == Type.VAR ? "variable":"function") + " '" + name + "' has already been defined");
+		Reference ref = Reference.unique(name, type, unique++);
+		Map<String, Reference> m = map.get(type);
+		if(m == null) map.put(type, m = new HashMap<>());
+		m.put(name, ref);
+		return ref;
+	}
+	private Reference _add_direct(Map<Type, Map<String, Reference>> map, String called, Reference ref) {
+		if(hasGlobal(ref.getName(), ref.getType())) throw new NullPointerException("The " + called + " " + (ref.getType() == Type.VAR ? "variable":"function") + " '" + ref.getName() + "' has already been defined");
+		Map<String, Reference> m = map.get(ref.getType());
+		if(m == null) map.put(ref.getType(), m = new HashMap<>());
+		m.put(ref.getName(), ref);
 		return ref;
 	}
 }

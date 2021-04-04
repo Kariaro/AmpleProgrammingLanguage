@@ -1,9 +1,7 @@
 package com.hardcoded.visualizer;
 
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseWheelEvent;
+import java.awt.event.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,9 +18,10 @@ public class TextArea extends JPanel {
 	private int scroll;
 	private int visible_rows = 37;
 	private int tab_size = 4;
+	private int index_size = 33;
 	
 	public TextArea() {
-		Dimension dim = new Dimension(1000, 629);
+		Dimension dim = new Dimension(1000, 640);
 		setMinimumSize(dim);
 		setPreferredSize(dim);
 		setBackground(Color.white);
@@ -42,13 +41,22 @@ public class TextArea extends JPanel {
 			}
 			
 			@Override
+			public void mouseDragged(MouseEvent e) {
+				mouse = e.getPoint();
+				repaint();
+			}
+			
+			@Override
 			public void mouseWheelMoved(MouseWheelEvent e) {
-				int next_scroll = (int)(scroll + e.getWheelRotation());
-				if(next_scroll < 0) next_scroll = 0;
-				scroll = next_scroll;
-				
-				if(scroll >= index.length) {
-					scroll = index.length - 1;
+				boolean shift = e.isShiftDown();
+				if(e.isControlDown()) {
+					int next_size = (int)(font.getSize() + e.getWheelRotation());
+					if(next_size < 7) next_size = 7;
+					if(next_size > 20) next_size = 20;
+					
+					setFontSize(next_size);
+				} else {
+					doScroll(e.getWheelRotation() * (shift ? 4:1));
 				}
 				
 				repaint();
@@ -57,6 +65,38 @@ public class TextArea extends JPanel {
 		addMouseListener(adapter);
 		addMouseMotionListener(adapter);
 		addMouseWheelListener(adapter);
+		setFocusable(true);
+		addKeyListener(new KeyAdapter() {
+			public void keyPressed(KeyEvent e) {
+				boolean shift = e.isShiftDown();
+				
+				switch(e.getKeyCode()) {
+					case KeyEvent.VK_DOWN: doScroll(shift ? 4:1); break;
+					case KeyEvent.VK_UP: doScroll(shift ? -4:-1); break;
+				}
+			}
+		});
+	}
+	
+	private float font_offset;
+	private float font_w;
+	private float font_h;
+	public void setFontSize(float size) {
+		font = font.deriveFont(size);
+		FontMetrics fm = getFontMetrics(font);
+		font_offset = fm.getAscent();
+		font_w = fm.stringWidth(" ");
+		font_h = fm.getHeight();
+		index_size = (int)(font_w * 4) + 2;
+		visible_rows = (int)Math.ceil(640 / font_h);
+	}
+	
+	protected void doScroll(int offset) {
+		int next_scroll = scroll + offset;
+		if(next_scroll >= index.length) next_scroll = index.length - 1;
+		if(next_scroll < 0) next_scroll = 0;
+		scroll = next_scroll;
+		repaint();
 	}
 	
 	public void setText(String text) {
@@ -83,8 +123,6 @@ public class TextArea extends JPanel {
 			}
 			
 			if(c == '\t') {
-				//sb.append('\u00bb');
-				//sb.append(' ');
 				sb.append('\t');
 			} else {
 				sb.append(c);
@@ -98,17 +136,6 @@ public class TextArea extends JPanel {
 		
 		lines = list.toArray(String[]::new);
 		index = intList.toArray();
-	}
-	
-	private float font_offset;
-	private float font_w;
-	private float font_h;
-	public void setFontSize(float size) {
-		font = font.deriveFont(size);
-		FontMetrics fm = getFontMetrics(font);
-		font_offset = fm.getAscent();
-		font_w = fm.stringWidth(" ");
-		font_h = fm.getHeight();
 	}
 	
 	private List<Range> ranges = new ArrayList<>();
@@ -128,52 +155,6 @@ public class TextArea extends JPanel {
 		g.setColor(Color.white);
 		g.fillRect(0, 0, getWidth(), getHeight());
 		
-		g.translate(33, 0);
-		g.setColor(Color.gray);
-		g.drawLine(0, 0, 0, getHeight());
-		String[] array = this.lines;
-		for(int j = 0; j < Math.min(scroll + visible_rows, array.length); j++) {
-			String line = array[j];
-			int i = j - scroll;
-			
-			g.setColor(Color.black);
-			drawString(g, line, 0, i * font_h + font_offset);
-			
-			g.setColor(Color.lightGray);
-			//g.drawRect(0, (int)(i * font_h), (int)(line.length() * font_w), (int)font_h);
-		}
-		
-		Range inside_range = null;
-		Range[] range_array = ranges.toArray(Range[]::new);
-		for(int i = 0; i < range_array.length; i++) {
-			Range range = range_array[i];
-			boolean inside = drawRange(g, range);
-			
-			if(inside) {
-				inside_range = range;
-			}
-		}
-		g.translate(-33, 0);
-		
-		if(inside_range != null) {
-			Point m = mouse;
-			if(m != null) {
-				String tip = inside_range.tooltip;
-				String ran = String.format("(start: %d, end: %d)", inside_range.start, inside_range.end);
-				int mx = m.x + 15;
-				int my = m.y - 6;
-				int ln = (int)(Math.max(tip.length(), ran.length()) * font_w);
-				
-				g.setColor(Color.gray);
-				g.fillRect(mx, my, ln + 2, 18 + 16);
-				g.setColor(Color.white);
-				g.fillRect(mx + 1, my + 1, ln, 32);
-				g.setColor(Color.black);
-				g.drawString(tip, mx + 1, my + font_offset);
-				g.drawString(ran, mx + 1, my + font_offset + font_h);
-			}
-		}
-		
 		g.setColor(Color.black);
 		int[] index = this.index;
 		for(int i = scroll; i < Math.min(scroll + visible_rows, index.length); i++) {
@@ -181,12 +162,73 @@ public class TextArea extends JPanel {
 			g.drawString(line, 0, (i - scroll) * font_h + font_offset);
 		}
 		
-		//gr.drawImage(bi, 0, 0, null);
-		//g.dispose();
+		g.translate(index_size, 0);
+		g.setColor(Color.gray);
+		g.drawLine(0, 0, 0, getHeight());
+		
+		Range irange = null;
+		Range[] ranges = this.ranges.toArray(Range[]::new);
+		for(int i = 0; i < ranges.length; i++) {
+			Range range = ranges[i];
+			boolean inside = drawRange(g, range);
+			
+			if(inside) {
+				irange = range;
+			}
+		}
+
+		g.setColor(new Color(1, 1, 1, 0.4f));
+		g.fillRect(0, 0, getWidth(), getHeight());
+		
+		if(irange != null) {
+			drawRange(g, irange, new Color(0, 0, 0, 0.3f));
+			
+			if(irange.unique != -1) {
+				for(int i = 0; i < ranges.length; i++) {
+					Range range = ranges[i];
+					if(range.unique != irange.unique) continue;
+					
+					drawRange(g, range, new Color(1, 1, 0, 1.0f));
+				}
+			}
+			
+		}
+		
+		String[] array = this.lines;
+		for(int j = 0; j < Math.min(scroll + visible_rows, array.length); j++) {
+			String line = array[j];
+			int i = j - scroll;
+			
+			g.setColor(Color.black);
+			drawString(g, line, 0, i * font_h + font_offset);
+		}
+		g.translate(-index_size, 0);
+		
+		if(irange != null) {
+			Point m = mouse;
+			if(m != null) {
+				String tip = irange.tooltip;
+				String ran = String.format("(start: %d, end: %d)", irange.start, irange.end);
+				int mx = m.x + 150;
+				int my = m.y - 6;
+				int ln = (int)(Math.max(tip.length(), ran.length()) * font_w);
+				
+				g.setColor(Color.gray);
+				g.fillRect(mx, my, ln + 2, (int)(font_h * 2) + 2);
+				g.setColor(Color.white);
+				g.fillRect(mx + 1, my + 1, ln, (int)(font_h * 2));
+				g.setColor(Color.black);
+				g.drawString(tip, mx + 1, my + font_offset);
+				g.drawString(ran, mx + 1, my + font_offset + font_h);
+			}
+		}
 	}
 	
 	private boolean drawRange(Graphics2D g, Range range) {
-		g.setColor(range.color);
+		return drawRange(g, range, range.color);
+	}
+	private boolean drawRange(Graphics2D g, Range range, Color color) {
+		g.setColor(color);
 		int s = range.start;
 		int e = range.end;
 		if(s == e) return false;
@@ -234,7 +276,6 @@ public class TextArea extends JPanel {
 	
 	private void drawString(Graphics2D g, String s, float x, float y) {
 		byte[] bytes = s.getBytes();
-		//g.drawString(s, x, y);
 		
 		int ox = 0;
 		for(int i = 0; i < bytes.length; i++) {
@@ -259,7 +300,7 @@ public class TextArea extends JPanel {
 		
 		Point m = mouse;
 		if(m != null) {
-			int mx = m.x - 33;
+			int mx = m.x - index_size;
 			int my = (int)(m.y + scroll * font_h);
 			
 			return (mx >= x && my >= y && (mx < x + w) && (my < y + h));

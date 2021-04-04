@@ -31,6 +31,11 @@ public class EmptyExpr implements Expression {
 	}
 	
 	@Override
+	public boolean isPure() {
+		return true;
+	}
+	
+	@Override
 	public String toString() {
 		return ";";
 	}

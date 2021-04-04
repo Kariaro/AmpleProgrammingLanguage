@@ -1,21 +1,31 @@
 package com.hardcoded.compiler.impl.expression;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.*;
 
 import com.hardcoded.compiler.api.AtomType;
 import com.hardcoded.compiler.api.Expression;
+import com.hardcoded.compiler.impl.context.IRefContainer;
 import com.hardcoded.compiler.impl.context.Reference;
 import com.hardcoded.compiler.lexer.Token;
 
 /**
  * A atom expression
  * 
+ * <pre>
+ * Valid syntax:
+ *   [number]
+ *   [string]
+ *   [name]
+ * </pre>
+ * 
  * @author HardCoded
  * @since 0.2.0
  */
-public class AtomExpr extends Expr {
+public class AtomExpr extends Expr implements IRefContainer {
+	private static final DecimalFormat number_format = new DecimalFormat("#.##########", DecimalFormatSymbols.getInstance(Locale.US));
+	
 	protected AtomType type;
 	protected double number = 0d;
 	protected String string = "";
@@ -57,6 +67,10 @@ public class AtomExpr extends Expr {
 		return Collections.emptyList();
 	}
 	
+	public AtomType getAtomType() {
+		return type;
+	}
+	
 	public boolean isReference() {
 		return type == AtomType.ref;
 	}
@@ -69,18 +83,33 @@ public class AtomExpr extends Expr {
 		return type == AtomType.string;
 	}
 	
-	public void set(Reference ref) {
-		this.ref = ref;
-	}
-	
+	@Override
 	public Reference getReference() {
 		return ref;
 	}
 	
 	@Override
+	public void setReference(Reference ref) {
+		this.ref = ref;
+	}
+	
+	public String getString() {
+		return string;
+	}
+	
+	public double getNumber() {
+		return number;
+	}
+	
+	@Override
+	public Token getRefToken() {
+		return token;
+	}
+	
+	@Override
 	public String toString() {
 		switch(type) {
-			case number: return Double.toString(number);
+			case number: return number_format.format(number);
 			case string: return '"' + string + '"';
 			case ref: return Objects.toString(ref);
 			default: throw new IllegalStateException("Bad AtomExpr missing type");

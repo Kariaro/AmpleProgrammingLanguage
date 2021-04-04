@@ -65,6 +65,18 @@ public abstract class Expr implements Expression {
 	}
 	
 	@Override
+	public boolean isPure() {
+		switch(getType()) {
+			case SET:
+			case CALL:
+				return false;
+			
+			default:
+				return true;
+		}
+	}
+	
+	@Override
 	public String toString() {
 		return String.format("%s(%s)", getType().name().toLowerCase(), StringUtils.join(", ", list));
 	}

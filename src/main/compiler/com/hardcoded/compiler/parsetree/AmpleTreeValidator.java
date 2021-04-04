@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.hardcoded.compiler.api.Expression;
 import com.hardcoded.compiler.api.Statement;
+import com.hardcoded.compiler.impl.context.IRefContainer;
 import com.hardcoded.compiler.impl.context.LinkerScope;
 import com.hardcoded.compiler.impl.context.Reference;
 import com.hardcoded.compiler.impl.expression.AtomExpr;
@@ -27,7 +28,7 @@ public class AmpleTreeValidator {
 		
 	}
 	
-	public void process(Options options, ProgramStat stat) {
+	public LinkerScope process(Options options, ProgramStat stat) {
 		LOGGER.debug("Started validator");
 		
 		
@@ -40,7 +41,7 @@ public class AmpleTreeValidator {
 //		System.out.println("################################################");
 		
 		// Process the program
-		processProgram(stat);
+		return processProgram(stat);
 	}
 	
 	// Replaces all expressions with a deep copy of themselves
@@ -61,61 +62,77 @@ public class AmpleTreeValidator {
 		}
 	}
 	
-	void processProgram(ProgramStat stat) {
-		// Functions are defined inside ClassStat and ProgramStat
-		// Global variables are defined inside the ProgramStat
-		// Imports are defined inside the ProgramStat
-		
+	LinkerScope processProgram(ProgramStat stat) {
 		LinkerScope link = new LinkerScope();
 		link.push(); // Create global scope
 		
 		for(Statement s : stat.getStatements()) {
-			// System.out.printf("(line: %d, column: %d) %s\n", s.getLineIndex(), s.getColumnIndex(), s);
 			if(s instanceof FuncStat) {
 				processFunction((FuncStat)s, link);
+			}
+			
+			if(s instanceof ClassStat) {
+				processClass((ClassStat)s, link);
+			}
+			
+			if(s instanceof DefineStat) {
+				processDefine((DefineStat)s, link);
+			}
+			
+			if(s instanceof ImportStat) {
+				processImport((ImportStat)s, link);
+			}
+		}
+		
+		return link;
+	}
+	
+	private void processImport(ImportStat stat, LinkerScope link) {
+		String value = stat.getPath().value;
+		value = value.substring(1, value.length() - 1);
+		
+		// Warn for redefinitions maybe?
+		link.addImportedFile(value);
+	}
+	
+	private void processClass(ClassStat stat, LinkerScope link) {
+		String name = stat.getName().value;
+		if(link.hasGlobal(name, Reference.Type.CLASS)) {
+			throw_exception(stat, "Redeclaration of global class '%s'", name);
+		}
+		
+		link.addExported(name, Reference.Type.CLASS);
+		stat.setReference(link.addGlobal(name, Reference.Type.CLASS));
+		
+		for(Statement s : stat.getStatements()) {
+			if(s instanceof FuncStat) {
+				processFunction((FuncStat)s, link);
+			}
+			
+			if(s instanceof ClassStat) {
+				processClass((ClassStat)s, link);
 			}
 			
 			if(s instanceof DefineStat) {
 				processDefine((DefineStat)s, link);
 			}
 		}
-		
-		/*
-		String str = TreeUtils.printTree(stat).replace("\t", "    ");
-		System.out.println("################################################");
-		System.out.println(str);
-		System.out.println("################################################");
-		
-		Map<Integer, String> map = link.map();
-		System.out.println("Mappings:");
-		for(Integer key : map.keySet()) {
-			System.out.printf("  %02x: %s\n", key, map.get(key));
-		}
-		System.out.println("---------------------");
-		
-
-		System.out.println("Imported:");
-		for(Reference ref : link.getImport()) {
-			System.out.printf("  %4d: (%s) %s\n", ref.getUniqueIndex(), ref.getType() == Type.VAR ? "variable":"function", ref.getName());
-		}
-		System.out.println("---------------------");
-		*/
-		// throw_exception(stat, "Not implemented yet!");
 	}
-	
+
 	private void processDefine(DefineStat stat, LinkerScope link) {
 		String name = stat.getName().value;
-		if(link.hasGlobal(name)) {
+		if(link.hasGlobal(name, Reference.Type.VAR)) {
 			throw_exception(stat, "Redeclaration of global variable '%s'", name);
 		}
 		
-		link.addGlobal(name);
+		link.addExported(name, Reference.Type.VAR);
+		stat.setReference(link.addGlobal(name, Reference.Type.VAR));
 	}
-
-	// If a variable is undefined make sure it is flagged as a imported variable
+	
 	void processFunction(FuncStat stat, LinkerScope link) {
 		link.push();
-		LOGGER.debug(stat);
+		link.addExported(stat.getName().value, Reference.Type.FUN);
+		stat.setReference(link.addGlobal(stat.getName().value, Reference.Type.FUN));
 		
 		for(DefineStat s : stat.getArguments()) {
 			String name = s.getName().value;
@@ -124,7 +141,7 @@ public class AmpleTreeValidator {
 				throw_exception(s, "Duplicate function parameter name '%s'", s.getName());
 			}
 			
-			link.addLocal(name);
+			s.setReference(link.addLocal(name));
 		}
 		
 		for(Statement s : stat.getStatements()) {
@@ -144,7 +161,22 @@ public class AmpleTreeValidator {
 				throw_exception(stat, "Redefined variable '%s'", name);
 			}
 			
-			link.addLocal(name);
+			s.setReference(link.addLocal(name));
+		}
+		
+		if(stat instanceof LabelStat
+		|| stat instanceof GotoStat) {
+			IRefContainer s = (IRefContainer)stat;
+			String name = s.getRefToken().value;
+			
+			Reference ref = null;
+			if(link.hasLocals(name, Reference.Type.LABEL)) {
+				ref = link.getLocals(name, Reference.Type.LABEL);
+			} else {
+				ref = link.addLocals(name, Reference.Type.LABEL);
+			}
+			
+			s.setReference(ref);
 		}
 		
 		boolean new_scope = false;
@@ -153,7 +185,7 @@ public class AmpleTreeValidator {
 		|| stat instanceof ForStat
 		|| stat instanceof WhileStat
 		|| stat instanceof DoWhileStat
-		|| stat instanceof ListStat) {
+		|| stat instanceof ScopeStat) {
 			link.push();
 			new_scope = true;
 		}
@@ -184,24 +216,21 @@ public class AmpleTreeValidator {
 				
 				if(link.hasLocal(name)) {
 					ref = link.getLocal(name);
-					e.set(ref);
+					e.setReference(ref);
 				} else if(ref.isTemporary()) {
 					ref = link.addLocal(name);
-					e.set(ref);
-				} else if(link.hasGlobal(name)) {
-					ref = link.getGlobal(name);
-					e.set(ref);
+					e.setReference(ref);
+				} else if(link.hasGlobal(name, ref.getType())) {
+					ref = link.getGlobal(name, ref.getType());
+					e.setReference(ref);
 				} else {
-					// Token t = e.getToken();
-					// System.out.printf("Could not find reference '%s'. This must be a global %s (line: %s, column: %s)\n", name, ref.getType(), t.line, t.column);
-					
 					if(link.hasImported(name, ref.getType())) {
 						ref = link.getImported(name, ref.getType());
 					} else {
 						ref = link.addImported(name, ref.getType());
 					}
 					
-					e.set(ref);
+					e.setReference(ref);
 				}
 			}
 		}
