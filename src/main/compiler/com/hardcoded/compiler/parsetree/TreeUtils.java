@@ -29,15 +29,10 @@ public class TreeUtils {
 		StringBuilder sb = new StringBuilder();
 		
 		if(stat instanceof IfStat) {
+			IfStat s = (IfStat)stat;
 			List<Statement> list = stat.getStatements();
 			sb.append("if(").append(list.get(0)).append(") ").append(printTree(list.get(1)));
-			return sb.toString();
-		}
-		
-		if(stat instanceof IfElseStat) {
-			List<Statement> list = stat.getStatements();
-			sb.append("if(").append(list.get(0)).append(") ").append(printTree(list.get(1)))
-				.append(" else ").append(printTree(list.get(2)));
+			if(s.hasElse()) sb.append(" else ").append(printTree(list.get(2)));
 			return sb.toString();
 		}
 		

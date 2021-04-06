@@ -1,0 +1,62 @@
+import "io.ample";
+
+class Testing;
+	// Class contents
+
+void test_for() {
+	num a = 3;
+	num b = 3;
+	num c = 0;
+	
+	for(num i = 0; i < a; i += 1) {
+		c += 1;
+	}
+}
+
+void test_if() {
+	num a = 3;
+	num b = 5;
+	
+	if(a < b) {
+		print("a < b");
+	} else {
+		print("a >= b");
+	}
+}
+
+void test_ternary() {
+	num a = 3;
+	num b = 5;
+	num c = 4;
+	num d = a ? b:c;
+}
+
+void test_ternary2() {
+	num a = 3;
+	num b = 5;
+	num c = 4;
+	num tmp;
+	num d = ((tmp = a), (tmp && (tmp = b, 1)) || (tmp = c), tmp);
+}
+
+void test_ternary3() {
+	num a = 3;
+	num b = 5;
+	num c = 4;
+	
+	num tmp = a;
+	if(tmp) {
+		tmp = b;
+	} else {
+		tmp = c;
+	}
+	num d = tmp;
+}
+
+void test_cand() {
+	num a = 3;
+	num b = 5;
+	num c = 4;
+	
+	num d = a && (b += 1, 1) && c;
+}

@@ -8,6 +8,7 @@ import com.hardcoded.compiler.lexer.Token;
  * <pre>
  * Valid syntax:
  *   'if' '(' [expr] ')' [stat]
+ *   'if' '(' [expr] ')' [stat] 'else' [stat]
  * </pre>
  * 
  * @author HardCoded
@@ -21,6 +22,10 @@ public class IfStat extends Stat {
 	@Override
 	public Type getType() {
 		return Type.IF;
+	}
+	
+	public boolean hasElse() {
+		return list.size() >= 3;
 	}
 	
 	@Override

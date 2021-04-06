@@ -15,7 +15,6 @@ public interface Statement {
 		FOR,
 		DO_WHILE,
 		IF,
-		IF_ELSE,
 		LABEL,
 		GOTO,
 		RETURN,

@@ -25,7 +25,7 @@ public class InstList {
 	}
 	
 	public void add(Inst inst) {
-		System.out.printf("%08x: %s\n", hashCode(), inst);
+		// System.out.printf("%08x: %s\n", hashCode(), inst);
 		list.add(inst);
 	}
 	

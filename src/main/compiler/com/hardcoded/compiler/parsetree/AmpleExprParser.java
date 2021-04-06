@@ -140,26 +140,27 @@ public class AmpleExprParser {
 			
 			Token token = lang.next();
 			Expr type = BinaryExpr.get(expr_type, token);
-			Token empty = token.empty();
-			if(!lhs.isPure()) {
-				AtomExpr temp = AtomExpr.get(empty, temp(Reference.Type.VAR));
+			
+			if(lhs.isPure()) {
+				type.add(lhs);
+				type.add(order_13());
 				
-				type.add(BinaryExpr.get(COMMA, empty).add(
-					BinaryExpr.get(SET, empty).add(temp, lhs),
-					temp
-				).add(order_13()));
-				
-				BinaryExpr expr = BinaryExpr.get(SET, empty);
-				expr.add(temp);
+				Expr expr = BinaryExpr.get(SET, Token.fromOffset(lhs.getStartOffset()));
+				expr.add(lhs);
 				expr.add(type);
 				return expr;
 			}
 			
-			type.add(lhs);
-			type.add(order_13());
+			Token empty = token.empty();
+			AtomExpr temp = AtomExpr.get(empty, temp(Reference.Type.VAR));
 			
-			Expr expr = BinaryExpr.get(SET, Token.fromOffset(lhs.getStartOffset()));
-			expr.add(lhs);
+			type.add(BinaryExpr.get(COMMA, empty).add(
+				BinaryExpr.get(SET, empty).add(temp, lhs),
+				temp
+			).add(order_13()));
+			
+			BinaryExpr expr = BinaryExpr.get(SET, empty);
+			expr.add(temp);
 			expr.add(type);
 			return expr;
 		}
@@ -178,17 +179,16 @@ public class AmpleExprParser {
 		Token empty = token.empty();
 		AtomExpr temp = AtomExpr.get(empty, temp(Reference.Type.VAR));
 		return BinaryExpr.get(COMMA, start).add(
+			BinaryExpr.get(SET, empty).add(temp, a),
 			BinaryExpr.get(COR, empty).add(
 				BinaryExpr.get(CAND, empty).add(
-					a,
+					temp,
 					BinaryExpr.get(COMMA, empty).add(
 						BinaryExpr.get(SET, empty).add(temp, b),
 						AtomExpr.get(empty, 1)
 					)
 				),
-				BinaryExpr.get(COMMA, empty.empty()).add(
-					BinaryExpr.get(SET, empty).add(temp, c)
-				)
+				BinaryExpr.get(SET, empty).add(temp, c)
 			),
 			temp
 		).end(lang.peek(-1));

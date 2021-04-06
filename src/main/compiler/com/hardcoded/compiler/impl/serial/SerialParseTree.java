@@ -196,10 +196,6 @@ public class SerialParseTree {
 		writeList(stat, out);
 	}
 	
-	void write_IF_ELSE(IfElseStat stat, SerialOut out) {
-		writeList(stat, out);
-	}
-	
 	void write_DO_WHILE(DoWhileStat stat, SerialOut out) {
 		writeList(stat, out);
 	}
@@ -562,14 +558,6 @@ public class SerialParseTree {
 	
 	IfStat read_IF(SerialIn in) {
 		IfStat stat = IfStat.get(Token.EMPTY);
-		stat.setLocation(in.readPackedInt(), in.readPackedInt());
-		readList(stat, in);
-		
-		return stat;
-	}
-	
-	IfElseStat read_IF_ELSE(SerialIn in) {
-		IfElseStat stat = IfElseStat.get(Token.EMPTY);
 		stat.setLocation(in.readPackedInt(), in.readPackedInt());
 		readList(stat, in);
 		

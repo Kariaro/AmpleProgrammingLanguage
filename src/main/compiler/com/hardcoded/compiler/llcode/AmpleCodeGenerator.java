@@ -5,7 +5,6 @@ import java.util.List;
 import com.hardcoded.compiler.api.Expression;
 import com.hardcoded.compiler.api.Instruction.Type;
 import com.hardcoded.compiler.api.Statement;
-import com.hardcoded.compiler.impl.context.IRefContainer;
 import com.hardcoded.compiler.impl.context.Reference;
 import com.hardcoded.compiler.impl.expression.AtomExpr;
 import com.hardcoded.compiler.impl.expression.EmptyExpr;
@@ -35,35 +34,17 @@ public class AmpleCodeGenerator {
 	
 	private InstList getList(Stat stat) {
 		InstList list = InstList.get();
-		
 		InstParam start = InstParam.get(stat.getStartOffset());
 		InstParam end = InstParam.get(stat.getEndOffset());
-		if(stat instanceof IRefContainer) {
-			list.add(Inst.get(Type.MARKER).addParams(start, end));
-		} else {
-			list.add(Inst.get(Type.MARKER).addParams(start, end));
-		}
-		
+		list.add(Inst.get(Type.MARKER).addParams(start, end, InstParam.get(stat.toString())));
 		return list;
 	}
 	
 	private InstList getList(Expression expr) {
 		InstList list = InstList.get();
-		
-		if(expr instanceof Expr) {
-			Expr ex = (Expr)expr;
-			int s = ex.getStartOffset();
-			int e = ex.getEndOffset();
-			//Token s = ex.getToken();
-			//Token e = ex.getEnd();
-			
-
-			InstParam start = InstParam.get(s);//s.offset);
-			InstParam end = InstParam.get(e);//e.offset + e.value.length());
-			
-			list.add(Inst.get(Type.MARKER).addParams(start, end));
-		}
-		
+//		InstParam start = InstParam.get(expr.getStartOffset());
+//		InstParam end = InstParam.get(expr.getEndOffset());
+//		list.add(Inst.get(Type.MARKER).addParams(start, end, InstParam.get(expr.toString())));
 		return list;
 	}
 	
@@ -94,11 +75,11 @@ public class AmpleCodeGenerator {
 		throw new RuntimeException("Invalid statement: " + ((stat == null) ? "<null>":(stat.getClass())));
 	}
 	
+	private InstList processStat(Statement stat) { return processStat(stat, InstParam.EMPTY); }
 	private InstList processStat(Statement stat, InstParam ref) {
 		if(EmptyStat.isEmpty(stat)) return InstList.get();
 		
-		Stat st = (Stat)stat;
-		InstList list = getList(st);
+		InstList list = InstList.get();
 		
 		if(stat instanceof ScopeStat) {
 			for(Statement s : stat.getStatements()) {
@@ -175,12 +156,6 @@ public class AmpleCodeGenerator {
 			return list;
 		}
 		
-		if(stat instanceof IfElseStat) {
-			list.add(processIfElseStat((IfElseStat)stat, ref));
-			return list;
-		}
-		
-		
 		throw new RuntimeException("Invalid statement: " + ((stat == null) ? "<null>":(stat.getClass())));
 	}
 	
@@ -206,7 +181,7 @@ public class AmpleCodeGenerator {
 		
 		Expression expr = stat.getExpression();
 		
-		if(param != null) {
+		if(!param.isEmpty()) {
 			if(isAtom(expr)) {
 				list.add(Inst.get(Type.SET).addParams(param, createParam(expr)));
 			} else {
@@ -225,9 +200,10 @@ public class AmpleCodeGenerator {
 		InstList list = getList(stat);
 		
 		for(Statement s : stat.getStatements()) {
-			list.add(processStat(s, null));
+			list.add(processStat(s));
 		}
 		
+		list.add(Inst.get(Type.RET).addParam(InstParam.EMPTY));
 		code.push(list);
 	}
 	
@@ -246,7 +222,7 @@ public class AmpleCodeGenerator {
 		break_label = label_end;
 		
 		List<Statement> stats = stat.getStatements();
-		list.add(processStat(stats.get(0), null));
+		list.add(processStat(stats.get(0)));
 		
 		if(!EmptyStat.isEmpty(stats.get(2))) {
 			// ============================== //
@@ -273,7 +249,7 @@ public class AmpleCodeGenerator {
 			}
 			
 			list.add(Inst.get(Type.LABEL).addParam(label_next));
-			list.add(processStat(stats.get(2), null));
+			list.add(processStat(stats.get(2)));
 			
 			if(!EmptyStat.isEmpty(stats.get(1))) {
 				InstParam temp = getTempParam();
@@ -302,7 +278,7 @@ public class AmpleCodeGenerator {
 			}
 		}
 
-		list.add(processStat(stats.get(3), null));
+		list.add(processStat(stats.get(3)));
 		list.add(Inst.get(Type.BR).addParam(label_next));
 		list.add(Inst.get(Type.LABEL).addParam(label_end));
 		continue_label = old_continue;
@@ -312,50 +288,45 @@ public class AmpleCodeGenerator {
 	
 	private InstList processIfStat(IfStat stat, InstParam ref) {
 		InstList list = getList(stat);
-		
-		// ============================== //
-		// if(x) { ... }
-		
-		// brz [end] [x]				Branch to [end] if [x] is zero
-		//		    ...
-		// end:
+
 		InstParam label_end = getNewLabel();
 		
 		List<Statement> stats = stat.getStatements();
 		InstParam temp = getTempParam();
-		list.add(processStat(stats.get(0), temp));
-		list.add(Inst.get(Type.BRZ).addParams(temp, label_end));
-		list.add(processStat(stats.get(1), null));
-		list.add(Inst.get(Type.LABEL).addParam(label_end));
 		
-		return list;
-	}
-	
-	private InstList processIfElseStat(IfElseStat stat, InstParam ref) {
-		InstList list = getList(stat);
-		
-		// ============================== //
-		// if(x) { ... } else { ... }
-		
-		// brz [else] [x]				Branch to [else] if [x] is zero
-		//    ...
-		// br [end]						Branch to [end]
-		// else:
-		//    ...
-		// end:
-
-		InstParam label_end = getNewLabel();
-		InstParam label_else = getNewLabel();
-
-		List<Statement> stats = stat.getStatements();
-		InstParam temp = getTempParam();
-		list.add(processStat(stats.get(0), temp));
-		list.add(Inst.get(Type.BRZ).addParams(temp, label_else));
-		list.add(processStat(stats.get(1), null));
-		list.add(Inst.get(Type.BR).addParam(label_end));
-		list.add(Inst.get(Type.LABEL).addParam(label_else));
-		list.add(processStat(stats.get(2), null));
-		list.add(Inst.get(Type.LABEL).addParam(label_end));
+		if(!stat.hasElse()) {
+			// ============================== //
+			// if(x) { ... }
+			
+			// brz [end] [x]				Branch to [end] if [x] is zero
+			//		    ...
+			// end:
+			
+			list.add(processStat(stats.get(0), temp));
+			list.add(Inst.get(Type.BRZ).addParams(temp, label_end));
+			list.add(processStat(stats.get(1)));
+			list.add(Inst.get(Type.LABEL).addParam(label_end));
+		} else {
+			// ============================== //
+			// if(x) { ... } else { ... }
+			
+			// brz [else] [x]				Branch to [else] if [x] is zero
+			//    ...
+			// br [end]						Branch to [end]
+			// else:
+			//    ...
+			// end:
+			
+			InstParam label_else = getNewLabel();
+			
+			list.add(processStat(stats.get(0), temp));
+			list.add(Inst.get(Type.BRZ).addParams(temp, label_else));
+			list.add(processStat(stats.get(1)));
+			list.add(Inst.get(Type.BR).addParam(label_end));
+			list.add(Inst.get(Type.LABEL).addParam(label_else));
+			list.add(processStat(stats.get(2)));
+			list.add(Inst.get(Type.LABEL).addParam(label_end));
+		}
 		
 		return list;
 	}
@@ -378,20 +349,20 @@ public class AmpleCodeGenerator {
 		InstParam label_next = getNewLabel();
 		InstParam label_loop = getNewLabel();
 		InstParam label_end = getNewLabel();
+
+		InstParam temp = getTempParam();
+		List<Statement> stats = stat.getStatements();
 		
 		InstParam old_continue = continue_label;
 		InstParam old_break = break_label;
 		continue_label = label_next;
 		break_label = label_end;
 		
-		InstParam temp = getTempParam();
-		
-		List<Statement> stats = stat.getStatements();
 		list.add(Inst.get(Type.LABEL).addParam(label_next));
-		list.add(processStat(stats.get(0), null));
+		list.add(processStat(stats.get(0)));
 		list.add(Inst.get(Type.BRZ).addParams(temp, label_end));
 		list.add(Inst.get(Type.LABEL).addParam(label_loop));
-		list.add(processStat(stats.get(1), null));
+		list.add(processStat(stats.get(1)));
 		list.add(Inst.get(Type.BR).addParam(label_next));
 		list.add(Inst.get(Type.LABEL).addParam(label_end));
 		
@@ -422,20 +393,21 @@ public class AmpleCodeGenerator {
 		InstParam label_loop = getNewLabel();
 		InstParam label_end = getNewLabel();
 		
+
+		InstParam temp = getTempParam();
+		List<Statement> stats = stat.getStatements();
+		
 		InstParam old_continue = continue_label;
 		InstParam old_break = break_label;
 		continue_label = label_next;
 		break_label = label_end;
 		
-		InstParam temp = getTempParam();
-		
-		List<Statement> stats = stat.getStatements();
 		list.add(Inst.get(Type.BR).addParam(label_loop));
 		list.add(Inst.get(Type.LABEL).addParam(label_next));
-		list.add(processStat(stats.get(0), null));
+		list.add(processStat(stats.get(0)));
 		list.add(Inst.get(Type.BRZ).addParams(temp, label_end));
 		list.add(Inst.get(Type.LABEL).addParam(label_loop));
-		list.add(processStat(stats.get(1), null));
+		list.add(processStat(stats.get(1)));
 		list.add(Inst.get(Type.BR).addParam(label_next));
 		list.add(Inst.get(Type.LABEL).addParam(label_end));
 		
@@ -478,12 +450,22 @@ public class AmpleCodeGenerator {
 		return temp;
 	}
 	
+	private InstParam resolveParam(Expression expr, InstParam temp, InstList list) {
+		if(isAtom(expr)) {
+			return createParam(expr);
+		}
+		
+		list.add(processExpr(expr, temp));
+		return temp;
+	}
+	
 	// Expressions
 	private InstList processExpr(Expression expr, InstParam ref) {
+		if(ref == null) throw new NullPointerException();
 		if(EmptyExpr.isEmpty(expr)) return InstList.get();
 		
+		InstList list = getList(expr);
 		Expr ex = (Expr)expr;
-		InstList list = getList(ex);
 		
 		switch(ex.getType()) {
 			case ADD: case SUB:
@@ -493,18 +475,25 @@ public class AmpleCodeGenerator {
 			case EQ: case NEQ:
 			case GT: case GTE:
 			case LT: case LTE: {
-				InstParam param_0 = ref == null ? InstParam.EMPTY:ref;
+				InstParam param_0 = ref;
 				InstParam param_1 = resolveParam(ex.get(0), list);
 				InstParam param_2 = resolveParam(ex.get(1), list);
 				list.add(Inst.get(convertBinaryType(ex.getType())).addParams(param_0, param_1, param_2));
 				return list;
 			}
 
-			case SET:
+			case SET: {
+				InstParam param_0 = resolveParam(ex.get(0), list);
+				InstParam param_1 = resolveParam(ex.get(1), list);
+				list.add(Inst.get(Type.SET).addParams(param_0, param_1));
+				if(!ref.isEmpty()) list.add(Inst.get(Type.SET).addParams(ref, param_1));
+				return list;
+			}
+			
 			case NOT:
 			case NOR:
 			case NEG: {
-				InstParam param_0 = ref == null ? InstParam.EMPTY:ref;
+				InstParam param_0 = ref;
 				InstParam param_1 = resolveParam(ex.get(0), list);
 				list.add(Inst.get(convertUnaryType(ex.getType())).addParams(param_0, param_1));
 				return list;
@@ -524,12 +513,13 @@ public class AmpleCodeGenerator {
 			
 			case COMMA: {
 				List<Expression> params = ex.getExpressions();
-				for(int i = 0; i < params.size(); i++) {
-					if(i == params.size() - 1) {
-						list.add(processExpr(params.get(i), ref));
-					} else {
-						list.add(processExpr(params.get(i), null));
-					}
+				for(int i = 0; i < params.size() - 1; i++) {
+					list.add(processExpr(params.get(i), InstParam.EMPTY));
+				}
+				
+				if(!params.isEmpty()) {
+					Expression last = params.get(params.size() - 1);
+					list.add(processExpr(last, ref));
 				}
 				
 				return list;
@@ -537,25 +527,28 @@ public class AmpleCodeGenerator {
 			
 			case COR: {
 				InstParam label_end = getNewLabel();
-				// (A) || (B)
-				
-				// bnz [label_1], A
-				// label_0:
+				// (A || B)
+				//   set [ref], [1]
+				//   bnz [label_end], [A]
 				// ...
-				// label_1:
+				//   set [ref], [0]
+				// label_end:
 				
-				if(ref != null) {
+				if(!ref.isEmpty()) {
 					list.add(Inst.get(Type.SET).addParams(ref, InstParam.get(1)));
 				}
-
+				
+				InstParam temp = getTempParam();
 				List<Expression> params = ex.getExpressions();
 				for(int i = 0; i < params.size(); i++) {
 					Expression e = params.get(i);
-					InstParam param = resolveParam(e, list);
-					list.add(Inst.get(Type.BNZ).addParams(param, label_end));
+					InstParam param = resolveParam(e, temp, list);
+					if(!param.isEmpty()) {
+						list.add(Inst.get(Type.BNZ).addParams(param, label_end));
+					}
 				}
 				
-				if(ref != null) {
+				if(!ref.isEmpty()) {
 					list.add(Inst.get(Type.SET).addParams(ref, InstParam.get(0)));
 				}
 				
@@ -565,25 +558,28 @@ public class AmpleCodeGenerator {
 			
 			case CAND: {
 				InstParam label_end = getNewLabel();
-				// (A) && (B)
-				
-				// bnz [label_1], A
-				// label_0:
+				// (A && B)
+				//   set [ref], [0]
+				//   brz [label_end], [A]
 				// ...
-				// label_1:
+				//   set [ref], [1]
+				// label_end:
 				
-				if(ref != null) {
+				if(!ref.isEmpty()) {
 					list.add(Inst.get(Type.SET).addParams(ref, InstParam.get(0)));
 				}
-
+				
+				InstParam temp = getTempParam();
 				List<Expression> params = ex.getExpressions();
 				for(int i = 0; i < params.size(); i++) {
 					Expression e = params.get(i);
-					InstParam param = resolveParam(e, list);
-					list.add(Inst.get(Type.BNZ).addParams(param, label_end));
+					InstParam param = resolveParam(e, temp, list);
+					if(!param.isEmpty()) {
+						list.add(Inst.get(Type.BRZ).addParams(param, label_end));
+					}
 				}
 				
-				if(ref != null) {
+				if(!ref.isEmpty()) {
 					list.add(Inst.get(Type.SET).addParams(ref, InstParam.get(1)));
 				}
 				
@@ -591,7 +587,13 @@ public class AmpleCodeGenerator {
 				return list;
 			}
 			
-			case ATOM:
+			case ATOM: {
+				if(!ref.isEmpty()) {
+					list.add(Inst.get(Type.SET).addParams(ref, createParam(expr)));
+				}
+				return list;
+			}
+			
 			case ARRAY: {
 				System.out.println("TODO: Implement " + expr.getType());
 				return list;
