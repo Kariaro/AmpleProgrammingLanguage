@@ -78,4 +78,8 @@ public class Token {
 	public Token empty() {
 		return new Token("", group, offset, line, column);
 	}
+	
+	public static Token fromOffset(int offset) {
+		return new Token("", "", offset, 0, 0);
+	}
 }

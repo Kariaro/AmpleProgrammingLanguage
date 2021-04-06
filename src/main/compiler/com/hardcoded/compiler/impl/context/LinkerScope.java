@@ -117,7 +117,7 @@ public class LinkerScope {
 	private boolean _has(Map<Type, Map<String, Reference>> map, String name, Type type) { return _get0(map, name, type) != null; }
 	private Reference _get(Map<Type, Map<String, Reference>> map, String called, String name, Type type) {
 		Reference ref = _get0(map, name, type);
-		if(ref == null) throw new NullPointerException("The " + called + " " + (type == Type.VAR ? "variable":"function") + " '" + name + "' has not been defined");
+		if(ref == null) throw new NullPointerException("The " + called + " " + getTypeName(type) + " '" + name + "' has not been defined");
 		return ref;
 	}
 	private Reference _get0(Map<Type, Map<String, Reference>> map, String name, Type type) {
@@ -126,7 +126,7 @@ public class LinkerScope {
 		return m.get(name);
 	}
 	private Reference _add(Map<Type, Map<String, Reference>> map, String called, String name, Type type) {
-		if(hasGlobal(name, type)) throw new NullPointerException("The " + called + " " + (type == Type.VAR ? "variable":"function") + " '" + name + "' has already been defined");
+		if(hasGlobal(name, type)) throw new NullPointerException("The " + called + " " + getTypeName(type) + " '" + name + "' has already been defined");
 		Reference ref = Reference.unique(name, type, unique++);
 		Map<String, Reference> m = map.get(type);
 		if(m == null) map.put(type, m = new HashMap<>());
@@ -134,10 +134,19 @@ public class LinkerScope {
 		return ref;
 	}
 	private Reference _add_direct(Map<Type, Map<String, Reference>> map, String called, Reference ref) {
-		if(hasGlobal(ref.getName(), ref.getType())) throw new NullPointerException("The " + called + " " + (ref.getType() == Type.VAR ? "variable":"function") + " '" + ref.getName() + "' has already been defined");
+		if(hasGlobal(ref.getName(), ref.getType())) throw new NullPointerException("The " + called + " " + getTypeName(ref.getType()) + " '" + ref.getName() + "' has already been defined");
 		Map<String, Reference> m = map.get(ref.getType());
 		if(m == null) map.put(ref.getType(), m = new HashMap<>());
 		m.put(ref.getName(), ref);
 		return ref;
+	}
+	
+	// Utility
+	private String getTypeName(Reference.Type type) {
+		switch(type) {
+			case VAR: return "variable";
+			case FUN: return "function";
+			default: return type.name();
+		}
 	}
 }

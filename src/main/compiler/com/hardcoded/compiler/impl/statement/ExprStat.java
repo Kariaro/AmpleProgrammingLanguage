@@ -34,6 +34,10 @@ public class ExprStat extends Stat {
 		return list;
 	}
 	
+	public Expression getExpression() {
+		return list.get(0);
+	}
+	
 	public void add(Expression expr) {
 		list.add(expr);
 	}

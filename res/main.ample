@@ -1,3 +1,4 @@
+
 num a = 3;
 num b = 3;
 num func = 32;
@@ -10,6 +11,21 @@ class Testing;
 
 //num func() { return 0; }
 // test
+
+num main2() {
+	{
+		num a = 32;
+		return a + 31;
+	}
+}
+
+num main3() {
+	{
+		num a = 32;
+		num b = 32;
+		return (a ? b:a);
+	}
+}
 
 num main(num a, num b, num c) {
 	num a2 = awesome ( 32);
@@ -54,8 +70,8 @@ num main(num a, num b, num c) {
 	do { str a3; } while(false);
 	goto label;
 	label:
-	continue;
-	break;
+	while(true) { break; }
+	for(num a4 = 0; a4 < 4; a += 1) { continue; }
 	return;
 	if(true) { str a3; }
 	if(false) { str a3; } else { str b3; }

@@ -9,8 +9,9 @@ import java.util.Comparator;
  * @since 0.2.0
  */
 public class Reference {
-	// private static final AtomicInteger counter = new AtomicInteger();
 	public enum Type {
+		EMPTY,
+		
 		/** Function */
 		FUN,
 		/** Variable */
@@ -27,11 +28,17 @@ public class Reference {
 	protected final Type type;
 	protected final int temp_index;
 	protected final int unique_index;
-	// protected final int temp = counter.getAndIncrement();
 	
 	private Reference(int temp_index) {
-		this.name = "#temp_" + temp_index;
+		this.name = "";
 		this.type = Type.VAR;
+		this.temp_index = temp_index;
+		this.unique_index = -1;
+	}
+	
+	private Reference(int temp_index, Type type) {
+		this.name = "";
+		this.type = type;
 		this.temp_index = temp_index;
 		this.unique_index = -1;
 	}
@@ -106,7 +113,18 @@ public class Reference {
 	
 	@Override
 	public String toString() {
-		return String.format("(%s:%s:%d)", type, name, unique_index);
+		String name_str = name;
+		if(temp_index != -1) {
+			if(temp_index < -1) {
+				name_str = "#" + (-temp_index);
+			} else {
+				name_str = "#temp_" + temp_index;
+			}
+
+			return String.format("(%s:%s)", type, name_str);
+		}
+		
+		return String.format("(%s:%s:%d)", type, name_str, unique_index);
 	}
 	
 	public static Reference get(String name) {
@@ -115,6 +133,10 @@ public class Reference {
 	
 	public static Reference get(int temp_index) {
 		return new Reference(temp_index);
+	}
+	
+	public static Reference get(int temp_index, Type type) {
+		return new Reference(temp_index, type);
 	}
 	
 	public static Reference unique(String name, int unique) {

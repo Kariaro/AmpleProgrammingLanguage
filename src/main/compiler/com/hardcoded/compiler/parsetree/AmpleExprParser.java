@@ -37,7 +37,8 @@ public class AmpleExprParser {
 			for(int i = 0; i < values.length; i++) {
 				if(lang.valueEquals(values[i])) {
 					found = true;
-					Expr tmp = BinaryExpr.get(init[i], expr.getToken());
+					Expr tmp = BinaryExpr.get(init[i], Token.EMPTY);
+					tmp.setLocation(expr.getStartOffset(), expr.getStartOffset());
 					lang.next();
 					tmp.add(expr, next.get());
 					expr = tmp.end(lang.peek(-1));
@@ -137,8 +138,9 @@ public class AmpleExprParser {
 			if(expr_type == null) return lhs;
 			if(!acceptModification(lhs)) throw_exception("Left hand side is not modifiable '%s'", lhs);
 			
-			Expr type = BinaryExpr.get(expr_type, lang.next());
-			Token empty = type.getToken().empty();
+			Token token = lang.next();
+			Expr type = BinaryExpr.get(expr_type, token);
+			Token empty = token.empty();
 			if(!lhs.isPure()) {
 				AtomExpr temp = AtomExpr.get(empty, temp(Reference.Type.VAR));
 				
@@ -156,7 +158,7 @@ public class AmpleExprParser {
 			type.add(lhs);
 			type.add(order_13());
 			
-			Expr expr = BinaryExpr.get(SET, empty);
+			Expr expr = BinaryExpr.get(SET, Token.fromOffset(lhs.getStartOffset()));
 			expr.add(lhs);
 			expr.add(type);
 			return expr;
@@ -172,9 +174,10 @@ public class AmpleExprParser {
 		check_or_throw(":");
 		Expr c = order_12();
 		
+		Token start = Token.fromOffset(a.getStartOffset());
 		Token empty = token.empty();
 		AtomExpr temp = AtomExpr.get(empty, temp(Reference.Type.VAR));
-		return BinaryExpr.get(COMMA, a.getToken()).add(
+		return BinaryExpr.get(COMMA, start).add(
 			BinaryExpr.get(COR, empty).add(
 				BinaryExpr.get(CAND, empty).add(
 					a,
@@ -244,9 +247,10 @@ public class AmpleExprParser {
 		while(true) {
 			switch(lang.value()) {
 				case "[": {
-					Token token = lang.next();
+					lang.next();
+					
 					Expression expr = order_15();
-					lhs = BinaryExpr.get(ARRAY, token).add(lhs, expr).end(lang.token());
+					lhs = BinaryExpr.get(ARRAY, Token.fromOffset(lhs.getStartOffset())).add(lhs, expr).end(lang.token());
 					check_or_throw("]");
 					continue;
 				}
@@ -256,7 +260,6 @@ public class AmpleExprParser {
 						throw_exception("Left hand side was not a identifier name '%s'", lhs);
 					}
 					
-					Token token = lhs.getToken();
 					lang.next();
 					Expression rhs = order_2();
 					if(!(rhs instanceof AtomExpr)) {
@@ -266,6 +269,7 @@ public class AmpleExprParser {
 					AtomExpr atom = (AtomExpr)rhs;
 					atom.setReference(atom.getReference().as(Reference.Type.MEMBER));
 					
+					Token token = Token.fromOffset(lhs.getStartOffset());
 					lhs = BinaryExpr.get(MEMBER, token).add(lhs, rhs).end(lang.peek(-1));
 					continue;
 				}
@@ -283,7 +287,8 @@ public class AmpleExprParser {
 					IRefContainer ref = (IRefContainer)lhs;
 					ref.setReference(ref.getReference().as(Reference.Type.FUN));
 					
-					BinaryExpr call = BinaryExpr.get(CALL, lhs.getToken());
+					Token token = Token.fromOffset(lhs.getStartOffset());
+					BinaryExpr call = BinaryExpr.get(CALL, token);
 					call.add(lhs);
 					lang.next();
 					

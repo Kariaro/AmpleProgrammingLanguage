@@ -48,9 +48,15 @@ public interface Statement {
 	// Get all elements inside this statement
 	List<Statement> getStatements();
 	
-	// Get the line index of the statement
-	int getLineIndex();
+	/**
+	 * Returns the start offset of this statement.
+	 * @return the start offset of this statement
+	 */
+	int getStartOffset();
 	
-	// Get the colum index of the statement
-	int getColumnIndex();
+	/**
+	 * Returns the end offset of this statement.
+	 * @return the end offset of this statement
+	 */
+	int getEndOffset();
 }

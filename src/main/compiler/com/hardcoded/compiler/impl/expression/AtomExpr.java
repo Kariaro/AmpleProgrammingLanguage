@@ -26,35 +26,34 @@ import com.hardcoded.compiler.lexer.Token;
 public class AtomExpr extends Expr implements IRefContainer {
 	private static final DecimalFormat number_format = new DecimalFormat("#.##########", DecimalFormatSymbols.getInstance(Locale.US));
 	
+	protected final Token token;
+	
 	protected AtomType type;
 	protected double number = 0d;
 	protected String string = "";
 	protected Reference ref;
 	
 	private AtomExpr(Token token, double value) {
-		super(token, true);
-		this.type = AtomType.number;
-		this.number = value;
+		this(token, AtomType.NUMBER, value, null, null);
 	}
 	
 	private AtomExpr(Token token, String value) {
-		super(token, true);
-		this.type = AtomType.string;
-		this.string = value;
+		this(token, AtomType.STRING, 0, value, null);
 	}
 	
 	private AtomExpr(Token token, Reference ref) {
-		super(token, true);
-		this.type = AtomType.ref;
-		this.ref = ref;
+		this(token, AtomType.REF, 0, null, ref);
 	}
 	
 	private AtomExpr(Token token, AtomType type, double a, String b, Reference c) {
 		super(token, true);
+		this.token = token;
 		this.type = type;
 		this.number = a;
 		this.string = b;
 		this.ref = c;
+		
+		setLocation(token.offset, token.offset + token.value.length());
 	}
 	
 	@Override
@@ -72,15 +71,15 @@ public class AtomExpr extends Expr implements IRefContainer {
 	}
 	
 	public boolean isReference() {
-		return type == AtomType.ref;
+		return type == AtomType.REF;
 	}
 	
 	public boolean isNumber() {
-		return type == AtomType.number;
+		return type == AtomType.NUMBER;
 	}
 	
 	public boolean isString() {
-		return type == AtomType.string;
+		return type == AtomType.STRING;
 	}
 	
 	@Override
@@ -109,9 +108,9 @@ public class AtomExpr extends Expr implements IRefContainer {
 	@Override
 	public String toString() {
 		switch(type) {
-			case number: return number_format.format(number);
-			case string: return '"' + string + '"';
-			case ref: return Objects.toString(ref);
+			case NUMBER: return number_format.format(number);
+			case STRING: return '"' + string + '"';
+			case REF: return Objects.toString(ref);
 			default: throw new IllegalStateException("Bad AtomExpr missing type");
 		}
 	}
@@ -132,6 +131,8 @@ public class AtomExpr extends Expr implements IRefContainer {
 	 * Create a copy of a AtomExpr
 	 */
 	public static AtomExpr get(AtomExpr atom) {
-		return new AtomExpr(atom.token, atom.type, atom.number, atom.string, atom.ref == null ? null:atom.ref.clone()).end(atom.end);
+		AtomExpr expr = new AtomExpr(atom.token, atom.type, atom.number, atom.string, atom.ref == null ? null:atom.ref.clone());
+		expr.setLocation(atom.start_offset, atom.end_offset);
+		return expr;
 	}
 }

@@ -21,7 +21,7 @@ import com.hardcoded.compiler.impl.serial.SerialParseTree;
 import com.hardcoded.compiler.impl.statement.*;
 import com.hardcoded.compiler.lexer.Token;
 import com.hardcoded.compiler.parsetree.AmpleParseTree;
-import com.hardcoded.compiler.parsetree.AmpleTreeValidator;
+import com.hardcoded.compiler.parsetree.AmpleTreeIndexer;
 import com.hardcoded.logger.Log;
 import com.hardcoded.utils.FileUtils;
 
@@ -109,7 +109,7 @@ public class ParseTreeVisualizer extends JPanel {
 				} else {
 					AmpleParseTree tree = new AmpleParseTree();
 					stat = tree.process(null, bytes);
-					AmpleTreeValidator validator = new AmpleTreeValidator();
+					AmpleTreeIndexer validator = new AmpleTreeIndexer();
 					link = validator.process(null, stat);
 				}
 				
@@ -141,12 +141,9 @@ public class ParseTreeVisualizer extends JPanel {
 	private static final Color stat_color = new Color(0x00 | (0x40 << 24), true);
 	private static final Color expr_color = new Color(0x0000ff | (0x40 << 24), true);
 	private void updateStatRect(Statement stat, LinkerScope link) {
-		if(stat instanceof Stat) {
-			Stat st = (Stat)stat;
-			Token s = st.getToken();
-			Token e = st.getEnd();
-			area.addRange(Range.get(s.offset, e.offset + e.value.length(), stat_color, st.toString()));
-		}
+		if(EmptyStat.isEmpty(stat)) return;
+		
+		area.addRange(Range.get(stat.getStartOffset(), stat.getEndOffset(), stat_color, stat.toString()));
 		
 		if(stat instanceof ExprStat) {
 			ExprStat st = (ExprStat)stat;
@@ -177,17 +174,19 @@ public class ParseTreeVisualizer extends JPanel {
 	private void updateExprRect(Expression expr, LinkerScope link) {
 		if(expr instanceof Expr) {
 			Expr ex = (Expr)expr;
-			Token s = ex.getToken();
-			Token e = ex.getEnd();
+			int s = ex.getStartOffset();
+			int e = ex.getEndOffset();
+//			Token s = ex.getToken();
+//			Token e = ex.getEnd();
+//			
+//			if(e == Token.EMPTY) {
+//				e = s;
+//			}
 			
-			if(e == Token.EMPTY) {
-				e = s;
-			}
-			
-			{
-				Token tok = ex.getToken();
-				System.out.printf("{value:\"%s\", group:\"%s\", offset:%d, line:%d, column:%d}\n", tok.value, tok.group, tok.offset, tok.line, tok.column);
-			}
+//			{
+//				Token tok = ex.getToken();
+//				System.out.printf("{value:\"%s\", group:\"%s\", offset:%d, line:%d, column:%d}\n", tok.value, tok.group, tok.offset, tok.line, tok.column);
+//			}
 			
 			if(ex instanceof AtomExpr && ((AtomExpr)ex).isReference()) {
 				Reference ref = ((AtomExpr)ex).getReference();
@@ -200,9 +199,9 @@ public class ParseTreeVisualizer extends JPanel {
 					}
 				}
 				
-				area.addRange(Range.get(s.offset, e.offset + e.value.length(), ref.getUniqueIndex(), expr_color, tip));
+				area.addRange(Range.get(s, e, ref.getUniqueIndex(), expr_color, tip));
 			} else {
-				area.addRange(Range.get(s.offset, e.offset + e.value.length(), expr_color, ex.toString()));
+				area.addRange(Range.get(s, e, expr_color, ex.toString()));
 			}
 		}
 		
