@@ -136,4 +136,9 @@ public class NonNullList<T> implements List<T> {
 	public List<T> subList(int fromIndex, int toIndex) {
 		return list.subList(fromIndex, toIndex);
 	}
+	
+	@Override
+	public String toString() {
+		return list.toString();
+	}
 }

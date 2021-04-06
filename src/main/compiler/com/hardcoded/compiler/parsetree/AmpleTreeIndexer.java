@@ -238,7 +238,6 @@ public class AmpleTreeIndexer {
 		
 		boolean new_scope = false;
 		if(stat instanceof IfStat
-		|| stat instanceof IfElseStat
 		|| stat instanceof ForStat
 		|| stat instanceof WhileStat
 		|| stat instanceof DoWhileStat
@@ -275,7 +274,7 @@ public class AmpleTreeIndexer {
 					ref = link.getLocal(name);
 					e.setReference(ref);
 				} else if(ref.isTemporary()) {
-					ref = link.addLocal(name);
+					link.addDirectLocal(ref);
 					e.setReference(ref);
 				} else if(link.hasGlobal(name, ref.getType())) {
 					ref = link.getGlobal(name, ref.getType());

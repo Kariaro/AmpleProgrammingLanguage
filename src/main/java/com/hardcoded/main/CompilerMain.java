@@ -32,7 +32,7 @@ public class CompilerMain {
 			
 			args = new String[] {
 				"-f", "ample",
-				"-i", "res/main.ample",
+				"-i", "res/test.ample",
 				"-o", "res/main.ir"
 			};
 		}

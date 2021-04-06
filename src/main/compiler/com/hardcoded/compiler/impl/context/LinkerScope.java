@@ -68,6 +68,10 @@ public class LinkerScope {
 		imported_files.add(path);
 	}
 	
+	public int getUniqueIndex() {
+		return unique;
+	}
+	
 	// LOCAL
 	public boolean hasLocal(String name) { return getLocal0(name) != -1; }
 	public Reference getLocal(String name) {
@@ -86,6 +90,12 @@ public class LinkerScope {
 		if(hasLocal(name)) throw new NullPointerException("The local variable '" + name + "' already exists");
 		scopes.getLast().put(name, unique);
 		Reference ref = Reference.unique(name, unique);
+		references.put(unique++, ref);
+		return ref;
+	}
+	public Reference addDirectLocal(Reference ref) {
+		if(hasLocal(ref.getName())) throw new NullPointerException("The local variable '" + ref.getName() + "' already exists");
+		scopes.getLast().put(ref.getName(), unique);
 		references.put(unique++, ref);
 		return ref;
 	}

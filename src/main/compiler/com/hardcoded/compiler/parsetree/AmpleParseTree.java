@@ -383,11 +383,7 @@ public class AmpleParseTree {
 		stat.add(makeStatement());
 		if(lang.valueEquals("else")) {
 			lang.next();
-			
-			IfElseStat if_else = IfElseStat.get(token);
-			if_else.getStatements().addAll(stat.getStatements());
-			if_else.add(makeStatement());
-			return if_else.end(lang.peek(-1));
+			stat.add(makeStatement());
 		}
 		
 		return stat.end(lang.peek(-1));

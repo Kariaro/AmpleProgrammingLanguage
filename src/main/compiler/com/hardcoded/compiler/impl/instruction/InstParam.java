@@ -41,6 +41,10 @@ public class InstParam {
 		this.ref = ref;
 	}
 	
+	public boolean isEmpty() {
+		return type == Type.EMPTY;
+	}
+	
 	@Override
 	public String toString() {
 		switch(type) {
