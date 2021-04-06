@@ -124,8 +124,8 @@ public class SerialParseTree {
 		String func = "write_" + stat.getType();
 		if(stat instanceof Stat) {
 			Stat s = (Stat)stat;
-			out.writeToken(s.getToken());
-			out.writeToken(s.getEnd());
+			out.writePackedInt(s.getStartOffset());
+			out.writePackedInt(s.getEndOffset());
 		}
 		
 		try {
@@ -155,12 +155,14 @@ public class SerialParseTree {
 	}
 	
 	void write_FUNCTION(FuncStat stat, SerialOut out) {
+		out.writeToken(stat.getReturnType());
 		writeIRef(stat, out);
 		writeList(stat.getArguments(), out);
 		writeList(stat.getStatements(), out);
 	}
 	
 	void write_DEFINE(DefineStat stat, SerialOut out) {
+		out.writeToken(stat.getValueType());
 		writeIRef(stat, out);
 		writeList(stat, out);
 	}
@@ -207,7 +209,7 @@ public class SerialParseTree {
 	}
 	
 	void write_LABEL(LabelStat stat, SerialOut out) {
-		out.writeReference(stat.getReference());
+		writeIRef(stat, out);
 	}
 	
 	void write_CONTINUE(ContinueStat stat, SerialOut out) {}
@@ -228,11 +230,15 @@ public class SerialParseTree {
 			return;
 		}
 		
+		int start = expr.getStartOffset();
+		int len = expr.getEndOffset() - start;
+		
 		if(expr instanceof AtomExpr) {
 			AtomExpr e = (AtomExpr)expr;
 			out.writeByte(1);
-			out.writeToken(e.getToken());
-			out.writeToken(e.getEnd());
+			out.writePackedInt(start);
+			out.writePackedInt(len);
+			out.writeToken(e.getRefToken());
 			out.writeEnum(e.getAtomType());
 			if(e.isNumber()) out.writeDouble(e.getNumber());
 			if(e.isReference()) out.writeReference(e.getReference());
@@ -243,8 +249,8 @@ public class SerialParseTree {
 		if(expr instanceof UnaryExpr) {
 			UnaryExpr e = (UnaryExpr)expr;
 			out.writeByte(2);
-			out.writeToken(e.getToken());
-			out.writeToken(e.getEnd());
+			out.writePackedInt(start);
+			out.writePackedInt(len);
 			out.writeEnum(e.getType());
 			writeExprList(expr.getExpressions(), out);
 			return;
@@ -253,8 +259,8 @@ public class SerialParseTree {
 		if(expr instanceof BinaryExpr) {
 			BinaryExpr e = (BinaryExpr)expr;
 			out.writeByte(3);
-			out.writeToken(e.getToken());
-			out.writeToken(e.getEnd());
+			out.writePackedInt(start);
+			out.writePackedInt(len);
 			out.writeEnum(e.getType());
 			writeExprList(expr.getExpressions(), out);
 			return;
@@ -307,7 +313,7 @@ public class SerialParseTree {
 	
 	private Statement readStat(SerialIn in) {
 		Statement.Type type = in.readEnum(Statement.Type.class);
-		// System.out.printf("Reading: [%s]\n", type);
+		//System.out.printf("Reading: [%s]\n", type);
 		
 		if(type == Statement.Type.NONE) {
 			return EmptyStat.get();
@@ -363,27 +369,35 @@ public class SerialParseTree {
 		switch(in.readUnsignedByte()) {
 			case 0: return EmptyExpr.get(); // EmptyExpr
 			case 1: { // AtomExpr
+				int start = in.readPackedInt();
+				int len = in.readPackedInt();
 				Token token = in.readToken();
-				Token end = in.readToken();
-				AtomType type = in.readEnum(AtomType.class);
-				if(type == AtomType.number) return AtomExpr.get(token, in.readDouble()).end(end);
-				if(type == AtomType.ref) return AtomExpr.get(token, in.readReference()).end(end);
-				if(type == AtomType.string) return AtomExpr.get(token, in.readString()).end(end);
-				throw new SerialException("Invalid atom expr");
+				AtomExpr atom = null;
+				switch(in.readEnum(AtomType.class)) {
+					case NUMBER: atom = AtomExpr.get(token, in.readDouble()); break;
+					case REF: atom = AtomExpr.get(token, in.readReference()); break;
+					case STRING: atom = AtomExpr.get(token, in.readString()); break;
+					default: throw new SerialException("Invalid atom expr");
+				}
+				
+				atom.setLocation(start, start + len);
+				return atom;
 			}
 			case 2: { // UnaryExpr
-				Token token = in.readToken();
-				Token end = in.readToken();
+				int start = in.readPackedInt();
+				int len = in.readPackedInt();
 				Expression.Type type = in.readEnum(Expression.Type.class);
-				UnaryExpr expr = UnaryExpr.get(type, token).end(end);
+				UnaryExpr expr = UnaryExpr.get(type, Token.EMPTY);
+				expr.setLocation(start, start + len);
 				readExprList(expr.getExpressions(), in);
 				return expr;
 			}
 			case 3: { // BinaryExpr
-				Token token = in.readToken();
-				Token end = in.readToken();
+				int start = in.readPackedInt();
+				int len = in.readPackedInt();
 				Expression.Type type = in.readEnum(Expression.Type.class);
-				BinaryExpr expr = BinaryExpr.get(type, token).end(end);
+				BinaryExpr expr = BinaryExpr.get(type, Token.EMPTY);
+				expr.setLocation(start, start + len);
 				readExprList(expr.getExpressions(), in);
 				return expr;
 			}
@@ -399,187 +413,164 @@ public class SerialParseTree {
 	}
 	
 	DefineStat read_DEFINE(SerialIn in) {
+		int start = in.readPackedInt();
+		int end = in.readPackedInt();
+		
+		Token value_type = in.readToken();
 		Token token = in.readToken();
-		Token end = in.readToken();
-		Token ref_token = in.readToken();
 		Reference ref = in.readReference();
 		
-		DefineStat stat = DefineStat.get(token, ref_token);
+		DefineStat stat = DefineStat.get(value_type, token);
+		stat.setLocation(start, end);
 		stat.setReference(ref);
-		stat.end(end);
 		readList(stat, in);
 		
 		return stat;
 	}
 	
 	ExprStat read_EXPR(SerialIn in) {
-		Token token = in.readToken();
-		Token end = in.readToken();
-		
-		ExprStat stat = ExprStat.get(token);
-		stat.end(end);
+		ExprStat stat = ExprStat.get(Token.EMPTY);
+		stat.setLocation(in.readPackedInt(), in.readPackedInt());
 		readExprList(stat.getExpressions(), in);
 		
 		return stat;
 	}
 	
 	ImportStat read_IMPORT(SerialIn in) {
+		int start = in.readPackedInt();
+		int end = in.readPackedInt();
 		Token token = in.readToken();
-		Token end = in.readToken();
-		Token path = in.readToken();
 		
-		ImportStat stat = ImportStat.get(token, path);
-		stat.end(end);
+		ImportStat stat = ImportStat.get(Token.EMPTY, token);
+		stat.setLocation(start, end);
 		
 		return stat;
 	}
 	
 	ClassStat read_CLASS(SerialIn in) {
+		int start = in.readPackedInt();
+		int end = in.readPackedInt();
+		
 		Token token = in.readToken();
-		Token end = in.readToken();
-		Token ref_token = in.readToken();
 		Reference ref = in.readReference();
 		
-		ClassStat stat = ClassStat.get(token, ref_token);
+		ClassStat stat = ClassStat.get(Token.EMPTY, token);
+		stat.setLocation(start, end);
 		stat.setReference(ref);
-		stat.end(end);
 		readList(stat, in);
 		
 		return stat;
 	}
 	
 	FuncStat read_FUNCTION(SerialIn in) {
+		int start = in.readPackedInt();
+		int end = in.readPackedInt();
+		
+		Token return_type = in.readToken();
 		Token token = in.readToken();
-		Token end = in.readToken();
-		Token ref_token = in.readToken();
 		Reference ref = in.readReference();
 		
-		FuncStat stat = FuncStat.get(token, ref_token);
-		readList(stat.getArguments(), in);
+		FuncStat stat = FuncStat.get(return_type, token);
+		stat.setLocation(start, end);
 		stat.setReference(ref);
-		stat.end(end);
+		
+		readList(stat.getArguments(), in);
 		readList(stat, in);
 		
 		return stat;
 	}
 	
 	ScopeStat read_SCOPE(SerialIn in) {
-		Token token = in.readToken();
-		Token end = in.readToken();
-		
-		ScopeStat stat = ScopeStat.get(token);
-		stat.end(end);
+		ScopeStat stat = ScopeStat.get(Token.EMPTY);
+		stat.setLocation(in.readPackedInt(), in.readPackedInt());
 		readList(stat, in);
 		
 		return stat;
 	}
 	
 	ForStat read_FOR(SerialIn in) {
-		Token token = in.readToken();
-		Token end = in.readToken();
-		
-		ForStat stat = ForStat.get(token);
-		stat.end(end);
+		ForStat stat = ForStat.get(Token.EMPTY);
+		stat.setLocation(in.readPackedInt(), in.readPackedInt());
 		readList(stat, in);
 		
 		return stat;
 	}
 	
 	WhileStat read_WHILE(SerialIn in) {
-		Token token = in.readToken();
-		Token end = in.readToken();
-		
-		WhileStat stat = WhileStat.get(token);
-		stat.end(end);
+		WhileStat stat = WhileStat.get(Token.EMPTY);
+		stat.setLocation(in.readPackedInt(), in.readPackedInt());
 		readList(stat, in);
 		
 		return stat;
 	}
 	
 	DoWhileStat read_DO_WHILE(SerialIn in) {
-		Token token = in.readToken();
-		Token end = in.readToken();
-		
-		DoWhileStat stat = DoWhileStat.get(token);
-		stat.end(end);
+		DoWhileStat stat = DoWhileStat.get(Token.EMPTY);
+		stat.setLocation(in.readPackedInt(), in.readPackedInt());
 		readList(stat, in);
 		
 		return stat;
 	}
 	
 	GotoStat read_GOTO(SerialIn in) {
+		int start = in.readPackedInt();
+		int end = in.readPackedInt();
+		
 		Token token = in.readToken();
-		Token end = in.readToken();
-		Token ref_token = in.readToken();
 		Reference ref = in.readReference();
 		
-		GotoStat stat = GotoStat.get(token, ref_token);
+		GotoStat stat = GotoStat.get(Token.EMPTY, token);
+		stat.setLocation(start, end);
 		stat.setReference(ref);
-		stat.end(end);
 		
 		return stat;
 	}
 	
 	LabelStat read_LABEL(SerialIn in) {
+		int start = in.readPackedInt();
+		int end = in.readPackedInt();
+		
 		Token token = in.readToken();
-		Token end = in.readToken();
 		Reference ref = in.readReference();
 		
 		LabelStat stat = LabelStat.get(token);
+		stat.setLocation(start, end);
 		stat.setReference(ref);
-		stat.end(end);
 		
 		return stat;
 	}
 	
 	ContinueStat read_CONTINUE(SerialIn in) {
-		Token token = in.readToken();
-		Token end = in.readToken();
-		
-		ContinueStat stat = ContinueStat.get(token);
-		stat.end(end);
-		
+		ContinueStat stat = ContinueStat.get(Token.EMPTY);
+		stat.setLocation(in.readPackedInt(), in.readPackedInt());
 		return stat;
 	}
 	
 	BreakStat read_BREAK(SerialIn in) {
-		Token token = in.readToken();
-		Token end = in.readToken();
-		
-		BreakStat stat = BreakStat.get(token);
-		stat.end(end);
-		
+		BreakStat stat = BreakStat.get(Token.EMPTY);
+		stat.setLocation(in.readPackedInt(), in.readPackedInt());
 		return stat;
 	}
 	
 	ReturnStat read_RETURN(SerialIn in) {
-		Token token = in.readToken();
-		Token end = in.readToken();
-		
-		ReturnStat stat = ReturnStat.get(token);
-		stat.end(end);
+		ReturnStat stat = ReturnStat.get(Token.EMPTY);
+		stat.setLocation(in.readPackedInt(), in.readPackedInt());
 		readList(stat, in);
 		
 		return stat;
 	}
 	
 	IfStat read_IF(SerialIn in) {
-		Token token = in.readToken();
-		Token end = in.readToken();
-		
-		IfStat stat = IfStat.get(token);
-		stat.end(end);
+		IfStat stat = IfStat.get(Token.EMPTY);
+		stat.setLocation(in.readPackedInt(), in.readPackedInt());
 		readList(stat, in);
 		
 		return stat;
 	}
 	
 	IfElseStat read_IF_ELSE(SerialIn in) {
-		Token token = in.readToken();
-		Token end = in.readToken();
-		
-		IfElseStat stat = IfElseStat.get(token);
-		stat.end(end);
+		IfElseStat stat = IfElseStat.get(Token.EMPTY);
+		stat.setLocation(in.readPackedInt(), in.readPackedInt());
 		readList(stat, in);
 		
 		return stat;

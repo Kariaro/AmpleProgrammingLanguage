@@ -36,6 +36,16 @@ public class EmptyExpr implements Expression {
 	}
 	
 	@Override
+	public int getStartOffset() {
+		return 0;
+	}
+	
+	@Override
+	public int getEndOffset() {
+		return 0;
+	}
+	
+	@Override
 	public String toString() {
 		return ";";
 	}

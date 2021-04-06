@@ -17,9 +17,11 @@ import com.hardcoded.compiler.lexer.Token;
  */
 public class LabelStat extends Stat implements IRefContainer {
 	protected Reference ref;
+	protected Token token;
 	
 	private LabelStat(Token token) {
 		super(token);
+		this.token = token;
 	}
 	
 	@Override
@@ -47,7 +49,7 @@ public class LabelStat extends Stat implements IRefContainer {
 		return String.format("%s:", token);
 	}
 	
-	public static LabelStat get(Token start) {
-		return new LabelStat(start);
+	public static LabelStat get(Token token) {
+		return new LabelStat(token);
 	}
 }

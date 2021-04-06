@@ -129,7 +129,7 @@ public class TextArea extends JPanel {
 			}
 		}
 		
-		if(!sb.isEmpty()) {
+		if(sb.length() != 0) {
 			list.add(sb.toString());
 			intList.add(start);
 		}

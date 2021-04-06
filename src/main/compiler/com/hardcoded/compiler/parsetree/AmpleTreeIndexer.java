@@ -1,6 +1,6 @@
 package com.hardcoded.compiler.parsetree;
 
-import java.util.List;
+import java.util.*;
 
 import com.hardcoded.compiler.api.Expression;
 import com.hardcoded.compiler.api.Statement;
@@ -13,23 +13,20 @@ import com.hardcoded.logger.Log;
 import com.hardcoded.options.Options;
 
 /**
- * Validates the syntax and throws exceptions when variables
- * and functions are redeclared within the same file.
- * 
- * <p>Types will not be checked.
+ * Goes though the syntax and generates a {@code LinkerScope}
  * 
  * @author HardCoded
  * @since 0.2.0
  */
-public class AmpleTreeValidator {
-	private static final Log LOGGER = Log.getLogger(AmpleTreeValidator.class);
+public class AmpleTreeIndexer {
+	private static final Log LOGGER = Log.getLogger(AmpleTreeIndexer.class);
 	
-	public AmpleTreeValidator() {
+	public AmpleTreeIndexer() {
 		
 	}
 	
 	public LinkerScope process(Options options, ProgramStat stat) {
-		LOGGER.debug("Started validator");
+		LOGGER.debug("Started indexer");
 		
 		
 		// Replace all duplicate expression and make sure everything is unique
@@ -41,7 +38,29 @@ public class AmpleTreeValidator {
 //		System.out.println("################################################");
 		
 		// Process the program
-		return processProgram(stat);
+		LinkerScope link = processProgram(stat);
+		
+		/* Debug */ {
+			System.out.println("----------------");
+			System.out.println("Imports:");
+			for(String str : link.getImportedFiles()) {
+				System.out.printf("  : (%s)\n", str);
+			}
+			System.out.println("\nGlobals:");
+			for(Reference ref : link.getGlobals()) {
+				System.out.printf("  %4d: (%s) %s\n", ref.getUniqueIndex(), ref.getType(), ref.getName());
+			}
+			System.out.println("\nImported:");
+			for(Reference ref : link.getImport()) {
+				System.out.printf("  %4d: (%s) %s\n", ref.getUniqueIndex(), ref.getType(), ref.getName());
+			}
+			System.out.println("\nExported:");
+			for(Reference ref : link.getExport()) {
+				System.out.printf("  %4d: (%s) %s\n", ref.getUniqueIndex(), ref.getType(), ref.getName());
+			}
+		}
+		
+		return link;
 	}
 	
 	// Replaces all expressions with a deep copy of themselves
@@ -67,20 +86,26 @@ public class AmpleTreeValidator {
 		link.push(); // Create global scope
 		
 		for(Statement s : stat.getStatements()) {
-			if(s instanceof FuncStat) {
-				processFunction((FuncStat)s, link);
-			}
-			
-			if(s instanceof ClassStat) {
-				processClass((ClassStat)s, link);
-			}
-			
-			if(s instanceof DefineStat) {
-				processDefine((DefineStat)s, link);
-			}
-			
-			if(s instanceof ImportStat) {
-				processImport((ImportStat)s, link);
+			switch(s.getType()) {
+				case FUNCTION: {
+					processFunction((FuncStat)s, link);
+					break;
+				}
+				case CLASS: {
+					processClass((ClassStat)s, link);
+					break;
+				}
+				case DEFINE: {
+					processDefine((DefineStat)s, link);
+					break;
+				}
+				case IMPORT: {
+					processImport((ImportStat)s, link);
+					break;
+				}
+				default: {
+					throw new ParseTreeException("Unknown statement: %s", s.getClass());
+				}
 			}
 		}
 		
@@ -129,10 +154,14 @@ public class AmpleTreeValidator {
 		stat.setReference(link.addGlobal(name, Reference.Type.VAR));
 	}
 	
+	private Set<String> function_labels = new HashSet<>();
+	private Map<String, GotoStat> function_gotos = new LinkedHashMap<>();
 	void processFunction(FuncStat stat, LinkerScope link) {
 		link.push();
 		link.addExported(stat.getName().value, Reference.Type.FUN);
 		stat.setReference(link.addGlobal(stat.getName().value, Reference.Type.FUN));
+		function_labels.clear();
+		function_gotos.clear();
 		
 		for(DefineStat s : stat.getArguments()) {
 			String name = s.getName().value;
@@ -148,6 +177,14 @@ public class AmpleTreeValidator {
 			processFunctionTree(s, link);
 		}
 		
+		if(!function_labels.containsAll(function_gotos.keySet())) {
+			for(String key : function_gotos.keySet()) {
+				if(!function_labels.contains(key)) {
+					GotoStat s = function_gotos.get(key);
+					throw_exception(s, "Unresolved goto label. %s", s.getRefToken());
+				}
+			}
+		}
 		link.pop();
 	}
 	
@@ -162,6 +199,26 @@ public class AmpleTreeValidator {
 			}
 			
 			s.setReference(link.addLocal(name));
+		}
+		
+		if(stat instanceof LabelStat) {
+			IRefContainer s = (IRefContainer)stat;
+			String name = s.getRefToken().value;
+			
+			if(function_labels.contains(name)) {
+				throw_exception(stat, "Redefined label. A label with the name '%s' has already been declared", name);
+			}
+			
+			function_labels.add(name);
+		}
+		
+		if(stat instanceof GotoStat) {
+			IRefContainer s = (IRefContainer)stat;
+			String name = s.getRefToken().value;
+			
+			if(!function_gotos.containsKey(name)) {
+				function_gotos.put(name, (GotoStat)stat);
+			}
 		}
 		
 		if(stat instanceof LabelStat
@@ -241,7 +298,7 @@ public class AmpleTreeValidator {
 	}
 	
 	<T> T throw_exception(Statement stat, String format, Object... args) {
-		String extra = String.format("(line: %d, column: %d) ", stat.getLineIndex(), stat.getColumnIndex());
+		String extra = String.format("(line: %d, column: %d) ", stat.getStartOffset(), stat.getEndOffset());
 		throw new ParseTreeException(extra + format, args);
 	}
 }

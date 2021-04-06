@@ -1,10 +1,10 @@
 package com.hardcoded.compiler.impl.statement;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import com.hardcoded.compiler.api.Statement;
+import com.hardcoded.compiler.impl.context.NonNullList;
 import com.hardcoded.compiler.lexer.Token;
 
 /**
@@ -15,17 +15,17 @@ import com.hardcoded.compiler.lexer.Token;
  */
 public abstract class Stat implements Statement {
 	protected final List<Statement> list;
-	protected final Token token;
-	protected Token end;
+	protected int start_offset;
+	protected int end_offset;
 	
 	protected Stat(Token token) {
 		this(token, false);
 	}
 	
-	protected Stat(Token token, boolean has_list) {
-		this.list = has_list ? new ArrayList<>():Collections.emptyList();
-		this.token = token;
-		this.end = Token.EMPTY;
+	protected Stat(Token start, boolean has_list) {
+		this.list = has_list ? new NonNullList<>(EmptyStat.get()):Collections.emptyList();
+		this.start_offset = start.offset;
+		this.end_offset = start.offset;
 	}
 	
 	public Stat add(Statement stat) {
@@ -33,35 +33,33 @@ public abstract class Stat implements Statement {
 		return this;
 	}
 	
-	public Stat add(Statement... array) {
-		for(Statement s : array)
-			list.add(s);
-		
-		return this;
-	}
-	
-	public final Token getToken() {
-		return token;
-	}
-	
-	public final Token getEnd() {
-		return end;
-	}
+//	public final Token getToken() {
+//		return start;
+//	}
+//	
+//	public final Token getEnd() {
+//		return end;
+//	}
 	
 	@SuppressWarnings("unchecked")
 	public <T extends Stat> T end(Token end) {
-		this.end = end;
+		this.end_offset = end.offset + end.value.length();
 		return (T)this;
 	}
 	
 	@Override
-	public int getLineIndex() {
-		return token.line;
+	public int getStartOffset() {
+		return start_offset;
 	}
 
 	@Override
-	public int getColumnIndex() {
-		return token.column;
+	public int getEndOffset() {
+		return end_offset;
+	}
+	
+	public void setLocation(int start, int end) {
+		this.start_offset = start;
+		this.end_offset = end;
 	}
 	
 	@Override

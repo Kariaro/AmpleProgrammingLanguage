@@ -2,6 +2,12 @@ package com.hardcoded.compiler.api;
 
 import java.util.List;
 
+/**
+ * API access
+ * 
+ * @author HardCoded
+ * @since 0.2.0
+ */
 public interface Expression {
 	public enum Type {
 		ATOM,
@@ -57,4 +63,16 @@ public interface Expression {
 	Type getType();
 	List<Expression> getExpressions();
 	boolean isPure();
+	
+	/**
+	 * Returns the start offset of this expression.
+	 * @return the start offset of this expression
+	 */
+	int getStartOffset();
+	
+	/**
+	 * Returns the end offset of this expression.
+	 * @return the end offset of this expression
+	 */
+	int getEndOffset();
 }

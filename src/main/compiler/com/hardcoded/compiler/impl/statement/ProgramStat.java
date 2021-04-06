@@ -29,12 +29,12 @@ public class ProgramStat implements Statement {
 	}
 	
 	@Override
-	public int getLineIndex() {
+	public int getStartOffset() {
 		return 0;
 	}
 	
 	@Override
-	public int getColumnIndex() {
+	public int getEndOffset() {
 		return 0;
 	}
 	

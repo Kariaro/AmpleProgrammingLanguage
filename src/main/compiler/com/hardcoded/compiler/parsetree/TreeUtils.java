@@ -6,6 +6,7 @@ import com.hardcoded.compiler.api.Expression;
 import com.hardcoded.compiler.api.Statement;
 import com.hardcoded.compiler.impl.expression.*;
 import com.hardcoded.compiler.impl.statement.*;
+import com.hardcoded.compiler.lexer.Token;
 
 public class TreeUtils {
 	private static String remove_last(String str) {
@@ -66,6 +67,12 @@ public class TreeUtils {
 			return remove_last(stat.toString()) + " " + printTree(list.get(0));
 		}
 		
+		if(stat instanceof ClassStat) {
+			List<Statement> list = stat.getStatements();
+			if(list.isEmpty()) return stat.toString();
+			return remove_last(stat.toString()) + " " + printTree(list.get(0));
+		}
+		
 		if(stat instanceof ScopeStat) {
 			List<Statement> list = stat.getStatements();
 			if(!list.isEmpty()) {
@@ -116,21 +123,21 @@ public class TreeUtils {
 		if(elm instanceof UnaryExpr) {
 			UnaryExpr ex = (UnaryExpr)elm;
 			
-			UnaryExpr expr = UnaryExpr.get(ex.getType(), ex.getToken());
+			UnaryExpr expr = UnaryExpr.get(ex.getType(), Token.EMPTY);
+			expr.setLocation(ex.getStartOffset(), ex.getEndOffset());
 			for(Expression e : ex.getExpressions()) {
 				expr.add(deepCopy(e));
 			}
-			expr.end(ex.getEnd());
 			return expr;
 		}
 		if(elm instanceof BinaryExpr) {
 			BinaryExpr ex = (BinaryExpr)elm;
 			
-			BinaryExpr expr = BinaryExpr.get(ex.getType(), ex.getToken());
+			BinaryExpr expr = BinaryExpr.get(ex.getType(), Token.EMPTY);
+			expr.setLocation(ex.getStartOffset(), ex.getEndOffset());
 			for(Expression e : ex.getExpressions()) {
 				expr.add(deepCopy(e));
 			}
-			expr.end(ex.getEnd());
 			return expr;
 		}
 		
