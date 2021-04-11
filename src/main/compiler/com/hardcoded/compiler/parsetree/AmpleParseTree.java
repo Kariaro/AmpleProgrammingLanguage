@@ -57,14 +57,12 @@ public class AmpleParseTree {
 		
 		ProgramStat stat = begin();
 		
-		/*
 		LOGGER.debug("Root: %s", stat);
 		
 		String str = TreeUtils.printTree(stat).replace("\t", "    ");
 		System.out.println("################################################");
 		System.out.println(str);
 		System.out.println("################################################");
-		*/
 		
 		return stat;
 	}
@@ -130,6 +128,44 @@ public class AmpleParseTree {
 		if(lang.valueEquals("{")) {
 			lang.next();
 			// [class-body]
+			
+			while(lang.hasNext()) {
+				int start_index = lang.readerIndex();
+				
+				if(lang.valueEquals(name.value)) {
+					Token token_name = lang.next();
+					FuncStat constructor = makeFunction(token_name, token_name);
+					stat.add(constructor);
+				} else {
+					if(isType()) {
+						Token token_type = lang.next();
+						if(!isName()) {
+							throw_exception("Expected a valid name but got '%s'", lang.value());
+						}
+						Token token_name = lang.next();
+						
+						if(lang.valueEquals("(")) {
+							// FUNCTION
+							stat.add(makeFunction(token_type, token_name));
+							continue;
+						}
+						
+						if(lang.valueEquals("=") || lang.valueEquals(";")) {
+							// DEFINE
+							stat.add(makeDefine(token_type, token_name));
+							continue;
+						}
+					}
+				}
+				
+				if(lang.valueEquals("}")) {
+					break;
+				}
+				
+				if(start_index == lang.readerIndex()) {
+					throw_stuck_exception();
+				}
+			}
 			
 			check_or_throw("}");
 			return stat.end(lang.peek(-1));
@@ -262,6 +298,7 @@ public class AmpleParseTree {
 		if(lang.valueEquals("do")) return makeDoWhile(lang.next());
 		if(lang.valueEquals("for")) return makeFor(lang.next());
 		if(lang.valueEquals("if")) return makeIf(lang.next());
+		if(lang.valueEquals("switch")) return makeSwitch(lang.next());
 		
 		if(isType()) {
 			Token def_type = lang.next();
@@ -375,7 +412,7 @@ public class AmpleParseTree {
 		return stat.end(lang.peek(-1));
 	}
 	
-	Statement makeIf(Token token) {
+	IfStat makeIf(Token token) {
 		IfStat stat = IfStat.get(token);
 		check_or_throw("(");
 		stat.add(makeExprStat(true));
@@ -384,6 +421,52 @@ public class AmpleParseTree {
 		if(lang.valueEquals("else")) {
 			lang.next();
 			stat.add(makeStatement());
+		}
+		
+		return stat.end(lang.peek(-1));
+	}
+	
+	SwitchStat makeSwitch(Token token) {
+		SwitchStat stat = SwitchStat.get(token);
+		check_or_throw("(");
+		stat.add(makeExprStat(true));
+		check_or_throw(")");
+		check_or_throw("{");
+		
+		while(true) {
+			int start_index = lang.readerIndex();
+			if(lang.valueEquals("}")) break;
+			stat.add(makeCase(lang.next()));
+			
+			if(start_index == lang.readerIndex()) {
+				throw_stuck_exception();
+			}
+		}
+		
+		check_or_throw("}");
+		return stat.end(lang.peek(-1));
+	}
+	
+	CaseStat makeCase(Token token) {
+		CaseStat stat = CaseStat.get(token);
+		ExprStat expr_stat = makeExprStat(true);
+		if(!TreeUtils.isPureAtom(expr_stat.getExpression())) {
+			throw_exception("Invalid case: A case statement can only contain constant values!");
+		}
+		
+		stat.add(expr_stat);
+		check_or_throw(":");
+		
+		while(true) {
+			int start_index = lang.readerIndex();
+			
+			if(lang.valueEquals("}")
+			|| lang.valueEquals("case")) break;
+			stat.add(makeStatement());
+			
+			if(start_index == lang.readerIndex()) {
+				throw_stuck_exception();
+			}
 		}
 		
 		return stat.end(lang.peek(-1));

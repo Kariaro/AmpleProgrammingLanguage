@@ -64,6 +64,10 @@ public class Inst implements Instruction {
 		return args.size();
 	}
 	
+//	public List<InstParam> getParams() {
+//		return args;
+//	}
+	
 	@Override
 	public String toString() {
 		return String.format("%s %s", type, args);

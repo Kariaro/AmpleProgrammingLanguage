@@ -41,6 +41,22 @@ public class InstList {
 		return list;
 	}
 	
+	public InstList clone() {
+		InstList copy = new InstList();
+		
+		for(Inst inst : list) {
+			Inst inst_copy = Inst.get(inst.getType());
+			
+			for(int i = 0; i < inst.getNumParam(); i++) {
+				inst_copy.addParam(inst.getParam(i));
+			}
+			
+			copy.add(inst_copy);
+		}
+		
+		return copy;
+	}
+	
 	public static InstList get() {
 		return new InstList();
 	}

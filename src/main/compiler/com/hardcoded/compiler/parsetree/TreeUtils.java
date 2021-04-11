@@ -25,6 +25,17 @@ public class TreeUtils {
 		return sb.toString().trim();
 	}
 	
+	public static boolean isPureAtom(Expression expr) {
+		if(expr instanceof AtomExpr) return ((AtomExpr)expr).isNumber();
+		if(EmptyExpr.isEmpty(expr)) return false;
+		
+		for(Expression e : expr.getExpressions()) {
+			if(!isPureAtom(e)) return false;
+		}
+		
+		return true;
+	}
+	
 	public static String printTree(Statement stat) {
 		StringBuilder sb = new StringBuilder();
 		
@@ -33,6 +44,28 @@ public class TreeUtils {
 			List<Statement> list = stat.getStatements();
 			sb.append("if(").append(list.get(0)).append(") ").append(printTree(list.get(1)));
 			if(s.hasElse()) sb.append(" else ").append(printTree(list.get(2)));
+			return sb.toString();
+		}
+		
+		if(stat instanceof SwitchStat) {
+			List<Statement> list = stat.getStatements();
+			sb.append("switch(").append(list.get(0)).append(") {");
+			for(int i = 1; i < list.size(); i++) {
+				String str = printTree(list.get(i));
+				if(str.startsWith("\n\t")) str = str.substring(2);
+				sb.append("\n\t").append(str.replace("\n", "\n\t"));
+			}
+			return sb.append("\n}").toString();
+		}
+		
+		if(stat instanceof CaseStat) {
+			List<Statement> list = stat.getStatements();
+			sb.append("case ").append(list.get(0)).append(":");
+			for(int i = 1; i < list.size(); i++) {
+				String str = printTree(list.get(i));
+				if(str.startsWith("\n\t")) str = str.substring(2);
+				sb.append("\n\t").append(str.replace("\n", "\n\t"));
+			}
 			return sb.toString();
 		}
 		
@@ -53,7 +86,7 @@ public class TreeUtils {
 			String a = list.get(0).toString();
 			String b = list.get(1).toString();
 			String c = list.get(2).toString();
-			sb.append("for(").append(a).append(b).append(c).append(") ").append(printTree(list.get(3)));
+			sb.append("for(").append(String.format("%s%s;%s", a, b, c)).append(") ").append(printTree(list.get(3)));
 			return sb.toString();
 		}
 		

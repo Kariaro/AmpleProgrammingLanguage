@@ -17,27 +17,31 @@ public class InstParam {
 		NUM
 	}
 	
-	protected Reference ref;
-	protected String string;
-	protected double number;
-	protected Type type;
+	protected final Reference ref;
+	protected final String string;
+	protected final double number;
+	protected final Type type;
 	
 	private InstParam() {
-		this.type = Type.EMPTY;
+		this(Type.EMPTY, null, 0D, null);
 	}
 	
 	private InstParam(String string) {
-		this.type = Type.STR;
-		this.string = string;
+		this(Type.STR, string, 0D, null);
 	}
 	
 	private InstParam(double number) {
-		this.type = Type.NUM;
-		this.number = number;
+		this(Type.NUM, null, number, null);
 	}
 	
 	private InstParam(Reference ref) {
-		this.type = Type.REF;
+		this(Type.REF, null, 0D, ref);
+	}
+	
+	private InstParam(Type type, String str, double num, Reference ref) {
+		this.type = type;
+		this.string = str;
+		this.number = num;
 		this.ref = ref;
 	}
 	

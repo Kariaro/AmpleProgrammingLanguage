@@ -31,18 +31,13 @@ import com.hardcoded.utils.FileUtils;
  * @since 0.2.0
  */
 public class ParseTreeVisualizer extends JPanel {
-	//private static int instance = 0;
 	private static final long serialVersionUID = -648826653395842049L;
 	
 	public static void main(String[] args) {
 		Log.setLogLevel(Log.Level.ALL);
 		Toolkit.getDefaultToolkit().setDynamicLayout(false); 
 		
-		startInstance("ParseTreeVisualizer", null);
-	}
-	
-	private static ParseTreeVisualizer startInstance(String title, ProgramStat stat) {
-		JFrame frame = new JFrame(title);
+		JFrame frame = new JFrame("ParseTreeVisualizer");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setLocationRelativeTo(null);
 		frame.setResizable(true);
@@ -50,19 +45,11 @@ public class ParseTreeVisualizer extends JPanel {
 		frame.add(panel);
 		frame.pack();
 		frame.setVisible(true);
-		if(stat != null) {
-			//panel.setStat(stat);
-		} else {
-			panel.start();
-		}
-		
-		return panel;
+		panel.start();
 	}
 	
 	private TextArea area;
 	public ParseTreeVisualizer() {
-		//if(instance++ > 2) throw new RuntimeException();
-		
 		Dimension dim = new Dimension(1000, 640);
 		setMaximumSize(dim);
 		setMinimumSize(dim);
@@ -176,12 +163,6 @@ public class ParseTreeVisualizer extends JPanel {
 			Expr ex = (Expr)expr;
 			int s = ex.getStartOffset();
 			int e = ex.getEndOffset();
-//			Token s = ex.getToken();
-//			Token e = ex.getEnd();
-//			
-//			if(e == Token.EMPTY) {
-//				e = s;
-//			}
 			
 //			{
 //				Token tok = ex.getToken();

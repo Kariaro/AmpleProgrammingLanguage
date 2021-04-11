@@ -21,6 +21,9 @@ public interface Statement {
 		CONTINUE,
 		BREAK,
 		
+		SWITCH,
+		CASE,
+		
 		// Expression
 		EXPR,
 		
