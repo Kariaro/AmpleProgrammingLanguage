@@ -13,6 +13,7 @@ import java.util.Objects;
  * @since 0.2.0
  */
 public final class Log {
+	private static final Log GLOBAL = new Log(Log.class);
 	private static boolean SHOW_LINE_INDEX = true;
 	private static int LOG_LEVEL = 900;
 	public static void setLogLevel(Level level) {
@@ -36,6 +37,17 @@ public final class Log {
 	
 	public static Log getLogger(Class<?> clazz) {
 		return new Log(clazz);
+	}
+	
+	public static Log getGlobal() {
+		return GLOBAL;
+	}
+	
+	public static Log getLogger() {
+		StackTraceElement[] stack = Thread.getAllStackTraces().get(Thread.currentThread());
+		if(stack == null) return GLOBAL;
+		StackTraceElement last = stack[3];
+		return new Log(last.getClassName());
 	}
 	
 	public static Log getLogger(String name) {

@@ -1,5 +1,6 @@
 package com.hardcoded.compiler.llcode;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.hardcoded.compiler.api.Expression;
@@ -11,6 +12,7 @@ import com.hardcoded.compiler.impl.expression.EmptyExpr;
 import com.hardcoded.compiler.impl.expression.Expr;
 import com.hardcoded.compiler.impl.instruction.*;
 import com.hardcoded.compiler.impl.statement.*;
+import com.hardcoded.logger.Log;
 import com.hardcoded.options.Options;
 
 /**
@@ -20,6 +22,7 @@ import com.hardcoded.options.Options;
  * @since 0.2.0
  */
 public class AmpleCodeGenerator {
+	private static final Log LOGGER = Log.getLogger();
 	private int temp_index = -2;
 	
 	public AmpleCodeGenerator() {
@@ -86,6 +89,11 @@ public class AmpleCodeGenerator {
 				list.add(processStat(s, ref));
 			}
 			
+			return list;
+		}
+		
+		if(stat instanceof SwitchStat) {
+			list.add(processSwitchStat((SwitchStat)stat, ref));
 			return list;
 		}
 		
@@ -412,6 +420,68 @@ public class AmpleCodeGenerator {
 		list.add(Inst.get(Type.LABEL).addParam(label_end));
 		
 		continue_label = old_continue;
+		break_label = old_break;
+		return list;
+	}
+	
+	private InstList processSwitchStat(SwitchStat stat, InstParam ref) {
+		InstList list = getList(stat);
+		
+		// ============================== //
+		// switch(A) {
+		//   case B: ...
+		//   case C: ...
+		// }
+		
+		//   set [#0], A
+		//   eq [#1], [#0], B
+		//   brz [case_B]
+		//   eq [#1], [#0], C
+		//   brz [case_C]
+		//   br [switch_end]
+		//   ; for all case statements
+		// case_B:
+		//   ; code inside B
+		// case_C:
+		//   ; code inside C
+		// switch_end:
+		// 
+		
+		InstParam label_end = getNewLabel();
+		
+		
+
+		InstParam temp0 = getTempParam();
+		InstParam temp1 = getTempParam();
+		List<Statement> stats = stat.getStatements();
+		List<InstParam> cases = new ArrayList<>();
+		
+		InstParam old_break = break_label;
+		break_label = label_end;
+		
+		list.add(processStat(stats.get(0), temp0));
+		
+		for(int i = 1; i < stats.size(); i++) {
+			CaseStat s = (CaseStat)stats.get(i);
+			Expression e = ((ExprStat)s.getStatements().get(0)).getExpression();
+			
+			InstParam label = getNewLabel();
+			cases.add(label);
+			list.add(Inst.get(Type.EQ).addParams(temp1, temp0, resolveParam(e, list)));
+			list.add(Inst.get(Type.BRZ).addParams(temp1, label));
+		}
+		list.add(Inst.get(Type.BR).addParam(label_end));
+		for(int i = 1; i < stats.size(); i++) {
+			list.add(Inst.get(Type.LABEL).addParam(cases.get(i - 1)));
+			CaseStat s = (CaseStat)stats.get(i);
+			
+			List<Statement> case_stats = s.getStatements();
+			for(int j = 1; j < case_stats.size(); j++) {
+				list.add(processStat(case_stats.get(j)));
+			}
+		}
+		list.add(Inst.get(Type.LABEL).addParam(label_end));
+		
 		break_label = old_break;
 		return list;
 	}

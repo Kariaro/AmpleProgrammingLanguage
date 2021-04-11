@@ -20,7 +20,7 @@ public class ClassStat extends Stat implements IRefContainer {
 	protected Reference ref;
 	
 	private ClassStat(Token token, Token name) {
-		super(token);
+		super(token, true);
 		this.name = name;
 		this.ref = Reference.get(token.value, Reference.Type.CLASS);
 	}

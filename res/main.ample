@@ -6,17 +6,44 @@ num func = 32;
 // Example file
 import "io.ample";
 
-class Testing;
+class Testing {
 	// Class contents
+	
+	Testing() {
+		// Class constructor
+	}
+	
+	num test = 32;
+	
+	num getTest() {
+		return test;
+	}
+}
 
 //num func() { return 0; }
 // test
 
+num main1() {
+	num a = 32;
+	
+	switch(a) {
+		case 0: {
+			print("case_0");
+			break;
+		}
+		case -1 + 32: print("case_1");
+		case 2: print("case_2");
+	}
+}
+
+/*
 num main2() {
 	{
 		num a = 32;
 		return a + 31;
 	}
+	
+	
 }
 
 num main3() {
@@ -88,3 +115,4 @@ num main(num a, num b, num c) {
 
 
 // test
+*/

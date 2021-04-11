@@ -12,6 +12,7 @@ import com.hardcoded.compiler.impl.statement.ProgramStat;
 import com.hardcoded.compiler.lexer.AmpleLexer;
 import com.hardcoded.compiler.lexer.Lang;
 import com.hardcoded.compiler.llcode.AmpleCodeGenerator;
+import com.hardcoded.compiler.llcode.AmpleCodeOptimizer;
 import com.hardcoded.compiler.parsetree.AmpleParseTree;
 import com.hardcoded.compiler.parsetree.AmpleTreeIndexer;
 import com.hardcoded.logger.Log;
@@ -87,6 +88,10 @@ public class AmpleCompiler {
 		LOGGER.debug("INTERMEDIATE_CODE_GENERATION");
 		AmpleCodeGenerator code_generator = new AmpleCodeGenerator();
 		ImCode code = code_generator.process(options, stat);
+
+		LOGGER.debug("INTERMEDIATE_CODE_OPTIMIZATION");
+		AmpleCodeOptimizer code_optimizer = new AmpleCodeOptimizer();
+		code_optimizer.process(options, code);
 		
 		{
 			List<InstList> lists = code.list();

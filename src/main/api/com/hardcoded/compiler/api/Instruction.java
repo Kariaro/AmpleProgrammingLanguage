@@ -47,6 +47,9 @@ public interface Instruction {
 		BNZ, // branch if not zero
 		BR, // branch
 		
+		// COMPILER
+		INLINE_ARRAY,
+		
 		/** Call a routine */
 		CALL,
 		
