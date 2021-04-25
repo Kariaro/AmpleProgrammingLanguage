@@ -37,6 +37,10 @@ public class InstList {
 		list.remove(index);
 	}
 	
+	public boolean isEmpty() {
+		return list.isEmpty();
+	}
+	
 	public List<Inst> list() {
 		return list;
 	}

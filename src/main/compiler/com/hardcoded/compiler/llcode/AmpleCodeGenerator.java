@@ -12,23 +12,24 @@ import com.hardcoded.compiler.impl.expression.EmptyExpr;
 import com.hardcoded.compiler.impl.expression.Expr;
 import com.hardcoded.compiler.impl.instruction.*;
 import com.hardcoded.compiler.impl.statement.*;
-import com.hardcoded.logger.Log;
 import com.hardcoded.options.Options;
+import com.hardcoded.options.Options.Key;
 
 /**
- * A code generator
+ * A code generator.
  * 
  * @author HardCoded
  * @since 0.2.0
  */
-public class AmpleCodeGenerator {
-	private static final Log LOGGER = Log.getLogger();
+class AmpleCodeGenerator {
+	// private static final Log LOGGER = Log.getLogger();
 	private int temp_index = -2;
 	
 	public AmpleCodeGenerator() {
 		
 	}
 	
+	// private Options options;
 	public ImCode process(Options options, ProgramStat stat) {
 		ImCode code = new ImCode();
 		processProgramStat(stat, code);
@@ -37,9 +38,11 @@ public class AmpleCodeGenerator {
 	
 	private InstList getList(Stat stat) {
 		InstList list = InstList.get();
-		InstParam start = InstParam.get(stat.getStartOffset());
-		InstParam end = InstParam.get(stat.getEndOffset());
-		list.add(Inst.get(Type.MARKER).addParams(start, end, InstParam.get(stat.toString())));
+//		if(options.getInt(Key.OPTIMIZATION) > 0) {
+//			InstParam start = InstParam.get(stat.getStartOffset());
+//			InstParam end = InstParam.get(stat.getEndOffset());
+//			list.add(Inst.get(Type.MARKER).addParams(start, end, InstParam.get(stat.toString())));
+//		}
 		return list;
 	}
 	
@@ -232,6 +235,8 @@ public class AmpleCodeGenerator {
 		List<Statement> stats = stat.getStatements();
 		list.add(processStat(stats.get(0)));
 		
+		
+		System.out.println(stat + ", " + stats + ", " + stat.getStartOffset());
 		if(!EmptyStat.isEmpty(stats.get(2))) {
 			// ============================== //
 			// for(x; y; z) { ... }
@@ -573,6 +578,7 @@ public class AmpleCodeGenerator {
 				List<Expression> params = ex.getExpressions();
 				Inst inst = Inst.get(Type.CALL);
 				
+				inst.addParam(ref);
 				for(Expression e : params) {
 					inst.addParam(resolveParam(e, list));
 				}

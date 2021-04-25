@@ -1,118 +1,40 @@
 
-num a = 3;
-num b = 3;
-num func = 32;
-
-// Example file
-import "io.ample";
-
-class Testing {
-	// Class contents
-	
-	Testing() {
-		// Class constructor
-	}
-	
-	num test = 32;
-	
-	num getTest() {
-		return test;
-	}
-}
-
-//num func() { return 0; }
-// test
-
-num main1() {
-	num a = 32;
-	
-	switch(a) {
-		case 0: {
-			print("case_0");
-			break;
-		}
-		case -1 + 32: print("case_1");
-		case 2: print("case_2");
-	}
-}
-
-/*
-num main2() {
-	{
-		num a = 32;
-		return a + 31;
-	}
-	
-	
-}
-
-num main3() {
-	{
-		num a = 32;
-		num b = 32;
-		return (a ? b:a);
-	}
-}
-
 num main(num a, num b, num c) {
-	num a2 = awesome ( 32);
-	awesome;
-	//awesome.testing();
-	//awesome.testing.cool();
-	
-	//testing.asdfing.testing();
-	{{{{{{{{{{{{
-		num awesome = 3;
-		awesome;
-		//awesome.test = 3;
-		//awesome.testing();
-		
-		
-		{{
-			num awesome2 = 5;
-			awesome2;
-		}}
-	}}}}}}}}}}}}
-	awesome;
-	
-	num b2 = func + a + a + a + 32;
-	num c2 = b + 32 + asdfcerw;
-	
-	num d = 3232;
-	
-	
-	str q = asdf[32];
-	str q2 = 0 ? 1:2;
-	str q3 = 0 ? 1:2;
-	str q4 = -1;
-	str q5 = -q;
-	str q6 = !q;
-	str q7 = +q;
-	str q8 = 0 ? 1:2;
-	str q9 = 0 ? 1:2;
-	
-	func(1, 0xAAAA, "text", 0.1234);
-	for(str a3 = 3; a3 < 43;);
-	while(true) { str a3; { str a4; } }
-	do { str a3; } while(false);
+	num vV = a ? b:c;
+	num vD = test();
 	goto label;
+	goto label;
+	goto label;
+	goto label;
+	goto label;
+	goto label;
+	goto label;
+	goto label;
+	goto label;
+	goto label;
+	goto label;
+	goto label;
+	goto label;
+	goto label;
+	return 5;
+	num v0 = 32;
+	num v1 = 31;
+	num v2 = 30;
+	num v3 = 29;
+	num v4 = 28;
 	label:
-	while(true) { break; }
-	for(num a4 = 0; a4 < 4; a += 1) { continue; }
-	return;
-	if(true) { str a3; }
-	if(false) { str a3; } else { str b3; }
-	
-	a + 1 <= 0;
-	a >= 0;
-	((a + 1,(((2))),3,4));
-	a[32];
-	
-	return d;
+	num v5 = 27;
+	num v6 = 26;
+	num v7 = 25;
+	num v8 = 24;
+	return 4;
+	num v9 = 23;
+	num vA = 22;
+	num vB = 21;
+	num vC = 20;
+	return 3;
 }
 
-// ample
-
-
-// test
-*/
+num test() {
+	return 0;
+}

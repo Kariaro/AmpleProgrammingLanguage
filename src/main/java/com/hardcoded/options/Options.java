@@ -44,6 +44,11 @@ public class Options {
 		 * <p><i>(Can not be used with other compiler flags)</i>
 		 */
 		RUNNING_FILE,
+		
+		/**
+		 * The optimization level.
+		 */
+		OPTIMIZATION,
 	}
 	
 	protected Map<Key, String> map;
@@ -58,6 +63,10 @@ public class Options {
 	
 	public String get(Key key) {
 		return map.getOrDefault(key, "");
+	}
+	
+	public int getInt(Key key) {
+		return Integer.parseInt(map.getOrDefault(key, "0"));
 	}
 	
 	public String get(Key key, String defaultValue) {
@@ -126,6 +135,12 @@ public class Options {
 				// PROJECT XML
 				case "-xml": {
 					options.set(Key.PROJECT_XML, args[++i]);
+					break;
+				}
+				
+				// OPTIMIZATION
+				case "-O": {
+					options.set(Key.OPTIMIZATION, args[++i]);
 					break;
 				}
 				

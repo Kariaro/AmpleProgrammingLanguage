@@ -1,10 +1,10 @@
 package com.hardcoded.compiler.impl.expression;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import com.hardcoded.compiler.api.Expression;
+import com.hardcoded.compiler.impl.context.NonNullList;
 import com.hardcoded.compiler.lexer.Token;
 import com.hardcoded.utils.StringUtils;
 
@@ -16,20 +16,15 @@ import com.hardcoded.utils.StringUtils;
  */
 public abstract class Expr implements Expression {
 	protected final List<Expression> list;
-	//protected final Token token;
-	//protected Token end;
 	protected int start_offset;
 	protected int end_offset;
 	
 	protected Expr(Token token) {
-		this(token, false);
+		this(token, true);
 	}
 	
-	protected Expr(Token token, boolean no_list) {
-		this.list = no_list ? Collections.emptyList():new ArrayList<>();
-		//this.token = token;
-		//this.end = Token.EMPTY;
-		
+	protected Expr(Token token, boolean has_list) {
+		this.list = has_list ? new NonNullList<>(EmptyExpr.get()):Collections.emptyList();
 		this.start_offset = token.offset;
 		this.end_offset = token.offset;
 	}
@@ -40,9 +35,7 @@ public abstract class Expr implements Expression {
 	}
 	
 	public Expr add(Expression... array) {
-		for(Expression e : array)
-			list.add(e);
-		
+		for(Expression e : array) add(e);
 		return this;
 	}
 	
@@ -70,9 +63,10 @@ public abstract class Expr implements Expression {
 		return end_offset;
 	}
 	
-	public void setLocation(int start, int end) {
+	public Expr setLocation(int start, int end) {
 		this.start_offset = start;
 		this.end_offset = end;
+		return this;
 	}
 	
 	@Override
@@ -87,9 +81,19 @@ public abstract class Expr implements Expression {
 			case CALL:
 				return false;
 			
-			default:
+			default: {
+				for(Expression e : list) {
+					if(!e.isPure()) return false;
+				}
+				
 				return true;
+			}
 		}
+	}
+	
+	@Override
+	public boolean isConstant() {
+		return false;
 	}
 	
 	@Override

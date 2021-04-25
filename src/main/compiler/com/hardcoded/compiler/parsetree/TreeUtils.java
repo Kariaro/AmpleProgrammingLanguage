@@ -168,6 +168,16 @@ public class TreeUtils {
 			}
 			return expr;
 		}
+		if(elm instanceof VaryingExpr) {
+			VaryingExpr ex = (VaryingExpr)elm;
+			
+			VaryingExpr expr = VaryingExpr.get(ex.getType(), Token.EMPTY);
+			expr.setLocation(ex.getStartOffset(), ex.getEndOffset());
+			for(Expression e : ex.getExpressions()) {
+				expr.add(deepCopy(e));
+			}
+			return expr;
+		}
 		
 		throw new NullPointerException("Failed to clone expression: " + ((elm == null) ? "<null>":elm.getClass()));
 	}

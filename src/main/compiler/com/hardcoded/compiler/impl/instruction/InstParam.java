@@ -10,7 +10,7 @@ public class InstParam {
 	private static final DecimalFormat number_format = new DecimalFormat("#.##########", DecimalFormatSymbols.getInstance(Locale.US));
 	public static final InstParam EMPTY = new InstParam();
 	
-	enum Type {
+	public enum Type {
 		EMPTY,
 		REF,
 		STR,
@@ -45,8 +45,39 @@ public class InstParam {
 		this.ref = ref;
 	}
 	
+	public Reference getReference() {
+		if(!isReference()) throw new CodeGenException("Invalid getReference(). Was '%s'", type);
+		return ref;
+	}
+	
+	public double getNumber() {
+		if(!isNumber()) throw new CodeGenException("Invalid getNumber(). Was '%s'", type);
+		return number;
+	}
+	
+	public String getString() {
+		if(!isString()) throw new CodeGenException("Invalid getString(). Was '%s'", type);
+		return string;
+	}
+	
 	public boolean isEmpty() {
 		return type == Type.EMPTY;
+	}
+	
+	public boolean isReference() {
+		return type == Type.REF;
+	}
+	
+	public boolean isNumber() {
+		return type == Type.NUM;
+	}
+	
+	public boolean isString() {
+		return type == Type.STR;
+	}
+	
+	public Type getType() {
+		return type;
 	}
 	
 	@Override

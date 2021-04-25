@@ -20,7 +20,7 @@ public interface Instruction {
 		
 		// BINARY
 		ADD,
-		SUB,
+		SUB,			// sub(a, b)    ->    add(a, not(b))
 		MUL,
 		DIV,
 		SHR,
@@ -29,12 +29,10 @@ public interface Instruction {
 		AND,
 		OR,
 		MOD,
-		CAND,
-		COR,
 		EQ,
 		NEQ,
-		LT,
-		LTE,
+		LT,				// lt (a, b)    ->    gte(b, a)
+		LTE,            // lte(a, b)    ->    gt (b, a)
 		GT,
 		GTE,
 		
@@ -55,6 +53,28 @@ public interface Instruction {
 		
 		/** Leave a routine */
 		RET,
+		
+		;
+		
+		public boolean isJump() {
+			return this == BR
+				|| this == BRZ
+				|| this == BNZ;
+		}
+		
+		public boolean isConditionalJump() {
+			return this == BRZ
+				|| this == BNZ;
+		}
+		
+		/**
+		 * Returns {@code true} if the instruction modifies data elsewhere
+		 * @return {@code true} if the instruction modifies data elsewhere
+		 */
+		public boolean isVolatile() {
+			// WRITE
+			return this == CALL;
+		}
 	}
 	
 	Type getType();

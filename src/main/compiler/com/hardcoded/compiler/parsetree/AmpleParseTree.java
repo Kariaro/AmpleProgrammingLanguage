@@ -4,10 +4,8 @@ import com.hardcoded.compiler.api.Expression;
 import com.hardcoded.compiler.api.Statement;
 import com.hardcoded.compiler.impl.context.Reference;
 import com.hardcoded.compiler.impl.statement.*;
-import com.hardcoded.compiler.lexer.AmpleLexer;
 import com.hardcoded.compiler.lexer.Lang;
 import com.hardcoded.compiler.lexer.Token;
-import com.hardcoded.logger.Log;
 import com.hardcoded.options.Options;
 
 /**
@@ -16,17 +14,12 @@ import com.hardcoded.options.Options;
  * @author HardCoded
  * @since 0.2.0
  */
-public class AmpleParseTree {
-	@SuppressWarnings("unused")
-	private static final Log LOGGER = Log.getLogger(AmpleParseTree.class);
+class AmpleParseTree {
+	// private static final Log LOGGER = Log.getLogger();
 	
 	public AmpleParseTree() {
 		
 	}
-	
-	// This file will generate a output tree struction that contains the syntax tree
-	// The output data will contain a list of exported symbols (provided)
-	// and a list of imported symbols (missing)
 	
 	protected AmpleExprParser expression_parser;
 	protected Options options;
@@ -50,22 +43,22 @@ public class AmpleParseTree {
 		return stat;
 	}
 	
-	public ProgramStat process(Options options, byte[] bytes) {
-		this.expression_parser = new AmpleExprParser();
-		this.options = options;
-		this.lang = Lang.wrap(AmpleLexer.getLexer().parse(bytes));
-		
-		ProgramStat stat = begin();
-		
-		LOGGER.debug("Root: %s", stat);
-		
-		String str = TreeUtils.printTree(stat).replace("\t", "    ");
-		System.out.println("################################################");
-		System.out.println(str);
-		System.out.println("################################################");
-		
-		return stat;
-	}
+//	public ProgramStat process(Options options, byte[] bytes) {
+//		this.expression_parser = new AmpleExprParser();
+//		this.options = options;
+//		this.lang = Lang.wrap(AmpleLexer.getLexer().parse(bytes));
+//		
+//		ProgramStat stat = begin();
+//		
+//		LOGGER.debug("Root: %s", stat);
+//		
+//		String str = TreeUtils.printTree(stat).replace("\t", "    ");
+//		System.out.println("################################################");
+//		System.out.println(str);
+//		System.out.println("################################################");
+//		
+//		return stat;
+//	}
 	
 	public ProgramStat begin() {
 		ProgramStat root = ProgramStat.get();
@@ -409,6 +402,7 @@ public class AmpleParseTree {
 		check_or_throw(")");
 		
 		stat.add(makeStatement());
+		
 		return stat.end(lang.peek(-1));
 	}
 	

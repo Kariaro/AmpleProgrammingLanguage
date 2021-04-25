@@ -1,8 +1,6 @@
 package com.hardcoded.visualizer;
 
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Toolkit;
+import java.awt.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.Arrays;
@@ -19,10 +17,12 @@ import com.hardcoded.compiler.impl.expression.AtomExpr;
 import com.hardcoded.compiler.impl.expression.Expr;
 import com.hardcoded.compiler.impl.serial.SerialParseTree;
 import com.hardcoded.compiler.impl.statement.*;
+import com.hardcoded.compiler.lexer.AmpleLexer;
+import com.hardcoded.compiler.lexer.Lang;
 import com.hardcoded.compiler.lexer.Token;
-import com.hardcoded.compiler.parsetree.AmpleParseTree;
-import com.hardcoded.compiler.parsetree.AmpleTreeIndexer;
+import com.hardcoded.compiler.parsetree.AmpleParseTreeWorker;
 import com.hardcoded.logger.Log;
+import com.hardcoded.options.Options;
 import com.hardcoded.utils.FileUtils;
 
 /**
@@ -55,7 +55,10 @@ public class ParseTreeVisualizer extends JPanel {
 		setMinimumSize(dim);
 		setPreferredSize(dim);
 		area = new TextArea();
-		add(area);
+		
+		BorderLayout layout = new BorderLayout();
+		setLayout(layout);
+		add(area, BorderLayout.CENTER);
 		
 		Thread t = new Thread(() -> {
 			while(true) {
@@ -94,10 +97,13 @@ public class ParseTreeVisualizer extends JPanel {
 					stat = (ProgramStat)ser.getStatement();
 					link = ser.getLinkerScope();
 				} else {
-					AmpleParseTree tree = new AmpleParseTree();
-					stat = tree.process(null, bytes);
-					AmpleTreeIndexer validator = new AmpleTreeIndexer();
-					link = validator.process(null, stat);
+					Lang lang = Lang.wrap(AmpleLexer.getLexer().parse(bytes));
+					Options options = Options.parse(new String[0]);
+					
+					AmpleParseTreeWorker worker = new AmpleParseTreeWorker();
+					worker.process(options, lang);
+					stat = worker.getProgram();
+					link = worker.getLink();
 				}
 				
 				setStat(stat, link);

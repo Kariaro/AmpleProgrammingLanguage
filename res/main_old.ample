@@ -1,0 +1,140 @@
+
+num a = 3;
+num b = 3;
+num func = 32;
+
+// Example file
+import "io.ample";
+
+class Testing {
+	// Class contents
+	
+	Testing() {
+		// Class constructor
+	}
+	
+	num test = 32;
+	
+	num getTest() {
+		return test;
+	}
+}
+
+//num func() { return 0; }
+// test
+
+num main1() {
+	num a = 32;
+	
+	num b = (a ? 32:32);
+	num c = 1 + 2 - 3 + 4 - 5 + 6 - 7 + 8 - 9 + 2;
+	
+	switch(a) {
+		case 0: {
+			print("case_0");
+			break;
+		}
+		case -1 + 32: print("case_1");
+		case 2: print("case_2");
+	}
+	
+	if(0) {
+		print("IF(0):");
+	} else {
+		print("ELSE(0):");
+	}
+	;;;;;;;;;;;;;;;;;;;
+	if(1) {
+		print("IF(1):");
+	} else {
+		print("ELSE(1):");
+	}
+	
+	if(0) {
+		print("SINGLE IF(0):");
+	}
+	
+	if(1) {
+		print("SINGLE IF(1):");
+	}
+}
+
+
+num main2() {
+	{
+		num a = 32;
+		return a + 31;
+	}
+	
+	
+}
+
+num main3() {
+	{
+		num a = 32;
+		num b = 32;
+		return (a ? b:a);
+	}
+}
+
+num main(num a, num b, num c) {
+	num a2 = awesome ( 32);
+	awesome;
+	//awesome.testing();
+	//awesome.testing.cool();
+	
+	//testing.asdfing.testing();
+	{{{{{{{{{{{{
+		num awesome = 3;
+		awesome;
+		//awesome.test = 3;
+		//awesome.testing();
+		
+		
+		{{
+			num awesome2 = 5;
+			awesome2;
+		}}
+	}}}}}}}}}}}}
+	awesome;
+	
+	num b2 = func + a + a + a + 32;
+	num c2 = b + 32 + asdfcerw;
+	
+	num d = 3232;
+	
+	
+	str q = asdf[32];
+	str q2 = 0 ? 1:2;
+	str q3 = 0 ? 1:2;
+	str q4 = -1;
+	str q5 = -q;
+	str q6 = !q;
+	str q7 = +q;
+	str q8 = 0 ? 1:2;
+	str q9 = 0 ? 1:2;
+	
+	func(1, 0xAAAA, "text", 0.1234);
+	for(str a3 = 3; a3 < 43;);
+	while(true) { str a3; { str a4; } }
+	do { str a3; } while(false);
+	goto label;
+	label:
+	while(true) { break; }
+	for(num a4 = 0; a4 < 4; a += 1) { continue; }
+	return;
+	if(true) { str a3; }
+	if(false) { str a3; } else { str b3; }
+	
+	a + 1 <= 0;
+	a >= 0;
+	((a + 1,(((2))),3,4));
+	a[32];
+	
+	return d;
+}
+
+// ample
+
+
+// test
