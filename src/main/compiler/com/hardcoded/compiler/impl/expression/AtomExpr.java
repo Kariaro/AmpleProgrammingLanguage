@@ -46,7 +46,7 @@ public class AtomExpr extends Expr implements IRefContainer {
 	}
 	
 	private AtomExpr(Token token, AtomType type, double a, String b, Reference c) {
-		super(token, true);
+		super(token, false);
 		this.token = token;
 		this.type = type;
 		this.number = a;
@@ -80,6 +80,11 @@ public class AtomExpr extends Expr implements IRefContainer {
 	
 	public boolean isString() {
 		return type == AtomType.STRING;
+	}
+	
+	@Override
+	public boolean isConstant() {
+		return type != AtomType.REF;
 	}
 	
 	@Override

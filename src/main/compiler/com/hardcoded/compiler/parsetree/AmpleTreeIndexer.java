@@ -18,7 +18,7 @@ import com.hardcoded.options.Options;
  * @author HardCoded
  * @since 0.2.0
  */
-public class AmpleTreeIndexer {
+class AmpleTreeIndexer {
 	private static final Log LOGGER = Log.getLogger(AmpleTreeIndexer.class);
 	
 	public AmpleTreeIndexer() {

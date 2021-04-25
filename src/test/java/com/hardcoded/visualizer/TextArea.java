@@ -16,6 +16,7 @@ public class TextArea extends JPanel {
 	private int[] index = new int[0];
 	private Point mouse;
 	private int scroll;
+	private int tooltip_width = 70;
 	private int visible_rows = 37;
 	private int tab_size = 4;
 	private int index_size = 33;
@@ -74,6 +75,16 @@ public class TextArea extends JPanel {
 					case KeyEvent.VK_DOWN: doScroll(shift ? 4:1); break;
 					case KeyEvent.VK_UP: doScroll(shift ? -4:-1); break;
 				}
+			}
+		});
+		addComponentListener(new ComponentAdapter() {
+			public void componentResized(ComponentEvent e) {
+				Component comp = e.getComponent();
+				if(comp == null) return;
+				
+				int height = comp.getHeight();
+				visible_rows = Math.max(8, (int)Math.ceil(height / font_h));
+				repaint();
 			}
 		});
 	}
@@ -211,15 +222,64 @@ public class TextArea extends JPanel {
 				String ran = String.format("(start: %d, end: %d)", irange.start, irange.end);
 				int mx = m.x + 150;
 				int my = m.y - 6;
-				int ln = (int)(Math.max(tip.length(), ran.length()) * font_w);
 				
-				g.setColor(Color.gray);
-				g.fillRect(mx, my, ln + 2, (int)(font_h * 2) + 2);
-				g.setColor(Color.white);
-				g.fillRect(mx + 1, my + 1, ln, (int)(font_h * 2));
-				g.setColor(Color.black);
-				g.drawString(tip, mx + 1, my + font_offset);
-				g.drawString(ran, mx + 1, my + font_offset + font_h);
+				final int tl = tip.length();
+				if(tl > tooltip_width) {
+					List<String> list = new ArrayList<>();
+					for(int i = 0, last = 0, stri = 0; i < tl; i++) {
+						char c = tip.charAt(i);
+						
+						if(!Character.isLetter(c)) {
+							last = i;
+						}
+						
+						if((i > 0) && (((i - stri) % tooltip_width) == 0) || (i == tl - 1)) {
+							String str;
+							if(i == tl - 1) {
+								str = tip.substring(stri);
+								
+								if(str.length() > tooltip_width) {
+									list.add(str.substring(0, tooltip_width));
+									list.add(str.substring(tooltip_width));
+								} else {
+									list.add(str);
+								}
+							} else {
+								str = tip.substring(stri, last);
+								list.add(str);
+							}
+							stri = last;
+							
+						}
+					}
+					
+					int ln = ran.length();
+					for(String str : list) {
+						ln = Math.max(ln, str.length());
+					}
+					
+					ln = (int)(ln * font_w);
+					
+					g.setColor(Color.gray);
+					g.fillRect(mx, my, ln + 2, (int)(font_h * (1 + list.size())) + 2);
+					g.setColor(Color.white);
+					g.fillRect(mx + 1, my + 1, ln, (int)(font_h * (1 + list.size())));
+					g.setColor(Color.black);
+					g.drawString(ran, mx + 1, my + font_offset);
+					int sh = 1;
+					for(String str : list) {
+						g.drawString(str, mx + 1, my + font_offset + font_h * (sh++));
+					}
+				} else {
+					int ln = (int)(Math.max(tip.length(), ran.length()) * font_w);
+					g.setColor(Color.gray);
+					g.fillRect(mx, my, ln + 2, (int)(font_h * 2) + 2);
+					g.setColor(Color.white);
+					g.fillRect(mx + 1, my + 1, ln, (int)(font_h * 2));
+					g.setColor(Color.black);
+					g.drawString(tip, mx + 1, my + font_offset);
+					g.drawString(ran, mx + 1, my + font_offset + font_h);
+				}
 			}
 		}
 	}

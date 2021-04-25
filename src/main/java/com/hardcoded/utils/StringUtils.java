@@ -3,19 +3,37 @@ package com.hardcoded.utils;
 import java.lang.reflect.Array;
 import java.util.List;
 
+/**
+ * A string utility class
+ * 
+ * @author HardCoded
+ * @since 0.2.0
+ */
 public final class StringUtils {
-	private StringUtils() {}
+	private StringUtils() {
+		
+	}
 	
 	public static String join(CharSequence separator, List<?> list) {
 		if(list == null) return null;
-		return join(separator, list.toArray());
+		
+		final int length = list.size();
+		
+		StringBuilder sb = new StringBuilder();
+		for(int i = 0; i < length; i++)
+			sb.append(separator).append(list.get(i));
+		
+		if(length > 0)
+			sb.delete(0, separator.length());
+		
+		return sb.toString();
 	}
 	
 	public static String join(CharSequence separator, Object array) {
 		if(array == null) return null;
 		
 		try {
-			int length = Array.getLength(array);
+			final int length = Array.getLength(array);
 			
 			StringBuilder sb = new StringBuilder();
 			for(int i = 0; i < length; i++)

@@ -5,6 +5,9 @@ import java.util.List;
 import java.util.Objects;
 
 import com.hardcoded.compiler.api.Instruction;
+import com.hardcoded.compiler.impl.context.Reference;
+import com.hardcoded.utils.NumberUtils;
+import com.hardcoded.utils.StringUtils;
 
 /**
  * An instruction implementation
@@ -71,6 +74,86 @@ public class Inst implements Instruction {
 	@Override
 	public String toString() {
 		return String.format("%s %s", type, args);
+	}
+	
+	private String toPrettyString(Reference ref) {
+		StringBuilder sb = new StringBuilder();
+		
+		switch(ref.getType()) {
+			case LABEL: {
+				if(ref.isTemporary()) {
+					if(ref.getTempIndex() < 0) {
+						sb.append("#").append(-ref.getTempIndex());
+					} else {
+						sb.append("#temp_").append(ref.getTempIndex());
+					}
+				} else {
+					sb.append(ref.getName());
+				}
+				
+				break;
+			}
+			
+			case CLASS:
+			case FUN:
+			case MEMBER: {
+				sb.append(ref.getName());
+				break;
+			}
+			
+			case VAR: {
+				if(ref.isTemporary()) {
+					if(ref.getTempIndex() < 0) {
+						sb.append("$").append(-ref.getTempIndex());
+					} else {
+						sb.append("$temp_").append(ref.getTempIndex());
+					}
+				} else {
+					sb.append('@').append(ref.getName());
+				}
+				
+				break;
+			}
+			
+			case EMPTY: {
+				sb.append("<invalid>");
+				break;
+			}
+		}
+		
+		return sb.toString();
+	}
+	
+	public String toPrettyString() {
+		if(type == Instruction.Type.LABEL) {
+			return toPrettyString(args.get(0).getReference()) + ":";
+		}
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append(type.name().toLowerCase());
+		
+		if(!args.isEmpty()) {
+			sb.append(" ");
+			for(int i = 0; i < args.size(); i++) {
+				InstParam param = args.get(i);
+				
+				if(param.isEmpty()) {
+					sb.append("<empty>");
+				} else if(param.isNumber()) {
+					sb.append(NumberUtils.toString(param.getNumber()));
+				} else if(param.isString()) {
+					sb.append(StringUtils.escapeString(param.getString()));
+				} else if(param.isReference()) {
+					sb.append(toPrettyString(param.getReference()));
+				}
+				
+				if(i != args.size() - 1) {
+					sb.append(", ");
+				}
+			}
+		}
+		
+		return sb.toString();
 	}
 	
 	public static Inst get(Type type) {

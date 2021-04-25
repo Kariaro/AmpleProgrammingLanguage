@@ -65,6 +65,13 @@ public interface Expression {
 	boolean isPure();
 	
 	/**
+	 * Returns if the expression is a constant value.
+	 * <p>A constant value is a {@code number} or a {@code string}.
+	 * @return {@code true} if this expression is holds a constant value.
+	 */
+	boolean isConstant();
+	
+	/**
 	 * Returns the start offset of this expression.
 	 * @return the start offset of this expression
 	 */

@@ -40,7 +40,10 @@ public interface Statement {
 		
 		// None statement. Does nothing
 		NONE,
-		SCOPE
+		SCOPE,
+		
+		// Custom statements
+		KEYWORD,
 	}
 
 	

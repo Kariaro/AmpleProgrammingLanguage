@@ -18,7 +18,7 @@ import com.hardcoded.utils.StringUtils;
  * @author HardCoded
  * @since 0.2.0
  */
-public class AmpleExprParser {
+class AmpleExprParser {
 	private int temp_index = 0;
 	
 	public AmpleExprParser() {
@@ -27,6 +27,46 @@ public class AmpleExprParser {
 	
 	@SafeVarargs
 	final <T> T[] a(final T... array) { return array; }
+	
+	Expr for_each_array_varying(String[] values, Expression.Type[] init, Supplier<Expr> next) { return for_each_array_varying(values, init, next, next); }
+	Expr for_each_array_varying(String[] values, Expression.Type[] init, Supplier<Expr> first, Supplier<Expr> next) {
+		Expr expr = first.get();
+		VaryingExpr varying = null;
+		while(true) {
+			boolean found = false;
+			for(int i = 0; i < values.length; i++) {
+				if(lang.valueEquals(values[i])) {
+					Expression.Type vary_type = init[i];
+					found = true;
+					lang.next();
+					
+					if(varying == null) {
+						varying = VaryingExpr.get(vary_type, Token.EMPTY);
+						varying.add(expr);
+						varying.setLocation(expr.getStartOffset(), expr.getStartOffset());
+					}
+					
+					if(vary_type == varying.getType()) {
+						varying.add(next.get());
+						varying.end(lang.peek(-1));
+					} else {
+						VaryingExpr old = varying;
+						varying = VaryingExpr.get(vary_type, Token.fromOffset(old.getStartOffset()));
+						varying.add(old);
+						varying.add(next.get());
+						varying.end(lang.peek(-1));
+					}
+					
+					break;
+				}
+			}
+			
+			if(!found) {
+				if(varying != null) return varying;
+				return expr;
+			}
+		}
+	}
 	
 	Expr for_each_array(String[] values, Expression.Type[] init, Supplier<Expr> next) { return for_each_array(values, init, next, next); }
 	Expr for_each_array(String[] values, Expression.Type[] init, Supplier<Expr> first, Supplier<Expr> next) {
@@ -55,7 +95,7 @@ public class AmpleExprParser {
 		Expr expr = first.get();
 		
 		if(!lang.valueEquals(value)) return expr.end(lang.peek(-1));
-		Expr last = BinaryExpr.get(init, lang.next());
+		Expr last = VaryingExpr.get(init, lang.next());
 		last.add(expr);
 		
 		while(true) {
@@ -116,21 +156,25 @@ public class AmpleExprParser {
 		Expr lhs = order_13();
 		
 		if(lang.valueEquals("=")) {
+			if(!acceptModification(lhs)) throw_exception("Left hand side is not modifiable '%s'", lhs);
+			
 			Expr expr = BinaryExpr.get(SET, lang.next());
 			expr.add(lhs);
 			expr.add(order_14());
 			return expr;
 		} else {
 			Expression.Type expr_type = null;
+			
 			switch(lang.value()) {
 				case "-=": expr_type = SUB; break;
 				case "+=": expr_type = ADD; break;
-				case "*=": expr_type = MUL; break;
-				case "/=": expr_type = DIV; break;
-				case "%=": expr_type = MOD; break;
 				case "&=": expr_type = AND; break;
 				case "^=": expr_type = XOR; break;
 				case "|=": expr_type = OR; break;
+				
+				case "*=": expr_type = MUL; break;
+				case "/=": expr_type = DIV; break;
+				case "%=": expr_type = MOD; break;
 				case "<<=": expr_type = SHL; break;
 				case ">>=": expr_type = SHR; break;
 			}
@@ -139,7 +183,23 @@ public class AmpleExprParser {
 			if(!acceptModification(lhs)) throw_exception("Left hand side is not modifiable '%s'", lhs);
 			
 			Token token = lang.next();
-			Expr type = BinaryExpr.get(expr_type, token);
+			Expr type = null;
+			
+			switch(expr_type) {
+				case ADD:
+				case SUB:
+				case AND:
+				case XOR:
+				case OR: type = VaryingExpr.get(expr_type, token); break;
+				
+				case MUL:
+				case DIV:
+				case MOD:
+				case SHR:
+				case SHL: type = BinaryExpr.get(expr_type, token); break;
+				
+				default: throw_invalid_exception();
+			}
 			
 			if(lhs.isPure()) {
 				type.add(lhs);
@@ -170,6 +230,7 @@ public class AmpleExprParser {
 		Expr a = order_12();
 		if(!lang.valueEquals("?")) return a;
 		Token token = lang.next();
+		
 		// ternary_operator
 		Expr b = order_12();
 		check_or_throw(":");
@@ -178,12 +239,12 @@ public class AmpleExprParser {
 		Token start = Token.fromOffset(a.getStartOffset());
 		Token empty = token.empty();
 		AtomExpr temp = AtomExpr.get(empty, temp(Reference.Type.VAR));
-		return BinaryExpr.get(COMMA, start).add(
+		return VaryingExpr.get(COMMA, start).add(
 			BinaryExpr.get(SET, empty).add(temp, a),
 			BinaryExpr.get(COR, empty).add(
 				BinaryExpr.get(CAND, empty).add(
 					temp,
-					BinaryExpr.get(COMMA, empty).add(
+					VaryingExpr.get(COMMA, empty).add(
 						BinaryExpr.get(SET, empty).add(temp, b),
 						AtomExpr.get(empty, 1)
 					)
@@ -227,7 +288,7 @@ public class AmpleExprParser {
 	}
 	
 	Expr order_4() {
-		return for_each_array(a("+", "-"), a(ADD, SUB), this::order_3);
+		return for_each_array_varying(a("+", "-"), a(ADD, SUB), this::order_3);
 	}
 	
 	Expr order_3() {
@@ -288,7 +349,7 @@ public class AmpleExprParser {
 					ref.setReference(ref.getReference().as(Reference.Type.FUN));
 					
 					Token token = Token.fromOffset(lhs.getStartOffset());
-					BinaryExpr call = BinaryExpr.get(CALL, token);
+					VaryingExpr call = VaryingExpr.get(CALL, token);
 					call.add(lhs);
 					lang.next();
 					

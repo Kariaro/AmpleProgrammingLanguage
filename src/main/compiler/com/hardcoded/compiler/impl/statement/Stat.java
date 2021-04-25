@@ -33,13 +33,13 @@ public abstract class Stat implements Statement {
 		return this;
 	}
 	
-//	public final Token getToken() {
-//		return start;
-//	}
-//	
-//	public final Token getEnd() {
-//		return end;
-//	}
+	public int getNumElements() {
+		return list.size();
+	}
+	
+	public Statement get(int index) {
+		return list.get(index);
+	}
 	
 	@SuppressWarnings("unchecked")
 	public <T extends Stat> T end(Token end) {
