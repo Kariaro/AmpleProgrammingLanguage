@@ -1,4 +1,4 @@
- // @import "src/test2.ample";
+// @import "src/test2.ample";
 
 void println(char* str) {
 	char* buffer = &(0xb8000);
@@ -6,7 +6,7 @@ void println(char* str) {
 	while(*str) {
 		*buffer = *str;
 		str++;
-		buffer ++;
+		buffer++;
 	}
 }
 

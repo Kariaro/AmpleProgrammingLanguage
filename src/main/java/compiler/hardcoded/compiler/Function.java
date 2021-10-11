@@ -141,7 +141,7 @@ public class Function implements IFunction, Printable {
 		return sourceFileOffset;
 	}
 
-	public int getLocationLength() {
+	public int getLength() {
 		return name.length();
 	}
 	

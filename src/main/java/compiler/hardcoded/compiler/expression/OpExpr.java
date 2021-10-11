@@ -36,7 +36,7 @@ public class OpExpr extends Expression {
 		LowType lowType = super.size();
 		if(lowType.isPointer() || lowType.isNumber()) {
 			if(type == ExprType.decptr) return lowType.isPointer() ? lowType.nextLowerPointer():LowType.INVALID;
-			if(type == ExprType.addptr) return lowType.nextHigherPointer();
+			if(type == ExprType.incptr) return lowType.nextHigherPointer();
 		} else {
 			return LowType.INVALID;
 		}

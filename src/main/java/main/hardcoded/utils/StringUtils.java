@@ -237,7 +237,8 @@ public final class StringUtils {
 				
 				case '^': case '$': case '?': case '|':
 				case '*': case '/': case '+': case '.':
-				case '(': case ')': case '[': case ']': 
+				case '(': case ')': case '[': case ']':
+				case '{': case '}':
 					sb.append("\\").append(c); continue;
 			}
 			

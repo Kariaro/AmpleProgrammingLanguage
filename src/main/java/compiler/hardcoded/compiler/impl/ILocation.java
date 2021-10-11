@@ -48,7 +48,7 @@ public interface ILocation {
 	 * Returns the length of the object.
 	 * @return the length of the object
 	 */
-	default int getLocationLength() {
+	default int getLength() {
 		return INVALID;
 	}
 }

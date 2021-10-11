@@ -7,6 +7,7 @@ import hardcoded.compiler.instruction.IntermediateCodeGenerator;
 import hardcoded.compiler.instruction.IntermediateCodeOptimizer;
 import hardcoded.compiler.parsetree.ParseTreeGenerator;
 import hardcoded.compiler.parsetree.ParseTreeOptimizer;
+import hardcoded.visualization.PTVisualization;
 import hardcoded.visualization.Visualization;
 
 public class AmpleCompilerBuild {
@@ -57,12 +58,13 @@ public class AmpleCompilerBuild {
 	public IRProgram build(BuildConfiguration config) throws Exception {
 		Program current_program = parse_tree_generator.init(config, config.getStartFile());
 		
+		new PTVisualization().show(current_program);
 		if(current_program.hasErrors()) {
 			for(SyntaxMarker marker : current_program.getSyntaxMarkers()) {
-				System.err.printf("%s (%s:%s) : %s\n",
+				System.err.printf("%s (Line: %d, Column: %d) : %s\n",
 					marker.getCompilerMessage(),
-					marker.getLineIndex(),
-					marker.getColumnIndex(),
+					marker.getLineIndex() + 1,
+					marker.getColumnIndex() + 1,
 					marker.getMessage()
 				);
 			}
