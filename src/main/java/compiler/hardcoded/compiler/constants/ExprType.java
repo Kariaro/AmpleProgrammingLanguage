@@ -26,7 +26,7 @@ public enum ExprType {
 	nor,	// ~x
 	neg,	// -x
 	
-	// Compares				[Only returns zero or one]
+	// Compares
 	eq,		// x == y
 	neq,	// x != y
 	gt,		// x >  y
@@ -37,7 +37,7 @@ public enum ExprType {
 	cand,	// x && y
 	
 	// Pointer
-	addptr, // &x
+	incptr, // &x
 	decptr, // *x
 	
 	// Function

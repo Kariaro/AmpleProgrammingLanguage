@@ -142,13 +142,10 @@ public class IntermediateCodeGenerator {
 				break;
 			}
 			
-			case div: case mul:
-			case shl: case shr:
-			case and: case xor:
-			case lt: case lte:
-			case gt: case gte:
-			case eq: case neq:
-			case or: case mod: {
+			case div, mul, shl, shr,
+				and, xor, lt, lte,
+				gt, gte, eq, neq,
+				or, mod: {
 				Expression a = expr.first(), b = expr.last();
 				
 				Param reg_0 = createObject(a);
@@ -212,9 +209,7 @@ public class IntermediateCodeGenerator {
 				break;
 			}
 			
-			case neg:
-			case not:
-			case nor: {
+			case neg, not, nor: {
 				Expression a = expr.first();
 				
 				Param reg_0 = createObject(a);
@@ -240,7 +235,7 @@ public class IntermediateCodeGenerator {
 				break;
 			}
 			
-			case addptr: {
+			case incptr: {
 				// TODO: ?? Remember that we need to write and not mov !!!!
 				
 				Expression a = expr.first();
@@ -295,7 +290,7 @@ public class IntermediateCodeGenerator {
 				break;
 			}
 			
-			case add: case sub: {
+			case add, sub: {
 				IRType type = IRType.convert(expr.type());
 				Expression a = expr.get(0), b = expr.get(1);
 				

@@ -2,7 +2,7 @@ package hardcoded.compiler.errors;
 
 import java.io.File;
 
-import hardcoded.compiler.context.Lang;
+import hardcoded.compiler.context.LangContext;
 import hardcoded.lexer.Token;
 
 // TODO: Implement for easier debugging outside of this compiler
@@ -19,7 +19,7 @@ public class CompilerMarker implements SyntaxMarker {
 	private final int length;
 	private final int line;
 	
-	public CompilerMarker(File sourceFile, Lang reader, int severity, String compilerMessage, String message, CompilerError error) {
+	public CompilerMarker(File sourceFile, LangContext reader, int severity, String compilerMessage, String message, CompilerError error) {
 		this.sourceFile = sourceFile;
 		this.compilerMessage = compilerMessage;
 		this.severity = severity;
@@ -32,7 +32,7 @@ public class CompilerMarker implements SyntaxMarker {
 			line = INVALID;
 			length = 10;
 		} else {
-			offset = reader.fileOffset();
+			offset = reader.offset();
 			column = reader.column();
 			line = reader.line();
 			length = reader.value().length();
@@ -59,7 +59,7 @@ public class CompilerMarker implements SyntaxMarker {
 		}
 	}
 	
-	public CompilerMarker(File sf, Lang reader, int offs, int count, int severity, String msg, String cm, CompilerError error) {
+	public CompilerMarker(File sf, LangContext reader, int offs, int count, int severity, String msg, String cm, CompilerError error) {
 		this.sourceFile = sf;
 		this.compilerMessage = cm;
 		this.message = msg;
@@ -109,7 +109,7 @@ public class CompilerMarker implements SyntaxMarker {
 		return line;
 	}
 	
-	public int getLocationLength() {
+	public int getLength() {
 		return length;
 	}
 	

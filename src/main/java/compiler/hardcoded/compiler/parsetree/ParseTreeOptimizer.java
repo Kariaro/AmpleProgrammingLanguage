@@ -204,8 +204,8 @@ public class ParseTreeOptimizer {
 					break;
 				}
 				
-				case addptr: case decptr: {
-					ExprType opp = e.type() == decptr ? addptr:decptr;
+				case incptr, decptr: {
+					ExprType opp = e.type() == decptr ? incptr:decptr;
 					Expression ex = e.first();
 					
 					if(ex.type() == opp) {
@@ -217,7 +217,7 @@ public class ParseTreeOptimizer {
 					break;
 				}
 				
-				case sub: case add: {
+				case sub, add: {
 					List<AtomExpr> list = new ArrayList<>();
 					for(int i = 0; i < e.length(); i++) {
 						Expression e0 = e.get(i);
@@ -351,25 +351,15 @@ public class ParseTreeOptimizer {
 					break;
 				}
 				
-				case neg: case not:
-				case mul: case div:
-				case nor: case xor:
-				case shr: case shl:
-				case or: case and:
-				case lt: case lte:
-				case gt: case gte:
-				case eq: case neq:
-				case mod: {
+				case neg, not, mul, div,
+					 nor, xor, shr, shl,
+					 or, and, lt, lte,
+					 gt, gte, eq, neq, mod: {
 					Expression next = ExpressionParser.compute(e.type(), e);
 					if(next != null) parent.set(index, next); break;
 				}
 				
-				case jump:
-				case leave:
-				case loop:
-				case label:
-				case ret:
-				case call: {
+				case jump, leave, loop, label, ret, call: {
 					/* There is nothing we can do here.
 					 */
 					break;
