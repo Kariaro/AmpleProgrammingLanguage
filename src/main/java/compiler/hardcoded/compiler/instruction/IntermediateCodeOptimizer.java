@@ -170,7 +170,7 @@ public class IntermediateCodeOptimizer {
 					iter.remove();
 				} else {
 					Param reg = inst.getParam(inst.getNumParams() - 1);
-					if(reg instanceof NumberReg && ((NumberReg)reg).getValue() == 0) {
+					if(reg instanceof NumParam && ((NumParam)reg).getValue() == 0) {
 						// Check if the equality result is referenced
 						
 						int refs = getReferences(func, inst.getParam(0));
@@ -207,7 +207,7 @@ public class IntermediateCodeOptimizer {
 	 * the lowest amount possible by counting and replacing.
 	 */
 	private void counter_optimization(IRFunction func) {
-		Map<Integer, Reg> map = new HashMap<>();
+		Map<Integer, RegParam> map = new HashMap<>();
 		int index = 0;
 		
 		IRListIterator iter = Utils.createIterator(func.list);
@@ -217,15 +217,15 @@ public class IntermediateCodeOptimizer {
 			
 			for(int i = 0; i < inst.params.size(); i++) {
 				Param param = inst.getParam(i);
-				if(!(param instanceof Reg)) continue;
-				Reg reg = (Reg)param;
+				if(!(param instanceof RegParam)) continue;
+				RegParam reg = (RegParam)param;
 				
 				// Only optimize generated registers and not variable registers.
 				if(!reg.isTemporary()) continue;
 				
-				Reg next = map.get(reg.getIndex());
+				RegParam next = map.get(reg.getIndex());
 				if(next == null) {
-					next = new Reg(reg.getSize(), index++);
+					next = new RegParam(reg.getSize(), index++);
 					map.put(reg.getIndex(), next);
 				}
 				

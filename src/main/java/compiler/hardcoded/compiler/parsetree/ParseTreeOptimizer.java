@@ -351,10 +351,10 @@ public class ParseTreeOptimizer {
 					break;
 				}
 				
-				case neg, not, mul, div,
-					 nor, xor, shr, shl,
-					 or, and, lt, lte,
-					 gt, gte, eq, neq, mod: {
+				case neg, not, mul, div:
+				case nor, xor, shr, shl:
+				case or, and, lt, lte:
+				case gt, gte, eq, neq, mod: {
 					Expression next = ExpressionParser.compute(e.type(), e);
 					if(next != null) parent.set(index, next); break;
 				}

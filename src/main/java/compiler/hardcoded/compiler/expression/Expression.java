@@ -11,10 +11,12 @@ import hardcoded.visualization.Printable;
 
 public abstract class Expression implements IExpression, Printable {
 	protected final List<Expression> list;
+	private final boolean hasElements;
 	private ExprType type;
 	
 	protected Expression(ExprType type, boolean hasElements) {
-		this.list = hasElements ? new ArrayList<>():null;
+		this.hasElements = hasElements;
+		this.list = hasElements ? new ArrayList<>():List.of();
 		this.type = Objects.requireNonNull(type, "Expression type must not be null");
 	}
 	
@@ -31,7 +33,7 @@ public abstract class Expression implements IExpression, Printable {
 	}
 	
 	public final boolean hasExpressions() {
-		return list != null;
+		return hasElements;
 	}
 	
 	public final List<Expression> getElements() {
@@ -39,7 +41,7 @@ public abstract class Expression implements IExpression, Printable {
 	}
 	
 	public final boolean hasElements() {
-		return list != null;
+		return hasElements;
 	}
 	
 	public abstract Expression clone();
@@ -49,51 +51,38 @@ public abstract class Expression implements IExpression, Printable {
 	 * @return the number of child nodes in this list
 	 */
 	public final int length() {
-		if(list != null)
-			return list.size();
-		return 0;
+		return list.size();
 	}
 	
 	/**
 	 * Returns the first element of this expression or {@code null} if there are no elements.
-	 * @return the first element of this expression or {@code null} if there are no elements
 	 */
 	public final Expression first() {
-		if(length() > 0)
-			return list.get(0);
-		return null;
+		return list.get(0);
 	}
 	
 	/**
 	 * Returns the last element of this expression or {@code null} if there are no elements.
-	 * @return the last element of this expression or {@code null} if there are no elements
 	 */
 	public final Expression last() {
-		int length = length();
-		if(length > 0)
-			return list.get(length - 1);
-		
-		return null;
+		return list.get(list.size() - 1);
 	}
 	
 	/**
 	 * Returns {@code false} if this expression modifies memory otherwise {@code true}.
-	 * @return {@code false} if this expression modifies memory otherwise {@code true}
 	 */
 	public boolean isPure() {
-		if(list != null) {
+		if(hasElements) {
 			for(Expression expr : list) {
 				if(!expr.isPure()) return false;
 			}
 		}
 		
 		switch(type) {
-			case invalid:
-			case call:
-			case set:
-			case ret:
+			case invalid, call, set, ret:
 				return false;
-			default: return true;
+			default:
+				return true;
 		}
 	}
 	
@@ -101,15 +90,13 @@ public abstract class Expression implements IExpression, Printable {
 	 * Checks whether or not an expression modifies any values.
 	 * A modification can cause unknown side effects and thats
 	 * why changing a value can give side effects.
-	 * 
-	 * @return 
 	 */
 	public final boolean hasSideEffects() {
 		if(type == ExprType.set
 		|| type == ExprType.call) return true;
 		
-		if(hasElements()) {
-			for(Expression expr : getElements()) {
+		if(hasElements) {
+			for(Expression expr : list) {
 				if(expr.hasSideEffects()) return true;
 			}
 		}
@@ -123,9 +110,7 @@ public abstract class Expression implements IExpression, Printable {
 	 * @return	the element at the specified index
 	 */
 	public final Expression get(int index) {
-		if(list != null)
-			return list.get(index);
-		return null;
+		return list.get(index);
 	}
 	
 	/**
@@ -133,7 +118,6 @@ public abstract class Expression implements IExpression, Printable {
 	 * @param	expr	the expression to add
 	 */
 	public final void add(Expression expr) {
-		if(list == null) throw new UnsupportedOperationException();
 		list.add(expr == null ? EMPTY:expr);
 	}
 	
@@ -143,7 +127,6 @@ public abstract class Expression implements IExpression, Printable {
 	 * @param	expr	the expression to replace with
 	 */
 	public final void set(int index, Expression expr) {
-		if(list == null) throw new UnsupportedOperationException();
 		list.set(index, expr == null ? EMPTY:expr);
 	}
 	
@@ -152,22 +135,23 @@ public abstract class Expression implements IExpression, Printable {
 	 * @param	index	the index of the element to remove
 	 */
 	public void remove(int index) {
-		if(list == null) throw new UnsupportedOperationException();
 		list.remove(index);
 	}
 	
-	public String asString() { return "Undefined(" + this.getClass() + ")"; }
+	public String asString() {
+		return "Undefined(%s)".formatted(this.getClass());
+	}
 	
 	public final Object[] asList() {
-		return list == null ? new Object[0]:list.toArray();
+		return list.toArray();
 	}
 	
 	public LowType size() {
 		if(this == EMPTY) return LowType.INVALID;
 		
 		LowType curr = null;
-		if(hasElements()) {
-			for(Expression expr : getElements()) {
+		if(hasElements) {
+			for(Expression expr : list) {
 				LowType type = expr.size();
 				if(type == null) continue;
 				

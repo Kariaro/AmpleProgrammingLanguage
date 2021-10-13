@@ -1,8 +1,6 @@
 package hardcoded.assembly.x86;
 
 final class NumberUtils {
-	private NumberUtils() {}
-	
 	public static int getBitsSize(long value) {
 		value = (value < 0 ? - (value + 1):value);
 		

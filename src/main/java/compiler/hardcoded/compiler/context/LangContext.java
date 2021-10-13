@@ -58,6 +58,15 @@ public class LangContext {
 		return token().type;
 	}
 	
+	public boolean consumeType(Type expected) {
+		if(expected == type()) {
+			advance();
+			return true;
+		}
+		
+		return false;
+	}
+	
 	public int offset() {
 		return token().offset;
 	}

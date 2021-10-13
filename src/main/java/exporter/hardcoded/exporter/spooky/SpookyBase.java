@@ -69,7 +69,7 @@ class SpookyBase {
 		for(SpookyBlock block : func.blocks) {
 			for(IRInstruction ir : block.list) {
 				for(Param param : ir.getParams()) {
-					if(param instanceof Reg) {
+					if(param instanceof RegParam) {
 						
 						if(!set.contains(param.getIndex())) {
 							set.add(param.getIndex());

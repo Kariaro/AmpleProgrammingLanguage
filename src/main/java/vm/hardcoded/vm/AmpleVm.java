@@ -78,7 +78,7 @@ public class AmpleVm {
 				case label: break;
 				
 				case mov: {
-					Reg target = (Reg)inst.getParam(0);
+					RegParam target = (RegParam)inst.getParam(0);
 					Value v = read(func, offset, inst.getParam(1));
 					write(func, offset, target, v);
 					break;
@@ -100,7 +100,7 @@ public class AmpleVm {
 				case gte:
 				case lt:
 				case lte: {
-					Reg target = (Reg)inst.getParam(0);
+					RegParam target = (RegParam)inst.getParam(0);
 					
 					Value a = read(func, offset, inst.getParam(1));
 					Value b = read(func, offset, inst.getParam(2));
@@ -132,7 +132,7 @@ public class AmpleVm {
 				case not:
 				case nor:
 				case neg: {
-					Reg target = (Reg)inst.getParam(0);
+					RegParam target = (RegParam)inst.getParam(0);
 					
 					Value a = read(func, offset, inst.getParam(1));
 					switch(inst.type()) {
@@ -147,7 +147,7 @@ public class AmpleVm {
 				}
 				
 				case read: {
-					Reg target = (Reg)inst.getParam(0);
+					RegParam target = (RegParam)inst.getParam(0);
 					
 					Value a = read(func, offset, inst.getParam(1));
 					a = memory.read((int)a.longValue(), inst.getSize());
@@ -207,7 +207,7 @@ public class AmpleVm {
 					run(next, offset + func.bodySize, 0);
 					
 					if(hasReturn) {
-						Reg reg = (Reg)inst.getParam(0);
+						RegParam reg = (RegParam)inst.getParam(0);
 						memory.write(offset + func.getRegister(reg), memory.read(offset + func.bodySize, next.getType()), reg.getSize());
 					}
 					
@@ -219,16 +219,16 @@ public class AmpleVm {
 	}
 	
 	private Value read(VmFunction func, int offset, Param param) {
-		if(param instanceof Reg) {
-			Reg reg = (Reg)param;
+		if(param instanceof RegParam) {
+			RegParam reg = (RegParam)param;
 			return memory.read(offset + func.getRegister(reg), param.getSize());
-		} else if(param instanceof NumberReg) {
-			NumberReg reg = (NumberReg)param;
+		} else if(param instanceof NumParam) {
+			NumParam reg = (NumParam)param;
 			LowType type = reg.getSize();
 			if(type.isPointer()) return Value.get(reg.getValue(), Atom.i64);
 			return Value.get(reg.getValue(), type.type());
-		} else if(param instanceof RefReg) {
-			RefReg reg = (RefReg)param;
+		} else if(param instanceof RefParam) {
+			RefParam reg = (RefParam)param;
 			return Value.dword(pointers.get(reg.toString()));
 		} else if(param instanceof DebugParam) {
 			return Value.dword(0); // T O D O: Illegal
@@ -237,7 +237,7 @@ public class AmpleVm {
 		throw new VmException("Not found: " + param.getClass());
 	}
 	
-	private void write(VmFunction func, int offset, Reg reg, Value value) {
+	private void write(VmFunction func, int offset, RegParam reg, Value value) {
 		memory.write(offset + func.getRegister(reg), value.convert(reg.getSize()), reg.getSize());
 	}
 }

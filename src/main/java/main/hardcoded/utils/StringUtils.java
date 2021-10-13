@@ -235,10 +235,10 @@ public final class StringUtils {
 				case '\t': sb.append("\\t"); continue;
 				case '\\': sb.append("\\\\"); continue;
 				
-				case '^': case '$': case '?': case '|':
-				case '*': case '/': case '+': case '.':
-				case '(': case ')': case '[': case ']':
-				case '{': case '}':
+				case '^', '$', '?', '|':
+				case '*', '/', '+', '.':
+				case '(', ')', '[', ']':
+				case '{', '}':
 					sb.append("\\").append(c); continue;
 			}
 			
@@ -294,4 +294,15 @@ public final class StringUtils {
 		
 		return sb.toString().substring(separator.length()).trim();
 	}
+	
+	// NOTE: Why is this printHexString method not using a byte array?
+		public static String printHexString(CharSequence separator, byte[] array) {
+			if(array == null || array.length == 0) return "";
+			StringBuilder sb = new StringBuilder();
+			for(int i : array) {
+				sb.append(separator).append(String.format("%02x", i & 0xff));
+			}
+			
+			return sb.toString().substring(separator.length()).trim();
+		}
 }

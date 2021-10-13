@@ -6,7 +6,7 @@ import java.util.List;
 import hardcoded.compiler.expression.Expression;
 import hardcoded.compiler.types.HighType;
 
-public class Variable extends Statement {
+public class VariableStat extends Statement {
 	public List<Expression> list;
 	
 	public HighType type;
@@ -15,7 +15,7 @@ public class Variable extends Statement {
 	public boolean isArray;
 	public int arraySize;
 	
-	public Variable(HighType type) {
+	public VariableStat(HighType type) {
 		super(false);
 		
 		this.list = new ArrayList<>();

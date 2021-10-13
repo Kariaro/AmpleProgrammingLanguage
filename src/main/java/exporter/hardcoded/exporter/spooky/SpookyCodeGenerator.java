@@ -275,15 +275,15 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 		for(IRInstruction inst : block.list) {
 			switch(inst.type()) {
 				case mov: {
-					Reg a = (Reg)inst.getParam(0);
+					RegParam a = (RegParam)inst.getParam(0);
 					Param b = inst.getParam(1);
 					
-					Address target = generate(func, (Reg)a);
-					if(b instanceof NumberReg) {
-						list.add(new SpookyInst(OpCode.CONST, ((NumberReg)b).getValue(), target));
-					} else if(b instanceof Reg) {
-						list.add(new SpookyInst(OpCode.MOV, generate(func, (Reg)b), target));
-					} else if(b instanceof RefReg) {
+					Address target = generate(func, (RegParam)a);
+					if(b instanceof NumParam) {
+						list.add(new SpookyInst(OpCode.CONST, ((NumParam)b).getValue(), target));
+					} else if(b instanceof RegParam) {
+						list.add(new SpookyInst(OpCode.MOV, generate(func, (RegParam)b), target));
+					} else if(b instanceof RefParam) {
 						list.add(new SpookyInst(OpCode.CONST, getStringAddress(b.getIndex()).offset, target));
 					} else throw new IllegalArgumentException("Invalid mov parameter '" + b + "' '" + (b == null ? "NULL":b.getClass())+ "'");
 					break;
@@ -291,8 +291,8 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 				
 				case not:   // eq (A, 0)
 				case neg: { // mul(B, A, -1)
-					Reg a = (Reg)inst.getParam(0);
-					Reg b = (Reg)inst.getParam(1);
+					RegParam a = (RegParam)inst.getParam(0);
+					RegParam b = (RegParam)inst.getParam(1);
 					
 					Address target = generate(func, a);
 					Address source = generate(func, b);
@@ -317,28 +317,28 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 				case sub: case add:
 				case mul: case div:
 				case mod: {
-					Reg a = (Reg)inst.getParam(0);
-					Reg b = (Reg)inst.getParam(1);
+					RegParam a = (RegParam)inst.getParam(0);
+					RegParam b = (RegParam)inst.getParam(1);
 					Param c = inst.getParam(2);
 					
 					Address target = generate(func, a);
 					Address op1 = generate(func, b);
 					OpCode op = OpCode.convert(inst.type());
 					
-					if(c instanceof NumberReg) {
-						list.add(new SpookyInst(OpCode.CONST, ((NumberReg)c).getValue(), TEMP));
+					if(c instanceof NumParam) {
+						list.add(new SpookyInst(OpCode.CONST, ((NumParam)c).getValue(), TEMP));
 						if(op == null) {
 							op = OpCode.convertSpecial(inst.type());
 							list.add(new SpookyInst(op, TEMP, op1, TEMP));
 						} else {
 							list.add(new SpookyInst(op, op1, TEMP, target));
 						}
-					} else if(c instanceof Reg) {
+					} else if(c instanceof RegParam) {
 						if(op == null) {
-							list.add(new SpookyInst(op, op1, generate(func, (Reg)c), TEMP));
+							list.add(new SpookyInst(op, op1, generate(func, (RegParam)c), TEMP));
 							list.add(new SpookyInst(OpCode.EQ, ZERO, TEMP, target));
 						} else {
-							list.add(new SpookyInst(op, op1, generate(func, (Reg)c), target));
+							list.add(new SpookyInst(op, op1, generate(func, (RegParam)c), target));
 						}
 					} else throw new IllegalArgumentException("Invalid parameter '" + c + "' '" + (c == null ? "NULL":c.getClass())+ "'");
 					break;
@@ -353,8 +353,8 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 					Param a = inst.getParam(0);
 					LabelParam label = (LabelParam)inst.getParam(1);
 					
-					if(a instanceof NumberReg) {
-						long value = ((NumberReg)a).getValue();
+					if(a instanceof NumParam) {
+						long value = ((NumParam)a).getValue();
 						
 						if(inst.type() == IRType.brz) {
 							if(value == 0) list.add(new SpookyInst(OpCode.JMP, ZERO, label));
@@ -363,11 +363,11 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 						}
 						
 						break;
-					} else if(a instanceof Reg) {
+					} else if(a instanceof RegParam) {
 						if(inst.type() == IRType.brz) {
-							list.add(new SpookyInst(OpCode.JMP, generate(func, (Reg)a), label));
+							list.add(new SpookyInst(OpCode.JMP, generate(func, (RegParam)a), label));
 						} else {
-							list.add(new SpookyInst(OpCode.EQ, generate(func, (Reg)a), ZERO, TEMP));
+							list.add(new SpookyInst(OpCode.EQ, generate(func, (RegParam)a), ZERO, TEMP));
 							list.add(new SpookyInst(OpCode.JMP, TEMP, label));
 						}
 					} else throw new IllegalArgumentException("Invalid brach parameter '" + a + "' '" + (a == null ? "NULL":a.getClass())+ "'");
@@ -375,8 +375,8 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 				}
 				
 				case read: {
-					Reg a = (Reg)inst.getParam(0);
-					Reg b = (Reg)inst.getParam(1);
+					RegParam a = (RegParam)inst.getParam(0);
+					RegParam b = (RegParam)inst.getParam(1);
 					
 					Address target = generate(func, a);
 					Address source = generate(func, b);
@@ -392,12 +392,12 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 					Param a = inst.getParam(0);
 					
 					int jump = func.getUsage();
-					if(a instanceof NumberReg) {
+					if(a instanceof NumParam) {
 						list.add(new SpookyInst(OpCode.CONST, jump, TEMP));
 						list.add(new SpookyInst(OpCode.SUB, BASE_POINTER, TEMP, BASE_POINTER));
-						list.add(new SpookyInst(OpCode.CONST, ((NumberReg)a).getValue(), TEMP));
+						list.add(new SpookyInst(OpCode.CONST, ((NumParam)a).getValue(), TEMP));
 						list.add(new SpookyInst(OpCode.JMPADR, Address.stack(0)));
-					} else if(a instanceof Reg) {
+					} else if(a instanceof RegParam) {
 						list.add(new SpookyInst(OpCode.CONST, jump, TEMP));
 						list.add(new SpookyInst(OpCode.SUB, BASE_POINTER, TEMP, BASE_POINTER));
 						list.add(new SpookyInst(OpCode.JMPADR, Address.stack(0)));
@@ -417,12 +417,12 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 						// We write the address tack to the back of our function
 						Address target = Address.stack(i - 1);
 						
-						if(c instanceof NumberReg) {
-							list.add(new SpookyInst(OpCode.CONST, ((NumberReg)c).getValue(), target));
-						} else if(c instanceof Reg) {
-							list.add(new SpookyInst(OpCode.MOV, generate(func, (Reg)c), target));
-						} else if(c instanceof RefReg) {
-							list.add(new SpookyInst(OpCode.CONST, generate(func, (RefReg)c).offset, target));
+						if(c instanceof NumParam) {
+							list.add(new SpookyInst(OpCode.CONST, ((NumParam)c).getValue(), target));
+						} else if(c instanceof RegParam) {
+							list.add(new SpookyInst(OpCode.MOV, generate(func, (RegParam)c), target));
+						} else if(c instanceof RefParam) {
+							list.add(new SpookyInst(OpCode.CONST, generate(func, (RefParam)c).offset, target));
 						} else {
 							throw new IllegalArgumentException("Invalid call parameter '" + c + "' '" + (c == null ? "NULL":c.getClass())+ "'");
 						}
@@ -442,8 +442,8 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 						list.add(new SpookyInst(OpCode.JMPADR, Address.functionPointer(called.id)));
 					}
 					
-					if(a instanceof Reg) {
-						list.add(new SpookyInst(OpCode.MOV, TEMP, generate(func, (Reg)a)));
+					if(a instanceof RegParam) {
+						list.add(new SpookyInst(OpCode.MOV, TEMP, generate(func, (RegParam)a)));
 					} else {
 						// throw new IllegalArgumentException("Invalid call parameter '" + a + "' '" + (a == null ? "NULL":a.getClass())+ "'");
 					}
@@ -458,7 +458,7 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 		}
 	}
 	
-	private Address generate(SpookyFunction func, Reg reg) {
+	private Address generate(SpookyFunction func, RegParam reg) {
 		if(reg.isTemporary()) {
 			return Address.stack(-func.getUsage() + func.getNumParams() + reg.getIndex() + 1);
 		}
@@ -466,7 +466,7 @@ public class SpookyCodeGenerator implements CodeGeneratorImpl {
 		return Address.stack(-func.getUsage() + reg.getIndex() + 1);
 	}
 	
-	private Address generate(SpookyFunction func, RefReg reg) {
+	private Address generate(SpookyFunction func, RefParam reg) {
 		Address addr = getStringAddress(reg.getIndex());
 		System.out.println(reg + " == " + addr);
 		return  addr;

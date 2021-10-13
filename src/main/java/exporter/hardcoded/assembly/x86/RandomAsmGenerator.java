@@ -4,8 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import hardcoded.exporter.x86.AssemblyConsts.AsmOp;
-import hardcoded.exporter.x86.AssemblyConsts.OprTy;
+import hardcoded.assembly.x86.AssemblyConsts.AsmOp;
+import hardcoded.assembly.x86.AssemblyConsts.OprTy;
+import hardcoded.utils.StringUtils;
 
 /**
  * This class is used for debugging the assembly class.
@@ -53,7 +54,7 @@ public final class RandomAsmGenerator {
 //		
 //		
 //		if(true) return;
-		
+		String str = "";
 		for(int i = 0; i < 100; i++) {
 			AsmInst inst = generate();
 			if(inst.getNumOperands() != 2) {
@@ -61,13 +62,17 @@ public final class RandomAsmGenerator {
 				continue;
 			}
 			
-			System.out.println();
-			System.out.println();
-			System.out.println();
-			System.out.println("=====================================================");
+			//System.out.println();
+			//System.out.println();
+			//System.out.println();
+			//System.out.println("=====================================================");
 			System.out.println(inst);
-			Assembly.compile(inst);
+			
+			str += 
+					StringUtils.printHexString("", Assembly.compile(inst));
 		}
+		
+		System.out.println(str);
 	}
 	
 	private static Random random = new Random();
