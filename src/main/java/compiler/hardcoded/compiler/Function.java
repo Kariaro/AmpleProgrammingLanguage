@@ -8,7 +8,7 @@ import hardcoded.compiler.expression.LowType;
 import hardcoded.compiler.impl.IFunction;
 import hardcoded.compiler.impl.IStatement;
 import hardcoded.compiler.statement.Statement;
-import hardcoded.compiler.statement.Variable;
+import hardcoded.compiler.statement.VariableStat;
 import hardcoded.compiler.types.HighType;
 import hardcoded.lexer.Token;
 import hardcoded.utils.StringUtils;
@@ -50,7 +50,7 @@ public class Function implements IFunction, Printable {
 		return scopes.lastElement();
 	}
 	
-	public Identifier add(Variable var) {
+	public Identifier add(VariableStat var) {
 		if(!hasIdentifier(var.name)) {
 			Identifier ident = Identifier.createVarIdent(var.name, var_index++, var.type);
 			getScope().add(ident);
@@ -115,7 +115,7 @@ public class Function implements IFunction, Printable {
 		this.modifiers.add(modifier);
 	}
 	
-	public void addArgument(Variable arg) {
+	public void addArgument(VariableStat arg) {
 		arguments.add(Identifier.createParamIdent(arg.name, arguments.size(), arg.type));
 	}
 	

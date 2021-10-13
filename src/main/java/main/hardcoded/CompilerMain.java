@@ -226,6 +226,8 @@ public class CompilerMain {
 		if(isDeveloper()) {
 			ConfigurationTest test = new ConfigurationTest();
 			
+			mode = ActionType.RUN;
+			format = "X86";
 			test.set("compiler.format", format);
 			test.set("compiler.directory", working_directory);
 			test.set("compiler.sourcefile", sourcePath);
@@ -273,6 +275,7 @@ public class CompilerMain {
 				FileOutputStream stream = new FileOutputStream(config.getOutputFile());
 				stream.write(bytes, 0, bytes.length);
 				stream.close();
+				
 			}
 			
 			long time = System.nanoTime() - start;
@@ -287,7 +290,7 @@ public class CompilerMain {
 		
 		if(mode == ActionType.RUN) {
 			compiler.build();
-			AmpleVm.run(compiler.getProgram());
+			//AmpleVm.run(compiler.getProgram());
 		}
 	}
 	

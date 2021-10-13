@@ -5,7 +5,7 @@ import java.util.*;
 import hardcoded.compiler.instruction.IRFunction;
 import hardcoded.compiler.instruction.IRInstruction;
 import hardcoded.compiler.instruction.IRInstruction.Param;
-import hardcoded.compiler.instruction.IRInstruction.Reg;
+import hardcoded.compiler.instruction.IRInstruction.RegParam;
 import hardcoded.exporter.impl.CodeBlockType;
 
 class SpookyFunction {
@@ -60,8 +60,8 @@ class SpookyFunction {
 		for(SpookyBlock block : blocks) {
 			for(IRInstruction ir : block.list) {
 				for(Param param : ir.getParams()) {
-					if(!(param instanceof Reg)) continue;
-					Reg reg = (Reg)param;
+					if(!(param instanceof RegParam)) continue;
+					RegParam reg = (RegParam)param;
 					
 					if(!reg.isTemporary()) continue;
 					

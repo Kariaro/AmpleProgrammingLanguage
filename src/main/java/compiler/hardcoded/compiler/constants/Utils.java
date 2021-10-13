@@ -59,8 +59,8 @@ public final class Utils {
 			}
 		}
 		
-		if(stat instanceof Variable) {
-			Variable var = (Variable)stat;
+		if(stat instanceof VariableStat) {
+			VariableStat var = (VariableStat)stat;
 			for(int i = 0; i < var.list.size(); i++) {
 				getAllExpressions(func, var.list.get(i), fc);
 				fc.constantFolding(var.list, i, func);

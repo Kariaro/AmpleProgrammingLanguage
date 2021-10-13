@@ -28,7 +28,7 @@ public class IntermediateCodeGenerator {
 	private final AtomicInteger atomic = new AtomicInteger();
 	
 	private Param temp(LowType type) {
-		return new Reg(type, atomic.getAndIncrement());
+		return new RegParam(type, atomic.getAndIncrement());
 	}
 	
 	public IntermediateCodeGenerator() {
@@ -59,7 +59,7 @@ public class IntermediateCodeGenerator {
 	}
 	
 	private Param addString(AtomExpr a) {
-		return new RefReg(".data.strings", program.getContext().getStringIndexAddIfAbsent(a.string()));
+		return new RefParam(".data.strings", program.getContext().getStringIndexAddIfAbsent(a.string()));
 	}
 	
 	private Param createObject(Expression e) {
@@ -79,7 +79,7 @@ public class IntermediateCodeGenerator {
 				
 				Param next;
 				if(ident.id_type() == IdType.param) {
-					next = new Reg(ident.name(), ident.getLowType(), ident.index());
+					next = new RegParam(ident.name(), ident.getLowType(), ident.index());
 				} else {
 					next = temp(size);
 				}
@@ -89,7 +89,7 @@ public class IntermediateCodeGenerator {
 			}
 			
 			if(a.isNumber()) {
-				return new NumberReg(a);
+				return new NumParam(a);
 			}
 		}
 		
@@ -382,7 +382,7 @@ public class IntermediateCodeGenerator {
 			
 			case cand: {
 				LabelParam label_end = new LabelParam("cand.end");
-				if(request != null) list.add(new IRInstruction(IRType.mov, request, new NumberReg(0, request.getSize())));
+				if(request != null) list.add(new IRInstruction(IRType.mov, request, new NumParam(0, request.getSize())));
 				
 				for(int i = 0; i < expr.length(); i++) {
 					Expression e = expr.get(i);
@@ -396,14 +396,14 @@ public class IntermediateCodeGenerator {
 					list.add(new IRInstruction(IRType.brz, reg, label_end));
 				}
 				
-				if(request != null) list.add(new IRInstruction(IRType.mov, request, new NumberReg(1, request.getSize())));
+				if(request != null) list.add(new IRInstruction(IRType.mov, request, new NumParam(1, request.getSize())));
 				list.add(new IRInstruction(IRType.label, label_end));
 				break;
 			}
 			
 			case cor: {
 				LabelParam label_end = new LabelParam("cor.end");
-				if(request != null) list.add(new IRInstruction(IRType.mov, request, new NumberReg(1, request.getSize())));
+				if(request != null) list.add(new IRInstruction(IRType.mov, request, new NumParam(1, request.getSize())));
 				
 				for(int i = 0; i < expr.length(); i++) {
 					Expression e = expr.get(i);
@@ -417,7 +417,7 @@ public class IntermediateCodeGenerator {
 					list.add(new IRInstruction(IRType.bnz, reg, label_end));
 				}
 
-				if(request != null) list.add(new IRInstruction(IRType.mov, request, new NumberReg(0, request.getSize())));
+				if(request != null) list.add(new IRInstruction(IRType.mov, request, new NumParam(0, request.getSize())));
 				list.add(new IRInstruction(IRType.label, label_end));
 				break;
 			}

@@ -1,5 +1,6 @@
 package hardcoded.compiler;
 
+import hardcoded.compiler.constants.Utils;
 import hardcoded.compiler.errors.CompilerException;
 import hardcoded.compiler.errors.SyntaxMarker;
 import hardcoded.compiler.instruction.IRProgram;
@@ -57,8 +58,10 @@ public class AmpleCompilerBuild {
 	 */
 	public IRProgram build(BuildConfiguration config) throws Exception {
 		Program current_program = parse_tree_generator.init(config, config.getStartFile());
-		
+
 		new PTVisualization().show(current_program);
+		
+		
 		if(current_program.hasErrors()) {
 			for(SyntaxMarker marker : current_program.getSyntaxMarkers()) {
 				System.err.printf("%s (Line: %d, Column: %d) : %s\n",
@@ -75,10 +78,7 @@ public class AmpleCompilerBuild {
 		vs.show(current_program);
 		parse_tree_optimizer.do_constant_folding(vs, current_program);
 		
-//		for(Function func : current_program.list()) {
-//			String str = hardcoded.compiler.constants.Utils.printPretty(func).replace("\t", "    ");
-//			System.out.println(str);
-//		}
+//		System.out.println(Utils.printPretty(current_program));
 		
 		IRProgram ir_program;
 		ir_program = icg.generate(current_program);

@@ -38,25 +38,22 @@ public class IRInstruction {
 	public static interface Param {
 		/**
 		 * Returns the name of this register.
-		 * @return the name of this register
 		 */
-		public default String getName() {
+		default String getName() {
 			return null;
 		}
 		
 		/**
 		 * Returns the index of a register or {@code -1} if the register is a variable register.
-		 * @return
 		 */
-		public default int getIndex() {
+		default int getIndex() {
 			return -1;
 		}
 		
 		/**
 		 * Returns the size of this register.
-		 * @return the size of this register
 		 */
-		public default LowType getSize() {
+		default LowType getSize() {
 			return null;
 		}
 	}
@@ -82,7 +79,7 @@ public class IRInstruction {
 		}
 	}
 	
-	public static final class Reg implements Param {
+	public static final class RegParam implements Param {
 		private final String name;
 		private final LowType size;
 		private final int index;
@@ -93,11 +90,11 @@ public class IRInstruction {
 		 */
 		private final boolean isTemporary;
 		
-		public Reg(LowType type, int index) {
+		public RegParam(LowType type, int index) {
 			this(null, type, index);
 		}
 		
-		public Reg(String name, LowType size, int index) {
+		public RegParam(String name, LowType size, int index) {
 			this.index = index;
 			this.name = name;
 			this.size = size;
@@ -107,6 +104,7 @@ public class IRInstruction {
 				throw new NullPointerException();
 		}
 		
+		// User for registers that are not parameters
 		public boolean isTemporary() {
 			return isTemporary;
 		}
@@ -134,11 +132,11 @@ public class IRInstruction {
 		}
 	}
 	
-	public static class RefReg implements Param {
+	public static class RefParam implements Param {
 		public String label;
 		public int index;
 		
-		public RefReg(String label, int index) {
+		public RefParam(String label, int index) {
 			this.label = label;
 			this.index = index;
 		}
@@ -156,15 +154,15 @@ public class IRInstruction {
 		}
 	}
 	
-	public static class NumberReg implements Param {
+	public static class NumParam implements Param {
 		private final LowType size;
 		private final long value;
 		
-		public NumberReg(AtomExpr expr) {
+		public NumParam(AtomExpr expr) {
 			this(expr.number(), expr.atomType);
 		}
 		
-		public NumberReg(long value, LowType size) {
+		public NumParam(long value, LowType size) {
 			this.value = value;
 			this.size = size;
 			
@@ -181,7 +179,6 @@ public class IRInstruction {
 		}
 		
 		public String toString() {
-			// TODO: Change how this value will be returned depending on the current LowType
 			return Long.toString(value);
 		}
 	}
@@ -293,27 +290,14 @@ public class IRInstruction {
 		return op;
 	}
 	
-	/**
-	 * Returns the parameter at the specified index.
-	 * @param	index	the index of the parameter
-	 * @return	the parameter at the specified index
-	 */
 	public Param getParam(int index) {
 		return params.get(index);
 	}
 	
-	/**
-	 * Returns an unmodifiable list of this instructions parameters.
-	 * @return an unmodifiable list of this instructions parameters
-	 */
 	public List<Param> getParams() {
 		return Collections.unmodifiableList(params);
 	}
 	
-	/**
-	 * Returns the amount of parameters of this instruction has.
-	 * @return the amount of parameters of this instruction has
-	 */
 	public int getNumParams() {
 		return params.size();
 	}

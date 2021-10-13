@@ -26,11 +26,11 @@ public class OpExpr extends Expression {
 		}
 		
 		if(type == ExprType.comma) {
-			return last().size();
+			return list.get(list.size() - 1).size();
 		}
 		
 		if(type == ExprType.call) {
-			return first().size();
+			return list.get(0).size();
 		}
 		
 		LowType lowType = super.size();
@@ -59,9 +59,9 @@ public class OpExpr extends Expression {
 	public String asString() { return type().toString(); }
 	public String toString() {
 		if(type() == ExprType.cast) {
-			return type() + "(" +StringUtils.join(", ", list) + ", " + override_size + ")";
+			return "%s(%s, %s)".formatted(type(), StringUtils.join(", ", list), override_size);
 		}
 		
-		return type() + "(" + StringUtils.join(", ", list) + ")";// + ":" + size();
+		return "%s(%s)".formatted(type(), StringUtils.join(", ", list)); // + ":" + size();
 	}
 }

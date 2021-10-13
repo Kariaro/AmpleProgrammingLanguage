@@ -6,7 +6,7 @@ import hardcoded.compiler.expression.LowType;
 import hardcoded.compiler.instruction.IRFunction;
 import hardcoded.compiler.instruction.IRInstruction;
 import hardcoded.compiler.instruction.IRInstruction.Param;
-import hardcoded.compiler.instruction.IRInstruction.Reg;
+import hardcoded.compiler.instruction.IRInstruction.RegParam;
 import hardcoded.compiler.instruction.IRType;
 
 class VmFunction {
@@ -33,8 +33,8 @@ class VmFunction {
 			}
 			
 			for(Param param : inst.getParams()) {
-				if(!(param instanceof Reg)) continue;
-				Reg reg = (Reg)param;
+				if(!(param instanceof RegParam)) continue;
+				RegParam reg = (RegParam)param;
 				
 				if(!reg.isTemporary()) continue;
 				sizes.put(reg.getIndex(), reg.getSize());
@@ -90,7 +90,7 @@ class VmFunction {
 		return labels.get(name);
 	}
 	
-	public int getRegister(Reg reg) {
+	public int getRegister(RegParam reg) {
 		if(reg.isTemporary()) {
 			return registers[args + reg.getIndex()];
 		}

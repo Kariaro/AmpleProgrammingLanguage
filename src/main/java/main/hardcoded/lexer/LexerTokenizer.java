@@ -19,7 +19,12 @@ public class LexerTokenizer {
 		
 		while(offset < length) {
 			GenericLexerContext<Type>.LexerToken lexerToken = AmpleLexer.LEXER.nextToken(input);
-			if(lexerToken == null || lexerToken.length + offset > length) break;
+			if(lexerToken == null) {
+				// Throw error
+				break;
+			}
+			
+			if(lexerToken.length + offset > length) break;
 			
 			if(lexerToken.type != Type.WHITESPACE) {
 				tokenList.add(new Token(

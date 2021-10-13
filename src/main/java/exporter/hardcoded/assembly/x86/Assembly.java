@@ -3,8 +3,8 @@ package hardcoded.assembly.x86;
 import java.util.Arrays;
 import java.util.List;
 
-import hardcoded.exporter.x86.AssemblyConsts.AsmOp;
-import hardcoded.exporter.x86.AssemblyConsts.OprTy;
+import hardcoded.assembly.x86.AssemblyConsts.AsmOp;
+import hardcoded.assembly.x86.AssemblyConsts.OprTy;
 import hardcoded.utils.buffer.IntBuffer;
 
 public final class Assembly {

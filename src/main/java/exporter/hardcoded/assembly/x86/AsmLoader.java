@@ -1,12 +1,12 @@
 package hardcoded.assembly.x86;
 
-import static hardcoded.exporter.x86.AssemblyConsts.*;
+import static hardcoded.assembly.x86.AssemblyConsts.*;
 
 import java.io.IOException;
 import java.util.*;
 
-import hardcoded.exporter.x86.AssemblyConsts.AsmOp;
-import hardcoded.exporter.x86.AssemblyConsts.OprTy;
+import hardcoded.assembly.x86.AssemblyConsts.AsmOp;
+import hardcoded.assembly.x86.AssemblyConsts.OprTy;
 import hardcoded.utils.FileUtils;
 import hardcoded.utils.buffer.IntBuffer;
 

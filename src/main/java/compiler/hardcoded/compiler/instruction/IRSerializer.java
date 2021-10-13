@@ -138,19 +138,19 @@ public final class IRSerializer {
 		if(param == IRInstruction.NONE) {
 			// TODO: Only allowed in call PARAMS
 			writeByte(0);
-		} else if(param instanceof Reg) {
+		} else if(param instanceof RegParam) {
 			writeByte(1);
 			writeLowType(param.getSize());
 			writeVarInt(param.getIndex());
 			writeString(param.getName());
-		} else if(param instanceof RefReg) {
+		} else if(param instanceof RefParam) {
 			writeByte(2);
 			writeVarInt(param.getIndex());
 			writeString(param.getName());
-		} else if(param instanceof NumberReg) {
+		} else if(param instanceof NumParam) {
 			writeByte(3);
 			writeLowType(param.getSize());
-			writeVarLong(((NumberReg)param).getValue());
+			writeVarLong(((NumParam)param).getValue());
 		} else if(param instanceof DataParam) {
 			writeByte(4);
 			writeVarInt(param.getIndex());
@@ -380,17 +380,17 @@ public final class IRSerializer {
 				LowType size = readLowType();
 				int index = readVarInt();
 				String name = readString();
-				return new Reg(name, size, index);
+				return new RegParam(name, size, index);
 			}
 			case 2: {
 				int index = readVarInt();
 				String name = readString();
-				return new RefReg(name, index);
+				return new RefParam(name, index);
 			}
 			case 3: {
 				LowType size = readLowType();
 				long value = readVarLong();
-				return new NumberReg(value, size);
+				return new NumParam(value, size);
 			}
 			case 4: {
 				int index = readVarInt();

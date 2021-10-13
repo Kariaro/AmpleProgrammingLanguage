@@ -1,4 +1,4 @@
-package hardcoded.exporter.x86;
+package hardcoded.assembly.x86;
 
 import hardcoded.utils.StringUtils;
 

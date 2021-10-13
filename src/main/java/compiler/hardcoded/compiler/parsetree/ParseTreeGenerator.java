@@ -149,7 +149,7 @@ public class ParseTreeGenerator {
 			
 			return IBlock.EMPTY;
 		} else {
-			if(reader.remaining() < 1) return null;
+			if(reader.type() == Type.EOF) return null;
 			return makeFunction();
 		}
 	}
@@ -268,7 +268,7 @@ public class ParseTreeGenerator {
 		
 		reader.advance();
 		while(reader.type() != Type.RIGHT_PARENTHESIS) {
-			Variable arg = nextFuncArgument();
+			VariableStat arg = nextFuncArgument();
 			
 			// Compare hightypes.
 			func.addArgument(arg);
@@ -320,7 +320,7 @@ public class ParseTreeGenerator {
 			if(stat instanceof StatementList) {
 				StatementList list = (StatementList)stat;
 				for(int i = 0; i < list.size(); i++) {
-					Variable var = (Variable)list.get(i);
+					VariableStat var = (VariableStat)list.get(i);
 					Identifier ident = currentFunction.add(var);
 					
 					if(!var.isInitialized()) {
@@ -337,12 +337,12 @@ public class ParseTreeGenerator {
 		switch(reader.type()) {
 			case IF -> { return makeIfStatement(); }
 			case FOR -> { return makeForStatement(); }
+			case DO -> { return makeDoWhileStatement(); }
 			case WHILE -> { return makeWhileStatement(); }
 			case LEFT_CURLY_BRACKET -> { return getStatements(); }
 		}
 		
 		switch(reader.type()) {
-			case DO -> { return makeDoWhileStatement(); }
 			case BREAK -> {
 				reader.advance();
 				if(reader.type() != Type.SEMICOLON) syntaxError(CompilerError.INVALID_BREAK_STATEMENT_EXPECTED_SEMICOLON, reader);
@@ -435,12 +435,8 @@ public class ParseTreeGenerator {
 	// Check if a expression does any modification
 	private boolean hasModifications(Expression expr) {
 		switch(expr.type()) {
-			case call:
-			case jump:
-			case label:
-			case loop:
-			case leave:
-			case set: return true;
+			case call, jump, label, loop, leave, set:
+				return true;
 			
 			default: {
 				// Check if any element does any thing..
@@ -500,7 +496,7 @@ public class ParseTreeGenerator {
 				if(vars instanceof StatementList) {
 					StatementList list = (StatementList)vars;
 					for(int i = 0; i < list.size(); i++) {
-						Variable var = (Variable)list.get(i);
+						VariableStat var = (VariableStat)list.get(i);
 						Identifier ident = currentFunction.add(var);
 						
 						if(!var.isInitialized()) {
@@ -561,9 +557,9 @@ public class ParseTreeGenerator {
 			syntaxError(CompilerError.INVALID_VARIABLE_TYPE, type);
 		}
 		
-		List<Variable> list = new ArrayList<Variable>();
+		List<VariableStat> list = new ArrayList<VariableStat>();
 		while(true) {
-			Variable var = new Variable(type);
+			VariableStat var = new VariableStat(type);
 			list.add(var);
 			
 			if(!isValidName(reader)) syntaxError(CompilerError.INVALID_VARIABLE_NAME, reader);
@@ -744,11 +740,11 @@ public class ParseTreeGenerator {
 						case MUL_ASSIGN: yield mul;
 						case DIV_ASSIGN: yield div;
 						case MOD_ASSIGN: yield mod;
-						case XOR_ASSIGN: yield xor;
 						case AND_ASSIGN: yield and;
+						case XOR_ASSIGN: yield xor;
 						case OR_ASSIGN: yield or;
-						case SHIFT_LEFT_ASSIGN: yield add;
-						case SHIFT_RIGHT_ASSIGN: yield add;
+						case SHIFT_LEFT_ASSIGN: yield shl;
+						case SHIFT_RIGHT_ASSIGN: yield shr;
 						default: yield null;
 					};
 					
@@ -1085,7 +1081,7 @@ public class ParseTreeGenerator {
 								}
 								
 								// TODO: Change the type of the value to a 'i64' if the value is a class object.
-								if(reader.type() == Type.RIGHT_PARENTHESIS) syntaxError(CompilerError.UNCLOSED_CAST_PARENTHESES, reader);
+								if(reader.type() != Type.RIGHT_PARENTHESIS) syntaxError(CompilerError.UNCLOSED_CAST_PARENTHESES, reader);
 								else reader.advance();
 								Expression rhs = e2();
 								
@@ -1199,8 +1195,8 @@ public class ParseTreeGenerator {
 		return Expression.EMPTY;
 	}
 	
-	private Variable nextFuncArgument() {
-		Variable variable = new Variable(getTypeFromSymbol());
+	private VariableStat nextFuncArgument() {
+		VariableStat variable = new VariableStat(getTypeFromSymbol());
 		if(reader.type() != Type.IDENTIFIER) syntaxError(CompilerError.INVALID_FUNCTION_PARAMETER_NAME, reader);
 		if(currentFunction.hasIdentifier(reader.value())) syntaxError(CompilerError.REDECLARATION_OF_FUNCTION_PARAMETER, reader);
 		variable.name = reader.value();
@@ -1213,7 +1209,6 @@ public class ParseTreeGenerator {
 		reader.advance();
 		return Modifiers.get(value);
 	}
-	
 	
 	private boolean acceptModification(Expression expr) {
 		if(expr instanceof AtomExpr) {

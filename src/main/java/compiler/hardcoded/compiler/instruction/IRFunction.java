@@ -71,7 +71,7 @@ public class IRFunction {
 	}
 	
 	public IRInstruction[] getInstructions() {
-		return list.toArray(new IRInstruction[0]);
+		return list.toArray(IRInstruction[]::new);
 	}
 	
 	public int length() {
