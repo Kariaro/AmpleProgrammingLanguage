@@ -26,15 +26,23 @@ public class IfStat extends NestedStat {
 	public boolean hasElseBody() {
 		Statement stat = getElseBody();
 		
-		// TODO: Statements are never be NULL!!!
 		if(stat == null || stat.isEmptyStat()) return false;
 		return stat.hasElements() && stat.size() > 0;
 	}
-	
+
+	@Override
 	public Object[] asList() {
 		if(hasElseBody()) return super.asList();
 		return new Object[] { get(0), get(1) };
 	}
-	public String asString() { return "IF"; }
-	public String toString() { return "if(" + getCondition() + ");"; }
+	
+	@Override
+	public String asString() {
+		return "IF";
+	}
+	
+	@Override
+	public String toString() {
+		return "if(%s);".formatted(getCondition());
+	}
 }

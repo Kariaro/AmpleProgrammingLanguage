@@ -8,7 +8,8 @@ import hardcoded.assembly.x86.RegisterX86;
 import hardcoded.compiler.expression.LowType;
 import hardcoded.compiler.instruction.IRFunction;
 import hardcoded.compiler.instruction.IRInstruction;
-import hardcoded.compiler.instruction.IRInstruction.*;
+import hardcoded.compiler.instruction.Param;
+import hardcoded.compiler.instruction.Param.*;
 
 class AsmFunction {
 	private AssemblyCodeGenerator parent;
@@ -16,6 +17,7 @@ class AsmFunction {
 	private String[] param_names;
 	private int[] stack_offset;
 	private int stack_size;
+	private int param_size;
 	
 	public AsmFunction(AssemblyCodeGenerator parent, IRFunction func) {
 		this.parent = parent;
@@ -23,9 +25,20 @@ class AsmFunction {
 		param_names = func.getParamNames();
 		
 		for(int i = 0, offset = 8; i < func.getNumParams(); i++) {
-			param_offset[i] = offset;
-			offset += func.getParams()[i].size();
+			if(i < 4) {
+				param_offset[i] = -8 * (i + 1);
+			} else {
+				int size = func.getParams()[i].size();
+				if(size == 4) size = 8;
+				if(size == 1) size = 2;
+				
+				offset += size;
+				param_offset[i] = offset;
+				param_size += size;
+			}
 		}
+		
+		int extra_size = Math.min(4, func.getNumParams()) * 8;
 		
 		{
 			int size = 0;
@@ -34,7 +47,7 @@ class AsmFunction {
 				List<Param> list = inst.getParams();
 				
 				for(Param param : list) {
-					if(param instanceof IRInstruction.RegParam) {
+					if(param instanceof RegParam) {
 						RegParam regParam = (RegParam)param;
 						int regIndex = regParam.getIndex();
 						if(regParam.isTemporary()) {
@@ -51,16 +64,20 @@ class AsmFunction {
 			// TODO: This should be easier to do. Save the stack and param's inside the IRFunction directly...
 			for(int i = 0, offset = 0; i < map.size(); i++) {
 				RegParam param = map.get(i);
-				stack_offset[i] = offset;
 				offset += param.getSize().size();
+				stack_offset[i] = -(offset + extra_size);
 			}
 			
-			stack_size = size;
+			stack_size = extra_size + size;
 		}
 	}
 	
 	public int get_stack_size() {
 		return stack_size;
+	}
+	
+	public int get_param_size() {
+		return param_size;
 	}
 	
 	public int get_param_offset(int i) {
@@ -75,7 +92,7 @@ class AsmFunction {
 		if(param instanceof RegParam) {
 			RegParam regParam = (RegParam)param;
 			if(regParam.isTemporary()) {
-				return stack_offset[regParam.getIndex()] - stack_size;
+				return stack_offset[regParam.getIndex()];
 			} else {
 				return param_offset[regParam.getIndex()];
 			}

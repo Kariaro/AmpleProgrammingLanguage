@@ -78,7 +78,8 @@ public class LangContext {
 	public int column() {
 		return token().column;
 	}
-	
+
+	@Override
 	public String toString() {
 		return value();
 	}
@@ -86,7 +87,6 @@ public class LangContext {
 	public static LangContext wrap(List<Token> list) {
 		return new LangContext(list);
 	}
-	
 	
 	/**
 	 * Returns the token at the specified relative position.

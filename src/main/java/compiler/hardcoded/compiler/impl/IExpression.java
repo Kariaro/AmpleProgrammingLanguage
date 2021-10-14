@@ -16,13 +16,11 @@ import hardcoded.compiler.expression.LowType;
 public interface IExpression {
 	/**
 	 * Returns the type of this expression.
-	 * @return the type of this expression
 	 */
 	ExprType type();
 
 	/**
 	 * Returns the size of this expression.
-	 * @return the size of this expression
 	 */
 	LowType size();
 	
@@ -35,7 +33,6 @@ public interface IExpression {
 	
 	/**
 	 * Returns {@code true} if this expression has elements.
-	 * @return {@code true} if this expression has elements
 	 */
 	boolean hasExpressions();
 }

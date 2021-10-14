@@ -142,7 +142,6 @@ public class Value {
 		if(isFloating() || val.isFloating())
 			return new Value(this, val, decimal + val.decimal);
 
-		// TODO: Check if not checking for unsigned or signed causes any errors.
 		return new Value(this, val, integer + val.integer);
 	}
 	
@@ -150,7 +149,6 @@ public class Value {
 		if(isFloating() || val.isFloating())
 			return new Value(this, val, decimal - val.decimal);
 
-		//TODO: Check if not checking for unsigned or signed causes any errors.
 		return new Value(this, val, integer - val.integer);
 	}
 	
@@ -215,7 +213,6 @@ public class Value {
 		if(isFloating() || val.isFloating())
 			throw new ArithmeticException("'and' is invalid for floating point values");
 		
-		// TODO: Check if not checking for unsigned or signed causes any errors.
 		return new Value(this, val, integer & val.integer);
 	}
 	
@@ -223,7 +220,6 @@ public class Value {
 		if(isFloating() || val.isFloating())
 			throw new ArithmeticException("'or' is invalid for floating point values");
 		
-		// TODO: Check if not checking for unsigned or signed causes any errors.
 		return new Value(this, val, integer | val.integer);
 	}
 	
@@ -235,7 +231,6 @@ public class Value {
 			return new Value(this, val, integer >> val.integer);
 		}
 		
-		// NOTE: Values should already be bit checked so this is not needed.
 		return new Value(this, val, integer >>> val.integer);
 	}
 	

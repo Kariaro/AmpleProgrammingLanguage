@@ -25,18 +25,19 @@ public class LowType {
 		this.type = type;
 		this.depth = depth;
 	}
-	
+
+	@Override
 	public int hashCode() {
 		return depth | (type.ordinal() << 8);
 	}
-	
+
+	@Override
 	public boolean equals(Object obj) {
 		if(obj instanceof Atom) return depth == 0 && type == obj;
 		if(!(obj instanceof LowType)) return false;
 		return hashCode() == obj.hashCode();
 	}
 	
-	// TODO: LowType - Should we return the converted atom type?
 	public Atom type() {
 		return type;
 	}
@@ -79,15 +80,14 @@ public class LowType {
 	/**
 	 * Returns the size of the base type if this where a pointer.
 	 * The size of the data with one lower pointer.
-	 * 
-	 * @return
 	 */
 	public int baseSize() {
 		if(depth > 1) return getPointerSize();
 		// TODO: If the depth is 0 then this should return a invalid value !!
 		return type.size();
 	}
-	
+
+	@Override
 	public String toString() {
 		return type + "*".repeat(depth);
 	}
@@ -113,7 +113,6 @@ public class LowType {
 	
 	/**
 	 * Returns the default pointer size.
-	 * @return the default pointer size
 	 */
 	public static int getPointerSize() {
 		return 8;
@@ -121,7 +120,6 @@ public class LowType {
 	
 	/**
 	 * Returns the default pointer type.
-	 * @return the default pointer type
 	 */
 	public static Atom getPointerType() {
 		return Atom.i64;
@@ -129,7 +127,6 @@ public class LowType {
 	
 	/**
 	 * Returns {@code true} if this type is invalid.
-	 * @return {@code true} if this type is invalid
 	 */
 	public boolean isInvalid() {
 		return this == INVALID;

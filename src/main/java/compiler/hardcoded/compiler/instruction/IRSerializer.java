@@ -8,7 +8,7 @@ import java.util.zip.GZIPOutputStream;
 
 import hardcoded.compiler.constants.Atom;
 import hardcoded.compiler.expression.LowType;
-import hardcoded.compiler.instruction.IRInstruction.*;
+import hardcoded.compiler.instruction.Param.*;
 
 /**
  *<pre>
@@ -135,7 +135,7 @@ public final class IRSerializer {
 	}
 	
 	private void writeParam(Param param) throws IOException {
-		if(param == IRInstruction.NONE) {
+		if(param == Param.NONE) {
 			// TODO: Only allowed in call PARAMS
 			writeByte(0);
 		} else if(param instanceof RegParam) {
@@ -375,7 +375,7 @@ public final class IRSerializer {
 		int type = readUByte();
 		
 		switch(type) {
-			case 0: return IRInstruction.NONE;
+			case 0: return Param.NONE;
 			case 1: {
 				LowType size = readLowType();
 				int index = readVarInt();
@@ -417,10 +417,9 @@ public final class IRSerializer {
 		
 		// Quick
 		switch(op) {
-			case br:
-			case label: {
+			case br, label: {
 				IRInstruction inst = new IRInstruction(op);
-				inst.params.add(readLabelParam());
+				inst.getParams().add(readLabelParam());
 				return inst;
 			}
 			default:
@@ -433,7 +432,7 @@ public final class IRSerializer {
 		
 		IRInstruction inst = new IRInstruction(op);
 		for(int i = 0; i < num_params; i++)
-			inst.params.add(readParam());
+			inst.getParams().add(readParam());
 		
 		return inst;
 	}

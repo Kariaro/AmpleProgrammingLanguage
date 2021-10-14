@@ -84,39 +84,48 @@ public class CompilerMarker implements SyntaxMarker {
 	public CompilerError getCompilerError() {
 		return error;
 	}
-	
+
+	@Override
 	public File getDeclaringFile() {
 		return sourceFile;
 	}
-	
+
+	@Override
 	public String getCompilerMessage() {
 		return compilerMessage;
 	}
-	
+
+	@Override
 	public String getMessage() {
 		return message;
 	}
-	
+
+	@Override
 	public int getFileOffset() {
 		return offset;
 	}
-	
+
+	@Override
 	public int getColumnIndex() {
 		return column;
 	}
-	
+
+	@Override
 	public int getLineIndex() {
 		return line;
 	}
-	
+
+	@Override
 	public int getLength() {
 		return length;
 	}
-	
+
+	@Override
 	public int getSeverity() {
 		return severity;
 	}
-	
+
+	@Override
 	public String toString() {
 		return message;
 	}

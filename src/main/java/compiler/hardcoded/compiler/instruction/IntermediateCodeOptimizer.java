@@ -5,7 +5,7 @@ import java.util.*;
 import hardcoded.CompilerMain;
 import hardcoded.compiler.constants.Utils;
 import hardcoded.compiler.constants.Utils.IRListIterator;
-import hardcoded.compiler.instruction.IRInstruction.*;
+import hardcoded.compiler.instruction.Param.*;
 
 public class IntermediateCodeOptimizer {
 	// TODO: Tail recursion optimization
@@ -51,29 +51,7 @@ public class IntermediateCodeOptimizer {
 			simplify(func);
 		}
 		
-//		{
-//			System.out.println(".data.strings:");
-//			int index = 0;
-//			for(String s : program.context.strings) {
-//				System.out.printf("%4d:   \"%s\"\n", index, StringUtils.escapeString(s));
-//			}
-//			
-//			System.out.println();
-//		}
-//		
-//		for(IRFunction func : program.getFunctions()) {
-//			System.out.println("\n" + func);
-//			for(int i = 0, line = 0; i < func.length(); i++) {
-//				IRInstruction inst = func.list.get(i);
-//				
-//				if(inst.op == IRType.label) {
-//					System.out.printf("\n%4d: %s\n", line, inst);
-//				} else {
-//					System.out.printf("%4d:   %s\n", line, inst);
-//					line++;
-//				}
-//			}
-//		}
+//		System.out.println(IRUtils.printPretty(program));
 //		
 //		try {
 //			Thread.sleep(100000);
@@ -159,13 +137,14 @@ public class IntermediateCodeOptimizer {
 			
 			if(positive_eq || inst.type() == IRType.neq || inst.type() == IRType.not) {
 				IRInstruction next = iter.peakNext();
+				List<Param> next_params = next.getParams();
 				
 				// Check if the type was the positive branch 'brz'
 				boolean positive_br = next.type() == IRType.brz;
 				
 				// Check if the last element is a zero
 				if(inst.type() == IRType.not) {
-					next.params.set(0, inst.getParam(1));
+					next_params.set(0, inst.getParam(1));
 					next.op = (positive_br) ? IRType.bnz:IRType.brz;
 					iter.remove();
 				} else {
@@ -178,7 +157,7 @@ public class IntermediateCodeOptimizer {
 							iter.remove(); // Remove the instruction...
 						}
 						
-						next.params.set(0, inst.getParam(1));
+						next_params.set(0, inst.getParam(1));
 						next.op = (positive_br == positive_eq) ? IRType.bnz:IRType.brz;
 					}
 				}
@@ -195,9 +174,10 @@ public class IntermediateCodeOptimizer {
 			
 			if(inst.op != IRType.mov) continue;
 			IRInstruction next = iter.peakNext();
+			List<Param> next_params = next.getParams();
 			
 			if(next.op == IRType.brz) {
-				next.params.set(0, inst.getParam(1));
+				next_params.set(0, inst.getParam(1));
 			}
 		}
 	}
@@ -215,7 +195,8 @@ public class IntermediateCodeOptimizer {
 		while(iter.hasNext()) {
 			IRInstruction inst = iter.next();
 			
-			for(int i = 0; i < inst.params.size(); i++) {
+			List<Param> inst_params = inst.getParams();
+			for(int i = 0; i < inst_params.size(); i++) {
 				Param param = inst.getParam(i);
 				if(!(param instanceof RegParam)) continue;
 				RegParam reg = (RegParam)param;
@@ -229,7 +210,7 @@ public class IntermediateCodeOptimizer {
 					map.put(reg.getIndex(), next);
 				}
 				
-				inst.params.set(i, next);
+				inst_params.set(i, next);
 			}
 		}
 	}
@@ -239,12 +220,14 @@ public class IntermediateCodeOptimizer {
 		
 		while(iter.hasNext()) {
 			IRInstruction inst = iter.next();
+			List<Param> inst_params = inst.getParams();
 			// add [a], [b], [c]
 			// check if a has been used inside the block..
 			
 			
 			if(iter.hasNext()) {
 				IRInstruction next = iter.peakNext();
+				List<Param> next_params = next.getParams();
 				
 				//    ... [a], [b], [c]
 				//    mov [z], [a]
@@ -252,16 +235,14 @@ public class IntermediateCodeOptimizer {
 				//    ... [z], [b], [c]
 				//    If z was zero before.
 				if(next.op == IRType.mov && canReduce(inst.op)) {
-					Param reg = inst.params.get(0);
-					Param wnt = next.params.get(1);
+					Param reg = inst_params.get(0);
+					Param wnt = next_params.get(1);
 					
 					if(getReferences(func, reg) == 2 && wnt == reg) {
-						inst.params.set(0, next.params.get(0));
+						inst_params.set(0, next_params.get(0));
 						
 						iter.next();
 						iter.remove();
-						
-						// TODO: ???
 						continue;
 					}
 				}
@@ -271,8 +252,8 @@ public class IntermediateCodeOptimizer {
 			// replace all further instructions read [ ... ], [y] with [x]
 			//    read [x], [y]
 			
-			if(!inst.params.isEmpty()) {
-				Param reg = inst.params.get(0);
+			if(!inst_params.isEmpty()) {
+				Param reg = inst_params.get(0);
 				int num = getReferences(func, reg);
 				
 				// Only remove temporary variables.
@@ -308,11 +289,13 @@ public class IntermediateCodeOptimizer {
 		
 		while(iter.hasNext()) {
 			IRInstruction inst = iter.next();
+			List<Param> inst_params = inst.getParams();
+			
 			switch(inst.op) {
-				case bnz:
-				case brz:
-				case br: break;
-				default: continue;
+				case bnz, brz, br:
+					break;
+				default:
+					continue;
 			}
 			
 			int paramIndex = inst.op.args == 2 ? 1:0;
@@ -325,7 +308,7 @@ public class IntermediateCodeOptimizer {
 				IRInstruction pass = list.get(index + 1);
 				
 				if(pass.op == IRType.br || pass.op == IRType.label) {
-					inst.params.set(paramIndex, pass.getParam(0));
+					inst_params.set(paramIndex, pass.getParam(0));
 				}
 			}
 		}
@@ -435,7 +418,7 @@ public class IntermediateCodeOptimizer {
 		int references = 0;
 		
 		for(IRInstruction inst : func.list) {
-			for(Param r : inst.params) {
+			for(Param r : inst.getParams()) {
 				if(reg.equals(r)) references++;
 			}
 		}
@@ -445,24 +428,19 @@ public class IntermediateCodeOptimizer {
 	
 	private boolean keepIfNotReferences(IRType type) {
 		switch(type) {
-			case call:
-			case write:
-			case data:
-			case ret: return true;
-			
-			default: return false;
+			case call, write, data, ret:
+				return true;
+			default:
+				return false;
 		}
 	}
 	
 	private boolean canReduce(IRType type) {
 		switch(type) {
-			case bnz:
-			case brz:
-			case label:
-			case data:
-			case ret: return false;
-			
-			default: return true;
+			case bnz, brz, label, data, ret:
+				return false;
+			default:
+				return true;
 		}
 	}
 }

@@ -1,9 +1,0 @@
-This parsetree should keep information about the tokens that was used to create each block/statement and expression.
-
-One rule is that a statement is made of many expressions but an expression is a single line of code.
-
-for   (  int    a         =    3      ; a         <    10     ; a         ++      )  {}
-[FOR] -  [TYPE] [LITERAL] [OP] [EXPR] - [LITERAL] [OP] [EXPR] - [LITERAL] [EXPR]  -  [STAT]
-
-
-Find a way to save tokens so that we can in another program figure out where we need to show errors..

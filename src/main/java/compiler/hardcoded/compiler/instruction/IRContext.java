@@ -48,6 +48,6 @@ public class IRContext {
 	
 	@Override
 	public String toString() {
-		return "IRContext{date=\"" + DateFormat.getInstance().format(new Date(creationDate)) + "\"}";
+		return "IRContext{date=\"%s\"}".formatted(DateFormat.getInstance().format(new Date(creationDate)));
 	}
 }

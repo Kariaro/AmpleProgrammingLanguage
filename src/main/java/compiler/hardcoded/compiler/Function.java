@@ -110,7 +110,6 @@ public class Function implements IFunction, Printable {
 		return body.isEmptyStat();
 	}
 	
-	
 	public void addModifier(Modifier modifier) {
 		this.modifiers.add(modifier);
 	}
@@ -119,46 +118,57 @@ public class Function implements IFunction, Printable {
 		arguments.add(Identifier.createParamIdent(arg.name, arguments.size(), arg.type));
 	}
 	
-	
-	
+	@Override
 	public String getName() {
 		return name;
 	}
-	
+
+	@Override
 	public List<Modifier> getModifiers() {
 		return List.copyOf(modifiers);
 	}
-	
+
+	@Override
 	public File getDeclaringFile() {
 		return declaredFile;
 	}
-	
+
+	@Override
 	public int getLineIndex() {
 		return sourceLineIndex;
 	}
 	
+	@Override
 	public int getFileOffset() {
 		return sourceFileOffset;
 	}
-
+	
+	@Override
 	public int getLength() {
 		return name.length();
 	}
-	
-	
-	
+
+	@Override
 	public HighType getReturnType() {
 		return returnType;
 	}
-	
+
+	@Override
 	public List<IStatement> getStatements() {
 		return List.of(body);
 	}
 	
+	@Override
+	public Object[] asList() {
+		return new Object[] { body };
+	}
 	
+	@Override
+	public String asString() {
+		return "function %s[%s %s]".formatted(name, var_index, var_index == 1 ? "variable":"variables");
+	}
 	
-	
-	
+	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		if(!modifiers.isEmpty()) sb.append(StringUtils.join(" ", modifiers)).append(" ");
@@ -171,7 +181,4 @@ public class Function implements IFunction, Printable {
 		
 		return sb.append(");").toString();
 	}
-	
-	public String asString() { return "function " + name + "[" + var_index + (var_index == 1 ? " variable":" variables") + "]"; }
-	public Object[] asList() { return new Object[] { body }; }
 }

@@ -226,12 +226,27 @@ public class CompilerMain {
 		if(isDeveloper()) {
 			ConfigurationTest test = new ConfigurationTest();
 			
-			mode = ActionType.RUN;
+			mode = ActionType.COMPILE;
 			format = "X86";
 			test.set("compiler.format", format);
 			test.set("compiler.directory", working_directory);
 			test.set("compiler.sourcefile", sourcePath);
 			test.set("compiler.outputfile", outputPath);
+			
+			File dir = new File("res/test/ample/");
+			
+			int id = 0;
+			for(String fileName : dir.list()) {
+				try {
+					fileName = fileName.substring(fileName.lastIndexOf('_') + 1);
+					fileName = fileName.substring(0, fileName.lastIndexOf('.'));
+					id = Math.max(id, Integer.parseInt(fileName));
+				} catch(Exception e) {
+					// Ignore
+				}
+			}
+			
+			outputPath = new File(dir, "compiled_%d.elf".formatted(id + 1)).getAbsolutePath();
 			
 			System.out.println(test);
 		}
@@ -269,13 +284,10 @@ public class CompilerMain {
 			long start = System.nanoTime();
 			{
 				compiler.build();
-				
-				// TODO: Is this a safe operation?
 				byte[] bytes = compiler.getBytes();
 				FileOutputStream stream = new FileOutputStream(config.getOutputFile());
 				stream.write(bytes, 0, bytes.length);
 				stream.close();
-				
 			}
 			
 			long time = System.nanoTime() - start;
@@ -290,7 +302,7 @@ public class CompilerMain {
 		
 		if(mode == ActionType.RUN) {
 			compiler.build();
-			//AmpleVm.run(compiler.getProgram());
+			AmpleVm.run(compiler.getProgram());
 		}
 	}
 	

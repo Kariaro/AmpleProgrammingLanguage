@@ -1,4 +1,13 @@
 // @import "src/test2.ample";
+bool isPrime(int number) {
+	if(number < 2) return false;
+	for(int i = 2; i * i <= number; i++) {
+		if(!(number % i))
+			return false;
+	}
+	
+	return true;
+}
 
 void println(char* str) {
 	char* buffer = &(0xb8000);
@@ -10,12 +19,28 @@ void println(char* str) {
 	}
 }
 
+void printInt(int number) {
+	char* mem = "0";
+	while(number != 0) {
+		int digit = number % 10;
+		number /= 10;
+		
+		*mem = '0' + (byte)digit;
+		println(mem);
+	}
+}
+
+void testing_parameters(byte a, short b, int c, long d) {
+	return;
+}
+
 
 void main() {
-	char* string = "Hello World:::: TESTING THIS COMPILER";
+	char* string = "Hello World:::: TESTING THIS COMPILER\n\n";
 	
 	// This is a bug and should be fixed!!!
 	
+	testing_parameters(0, 1, 2, 3);
 	
 	int idx = 3;
 	int j = 0;
@@ -29,6 +54,18 @@ void main() {
 	
 	
 	println(string);
+	
+	for(int i = 0; i < 100; i++) {
+		println("Is ");
+		printInt(i);
+		println(" a prime? ");
+		
+		if(isPrime(i)) {
+			println("(true)\n");
+		} else {
+			println("(false)\n");
+		}
+	}
 }
 
 /*

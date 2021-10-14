@@ -1,13 +1,11 @@
 package hardcoded.vm;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 import hardcoded.compiler.expression.LowType;
-import hardcoded.compiler.instruction.IRFunction;
-import hardcoded.compiler.instruction.IRInstruction;
-import hardcoded.compiler.instruction.IRInstruction.Param;
-import hardcoded.compiler.instruction.IRInstruction.RegParam;
-import hardcoded.compiler.instruction.IRType;
+import hardcoded.compiler.instruction.*;
+import hardcoded.compiler.instruction.Param.RegParam;
 
 class VmFunction {
 	private final IRFunction func;

@@ -8,17 +8,21 @@ import hardcoded.visualization.Printable;
 
 public class Statement implements IStatement, Printable {
 	protected final List<Statement> list;
+	protected final boolean hasElements;
 	
 	public Statement(boolean hasElements) {
-		list = hasElements ? new ArrayList<>():null;
+		this.list = hasElements ? new ArrayList<>():List.of();
+		this.hasElements = hasElements;
 	}
-	
+
+	@Override
 	public final List<IStatement> getStatements() {
 		return List.copyOf(list);
 	}
 
+	@Override
 	public final boolean hasStatements() {
-		return list != null;
+		return hasElements;
 	}
 	
 	public final List<Statement> getElements() {
@@ -26,7 +30,7 @@ public class Statement implements IStatement, Printable {
 	}
 	
 	public final boolean hasElements() {
-		return list != null;
+		return hasElements;
 	}
 	
 	
@@ -48,7 +52,7 @@ public class Statement implements IStatement, Printable {
 	 * @return	the element at the specified index
 	 */
 	public final Statement get(int index) {
-		return list == null ? null:list.get(index);
+		return list.get(index);
 	}
 	
 	/**
@@ -56,7 +60,6 @@ public class Statement implements IStatement, Printable {
 	 * @param	stat	the statement to add
 	 */
 	public final void add(Statement stat) {
-		if(list == null) throw new UnsupportedOperationException();
 		list.add(stat);
 	}
 	
@@ -66,7 +69,6 @@ public class Statement implements IStatement, Printable {
 	 * @param	stat	the statement to replace with
 	 */
 	public final void set(int index, Statement stat) {
-		if(list == null) throw new UnsupportedOperationException();
 		list.set(index, stat);
 	}
 	
@@ -75,14 +77,18 @@ public class Statement implements IStatement, Printable {
 	 * @param	index	the index of the element to remove
 	 */
 	public void remove(int index) {
-		if(list == null) throw new UnsupportedOperationException();
 		list.remove(index);
 	}
 	
+	@Override
+	public String asString() {
+		return "Undefined(%s)".formatted(this.getClass());
+	}
 	
-	
-	public String asString() { return "Undefined(" + this.getClass() + ")"; }
-	public Object[] asList() { return list == null ? new Object[0]:list.toArray(); }
+	@Override
+	public Object[] asList() {
+		return list.toArray();
+	}
 	
 	public static Statement newEmpty() {
 		return new Statement(false) {

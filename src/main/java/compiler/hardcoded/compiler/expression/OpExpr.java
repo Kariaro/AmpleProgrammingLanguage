@@ -15,6 +15,8 @@ public class OpExpr extends Expression {
 	 * Will only be used if this Expression is a cast expression.
 	 */
 	public LowType override_size;
+	
+	@Override
 	public LowType size() {
 		ExprType type = type();
 		if(type == ExprType.cast) {
@@ -43,20 +45,24 @@ public class OpExpr extends Expression {
 		
 		return lowType;
 	}
-	
+
+	@Override
 	public Expression clone() {
 		OpExpr expr = new OpExpr(type());
 		expr.override_size = override_size;
 		for(Expression e : list) {
-			// FIXME: Values inside the elements list should never be null!
-			if(e == null) continue;
 			expr.add(e.clone());
 		}
 		
 		return expr;
 	}
+
+	@Override
+	public String asString() {
+		return type().toString();
+	}
 	
-	public String asString() { return type().toString(); }
+	@Override
 	public String toString() {
 		if(type() == ExprType.cast) {
 			return "%s(%s, %s)".formatted(type(), StringUtils.join(", ", list), override_size);

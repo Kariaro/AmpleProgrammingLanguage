@@ -19,7 +19,18 @@ public class ExprStat extends Statement {
 		return list.get(0);
 	}
 	
-	public String asString() { return toString(); }
-	public Object[] asList() { return list.toArray(); }
-	public String toString() { return StringUtils.join(" ", list); }
+	@Override
+	public String asString() {
+		return toString();
+	}
+	
+	@Override
+	public Object[] asList() {
+		return list.toArray();
+	}
+	
+	@Override
+	public String toString() {
+		return StringUtils.join(" ", list);
+	}
 }

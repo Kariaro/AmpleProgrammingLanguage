@@ -80,16 +80,14 @@ public class IRFunction {
 	
 	@Override
 	public String toString() {
-		if(params.length == 0) return type + " " + name + "():";
+		if(params.length == 0) return "%s %s():".formatted(type, name);
 		
 		StringBuilder sb = new StringBuilder();
-		{
-			for(int i = 0; i < params.length; i++) {
-				sb.append(params[i]).append(" @").append(paramNames[i]).append(", ");
-			}
-			sb.deleteCharAt(sb.length() - 2);
+		for(int i = 0; i < params.length; i++) {
+			sb.append(params[i]).append(" @").append(paramNames[i]).append(", ");
 		}
+		sb.deleteCharAt(sb.length() - 2);
 		
-		return type + " " + name + "( " + sb.toString().trim() + " ):";
+		return "%s %s( %s ):".formatted(type, name, sb.toString().trim());
 	}
 }

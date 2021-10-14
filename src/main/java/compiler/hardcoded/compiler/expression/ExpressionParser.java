@@ -80,7 +80,7 @@ public final class ExpressionParser {
 		AtomExpr b = (AtomExpr)e1;
 		
 		// TODO: cand, cor
-		// TODO: add, sub   contains multiple values sometimes.
+		// TODO: add, sub contains multiple values sometimes.
 		switch(type) {
 			case neg: return NEG.run(a);
 			case nor: return NOR.run(a);

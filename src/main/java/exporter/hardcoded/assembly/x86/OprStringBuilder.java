@@ -5,7 +5,6 @@ import java.util.List;
 
 import hardcoded.utils.StringUtils;
 
-// TODO: Allow subtraction and print correctly
 class OprStringBuilder {
 	OprStringBuilder() {}
 	

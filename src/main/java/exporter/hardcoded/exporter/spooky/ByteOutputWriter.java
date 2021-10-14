@@ -20,7 +20,6 @@ class ByteOutputWriter {
 	public void write(OpCode op) { writeOpcode(op); }
 	public void write(int value) { writeInt(value); }
 	
-	// TODO: Create a exception class.
 	public void writeString(String value) {
 		byte[] bytes = value.getBytes(StandardCharsets.ISO_8859_1);
 		

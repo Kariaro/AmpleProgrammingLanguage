@@ -43,14 +43,17 @@ public class ForStat extends NestedStat {
 		set(3, stat);
 	}
 	
-	public String asString() { return "FOR"; }
+	@Override
+	public String asString() {
+		return "FOR";
+	}
+	
+	@Override
 	public String toString() {
-		String vars = Objects.toString(getVariables(), null);
+		String vars = Objects.toString(getVariables(), "");
 		String cond = Objects.toString(getCondition(), null);
 		String acts = Objects.toString(getAction(), null);
 		
-		return "for(" + (vars == null ? "":vars) + ";" +
-						(cond == null ? "":" " + cond) + ";" +
-						(acts == null ? "":" " + acts) + ");";
+		return "for(%s;%s;%s);".formatted(vars, (cond == null ? "":" " + cond), (acts == null ? "":" " + acts));
 	}
 }

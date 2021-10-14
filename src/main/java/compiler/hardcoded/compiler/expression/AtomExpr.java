@@ -103,11 +103,11 @@ public class AtomExpr extends Expression {
 		if(!isNumber()) throw new CompilerException("You cannot check a non number if it is zero");
 		return n_value == 1;
 	}
-	
-	public boolean isPure() { return true; }
-	
-	@Deprecated
-	public LowType atomType() { return atomType; }
+
+	@Override
+	public boolean isPure() {
+		return true;
+	}
 	
 	public Identifier identifier() {
 		return d_value;
@@ -120,7 +120,8 @@ public class AtomExpr extends Expression {
 	public long number() {
 		return n_value;
 	}
-	
+
+	@Override
 	public Expression clone() {
 		AtomExpr expr = new AtomExpr(0);
 		expr.atomType = atomType;
@@ -133,8 +134,13 @@ public class AtomExpr extends Expression {
 		expr.s_value = s_value;
 		return expr;
 	}
+
+	@Override
+	public String asString() {
+		return toString() + ":" + size();
+	}
 	
-	public String asString() { return toString() + ":" + size(); }
+	@Override
 	public String toString() {
 		if(atomType.type() == Atom.string) return '\"' + StringUtils.escapeString(s_value) + '\"';
 		if(atomType.type() == Atom.ident)  return Objects.toString(d_value);

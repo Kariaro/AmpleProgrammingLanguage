@@ -3,8 +3,11 @@ package hardcoded.exporter.spooky;
 import java.util.*;
 
 import hardcoded.compiler.instruction.IRInstruction;
-import hardcoded.compiler.instruction.IRInstruction.*;
 import hardcoded.compiler.instruction.IRProgram;
+import hardcoded.compiler.instruction.Param;
+import hardcoded.compiler.instruction.Param.FunctionLabel;
+import hardcoded.compiler.instruction.Param.LabelParam;
+import hardcoded.compiler.instruction.Param.RegParam;
 
 class SpookyBase {
 	final List<SpookyFunction> list = new ArrayList<>();

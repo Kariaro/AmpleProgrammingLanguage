@@ -17,13 +17,11 @@ public interface IBlock {
 
 	/**
 	 * Returns the file that this block was declared in.
-	 * @return the file that this block was declared in
 	 */
 	File getDeclaringFile();
 	
 	/**
 	 * Returns the line inedx that this block was declared on.
-	 * @return the line inedx that this block was declared on
 	 */
 	int getLineIndex();
 }

@@ -17,7 +17,14 @@ public class WhileStat extends NestedStat {
 	public Statement getBody() {
 		return get(1);
 	}
+
+	@Override
+	public String asString() {
+		return "WHILE";
+	}
 	
-	public String asString() { return "WHILE"; }
-	public String toString() { return "while(" + getCondition() + ");"; }
+	@Override
+	public String toString() {
+		return "while(%s);".formatted(getCondition());
+	}
 }

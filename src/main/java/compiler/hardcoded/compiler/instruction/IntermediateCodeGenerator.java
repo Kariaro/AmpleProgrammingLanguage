@@ -15,7 +15,7 @@ import hardcoded.compiler.expression.AtomExpr;
 import hardcoded.compiler.expression.Expression;
 import hardcoded.compiler.expression.LowType;
 import hardcoded.compiler.impl.IBlock;
-import hardcoded.compiler.instruction.IRInstruction.*;
+import hardcoded.compiler.instruction.Param.*;
 import hardcoded.compiler.statement.*;
 
 /**
@@ -348,10 +348,10 @@ public class IntermediateCodeGenerator {
 						
 						if(a.isIdentifier()) {
 							func = a.identifier().func();
-							params.add(new IRInstruction.FunctionLabel(a.identifier()));
+							params.add(new FunctionLabel(a.identifier()));
 						}
 					} else {
-						params.add(new IRInstruction.LabelParam(e.toString()));
+						params.add(new LabelParam(e.toString()));
 					}
 				}
 				
@@ -371,7 +371,7 @@ public class IntermediateCodeGenerator {
 				}
 				
 				if(request == null) {
-					params.add(0, IRInstruction.NONE);
+					params.add(0, Param.NONE);
 				} else {
 					params.add(0, request);
 				}

@@ -8,7 +8,7 @@ import hardcoded.CompilerMain;
 import hardcoded.compiler.constants.Atom;
 import hardcoded.compiler.expression.LowType;
 import hardcoded.compiler.instruction.*;
-import hardcoded.compiler.instruction.IRInstruction.*;
+import hardcoded.compiler.instruction.Param.*;
 import hardcoded.compiler.numbers.Value;
 
 public class AmpleVm {
@@ -197,7 +197,7 @@ public class AmpleVm {
 				
 				case call: {
 					VmFunction next = functions.get(inst.getParam(1).getName());
-					boolean hasReturn = inst.getParam(0) != IRInstruction.NONE;
+					boolean hasReturn = inst.getParam(0) != Param.NONE;
 					
 					for(int i = 2; i < inst.getNumParams(); i++) {
 						Value v = read(func, offset, inst.getParam(i));

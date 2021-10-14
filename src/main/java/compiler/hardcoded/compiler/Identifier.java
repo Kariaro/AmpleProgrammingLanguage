@@ -92,7 +92,8 @@ public class Identifier {
 		ident.id_type = IdType.param;
 		return ident;
 	}
-	
+
+	@Override
 	public Identifier clone() {
 		Identifier a = new Identifier();
 		a.name = name;
@@ -104,7 +105,8 @@ public class Identifier {
 		a.function = function;
 		return a;
 	}
-	
+
+	@Override
 	public String toString() {
 		return name;
 	}
