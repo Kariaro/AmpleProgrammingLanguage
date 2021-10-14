@@ -95,6 +95,13 @@ public final class Program implements IProgram, Printable {
 		return functions;
 	}
 	
-	public String asString() { return "PROGRAM"; }
-	public Object[] asList() { return functions.toArray(); };
+	@Override
+	public String asString() {
+		return "PROGRAM";
+	}
+	
+	@Override
+	public Object[] asList() {
+		return functions.toArray();
+	}
 }

@@ -4,8 +4,8 @@ import java.util.*;
 
 import hardcoded.compiler.instruction.IRFunction;
 import hardcoded.compiler.instruction.IRInstruction;
-import hardcoded.compiler.instruction.IRInstruction.Param;
-import hardcoded.compiler.instruction.IRInstruction.RegParam;
+import hardcoded.compiler.instruction.Param;
+import hardcoded.compiler.instruction.Param.RegParam;
 import hardcoded.exporter.impl.CodeBlockType;
 
 class SpookyFunction {

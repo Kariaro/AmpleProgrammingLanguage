@@ -14,6 +14,13 @@ public class StatementList extends Statement {
 		this.list.addAll(list);
 	}
 	
-	public String asString() { return toString(); }
-	public String toString() { return StringUtils.join("", list); }
+	@Override
+	public String asString() {
+		return toString();
+	}
+	
+	@Override
+	public String toString() {
+		return StringUtils.join("", list);
+	}
 }

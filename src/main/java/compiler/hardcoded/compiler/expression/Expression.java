@@ -19,7 +19,8 @@ public abstract class Expression implements IExpression, Printable {
 		this.list = hasElements ? new ArrayList<>():List.of();
 		this.type = Objects.requireNonNull(type, "Expression type must not be null");
 	}
-	
+
+	@Override
 	public final ExprType type() {
 		return type;
 	}
@@ -27,11 +28,13 @@ public abstract class Expression implements IExpression, Printable {
 	protected final void setType(ExprType type) {
 		this.type = Objects.requireNonNull(type, "Expression type must not be null");
 	}
-	
+
+	@Override
 	public final List<IExpression> getExpressions() {
 		return List.copyOf(list);
 	}
-	
+
+	@Override
 	public final boolean hasExpressions() {
 		return hasElements;
 	}
@@ -44,11 +47,11 @@ public abstract class Expression implements IExpression, Printable {
 		return hasElements;
 	}
 	
+	@Override
 	public abstract Expression clone();
 	
 	/**
 	 * Returns the number of child nodes in this list.
-	 * @return the number of child nodes in this list
 	 */
 	public final int length() {
 		return list.size();
@@ -137,15 +140,18 @@ public abstract class Expression implements IExpression, Printable {
 	public void remove(int index) {
 		list.remove(index);
 	}
-	
+
+	@Override
 	public String asString() {
 		return "Undefined(%s)".formatted(this.getClass());
 	}
-	
+
+	@Override
 	public final Object[] asList() {
 		return list.toArray();
 	}
-	
+
+	@Override
 	public LowType size() {
 		if(this == EMPTY) return LowType.INVALID;
 		
@@ -186,18 +192,22 @@ public abstract class Expression implements IExpression, Printable {
 	 * An empty expression class used to indicate that an expression was absent or invalid.
 	 */
 	public static final Expression EMPTY = new Expression(ExprType.nop, false) {
+		@Override
 		public LowType size() {
 			return LowType.INVALID;
 		}
-		
+
+		@Override
 		public Expression clone() {
 			return this;
 		}
-		
+
+		@Override
 		public String toString() {
 			return "nop";
 		}
-		
+
+		@Override
 		public String asString() {
 			return "nop";
 		}

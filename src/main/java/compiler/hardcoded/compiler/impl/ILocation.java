@@ -16,13 +16,11 @@ public interface ILocation {
 	
 	/**
 	 * Returns the file that this object was declared in.
-	 * @return the file that this object was declared in
 	 */
 	File getDeclaringFile();
 	
 	/**
 	 * Returns the file offset that this object was declared on.
-	 * @return the file offset that this object was declared on
 	 */
 	default int getFileOffset() {
 		return INVALID;
@@ -30,7 +28,6 @@ public interface ILocation {
 	
 	/**
 	 * Returns the line index that this object was declared on.
-	 * @return the line index that this object was declared on
 	 */
 	default int getLineIndex() {
 		return INVALID;
@@ -38,7 +35,6 @@ public interface ILocation {
 	
 	/**
 	 * Returns the column index that this object was declared on.
-	 * @return the column index that this object was declared on
 	 */
 	default int getColumnIndex() {
 		return INVALID;
@@ -46,7 +42,6 @@ public interface ILocation {
 	
 	/**
 	 * Returns the length of the object.
-	 * @return the length of the object
 	 */
 	default int getLength() {
 		return INVALID;

@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import hardcoded.compiler.instruction.*;
-import hardcoded.compiler.instruction.IRInstruction.*;
+import hardcoded.compiler.instruction.Param.*;
 import hardcoded.exporter.impl.CodeGeneratorImpl;
 
 public class SpookyCodeGenerator implements CodeGeneratorImpl {

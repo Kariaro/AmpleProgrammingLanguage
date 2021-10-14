@@ -21,13 +21,11 @@ public interface IStatement {
 	
 	/**
 	 * Returns {@code true} if this statement has elements.
-	 * @return {@code true} if this statement has elements
 	 */
 	boolean hasStatements();
 	
 	/**
 	 * Returns the line index that this statement was declared on.
-	 * @return the line index that this statement was declared on
 	 */
 	@Deprecated
 	default int getLineIndex() {

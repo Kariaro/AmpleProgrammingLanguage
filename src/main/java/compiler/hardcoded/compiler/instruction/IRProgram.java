@@ -14,7 +14,7 @@ public class IRProgram {
 	protected final IRContext context;
 	
 	/**
-	 * All the functions inside this IRProgram
+	 * All the functions inside this IRProgram.
 	 */
 	protected final List<IRFunction> list;
 	

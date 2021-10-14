@@ -39,17 +39,23 @@ public class VariableStat extends Statement {
 	public boolean isInitialized() {
 		return !list.isEmpty();
 	}
-	
+
+	@Override
 	public Object[] asList() {
 		if(isArray) return new Object[] { name, arraySize };
 		if(!isInitialized()) return new Object[] { name };
 		return new Object[] { name, value() };
 	}
-	public String asString() { return toString(); }
 	
+	@Override
+	public String asString() {
+		return toString();
+	}
+	
+	@Override
 	public String toString() {
-		if(isArray) return type + " " + name + "[" + arraySize + "];";
-		if(!isInitialized()) return type + " " + name + ";";
-		return type + " " + name + " = " + value() + ";";
+		if(isArray) return "%s %s[%d]".formatted(type, name, arraySize);
+		if(!isInitialized()) return "%s %s;".formatted(type, name);
+		return "%s %s = %s;".formatted(type, name, value());
 	}
 }

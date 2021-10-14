@@ -18,6 +18,13 @@ public class DoWhileStat extends NestedStat {
 		return get(1);
 	}
 	
-	public String asString() { return "DoWhile"; }
-	public String toString() { return "do { ... } while(" + getCondition() + ");"; }
+	@Override
+	public String asString() {
+		return "DoWhile";
+	}
+	
+	@Override
+	public String toString() {
+		return "do { ... } while(%s);".formatted(getCondition());
+	}
 }

@@ -16,25 +16,21 @@ import hardcoded.compiler.errors.SyntaxMarker;
 public interface IProgram {
 	/**
 	 * Returns a unmodifiable list of functions.
-	 * @return a unmodifiable list of functions
 	 */
 	List<IFunction> getFunctions();
 	
 	/**
 	 * Returns a unmodifiable set of all imported files.
-	 * @return a unmodifiable set of all imported files
 	 */
 	Set<String> getImportedFiles();
 	
 	/**
 	 * Returns a unmodifiable list of syntax markers.
-	 * @return a unmodifiable list of syntax markers
 	 */
 	List<SyntaxMarker> getSyntaxMarkers();
 	
 	/**
 	 * Returns {@code true} if this program has errors.
-	 * @return {@code true} if this program has errors
 	 */
 	boolean hasErrors();
 }

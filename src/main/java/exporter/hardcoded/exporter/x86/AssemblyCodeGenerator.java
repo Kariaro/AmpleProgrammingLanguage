@@ -7,7 +7,7 @@ import java.util.*;
 import hardcoded.assembly.x86.*;
 import hardcoded.compiler.expression.LowType;
 import hardcoded.compiler.instruction.*;
-import hardcoded.compiler.instruction.IRInstruction.*;
+import hardcoded.compiler.instruction.Param.*;
 import hardcoded.exporter.impl.CodeGeneratorImpl;
 import hardcoded.utils.StringUtils;
 
@@ -24,8 +24,9 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 	protected Map<Integer, Integer> string_index_ordinal;
 	protected Map<IRFunction, Integer> function_ordinal;
 	protected Map<String, IRFunction> function_string_ordinal;
-	protected ByteBuffer byteBuffer;
+	protected Map<Integer, Integer> function_index_ordinal;
 	protected int function_header_offset = 0;
+	protected int function_trunc_offset = 0;
 	protected int string_header_offset = 0;
 	protected int code_offset = 0;
 	
@@ -43,11 +44,12 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 	
 	public byte[] generate2(IRProgram program) throws Exception {
 		System.out.println("\nInside the asm code generator");
-		byteBuffer = ByteBuffer.allocateDirect(0x100000);
+		ByteBuffer byteBuffer = ByteBuffer.allocateDirect(0x100000);
 		byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 		
 		function_ordinal = new HashMap<>();
 		function_string_ordinal = new HashMap<>();
+		function_index_ordinal = new HashMap<>();
 		string_ordinal = new HashMap<>();
 		string_index_ordinal = new HashMap<>();
 		
@@ -76,11 +78,16 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 			function_string_ordinal.put(func.getName(), func);
 			
 			// Zero initialize the function
-			byteBuffer.putLong(0xDEADBEEFL);
+			byteBuffer.putLong(0x00000000_000000E9L);
+			
+			// Align the stream
+			byteBuffer.position((byteBuffer.position() + 7) & (~7));
 		}
 		
 		// Align the stream
 		byteBuffer.position((byteBuffer.position() + 15) & (~15));
+		
+		// The code that gives relative jump instructions
 		
 		// The code should then compile functions
 		code_offset = byteBuffer.position();
@@ -93,10 +100,11 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 		for(IRFunction func : program.getFunctions()) {
 			int function_offset = byteBuffer.position();
 			// Write the function index to the function ordinal list
-			byteBuffer.putLong(function_header_offset + (function_ordinal.get(func) * 8), function_offset);
+			int inst_offset = function_header_offset + (function_ordinal.get(func) * 8);
+			byteBuffer.putInt(inst_offset + 1, function_offset - inst_offset - 5);
 			
 			// Start compiling the function fully
-			byte[] compiled_code = compileFunction(func, program);
+			byte[] compiled_code = compileFunction(func, program, function_offset);
 			byteBuffer.put(compiled_code);
 			byteBuffer.position((byteBuffer.position() + 15) & (~15));
 		}
@@ -107,7 +115,7 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 		return result_array;
 	}
 	
-	private byte[] compileFunction(IRFunction func, IRProgram program) {
+	private byte[] compileFunction(IRFunction func, IRProgram program, int memory_offset) {
 		System.out.printf("\nCompiling function: %s\n", func.getName());
 		
 		// A function always has parameters
@@ -137,6 +145,15 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 			Assembly.getInstruction("mov rbp, rsp"),
 			Assembly.getInstruction("sub rsp, 0x%x".formatted(stack_size))
 		));
+		
+		{
+			String[] regs = { "RCX", "RDX", "R8", "R9" };
+			int len = Math.min(4, func.getNumParams());
+			for(int i = 0; i < len; i++) {
+				list.add(Assembly.getInstruction("mov qword[rbp + %d], %s".formatted(asmFunc.get_param_offset(i), regs[i])));
+			}
+		}
+		
 		for(IRInstruction inst : func.getInstructions()) {
 			// For all instructions when you find a computation convert it into the correct assembly.
 			switch(inst.type()) {
@@ -168,7 +185,7 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 					AsmOpr rbx_ptr_opr = new OprBuilder().reg(RegisterX86.RBX).ptr(inst.getSize().size() * 8);
 					AsmOpr rbx_dta_opr = new OprBuilder().reg(pickRegister(RegisterX86.RBX, inst.getSize())).get();
 					// op1 holds a value and is a pointer
-
+					
 					// Write op1 to RBX
 					list.add(Assembly.getInstruction(AsmMnm.MOV, rbx_opr, asmFunc.get_asm_opr(op1)));
 					// Write [RBX] to op0
@@ -181,14 +198,17 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 					Param op1 = inst.getParam(1);
 					
 					AsmOpr rbx_opr = new OprBuilder().reg(RegisterX86.RBX).get();
-					AsmOpr rdx_opr = new OprBuilder().reg(pickRegister(RegisterX86.RDX, inst.getSize())).get();
-					AsmOpr rbx_ptr_opr = new OprBuilder().reg(RegisterX86.RBX).ptr(inst.getSize().size() * 8);
+					
+					LowType container_size = inst.getSize().nextLowerPointer();
+					AsmOpr rbx_ptr_opr = new OprBuilder().reg(RegisterX86.RBX).ptr(container_size.size() * 8);
+					AsmOpr rdx_opr = new OprBuilder().reg(pickRegister(RegisterX86.RDX, container_size)).get();
+					
 					// op1 holds a value and is a pointer
 					
 					// Write op0 to RBX
 					list.add(Assembly.getInstruction(AsmMnm.MOV, rbx_opr, asmFunc.get_asm_opr(op0)));
-					// Write [RBX] to op0
-					list.add(Assembly.getInstruction(AsmMnm.MOV, rdx_opr, asmFunc.get_asm_opr(inst.getSize(), op1)));
+					// Write op1 to RDX with the correct size
+					list.add(Assembly.getInstruction(AsmMnm.MOV, rdx_opr, asmFunc.get_asm_opr(container_size, op1)));
 					list.add(Assembly.getInstruction(AsmMnm.MOV, rbx_ptr_opr, rdx_opr));
 				}
 				
@@ -260,25 +280,123 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 					list.add(Assembly.getInstruction(AsmMnm.MOV, asmFunc.get_asm_opr(op0), rax_opr));
 				}
 				
+				case mul -> {
+					RegParam op0 = (RegParam)inst.getParam(0);
+					RegParam op1 = (RegParam)inst.getParam(1);
+					Param op2 = inst.getParam(2);
+					
+					// Clear rax and rdx, rbx
+					list.add(Assembly.getInstruction("xor rax, rax"));
+					list.add(Assembly.getInstruction("xor rbx, rbx"));
+
+					AsmOpr rax_opr = new OprBuilder().reg(pickRegister(RegisterX86.RAX, inst.getSize())).get();
+					AsmOpr rbx_opr = new OprBuilder().reg(pickRegister(RegisterX86.RBX, inst.getSize())).get();
+					
+					// Write op1 to rax
+					list.add(Assembly.getInstruction(AsmMnm.MOV, rax_opr, asmFunc.get_asm_opr(op1)));
+					// Write op2 to rbx
+					list.add(Assembly.getInstruction(AsmMnm.MOV, rbx_opr, asmFunc.get_asm_opr(op2)));
+					// Multiply and store in EDX, EAX
+					list.add(Assembly.getInstruction(AsmMnm.MUL, rbx_opr));
+					// Store in output register
+					list.add(Assembly.getInstruction(AsmMnm.MOV, asmFunc.get_asm_opr(op0), rax_opr));
+				}
+				
+				case div, mod -> {
+					RegParam op0 = (RegParam)inst.getParam(0);
+					RegParam op1 = (RegParam)inst.getParam(1);
+					Param op2 = inst.getParam(2);
+					
+					// Clear rax and rdx, rbx
+					list.add(Assembly.getInstruction("xor rax, rax"));
+					list.add(Assembly.getInstruction("xor rdx, rdx"));
+					list.add(Assembly.getInstruction("xor rbx, rbx"));
+
+					AsmOpr rax_opr = new OprBuilder().reg(pickRegister(RegisterX86.RAX, inst.getSize())).get();
+					AsmOpr rbx_opr = new OprBuilder().reg(pickRegister(RegisterX86.RBX, inst.getSize())).get();
+					AsmOpr rdx_opr = new OprBuilder().reg(pickRegister(RegisterX86.RDX, inst.getSize())).get();
+					
+					// Write op1 to rax
+					list.add(Assembly.getInstruction(AsmMnm.MOV, rax_opr, asmFunc.get_asm_opr(op1)));
+					// Write op2 to rbx
+					list.add(Assembly.getInstruction(AsmMnm.MOV, rbx_opr, asmFunc.get_asm_opr(op2)));
+					// Divide and store in EDX, EAX
+					list.add(Assembly.getInstruction(AsmMnm.DIV, rbx_opr));
+					// Store in output register
+					switch(inst.type()) {
+						case div -> {
+							list.add(Assembly.getInstruction(AsmMnm.MOV, asmFunc.get_asm_opr(op0), rax_opr));
+						}
+						case mod -> {
+							list.add(Assembly.getInstruction(AsmMnm.MOV, asmFunc.get_asm_opr(op0), rdx_opr));
+						}
+					}
+				}
+				
+				case ret -> {
+					AsmOpr rax_opr = new OprBuilder().reg(pickRegister(RegisterX86.RAX, inst.getSize())).get();
+					list.add(Assembly.getInstruction("xor rax, rax"));
+					list.add(Assembly.getInstruction(AsmMnm.MOV, rax_opr, asmFunc.get_asm_opr(inst.getParam(0))));
+					list.add(Assembly.getInstruction("pop rbp"));
+					list.add(Assembly.getInstruction("retn"));
+				}
+				
 				case call -> {
+					// push rbp
+					// mov rbp, rsp
+					// sub rsp, <stack_size>
+					
+					// Parameters
+					// [Stack:0x0] Return address
+					// [Stack:0x8] param_1
+					//    ....
+					// [Stack:0x10] stack 
+					
 					FunctionLabel op1 = (FunctionLabel)inst.getParam(1);
 					IRFunction ir_func = function_string_ordinal.get(op1.getName());
 					int ref_func = function_ordinal.get(ir_func);
-					
-					for(int i = 0, offset = 8; i < ir_func.getNumParams(); i++) {
+
+					RegisterX86[] regs = { RegisterX86.RCX, RegisterX86.RDX, RegisterX86.R8, RegisterX86.R9 };
+					int pushed = 0;
+					for(int i = ir_func.getNumParams() - 1, j = 0; i >= 0; i--, j++) {
 						Param param = inst.getParam(i + 2);
 						
 						LowType target_size = ir_func.getParams()[i];
+						if(j < 4) {
+							RegisterX86 reg = pickRegister(regs[j], target_size);
+							list.add(Assembly.getInstruction(AsmMnm.MOV, new OprBuilder().reg(reg).get(), asmFunc.get_asm_opr(param)));
+							continue;
+						}
 						
-						RegisterX86 reg = pickRegister(RegisterX86.RAX, target_size);
-						AsmOpr rax_opr = new OprBuilder().reg(reg).get();
+						AsmOpr rax_low_opr = new OprBuilder().reg(pickRegister(RegisterX86.RAX, target_size)).get();
+						AsmOpr rax_opr;
 						
-						list.add(Assembly.getInstruction(AsmMnm.MOV, rax_opr, asmFunc.get_asm_opr(param)));
-						list.add(Assembly.getInstruction(AsmMnm.MOV, new OprBuilder().reg(RegisterX86.RBP).add().num(offset).ptr(target_size.size() * 8), rax_opr));
-						offset += target_size.size();
+						if(target_size.size() == 1
+						|| target_size.size() == 4) {
+							rax_opr = new OprBuilder().reg(pickRegister(RegisterX86.RAX, target_size.size() << 1)).get();
+							pushed += target_size.size() << 1;
+						} else {
+							rax_opr = new OprBuilder().reg(pickRegister(RegisterX86.RAX, target_size)).get();
+							pushed += target_size.size();
+						}
+						
+						list.add(Assembly.getInstruction("xor rax, rax"));
+						list.add(Assembly.getInstruction(AsmMnm.MOV, rax_low_opr, asmFunc.get_asm_opr(param)));
+						list.add(Assembly.getInstruction(AsmMnm.PUSH, rax_opr));
 					}
 					
-					list.add(Assembly.getInstruction(AsmMnm.CALL, new OprBuilder().num(function_header_offset + ref_func * 8).ptrQword()));
+					list.add(Assembly.getInstruction(AsmMnm.CALL, new OprBuilder().imm(ref_func)));
+					if(pushed != 0) {
+						list.add(Assembly.getInstruction("add esp, %d".formatted(pushed)));
+					}
+
+					Param op0 = inst.getParam(0);
+					
+					if(op0 != Param.NONE) {
+						// Return value is always in ax
+						AsmOpr rax_opr = new OprBuilder().reg(pickRegister(RegisterX86.RAX, inst.getSize())).get();
+						list.add(Assembly.getInstruction(AsmMnm.MOV, asmFunc.get_asm_opr(inst.getParam(0)), rax_opr));
+					}
 				}
 				
 				default -> {
@@ -287,32 +405,57 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 				}
 			}
 		}
-
-		list.add(Assembly.getInstruction("pop rbp"));
-		list.add(Assembly.getInstruction("retn"));
+		
+		if(list.isEmpty() || list.get(list.size() - 1).getMnemonic() != AsmMnm.RETN) {
+			list.add(Assembly.getInstruction("pop rbp"));
+			list.add(Assembly.getInstruction("retn"));
+		}
 		
 		Map<Integer, Integer> jump_indexes = new HashMap<>();
 		Map<Integer, Integer> label_indexes = new HashMap<>();
 
 		ByteBuffer buffer = ByteBuffer.allocate(0x10000);
 		buffer.order(ByteOrder.LITTLE_ENDIAN);
-
+		
+		for(int i = 0; i < list.size(); i++) {
+			System.out.printf("inst: %3d: %s\n", i, list.get(i));
+		}
+		
 		int longest = 0;
 		for(int i = 0; i < list.size(); i++) {
 			AsmInst inst = list.get(i);
-			System.out.println("inst: " + inst);
 			String labelStr = asmFunc.test_label_map.get(i);
 			if(labelStr != null) {
 				label_indexes.put(i, buffer.position());
 			}
 			
-			int[] opcode = Assembly.compile(inst);
-			for(int opcodeByte : opcode)
-				buffer.put((byte)opcodeByte);
+			int func_ref = 0;
+			switch(inst.getMnemonic()) {
+				case CALL -> {
+					func_ref = (int)inst.getOperand(0).getImmediate(0);
+					list.set(i, Assembly.getInstruction(AsmMnm.CALL, new OprBuilder().imm(0x10000000)));
+					buffer.put((byte)0xE8);
+					buffer.putInt(0);
+				}
+				default -> {
+					int[] opcode = Assembly.compile(inst);
+					if(opcode == null) {
+						System.out.printf("Could not compile: [index: %d][%s]\n", i, inst);
+					}
+					
+					for(int opcodeByte : opcode)
+						buffer.put((byte)opcodeByte);
+					
+				}
+			}
 			
 			switch(inst.getMnemonic()) {
 				case JZ, JNZ, JMP -> {
 					jump_indexes.put(i, buffer.position());
+				}
+				case CALL -> {
+					int inst_offset = buffer.position() + memory_offset;
+					buffer.putInt(buffer.position() - 4, (function_header_offset + func_ref * 8) - inst_offset);
 				}
 			}
 			
@@ -360,6 +503,17 @@ public class AssemblyCodeGenerator implements CodeGeneratorImpl {
 	
 	private RegisterX86 pickRegister(RegisterX86 reg, LowType type) {
 		switch(type.size() * 8) {
+			case 8: return RegisterX86.get(RegisterType.r8, reg.index);
+			case 16: return RegisterX86.get(RegisterType.r16, reg.index);
+			case 32: return RegisterX86.get(RegisterType.r32, reg.index);
+			case 64: return RegisterX86.get(RegisterType.r64, reg.index);
+		}
+		
+		return null;
+	}
+	
+	private RegisterX86 pickRegister(RegisterX86 reg, int size) {
+		switch(size * 8) {
 			case 8: return RegisterX86.get(RegisterType.r8, reg.index);
 			case 16: return RegisterX86.get(RegisterType.r16, reg.index);
 			case 32: return RegisterX86.get(RegisterType.r32, reg.index);
