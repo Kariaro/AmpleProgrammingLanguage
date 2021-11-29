@@ -1,0 +1,38 @@
+Help message for AmpleProgrammingLanguage https://github.com/Kariaro/AmpleProgrammingLanguage
+
+Usage: [options]
+
+options:
+    -? -h --help
+                  display this help message
+
+    -w --working-directory <path>
+                  set the working directory
+
+    -s --source-folders "<path 1>;<path 2>; ..."
+                  add source folder paths
+
+    -f --format <format>
+                  the output format type
+                  [chockintosh]
+                  [spooky]
+                  [x86]
+                  [ir]
+
+    -i --input-file <pathname>
+                  set the main entry point of the compiler
+
+    -o --output-file <pathname>
+                  set the output file of this compiler
+
+    -b --bytecode
+                  set the output to bytecode (default)
+
+    -a --assembler
+                  set the output to assembler
+
+    -c --compile
+                  set the compiler mode to compile (default)
+
+    -r --run
+                  set the compiler mode to run
