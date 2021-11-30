@@ -3,10 +3,11 @@ package hardcoded.compiler.errors;
 import java.io.File;
 
 import hardcoded.compiler.context.LangContext;
+import hardcoded.compiler.impl.ISyntaxMarker;
 import hardcoded.compiler.impl.ISyntaxPosition;
 import hardcoded.lexer.Token;
 
-public class CompilerMarker implements SyntaxMarker {
+public class CompilerMarker implements ISyntaxMarker {
 	private final ISyntaxPosition syntaxPosition;
 	private final CompilerError error;
 	private final String compilerMessage;
@@ -33,7 +34,7 @@ public class CompilerMarker implements SyntaxMarker {
 	}
 	
 	public CompilerMarker(Throwable t) {
-		this(new File(""), null, 0, 0, SyntaxMarker.ERROR, "", t.getMessage(), CompilerError.INTERNAL_ERROR);
+		this(new File(""), null, 0, 0, ISyntaxMarker.ERROR, "", t.getMessage(), CompilerError.INTERNAL_ERROR);
 	}
 	
 	@Override

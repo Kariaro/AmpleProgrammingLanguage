@@ -1,6 +1,7 @@
 package hardcoded.vm;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import hardcoded.compiler.expression.LowType;
@@ -9,32 +10,28 @@ import hardcoded.compiler.instruction.Param.RegParam;
 
 class VmFunction {
 	private final IRFunction func;
-	private final IRInstruction[] array;
+	private final List<IRInstruction> list;
 	private final Map<String, Integer> labels;
 	private final int[] registers;
 	public final int bodySize;
 	public final int args;
 	public final int stack;
 	
-	
 	public VmFunction(IRFunction func) {
 		this.func = func;
-		this.array = func.getInstructions().clone();
+		this.list = func.getInstructions();
 		this.labels = new HashMap<>();
 		
 		Map<Integer, LowType> sizes = new HashMap<>();
-		for(int i = 0; i < array.length; i++) {
-			IRInstruction inst = array[i];
+		for(int i = 0; i < list.size(); i++) {
+			IRInstruction inst = list.get(i);
 			
 			if(inst.type() == IRType.label) {
 				labels.put(inst.getParam(0).getName(), i + 1);
 			}
 			
 			for(Param param : inst.getParams()) {
-				if(!(param instanceof RegParam)) continue;
-				RegParam reg = (RegParam)param;
-				
-				if(!reg.isTemporary()) continue;
+				if(!(param instanceof RegParam reg) || !reg.isTemporary()) continue;
 				sizes.put(reg.getIndex(), reg.getSize());
 			}
 		}
@@ -72,16 +69,12 @@ class VmFunction {
 		return func.getName();
 	}
 	
-	public IRInstruction[] getInstructions() {
-		return array;
-	}
-	
 	public IRInstruction getInstruction(int index) {
-		return array[index];
+		return list.get(index);
 	}
 	
 	public int getNumInstructions() {
-		return array.length;
+		return list.size();
 	}
 	
 	public int getLabel(String name) {

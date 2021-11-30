@@ -368,7 +368,6 @@ public class ParseTreeOptimizer {
 					}
 				}
 				
-				// TODO: Still will fail for [ b = (0 || a) ] because it will become [ b = a ]
 				case cor -> {
 					for(int i = 0; i < e.length(); i++) {
 						Expression e0 = e.get(i);
@@ -402,7 +401,12 @@ public class ParseTreeOptimizer {
 					
 					if(e.length() == 1) {
 						if(e.first() instanceof AtomExpr e_first) {
-							parent.set(index, new AtomExpr(e_first.isZero() ? 0:1));
+							if(e_first.isNumber()) {
+								parent.set(index, new AtomExpr(e_first.isZero() ? 0:1));
+							} else {
+								// Check if it is not equal to zero
+								parent.set(index, new OpExpr(neq, e_first, new AtomExpr(0)));
+							}
 							break;
 						}
 						
@@ -415,8 +419,6 @@ public class ParseTreeOptimizer {
 					if(next != null) {
 						parent.set(index, next);
 					}
-					
-					// TODO: [ neg(neg(x)) ] -> [ x ]
 				}
 				
 				case jump, leave, loop, label, ret, call -> {
@@ -454,7 +456,7 @@ public class ParseTreeOptimizer {
 				
 				for(int j = 0; j < e.length(); j++) {
 					Expression add = e.get(j);
-
+					
 					// [ add(sub(a, b), sub(c, d)) ]  -> [ add(a, neg(b), c, neg(d)) ]  
 					// [ sub(add(a, b), add(c, d)) ]  -> [ sub(a, neg(b), c,     d ) ]
 					if(j != 0 && (i == 0 || e.type() == sub)) {
@@ -462,7 +464,11 @@ public class ParseTreeOptimizer {
 						if(add instanceof AtomExpr atom_expr && atom_expr.isNumber()) {
 							add = (AtomExpr)ExpressionParser.compute(neg, add, null);
 						} else {
-							add = new OpExpr(neg, add);
+							if(add.type() == neg) {
+								add = add.get(0);
+							} else {
+								add = new OpExpr(neg, add);
+							}
 						}
 					}
 					
@@ -472,8 +478,6 @@ public class ParseTreeOptimizer {
 						expr.getElements().add(i + j, add);
 					}
 				}
-				
-				// System.out.println(expr);
 			}
 		}
 	}

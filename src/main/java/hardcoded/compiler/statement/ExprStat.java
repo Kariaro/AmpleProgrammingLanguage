@@ -15,8 +15,7 @@ public class ExprStat extends Statement {
 	}
 	
 	public Expression expr() {
-		if(list.isEmpty()) return null;
-		return list.get(0);
+		return list.isEmpty() ? null:list.get(0);
 	}
 	
 	@Override

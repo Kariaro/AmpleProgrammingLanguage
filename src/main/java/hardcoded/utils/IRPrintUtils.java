@@ -29,7 +29,7 @@ public class IRPrintUtils {
 		StringBuilder sb = new StringBuilder();
 		sb.append("\n").append(func).append("\n");
 		
-		List<IRInstruction> list = func.getInstructionsList();
+		List<IRInstruction> list = func.getInstructions();
 		for(int i = 0, line = 0, len = list.size(); i < len; i++) {
 			IRInstruction inst = list.get(i);
 			
@@ -117,5 +117,9 @@ public class IRPrintUtils {
 	
 	public static IRListIterator createIterator(List<IRInstruction> list) {
 		return new IRListIterator(list);
+	}
+	
+	public static IRListIterator createIterator(IRFunction func) {
+		return createIterator(func.getInstructions());
 	}
 }

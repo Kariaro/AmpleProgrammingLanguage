@@ -14,14 +14,22 @@ import java.util.*;
 public class IRContext {
 	protected final List<String> strings = new ArrayList<>();
 	protected String programName;
-	public long creationDate;
+	protected long creationDate;
 	
 	protected IRContext() {
-		creationDate = System.currentTimeMillis();
+		this(System.currentTimeMillis());
+	}
+	
+	protected IRContext(long creationDate) {
+		this.creationDate = creationDate;
 	}
 	
 	public List<String> getStrings() {
 		return strings;
+	}
+	
+	public long getCreationDate() {
+		return creationDate;
 	}
 	
 	public int getStringIndex(String value) {

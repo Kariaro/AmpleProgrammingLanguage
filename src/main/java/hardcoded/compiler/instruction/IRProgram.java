@@ -50,8 +50,9 @@ public class IRProgram {
 		
 		IRFunction ir_func = new IRFunction(func.getReturnType().type(), func.getName(), func_arguments);
 		
+		List<IRInstruction> func_inst = ir_func.getInstructions();
 		for(IRInstruction inst : list) {
-			ir_func.list.add(inst);
+			func_inst.add(inst);
 		}
 		
 		this.list.add(ir_func);

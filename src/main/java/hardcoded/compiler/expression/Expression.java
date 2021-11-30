@@ -11,7 +11,7 @@ import hardcoded.compiler.impl.ISyntaxPosition;
 import hardcoded.visualization.Printable;
 
 public abstract class Expression implements IExpression, Printable {
-	protected final List<Expression> list;
+	private final List<Expression> list;
 	private final boolean hasElements;
 	private ExprType type;
 	
@@ -26,10 +26,6 @@ public abstract class Expression implements IExpression, Printable {
 		return type;
 	}
 	
-	protected void setType(ExprType type) {
-		this.type = Objects.requireNonNull(type, "Expression type must not be null");
-	}
-
 	@Override
 	public List<IExpression> getExpressions() {
 		return List.copyOf(list);
@@ -38,6 +34,10 @@ public abstract class Expression implements IExpression, Printable {
 	@Override
 	public boolean hasExpressions() {
 		return hasElements;
+	}
+	
+	protected void setType(ExprType type) {
+		this.type = Objects.requireNonNull(type, "Expression type must not be null");
 	}
 	
 	public List<Expression> getElements() {

@@ -203,9 +203,9 @@ public final class IRSerializer {
 		writeLowType(func.getReturnType());
 		writeString(func.getName());
 		
-		IRInstruction[] array = func.getInstructions();
-		writeVarInt(array.length);
-		for(IRInstruction inst : array) {
+		List<IRInstruction> list = func.getInstructions();
+		writeVarInt(list.size());
+		for(IRInstruction inst : list) {
 			writeInstruction(inst);
 		}
 	}
@@ -463,7 +463,7 @@ public final class IRSerializer {
 		IRFunction func = new IRFunction(type, name, params, paramNames);
 		int len = readVarInt();
 		for(int i = 0; i < len; i++) {
-			func.list.add(readInstruction());
+			func.getInstructions().add(readInstruction());
 		}
 		
 		return func;

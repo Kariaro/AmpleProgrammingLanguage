@@ -34,6 +34,9 @@ import hardcoded.vm.AmpleVm;
 public class Main {
 	private static final Logger LOGGER = LogManager.getLogger(Main.class);
 	
+	// TODO: Add libraries to annotate @Nullable, @NonNull for method return values.
+	//       This will make it easier to know if there could be any potential null values.
+	
 	static {
 		// Set printing locale.
 		Locale.setDefault(Locale.US);
@@ -57,20 +60,9 @@ public class Main {
 			String file = "multiplication.ample";
 			File dir = new File("src/main/resources/test/ample/");
 			
-			int id = 0;
-			for(String fileName : dir.list()) {
-				try {
-					fileName = fileName.substring(fileName.lastIndexOf('_') + 1);
-					fileName = fileName.substring(0, fileName.lastIndexOf('.'));
-					id = Math.max(id, Integer.parseInt(fileName));
-				} catch(Exception ignore) {
-					
-				}
-			}
-			
 			String workingDirectory = new File("src/main/resources/project").getAbsolutePath();
 			String inputFile = "src/" + file;
-			String outputFile = new File(dir, "compiled_%d.txt".formatted(id + 1)).getAbsolutePath();
+			String outputFile = DebugUtils.getNextFileId(dir, "compiled_%d.txt");
 			
 			args = new String[] {
 				"--working-directory", workingDirectory,

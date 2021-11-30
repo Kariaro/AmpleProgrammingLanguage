@@ -28,7 +28,6 @@ public class Function implements IFunction, Printable {
 	
 	// TODO: These variables should not be public.
 	public ISyntaxPosition syntaxPosition;
-	
 	public Statement body = Statement.newEmpty();
 	
 	public Function(String functionName, HighType returnType, List<Modifier> modifiers) {

@@ -4,10 +4,7 @@ import java.util.List;
 
 import org.junit.Test;
 
-import hardcoded.compiler.errors.SyntaxMarker;
-import hardcoded.compiler.impl.IFunction;
-import hardcoded.compiler.impl.IProgram;
-import hardcoded.compiler.impl.IStatement;
+import hardcoded.compiler.impl.*;
 import hardcoded.compiler.parsetree.ParseTreeGenerator;
 import hardcoded.compiler.statement.Statement;
 import hardcoded.utils.Position;
@@ -46,7 +43,7 @@ public class ParseTreeTest {
 	}
 	
 	private static void dump(IProgram program) {
-		for(SyntaxMarker marker : program.getSyntaxMarkers()) {
+		for(ISyntaxMarker marker : program.getSyntaxMarkers()) {
 			Position position = marker.getSyntaxPosition().getStartPosition();
 			
 			System.err.printf("%s(%s:%s) : %s",

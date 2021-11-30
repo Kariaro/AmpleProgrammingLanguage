@@ -15,8 +15,7 @@ public class IRFunction {
 	private final String[] paramNames;
 	private final LowType type;
 	private final String name;
-	
-	protected List<IRInstruction> list;
+	private final List<IRInstruction> list;
 	
 	protected IRFunction(LowType type, String name, List<Identifier> list) {
 		if(list.size() > 255) {
@@ -78,11 +77,7 @@ public class IRFunction {
 		return type;
 	}
 	
-	public IRInstruction[] getInstructions() {
-		return list.toArray(IRInstruction[]::new);
-	}
-	
-	public List<IRInstruction> getInstructionsList() {
+	public List<IRInstruction> getInstructions() {
 		return list;
 	}
 	

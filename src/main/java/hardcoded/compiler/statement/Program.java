@@ -5,11 +5,8 @@ import java.util.*;
 
 import hardcoded.compiler.constants.Identifier;
 import hardcoded.compiler.constants.Identifier.IdType;
-import hardcoded.compiler.errors.SyntaxMarker;
 import hardcoded.compiler.expression.Expression;
-import hardcoded.compiler.impl.IBlock;
-import hardcoded.compiler.impl.IFunction;
-import hardcoded.compiler.impl.IProgram;
+import hardcoded.compiler.impl.*;
 import hardcoded.compiler.types.HighType;
 import hardcoded.visualization.Printable;
 
@@ -20,7 +17,7 @@ public final class Program implements IProgram, Printable {
 	private final Map<String, Expression> defined_globals;
 	private final Map<String, HighType> defined_types;
 	private final Set<String> importedFiles;
-	private final List<SyntaxMarker> syntaxMarkers;
+	private final List<ISyntaxMarker> syntaxMarkers;
 	private final List<Identifier> functionIdentifiers;
 	private final List<Function> functions;
 	private int function_index;
@@ -43,7 +40,7 @@ public final class Program implements IProgram, Printable {
 	}
 	
 	@Override
-	public List<SyntaxMarker> getSyntaxMarkers() {
+	public List<ISyntaxMarker> getSyntaxMarkers() {
 		return syntaxMarkers;
 	}
 	
@@ -123,8 +120,8 @@ public final class Program implements IProgram, Printable {
 		importedFiles.add(file.getAbsolutePath());
 	}
 	
-	public void addSyntaxMarker(SyntaxMarker syntaxMarker) {
-		if(syntaxMarker.getSeverity() == SyntaxMarker.ERROR) {
+	public void addSyntaxMarker(ISyntaxMarker syntaxMarker) {
+		if(syntaxMarker.getSeverity() == ISyntaxMarker.ERROR) {
 			// Mark this program as having errors
 			hasErrors = true;
 		}

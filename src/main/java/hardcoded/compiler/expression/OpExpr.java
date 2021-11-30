@@ -13,7 +13,7 @@ public class OpExpr extends Expression {
 	
 	public OpExpr(ExprType type, Expression... array) {
 		super(type, true);
-		list.addAll(Arrays.asList(array));
+		getElements().addAll(Arrays.asList(array));
 	}
 	
 	@Override
@@ -28,11 +28,11 @@ public class OpExpr extends Expression {
 		}
 		
 		if(type == ExprType.comma) {
-			return list.get(list.size() - 1).size();
+			return getElements().get(getElements().size() - 1).size();
 		}
 		
 		if(type == ExprType.call) {
-			return list.get(0).size();
+			return getElements().get(0).size();
 		}
 		
 		LowType lowType = super.size();
@@ -50,7 +50,7 @@ public class OpExpr extends Expression {
 	public Expression clone() {
 		OpExpr expr = new OpExpr(type());
 		expr.override_size = override_size;
-		for(Expression e : list) {
+		for(Expression e : getElements()) {
 			expr.add(e.clone());
 		}
 		
@@ -65,9 +65,9 @@ public class OpExpr extends Expression {
 	@Override
 	public String toString() {
 		if(type() == ExprType.cast) {
-			return "%s(%s, %s)".formatted(type(), StringUtils.join(", ", list), override_size);
+			return "%s(%s, %s)".formatted(type(), StringUtils.join(", ", getElements()), override_size);
 		}
 		
-		return "%s(%s)".formatted(type(), StringUtils.join(", ", list));
+		return "%s(%s)".formatted(type(), StringUtils.join(", ", getElements()));
 	}
 }

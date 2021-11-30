@@ -3,8 +3,6 @@ package hardcoded.compiler.impl;
 import java.util.List;
 import java.util.Set;
 
-import hardcoded.compiler.errors.SyntaxMarker;
-
 /**
  * This interface is a simplified version of the internal program class.
  * 
@@ -26,7 +24,7 @@ public interface IProgram {
 	/**
 	 * Returns a unmodifiable list of syntax markers.
 	 */
-	List<SyntaxMarker> getSyntaxMarkers();
+	List<ISyntaxMarker> getSyntaxMarkers();
 	
 	/**
 	 * Returns {@code true} if this program has errors.

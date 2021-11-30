@@ -20,13 +20,13 @@ public class ForStat extends NestedStat {
 	}
 	
 	public Expression getCondition() {
-		ExprStat stat = (ExprStat)get(1);
-		return stat == null ? null:stat.expr();
+		// TODO: These are never null
+		return ((ExprStat)get(1)).expr();
 	}
 	
 	public Expression getAction() {
-		ExprStat stat = (ExprStat)get(2);
-		return stat == null ? null:stat.expr();
+		// TODO: These are never null
+		return ((ExprStat)get(2)).expr();
 	}
 	
 	public Statement getBody() {

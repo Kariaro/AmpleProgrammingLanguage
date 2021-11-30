@@ -54,13 +54,13 @@ public class IntermediateCodeOptimizer {
 	public IntermediateCodeOptimizer() {}
 	
 	public IRProgram generate(IRProgram program) {
-		// LOGGER.info(IRPrintUtils.printPretty(program));
+		LOGGER.info(IRPrintUtils.printPretty(program));
 		
 		for(IRFunction func : program.getFunctions()) {
 			simplify(func);
 		}
 		
-		// LOGGER.info(IRPrintUtils.printPretty(program));
+		LOGGER.info(IRPrintUtils.printPretty(program));
 		
 		return program;
 	}
@@ -70,7 +70,7 @@ public class IntermediateCodeOptimizer {
 	 * @param	block	the instruction block to optimize
 	 */
 	private void remove_nops(IRFunction func) {
-		Iterator<IRInstruction> iter = func.list.iterator();
+		Iterator<IRInstruction> iter = func.getInstructions().iterator();
 		
 		while(iter.hasNext()) {
 			IRInstruction inst = iter.next();
@@ -125,7 +125,7 @@ public class IntermediateCodeOptimizer {
 	 * @param	block	the instruction block to optimize
 	 */
 	private void eq_bnz_optimization(IRFunction func) {
-		IRListIterator iter = IRPrintUtils.createIterator(func.list);
+		IRListIterator iter = IRPrintUtils.createIterator(func);
 		
 		while(iter.hasNext()) {
 			IRInstruction inst = iter.next();
@@ -169,7 +169,7 @@ public class IntermediateCodeOptimizer {
 	}
 	
 	private void mov_bnz_optimization(IRFunction func) {
-		IRListIterator iter = IRPrintUtils.createIterator(func.list);
+		IRListIterator iter = IRPrintUtils.createIterator(func);
 		
 		while(iter.hasNext()) {
 			IRInstruction inst = iter.next();
@@ -193,7 +193,7 @@ public class IntermediateCodeOptimizer {
 		Map<Integer, RegParam> map = new HashMap<>();
 		int index = 0;
 		
-		IRListIterator iter = IRPrintUtils.createIterator(func.list);
+		IRListIterator iter = IRPrintUtils.createIterator(func);
 		
 		while(iter.hasNext()) {
 			IRInstruction inst = iter.next();
@@ -219,7 +219,7 @@ public class IntermediateCodeOptimizer {
 	}
 	
 	private void flow_optimization(IRFunction func) {
-		IRListIterator iter = IRPrintUtils.createIterator(func.list);
+		IRListIterator iter = IRPrintUtils.createIterator(func);
 		
 		while(iter.hasNext()) {
 			IRInstruction inst = iter.next();
@@ -287,8 +287,8 @@ public class IntermediateCodeOptimizer {
 	// some_label:
 	//   br [another]
 	private void pass_though_label_optimization(IRFunction func) {
-		IRListIterator iter = IRPrintUtils.createIterator(func.list);
-		List<IRInstruction> list = func.list;
+		IRListIterator iter = IRPrintUtils.createIterator(func);
+		List<IRInstruction> list = func.getInstructions();
 		
 		while(iter.hasNext()) {
 			IRInstruction inst = iter.next();
@@ -330,7 +330,7 @@ public class IntermediateCodeOptimizer {
 	//   If an instruction is inside a code block that will never be entered or if a
 	//   label is never jumped to or is proceeded by another label it should be removed.
 	private void dead_code_optimization(IRFunction func) {
-		IRListIterator iter = IRPrintUtils.createIterator(func.list);
+		IRListIterator iter = IRPrintUtils.createIterator(func);
 		
 		while(iter.hasNext()) {
 			IRInstruction inst = iter.next();
@@ -366,7 +366,7 @@ public class IntermediateCodeOptimizer {
 		logOptimization(func, "eq_bnz");
 		
 		while(true) {
-			int size = func.list.size();
+			int size = func.getInstructions().size();
 			
 			mov_bnz_optimization(func);
 			logOptimization(func, "mov_bnz");
@@ -383,7 +383,7 @@ public class IntermediateCodeOptimizer {
 			dead_code_optimization(func);
 			logOptimization(func, "dead_code");
 			
-			if(size != func.list.size()) {
+			if(size != func.getInstructions().size()) {
 				// If the size changed during the flow optimization we
 				// should try re run the optimizations
 				
@@ -395,7 +395,7 @@ public class IntermediateCodeOptimizer {
 	}
 	
 	private int findLabel(IRFunction func, int pivot, LabelParam label) {
-		List<IRInstruction> list = func.list;
+		List<IRInstruction> list = func.getInstructions();
 		
 		// TODO: Maybe implement a pivot based search.
 		for(int i = 0; i < list.size(); i++) {
@@ -429,7 +429,7 @@ public class IntermediateCodeOptimizer {
 	private int getReferences(IRFunction func, Param reg) {
 		int references = 0;
 		
-		for(IRInstruction inst : func.list) {
+		for(IRInstruction inst : func.getInstructions()) {
 			for(Param r : inst.getParams()) {
 				if(reg.equals(r)) references++;
 			}

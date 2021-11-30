@@ -1,39 +1,34 @@
 package hardcoded.configuration;
 
-import java.lang.reflect.InvocationTargetException;
+import java.util.function.Supplier;
 
 import hardcoded.compiler.impl.ICodeGenerator;
 import hardcoded.exporter.chockintosh.ChockintoshCodeGenerator;
+import hardcoded.exporter.ir.IRCodeGenerator;
 import hardcoded.exporter.spooky.SpookyCodeGenerator;
 import hardcoded.exporter.x86.AssemblyCodeGenerator;
-import hardcoded.exporter.ir.IRCodeGenerator;
 
 public enum OutputFormat {
-	SPOOKY(".spook", SpookyCodeGenerator.class),
-	X86(".bin", AssemblyCodeGenerator.class),
-	IR(".lir", IRCodeGenerator.class),
-	CHOCKINTOSH(".chock", ChockintoshCodeGenerator.class)
-	
+	SPOOKY(".spook", SpookyCodeGenerator::new),
+	X86(".bin", AssemblyCodeGenerator::new),
+	IR(".lir", IRCodeGenerator::new),
+	CHOCKINTOSH(".chock", ChockintoshCodeGenerator::new)
 	;
 	
-	public final Class<? extends ICodeGenerator> generator;
-	public final String extension;
+	private final Supplier<? extends ICodeGenerator> generator;
+	private final String extension;
 	
-	private OutputFormat(String extension, Class<? extends ICodeGenerator> generator) {
+	private OutputFormat(String extension, Supplier<? extends ICodeGenerator> generator) {
 		this.extension = extension;
 		this.generator = generator;
 	}
 	
 	public ICodeGenerator createNew() {
-		try {
-			return generator.getDeclaredConstructor().newInstance();
-		} catch(InstantiationException | IllegalAccessException
-			| IllegalArgumentException | InvocationTargetException
-			| NoSuchMethodException | SecurityException e) {
-			e.printStackTrace();
-		}
-		
-		return null;
+		return generator.get();
+	}
+	
+	public String getExtension() {
+		return extension;
 	}
 	
 	public static OutputFormat get(String name) {
