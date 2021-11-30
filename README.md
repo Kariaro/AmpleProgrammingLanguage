@@ -1,45 +1,65 @@
 # Ample Programming Language
-Creating a compiler for my own programing language.
-This project is not finished and is currently under construction.
+This compiler is my hobby project. This is my own programming language and it has similar features to C.
 
-The ample syntax is simmilar to C or C++ styled code but will allow for flexible
-keywords and inline syntax changes.
+The idea of the language is to play around with lexers and compiler optimizations and get better with solving complex compiler problems.
+
+This programming language is still under construction and is not be suitable for any real use outside of exporting to interesting instruction sets.
+
+## Exporting
+The compiler currently exports to four different languages:
+* IR **My compiler instruction set*
+* Spooky **Not stable*
+* Assembly x64
+* Chockintosh I
 
 ## Usage
-
 To use this compiler you can call it from the console. *Only tested on windows*
 
 ```
-java -jar amplecompiler.jar [options] -compile <sourcefile> <outputfile>
-java -jar amplecompiler.jar [options] -run <sourcefile>
+Usage: [options]
 
 options:
-    -? -h -help
+    -? -h --help
                   display this help message
 
-    -p <path>
+    -w --working-directory <path>
                   set the working directory
 
-    -f -format
-                  the output format type
-                  [spooky]
-                  [x86] *
-                  [ir]
-```
+    -s --source-folders "<path 1>;<path 2>; ..."
+                  add source folder paths
 
-\* Currently being worked on and/or unstable.
+    -f --format <format>
+                  the output format type
+                  [chockintosh]
+                  [spooky]
+                  [x86]
+                  [ir]
+
+    -i --input-file <pathname>
+                  set the main entry point of the compiler
+
+    -o --output-file <pathname>
+                  set the output file of this compiler
+
+    -b --bytecode
+                  set the output to bytecode (default)
+
+    -a --assembler
+                  set the output to assembler
+
+    -c --compile
+                  set the compiler mode to compile (default)
+
+    -r --run
+                  set the compiler mode to run
+
+```
 
 ## Compiler
 
-The compiler will be able to generate multiple output formats.
-
-Some formats that this compiler will support.
- * x86-64/Intel-AMD
- * spooky
-
 Here is an example of the syntax:
 
-```cpp
+```c
 void print(int v);
 
 void main() {
@@ -52,43 +72,30 @@ void print(int v) {
 }
 ```
 
-The compiler has its own IR language.
-
 
 ## Lexer
-Lexical analysis is a large part of how a compiler reads the input source file and
-converts it into tokens that is then understod by the compiler.
+The compiler lexer is a large part of how this compiler functions. The lexer is located inside the directory `src/main/java/hardcoded/lexer`.
 
-All code related to lexers are placed inside the directory *lexer/hardcoded/lexer*.
+The lexer is first construction with a set of rules for how to group characters. All groups are written with regex currently.
+An example of a number matching group would be `[0-9]+`.
 
-Lexical analysis is when you take a input string and group it into tokens. Each token
-is then given a group and value representing the catigorisation of the token.
+All tokens returned by the lexer has information about where the token started and ended, file location, content and group information.
 
-
+Here is an example of what the lexer does.
 ```
 Input: "char hello ='a'"
 
-[Primitive]   : char
-[Space]       :
+[Identifier]  : char
+[Whitespace]  :
 [Literal]     : hello
-[Space]       :
-[Operator]    : =
-[CharLiteral] : 'a'
+[Whitespace]  :
+[Assignment]  : =
+[String]      : 'a'
 ```
 
-The input string was split into tokens of the types <code>Primitive, Space, Literal,
-Operator and CharLiteral</code>. These can then be used by the compiler to determine
-if the assigned value is of the correct type or if we are defining a variable or
-creating a function.
-
-
-
 ## Visualization
-All visualizations are placed inside the *lexer/hardcoded/visualization* path.
+The visualization classes are located inside the directory `src/main/java/hardcoded/visualization`.
 
-Visualization classes are used when debuging the output of the compiler. The visualizations
-makes it easier to view and look at how the parsetree gets generated and how the compiler
-then optimizes it step by step.
+Visualizations are used to debug how the compiler works and can help a developer identify errors made by the compiler andd make it easier to fix them.
 
-The visualization classes help debug complex data structures and tell the developer what is
-going on.
+Currently there is only one visualization that shows a tree structure of the current program loaded.

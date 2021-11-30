@@ -7,18 +7,10 @@ import hardcoded.compiler.constants.Atom;
 public class LowType {
 	public static final LowType INVALID = new LowType(Atom.unf, 0);
 	
-	/**
-	 * The type of this {@code LowType}
-	 */
 	private final Atom type;
-	
-	/**
-	 * The size of this pointer.
-	 * The maximum allowed size is 255.
-	 */
 	private final int depth;
 	
-	LowType(Atom type, int depth) {
+	private LowType(Atom type, int depth) {
 		if(depth < 0 || depth > 255) {
 			throw new AssertionError("LowType pointer depth was outside bounds. (0 < depth < 256). Got '%s'".formatted(depth));
 		}
@@ -35,8 +27,7 @@ public class LowType {
 	@Override
 	public boolean equals(Object obj) {
 		if(obj instanceof Atom) return depth == 0 && type == obj;
-		if(!(obj instanceof LowType)) return false;
-		return hashCode() == obj.hashCode();
+		return (obj instanceof LowType) && hashCode() == obj.hashCode();
 	}
 	
 	public Atom type() {
@@ -116,13 +107,14 @@ public class LowType {
 	 * Returns the default pointer size.
 	 */
 	public static int getPointerSize() {
-		return 8;
+		return getPointerType().size();
 	}
 	
 	/**
 	 * Returns the default pointer type.
 	 */
 	public static Atom getPointerType() {
+		// TODO: This should be specified by the compiler.
 		return Atom.i64;
 	}
 	

@@ -2,6 +2,7 @@ void _set_output(byte out);
 byte _read_input();
 
 void main() {
+/*
 	int a = 0;
 	int b = 0;
 	int c = 0;
@@ -10,20 +11,8 @@ void main() {
 	int d2 = 5 - a;
 	int f = 1 + a - 1;
 	int g = 1 - a + 1;
+*/
 	
-	int _ = 0;
-	int ___ = 0;
-	
-	_ = ((a + b) + ___);
-	_ = ((a - b) + ___);
-	_ = (___ + (a + b));
-	_ = (___ + (a - b));
-	_ = ((a + b) - ___);
-	_ = ((a - b) - ___);
-	_ = (___ - (a + b));
-	_ = (___ - (a - b));
-	
-	/*
 	byte input = _read_input();
 	byte factor = 5;
 	byte result = 0;
@@ -53,5 +42,4 @@ void main() {
 	_set_output(result);
 	
 	loop_end:
-	*/
 }

@@ -53,7 +53,6 @@ public final class Primitives {
 	
 	/**
 	 * Returns a unmodifiable set with all primitives inside of it.
-	 * @return a unmodifiable set with all primitives inside of it
 	 */
 	public static Set<HighType> getAllTypes() {
 		return Set.copyOf(PRIMITIVES.values());

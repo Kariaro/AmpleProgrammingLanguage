@@ -60,6 +60,31 @@ public class ExpressionTest {
 	}
 	
 	@Test
+	public void corCandTest() {
+		AtomExpr a = ParseTreeHelper.atom("a", 0, Atom.i32);
+		AtomExpr zero = ParseTreeHelper.atom(0);
+		AtomExpr one = ParseTreeHelper.atom(1);
+		
+		// cor(0, a)    ->   neq(a, 0)
+		assertTrue(ParseTreeHelper.checkOptimizedEquality(
+			new OpExpr(cor, zero, a),
+			new OpExpr(neq, a, zero)
+		));
+		
+		// cor(1, set(a, 0))    ->   1
+		assertTrue(ParseTreeHelper.checkOptimizedEquality(
+			new OpExpr(cor, one, new OpExpr(set, a, zero)),
+			one
+		));
+		
+		// cand(0, set(a, 0))   ->   0
+		assertTrue(ParseTreeHelper.checkOptimizedEquality(
+			new OpExpr(cand, zero, new OpExpr(set, a, zero)),
+			zero
+		));
+	}
+	
+	@Test
 	public void constantPropagation() {
 		AtomExpr zero = ParseTreeHelper.atom(0);
 		AtomExpr one = ParseTreeHelper.atom(1);
@@ -88,11 +113,19 @@ public class ExpressionTest {
 	@Test
 	public void negTest() {
 		AtomExpr a = ParseTreeHelper.atom("a", 0, Atom.i32);
+		AtomExpr two = ParseTreeHelper.atom(2);
+		AtomExpr neg_two = ParseTreeHelper.atom(-2);
 		
 		// neg(neg(a))      -> a
 		assertTrue(ParseTreeHelper.checkOptimizedEquality(
 			new OpExpr(neg, new OpExpr(neg, a)),
 			a
+		));
+		
+		// neg(2)   -> -2
+		assertTrue(ParseTreeHelper.checkOptimizedEquality(
+			new OpExpr(neg, two),
+			neg_two
 		));
 	}
 }

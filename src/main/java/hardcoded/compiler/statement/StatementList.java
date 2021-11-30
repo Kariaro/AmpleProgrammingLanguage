@@ -11,7 +11,7 @@ public class StatementList extends Statement {
 	
 	public StatementList(List<? extends Statement> list) {
 		super(true);
-		this.list.addAll(list);
+		getElements().addAll(list);
 	}
 	
 	@Override
@@ -21,6 +21,6 @@ public class StatementList extends Statement {
 	
 	@Override
 	public String toString() {
-		return StringUtils.join("", list);
+		return StringUtils.join("", getElements());
 	}
 }

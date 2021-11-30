@@ -4,7 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import hardcoded.compiler.errors.CompilerException;
-import hardcoded.compiler.errors.SyntaxMarker;
+import hardcoded.compiler.impl.ISyntaxMarker;
 import hardcoded.compiler.instruction.IRProgram;
 import hardcoded.compiler.instruction.IntermediateCodeGenerator;
 import hardcoded.compiler.instruction.IntermediateCodeOptimizer;
@@ -73,7 +73,7 @@ class AmpleCompilerBuild {
 		
 		System.out.println(StatementUtils.printPretty(current_program));
 		if(current_program.hasErrors()) {
-			for(SyntaxMarker marker : current_program.getSyntaxMarkers()) {
+			for(ISyntaxMarker marker : current_program.getSyntaxMarkers()) {
 				Position position = marker.getSyntaxPosition().getStartPosition();
 				
 				LOGGER.warn("{}(Line: {}, Column: {}) : {}",

@@ -1,17 +1,17 @@
 package hardcoded.compiler.constants;
 
 public enum Atom {
-	// size, isNumber, isSigned, isFloating
-	u64			(8, true, false, false),
-	u32			(4, true, false, false),
-	u16			(2, true, false, false),
-	u8			(1, true, false, false),
-	i64			(8, true, true, false),
-	i32			(4, true, true, false),
-	i16			(2, true, true, false),
-	i8			(1, true, true, false),
-	f64			(8, true, true, true),
-	f32			(4, true, true, true),
+	// size, isSigned, isFloating
+	u64			(8, false, false),
+	u32			(4, false, false),
+	u16			(2, false, false),
+	u8			(1, false, false),
+	i64			(8, true, false),
+	i32			(4, true, false),
+	i16			(2, true, false),
+	i8			(1, true, false),
+	f64			(8, true, true),
+	f32			(4, true, true),
 	
 	// Object Types
 	string		(),
@@ -25,13 +25,18 @@ public enum Atom {
 	private final boolean isFloating;
 	private final int size;
 	
+	// Object constructor
 	private Atom() {
-		this(0, false, false, false);
+		this.isFloating = false;
+		this.isNumber = false;
+		this.isSigned = false;
+		this.size = 0;
 	}
 	
-	private Atom(int size, boolean isNumber, boolean isSigned, boolean isFloating) {
+	// Number constructor
+	private Atom(int size, boolean isSigned, boolean isFloating) {
 		this.isFloating = isFloating;
-		this.isNumber = isNumber;
+		this.isNumber = true;
 		this.isSigned = isSigned;
 		this.size = size;
 	}

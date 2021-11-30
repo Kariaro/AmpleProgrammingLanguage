@@ -8,8 +8,10 @@ import hardcoded.compiler.impl.ISyntaxPosition;
 import hardcoded.visualization.Printable;
 
 public class Statement implements IStatement, Printable {
-	protected final List<Statement> list;
-	protected final boolean hasElements;
+	private final List<Statement> list;
+	private final boolean hasElements;
+	
+	// TODO: Make this private final.
 	protected ISyntaxPosition syntaxPosition = ISyntaxPosition.empty();
 	
 	protected Statement(boolean hasElements) {
@@ -18,23 +20,22 @@ public class Statement implements IStatement, Printable {
 	}
 	
 	@Override
-	public final List<IStatement> getStatements() {
+	public List<IStatement> getStatements() {
 		return List.copyOf(list);
 	}
 
 	@Override
-	public final boolean hasStatements() {
+	public boolean hasStatements() {
 		return hasElements;
 	}
 	
-	public final List<Statement> getElements() {
+	public List<Statement> getElements() {
 		return list;
 	}
 	
-	public final boolean hasElements() {
+	public boolean hasElements() {
 		return hasElements;
 	}
-	
 	
 	public boolean isEmptyStat() {
 		return false;
@@ -43,7 +44,7 @@ public class Statement implements IStatement, Printable {
 	/**
 	 * Returns the size of this list.
 	 */
-	public final int size() {
+	public int size() {
 		return list.size();
 	}
 	
@@ -52,7 +53,7 @@ public class Statement implements IStatement, Printable {
 	 * @param index the index of the element in this list
 	 * @return the element at the specified index
 	 */
-	public final Statement get(int index) {
+	public Statement get(int index) {
 		return list.get(index);
 	}
 	
@@ -60,7 +61,7 @@ public class Statement implements IStatement, Printable {
 	 * Add a new element to this statement.
 	 * @param stat the statement to add
 	 */
-	public final void add(Statement stat) {
+	public void add(Statement stat) {
 		list.add(stat);
 	}
 	
@@ -69,7 +70,7 @@ public class Statement implements IStatement, Printable {
 	 * @param index the index of the element that should be replaced
 	 * @param stat the statement to replace with
 	 */
-	public final void set(int index, Statement stat) {
+	public void set(int index, Statement stat) {
 		list.set(index, stat);
 	}
 	

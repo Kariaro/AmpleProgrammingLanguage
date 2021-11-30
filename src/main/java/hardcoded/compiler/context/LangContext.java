@@ -60,7 +60,7 @@ public class LangContext {
 			LOGGER.debug("[{}] (Line: {}, Column: {}), {}", Thread.getAllStackTraces().get(Thread.currentThread())[4], pos.line, pos.column, token);
 		}
 		
-		return peak(0);
+		return token;
 	}
 
 	public String value() {

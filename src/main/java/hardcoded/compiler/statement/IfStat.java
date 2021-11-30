@@ -13,8 +13,8 @@ public class IfStat extends NestedStat {
 	}
 	
 	public Expression getCondition() {
-		ExprStat stat = (ExprStat)get(0);
-		return stat == null ? null:(stat.expr());
+		// TODO: These are never null
+		return ((ExprStat)get(0)).expr();
 	}
 	
 	public Statement getBody() {
@@ -27,9 +27,8 @@ public class IfStat extends NestedStat {
 	
 	public boolean hasElseBody() {
 		Statement stat = getElseBody();
-		
-		if(stat == null || stat.isEmptyStat()) return false;
-		return stat.hasElements() && stat.size() > 0;
+		// TODO: return stat.size() > 0;
+		return !stat.isEmptyStat() && stat.hasElements() && stat.size() > 0;
 	}
 
 	@Override

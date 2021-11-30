@@ -11,9 +11,7 @@ import hardcoded.compiler.constants.Modifiers.Modifier;
 import hardcoded.compiler.context.LangContext;
 import hardcoded.compiler.errors.*;
 import hardcoded.compiler.expression.*;
-import hardcoded.compiler.impl.IBlock;
-import hardcoded.compiler.impl.IProgram;
-import hardcoded.compiler.impl.ISyntaxPosition;
+import hardcoded.compiler.impl.*;
 import hardcoded.compiler.statement.*;
 import hardcoded.compiler.types.HighType;
 import hardcoded.compiler.types.PrimitiveType;
@@ -27,10 +25,12 @@ import hardcoded.lexer.Token.Type;
 public class ParseTreeGenerator {
 	// FIXME: Add global variables
 	// FIXME: Add non const arrays
+	// TODO: The source file should be stored inside the reader
 	
 	private CompilerConfiguration config;
 	private Function currentFunction;
 	private Program currentProgram;
+	
 	private File sourceFile;
 	private LangContext reader;
 	
@@ -49,7 +49,7 @@ public class ParseTreeGenerator {
 			importFile(mainFile);
 		} catch(Throwable t) {
 			// This is a real error and was not thrown by the compiler
-			syntaxError(CompilerError.MESSAGE, t.getClass() + ": " + t.getMessage());
+			syntaxError(CompilerError.MESSAGE, "%s: %s".formatted(t.getCause(), t.getMessage()));
 			t.printStackTrace();
 		}
 		
@@ -586,13 +586,12 @@ public class ParseTreeGenerator {
 				
 				if(!type.isPointer()) {
 					if(e_size.isPointer()) {
-						syntaxError(CompilerError.INVALID_VARIABLE_ASSIGNMENT, "Pointer sizes are different (Type:" + type.depth() + " != Got:" + e_size.depth() + ")");
+						syntaxError(CompilerError.INVALID_VARIABLE_ASSIGNMENT, "Pointer sizes are different (Type:%s != Got: %s)".formatted(type.depth(), e_size.depth()));
 					} else {
 						if(type.size() != e_size.size()) {
 							OpExpr next = new OpExpr(ExprType.cast, expr);
 							next.override_size = type.type();
 							expr = next;
-							// syntaxError(CompilerError.INVALID_VARIABLE_ASSIGNMENT, "Expression sizes are different (Type:" + type.size() + " != Got:" + e_size.size() + ")");
 						}
 					}
 				}
@@ -1276,7 +1275,7 @@ public class ParseTreeGenerator {
 			reader,
 			offset,
 			count,
-			SyntaxMarker.ERROR,
+			ISyntaxMarker.ERROR,
 			_caller(),
 			error.getMessage().formatted(args),
 			error
@@ -1289,7 +1288,7 @@ public class ParseTreeGenerator {
 			reader,
 			offset,
 			count,
-			SyntaxMarker.WARNING,
+			ISyntaxMarker.WARNING,
 			_caller(),
 			error.getMessage().formatted(args),
 			error
@@ -1303,7 +1302,7 @@ public class ParseTreeGenerator {
 		currentProgram.addSyntaxMarker(new CompilerMarker(
 			sourceFile,
 			reader,
-			SyntaxMarker.ERROR,
+			ISyntaxMarker.ERROR,
 			compilerMessage,
 			message,
 			error
@@ -1319,7 +1318,7 @@ public class ParseTreeGenerator {
 		currentProgram.addSyntaxMarker(new CompilerMarker(
 			sourceFile,
 			reader,
-			SyntaxMarker.ERROR,
+			ISyntaxMarker.ERROR,
 			compilerMessage,
 			message,
 			error
@@ -1336,7 +1335,7 @@ public class ParseTreeGenerator {
 			reader,
 			offset,
 			count,
-			SyntaxMarker.ERROR,
+			ISyntaxMarker.ERROR,
 			compilerMessage,
 			message,
 			error
@@ -1349,7 +1348,7 @@ public class ParseTreeGenerator {
 		currentProgram.addSyntaxMarker(new CompilerMarker(
 			sourceFile,
 			reader,
-			SyntaxMarker.ERROR,
+			ISyntaxMarker.ERROR,
 			compilerMessage,
 			message,
 			error

@@ -18,7 +18,7 @@ public class CompilerException extends Error {
 	
 	/**
 	 * Construct a new compiler exception with a message.
-	 * @param	message
+	 * @param message
 	 */
 	public CompilerException(String message) {
 		super(message);

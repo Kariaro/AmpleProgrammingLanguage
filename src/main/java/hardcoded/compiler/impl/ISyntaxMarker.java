@@ -1,8 +1,8 @@
-package hardcoded.compiler.errors;
+package hardcoded.compiler.impl;
 
-import hardcoded.compiler.impl.ISyntaxLocation;
+import hardcoded.compiler.errors.CompilerError;
 
-public interface SyntaxMarker extends ISyntaxLocation {
+public interface ISyntaxMarker extends ISyntaxLocation {
 	public static final int ERROR = 1;
 	public static final int WARNING = 2;
 	public static final int INFO = 3;
