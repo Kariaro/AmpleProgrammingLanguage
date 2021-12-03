@@ -74,7 +74,6 @@ public class AmpleVm {
 			
 			
 			switch(inst.type()) {
-				case data:
 				case nop:
 				case label: break;
 				

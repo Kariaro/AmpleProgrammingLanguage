@@ -54,6 +54,10 @@ public final class Program implements IProgram, Printable {
 		return hasErrors;
 	}
 	
+	public List<Function> getFunctionList() {
+		return functions;
+	}
+	
 	public boolean hasDefinedType(String typeName) {
 		return defined_types.containsKey(typeName);
 	}
@@ -131,10 +135,6 @@ public final class Program implements IProgram, Printable {
 	
 	public IBlock get(int index) {
 		return functions.get(index);
-	}
-	
-	public List<Function> list() {
-		return functions;
 	}
 	
 	@Override

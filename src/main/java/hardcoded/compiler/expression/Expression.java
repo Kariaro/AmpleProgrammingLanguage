@@ -30,11 +30,6 @@ public abstract class Expression implements IExpression, Printable {
 	public List<IExpression> getExpressions() {
 		return List.copyOf(list);
 	}
-
-	@Override
-	public boolean hasExpressions() {
-		return hasElements;
-	}
 	
 	protected void setType(ExprType type) {
 		this.type = Objects.requireNonNull(type, "Expression type must not be null");

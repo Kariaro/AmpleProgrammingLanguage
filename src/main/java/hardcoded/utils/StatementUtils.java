@@ -71,7 +71,7 @@ public final class StatementUtils {
 	
 	public static String printPretty(Program prog) {
 		StringBuilder sb = new StringBuilder();
-		for(Function func : prog.list()) {
+		for(Function func : prog.getFunctionList()) {
 			sb.append(printPretty(func)).append("\n");
 		}
 		return sb.toString().trim();

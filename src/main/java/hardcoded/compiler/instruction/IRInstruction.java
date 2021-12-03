@@ -36,6 +36,22 @@ public class IRInstruction {
 		return params.get(index);
 	}
 	
+//	public RefParam getRefParam(int index) {
+//		return (RefParam)params.get(index);
+//	}
+//	
+//	public NumParam getNumParam(int index) {
+//		return (NumParam)params.get(index);
+//	}
+//	
+//	public LabelParam getLabelParam(int index) {
+//		return (LabelParam)params.get(index);
+//	}
+//	
+//	public FunctionLabel getFunctionLabelParam(int index) {
+//		return (FunctionLabel)params.get(index);
+//	}
+	
 	public List<Param> getParams() {
 		return params;
 	}
@@ -44,6 +60,8 @@ public class IRInstruction {
 		return params.size();
 	}
 	
+	// TODO: The size should not be calculated but known at compile time.
+	@Deprecated
 	public LowType getSize() {
 		if(params.isEmpty()) return null;
 		

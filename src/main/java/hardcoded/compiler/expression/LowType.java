@@ -26,8 +26,8 @@ public class LowType {
 
 	@Override
 	public boolean equals(Object obj) {
-		if(obj instanceof Atom) return depth == 0 && type == obj;
-		return (obj instanceof LowType) && hashCode() == obj.hashCode();
+		return (obj instanceof LowType)
+			&& hashCode() == obj.hashCode();
 	}
 	
 	public Atom type() {

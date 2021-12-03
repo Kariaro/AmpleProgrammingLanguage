@@ -567,7 +567,6 @@ public class ParseTreeGenerator {
 					syntaxError(CompilerError.INVALID_ARRAY_VARIABLE_DECLARATION_EXPECTED_INTEGER, expr);
 				}
 				
-
 				tryMatchOrSyntaxError(Type.RIGHT_SQUARE_BRACKET, CompilerError.UNCLOSED_ARRAY_DEFINITION, reader);
 				reader.advance();
 				
@@ -1229,16 +1228,6 @@ public class ParseTreeGenerator {
 		return false;
 	}
 	
-	private boolean isType(LangContext reader) {
-		String value = reader.value();
-		if(reader.type() == Type.UNSIGNED
-		|| reader.type() == Type.SIGNED) {
-			value = reader.peak(1).value;
-		}
-		
-		return currentProgram.hasDefinedType(value);
-	}
-	
 	private HighType getTypeFromSymbol() {
 		if(!isType(reader)) {
 			syntaxError(CompilerError.INVALID_TYPE, reader);
@@ -1261,6 +1250,10 @@ public class ParseTreeGenerator {
 		}
 
 		return type;
+	}
+	
+	private boolean isType(LangContext reader) {
+		return currentProgram.hasDefinedType(reader.value());
 	}
 	
 	private boolean isValidName(LangContext reader) {

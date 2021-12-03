@@ -7,10 +7,10 @@ import hardcoded.compiler.constants.Atom;
 import hardcoded.compiler.constants.Identifier;
 import hardcoded.compiler.expression.AtomExpr;
 import hardcoded.compiler.expression.LowType;
+import hardcoded.utils.DebugUtils;
 import hardcoded.utils.StringUtils;
 
 public interface Param {
-	static final boolean DEBUG_SIZE = false;
 	static final Param NONE = new Param() {
 		@Override
 		public boolean equals(Object obj) {
@@ -49,6 +49,9 @@ public interface Param {
 		return null;
 	}
 	
+	/**
+	 * Returns the type of this parameter.
+	 */
 	ParamType type();
 	
 	/**
@@ -91,12 +94,8 @@ public interface Param {
 		public RegParam(String name, LowType size, int index) {
 			this.index = index;
 			this.name = name;
-			this.size = size;
+			this.size = Objects.requireNonNull(size);
 			this.isTemporary = (name == null);
-			
-			if(size == null) {
-				throw new NullPointerException();
-			}
 		}
 		
 		// User for registers that are not parameters
@@ -126,13 +125,17 @@ public interface Param {
 		
 		@Override
 		public String toString() {
-			if(isTemporary) {
-				String value = StringUtils.toStringCustomBase(index, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", false);
-				
-				return "$" + value + (DEBUG_SIZE ? (":" + size):"");
+			String size = "";
+			if(DebugUtils.DEBUG_IRCODE_SIZE) {
+				size = ":" + this.size;
 			}
 			
-			return "@" + name + (DEBUG_SIZE ? (":" + size):"");
+			if(isTemporary) {
+				String value = StringUtils.toStringCustomBase(index, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", false);
+				return "$%s%s".formatted(value, size);
+			}
+			
+			return "@%s%s".formatted(name, size);
 		}
 	}
 	
@@ -183,11 +186,7 @@ public interface Param {
 		
 		public NumParam(long value, LowType size) {
 			this.value = value;
-			this.size = size;
-			
-			if(size == null) {
-				throw new NullPointerException();
-			}
+			this.size = Objects.requireNonNull(size);
 		}
 		
 		public long getValue() {
@@ -210,37 +209,6 @@ public interface Param {
 		}
 	}
 	
-	@Deprecated
-	public class DataParam implements Param {
-		private final Object obj;
-		private final int index;
-		
-		// FIXME: Remove the Object and replace with the type [ String ]
-		public DataParam(Object obj, int index) {
-			this.index = index;
-			this.obj = "" + obj;
-		}
-		
-		public Object getValue() {
-			return obj;
-		}
-
-		@Override
-		public int getIndex() {
-			return index;
-		}
-		
-		@Override
-		public ParamType type() {
-			return ParamType.DEBUG;
-		}
-		
-		@Override
-		public String toString() {
-			return "[%d] = '%s'".formatted(index, Objects.toString(obj));
-		}
-	}
-	
 	// Used for functions. Data and more.
 	public class LabelParam implements Param {
 		private static final AtomicInteger atomic = new AtomicInteger();
@@ -255,7 +223,7 @@ public interface Param {
 			this.isTemporary = isTemporary;
 			
 			if(isTemporary) {
-				this.name = "_" + name + "_" + atomic.getAndIncrement();
+				this.name = "_%s_%s".formatted(name, atomic.getAndIncrement());
 			} else {
 				this.name = name;
 			}
@@ -272,8 +240,7 @@ public interface Param {
 
 		@Override
 		public boolean equals(Object obj) {
-			if(!(obj instanceof LabelParam)) return false;
-			LabelParam param = (LabelParam)obj;
+			if(!(obj instanceof LabelParam param)) return false;
 			return name.equals(param.name) && isTemporary == param.isTemporary;
 		}
 

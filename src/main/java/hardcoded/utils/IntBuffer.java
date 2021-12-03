@@ -1,5 +1,7 @@
 package hardcoded.utils;
 
+import java.util.Arrays;
+
 /**
  * Because the standard java library does not include
  * a fast integer array wrapper this class was created.
@@ -10,7 +12,7 @@ package hardcoded.utils;
  * 
  * @author HardCoded
  */
-public final class IntBuffer {
+public class IntBuffer {
 	private final int[] array;
 	private int index;
 	
@@ -56,20 +58,21 @@ public final class IntBuffer {
 	}
 	
 	public int[] toArray() {
-		int[] copy = new int[index];
-		System.arraycopy(array, 0, copy, 0, index);
-		return copy;
+		return Arrays.copyOf(array, index);
 	}
 	
 	@Override
 	public String toString() {
+		int[] array = this.array;
+		int index = this.index;
+		
 		if(index == 0) return "IntBuffer {}";
 		
 		StringBuilder sb = new StringBuilder();
 		for(int i = 0; i < index; i++) {
-			sb.append(", ").append(String.format("0x%02X", array[i]));
+			sb.append(", 0x%02X".formatted(array[i]));
 		}
 		
-		return "IntBuffer { " + sb.toString().substring(2) + " }";
+		return "IntBuffer { %s }".formatted(sb.toString().substring(2));
 	}
 }
