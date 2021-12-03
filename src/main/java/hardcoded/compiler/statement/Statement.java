@@ -23,11 +23,6 @@ public class Statement implements IStatement, Printable {
 	public List<IStatement> getStatements() {
 		return List.copyOf(list);
 	}
-
-	@Override
-	public boolean hasStatements() {
-		return hasElements;
-	}
 	
 	public List<Statement> getElements() {
 		return list;

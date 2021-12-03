@@ -1,6 +1,7 @@
 package hardcoded.compiler.instruction;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -14,8 +15,6 @@ import hardcoded.utils.IRPrintUtils.IRListIterator;
 
 public class IntermediateCodeOptimizer {
 	private static final Logger LOGGER = LogManager.getLogger(IntermediateCodeOptimizer.class);
-	
-	// TODO: Tail recursion optimization
 	
 	// TODO: Unused write optimization
 	//   If a instruction changes the value of a register and is later changed with mov
@@ -51,7 +50,53 @@ public class IntermediateCodeOptimizer {
 	//   Each branch instruction inside a loop can take a small amount of time to
 	//   execute so unfolding loops of a small size should be prefered for speed.
 	
-	public IntermediateCodeOptimizer() {}
+	private class Task {
+		private final String name;
+		private final Consumer<IRFunction> consumer;
+		
+		public Task(String name, Consumer<IRFunction> consumer) {
+			this.name = name;
+			this.consumer = consumer;
+		}
+		
+		public boolean run(IRFunction func) {
+			List<IRInstruction> list = func.getInstructions();
+			int oldSize = list.size();
+			
+			consumer.accept(func);
+			
+			boolean modified = oldSize != list.size();
+			
+			if(DebugUtils.DEBUG_IRCODE_OPTIMIZATION) {
+				if(modified) {
+					LOGGER.info("Optimization[{}]: {} -> {}", name, oldSize, list.size());
+				}
+			}
+			
+			return modified;
+		}
+	}
+	
+	// Optimizations
+	private final List<Task> setup_optimizations;
+	private final List<Task> multi_optimizations;
+	
+	public IntermediateCodeOptimizer() {
+		// Run only once
+		setup_optimizations = List.of(
+			new Task("remove_nops", this::remove_nops),
+			new Task("eq_bnz", this::eq_bnz_optimization)
+		);
+
+		// Multi optimizations
+		multi_optimizations = List.of(
+			new Task("mov_bnz", this::mov_bnz_optimization),
+			new Task("flow", this::flow_optimization),
+			new Task("counter", this::counter_optimization),
+			new Task("pass_through_label", this::pass_though_label_optimization),
+			new Task("dead_code", this::dead_code_optimization)
+		);
+	}
 	
 	public IRProgram generate(IRProgram program) {
 		LOGGER.info(IRPrintUtils.printPretty(program));
@@ -63,6 +108,34 @@ public class IntermediateCodeOptimizer {
 		LOGGER.info(IRPrintUtils.printPretty(program));
 		
 		return program;
+	}
+	
+	private void simplify(IRFunction func) {
+		if(func.length() < 1) return; // We should not simplify empty functions
+		
+		if(DebugUtils.DEBUG_IRCODE_OPTIMIZATION) {
+			LOGGER.info("============================================== [{}]", func);
+		}
+		
+		// Run all startup tasks
+		for(Task task : setup_optimizations) {
+			task.run(func);
+		}
+		
+		int max = 100;
+		while(max-- > 0) {
+			boolean modified = false;
+			for(Task task : multi_optimizations) {
+				modified |= task.run(func);
+			}
+			
+			if(!modified) {
+				// The code has not been modified.
+				break;
+			}
+			
+			// break;
+		}
 	}
 	
 	/**
@@ -219,52 +292,59 @@ public class IntermediateCodeOptimizer {
 	}
 	
 	private void flow_optimization(IRFunction func) {
-		IRListIterator iter = IRPrintUtils.createIterator(func);
+		int oldSize = 0;
 		
-		while(iter.hasNext()) {
-			IRInstruction inst = iter.next();
-			List<Param> inst_params = inst.getParams();
-			// add [a], [b], [c]
-			// check if a has been used inside the block..
+		// While the code is changed we update it.
+		while(oldSize != func.length()) {
+			oldSize = func.length();
 			
+			IRListIterator iter = IRPrintUtils.createIterator(func);
 			
-			if(iter.hasNext()) {
-				IRInstruction next = iter.peakNext();
-				List<Param> next_params = next.getParams();
+			while(iter.hasNext()) {
+				IRInstruction inst = iter.next();
+				List<Param> inst_params = inst.getParams();
+				// add [a], [b], [c]
+				// check if a has been used inside the block..
 				
-				//    ... [a], [b], [c]
-				//    mov [z], [a]
-				// Should become
-				//    ... [z], [b], [c]
-				//    If z was zero before.
-				if(next.op == IRType.mov && canReduce(inst.op)) {
-					Param reg = inst_params.get(0);
-					Param wnt = next_params.get(1);
+				
+				if(iter.hasNext()) {
+					IRInstruction next = iter.peakNext();
+					List<Param> next_params = next.getParams();
 					
-					if(getReferences(func, reg) == 2 && wnt == reg) {
-						inst_params.set(0, next_params.get(0));
+					//    ... [a], [b], [c]
+					//    mov [z], [a]
+					// Should become
+					//    ... [z], [b], [c]
+					//    If z was zero before.
+					if(next.op == IRType.mov && canReduce(inst.op)) {
+						Param reg = inst_params.get(0);
+						Param wnt = next_params.get(1);
 						
-						iter.next();
-						iter.remove();
-						continue;
+						if(getReferences(func, reg) == 2 && wnt == reg) {
+							inst_params.set(0, next_params.get(0));
+							
+							iter.next();
+							iter.remove();
+							continue;
+						}
 					}
 				}
-			}
-			
-			// If x has not been modified and y has not been modified then
-			// replace all further instructions read [ ... ], [y] with [x]
-			//    read [x], [y]
-			
-			if(!inst_params.isEmpty()) {
-				Param reg = inst_params.get(0);
-				int num = getReferences(func, reg);
 				
-				// Only remove temporary variables.
+				// If x has not been modified and y has not been modified then
+				// replace all further instructions read [ ... ], [y] with [x]
+				//    read [x], [y]
 				
-				if(num < 2) {
-					if(!keepIfNotReferences(inst.op)) {
-						// TODO: There could be a problem if the register is pointing towards a global variable.
-						iter.remove();
+				if(!inst_params.isEmpty()) {
+					Param reg = inst_params.get(0);
+					int num = getReferences(func, reg);
+					
+					// Only remove temporary variables.
+					
+					if(num < 2) {
+						if(!keepIfNotReferences(inst.op)) {
+							// TODO: There could be a problem if the register is pointing towards a global variable.
+							iter.remove();
+						}
 					}
 				}
 			}
@@ -350,50 +430,6 @@ public class IntermediateCodeOptimizer {
 		}
 	}
 	
-	private void simplify(IRFunction func) {
-		if(func.length() < 1) return; // We should not simplify empty functions
-		
-		// TODO: Find a way to check if any changes has been made to the instruction block
-		
-		//   brz [ ... ], [A]
-		// A:
-		// If there is no code between the branch and not the branch then remove them.
-		//   ...
-		logOptimization(func, null);
-		remove_nops(func);
-		logOptimization(func, "remove_nops");
-		eq_bnz_optimization(func);
-		logOptimization(func, "eq_bnz");
-		
-		while(true) {
-			int size = func.getInstructions().size();
-			
-			mov_bnz_optimization(func);
-			logOptimization(func, "mov_bnz");
-			
-			flow_optimization(func);
-			logOptimization(func, "flow");
-			
-			counter_optimization(func);
-			logOptimization(func, "counter");
-			
-			pass_though_label_optimization(func);
-			logOptimization(func, "pass_through_label");
-			
-			dead_code_optimization(func);
-			logOptimization(func, "dead_code");
-			
-			if(size != func.getInstructions().size()) {
-				// If the size changed during the flow optimization we
-				// should try re run the optimizations
-				
-				continue;
-			}
-			
-			break;
-		}
-	}
-	
 	private int findLabel(IRFunction func, int pivot, LabelParam label) {
 		List<IRInstruction> list = func.getInstructions();
 		
@@ -411,21 +447,6 @@ public class IntermediateCodeOptimizer {
 		return -1;
 	}
 	
-	private int size;
-	@SuppressWarnings("unused")
-	private void logOptimization(IRFunction func, String name) {
-		if(!DebugUtils.isDeveloper()) return;
-		if(true) return;
-		
-		if(name == null) {
-			size = func.length();
-			LOGGER.info("============================================== [{}]", func);
-		} else {
-			LOGGER.info("Optimization[{}]: {} -> {}", name, size, func.length());
-			size = func.length();
-		}
-	}
-	
 	private int getReferences(IRFunction func, Param reg) {
 		int references = 0;
 		
@@ -440,7 +461,7 @@ public class IntermediateCodeOptimizer {
 	
 	private boolean keepIfNotReferences(IRType type) {
 		switch(type) {
-			case call, write, data, ret -> {
+			case call, write, ret -> {
 				return true;
 			}
 			
@@ -452,7 +473,7 @@ public class IntermediateCodeOptimizer {
 	
 	private boolean canReduce(IRType type) {
 		switch(type) {
-			case bnz, brz, label, data, ret -> {
+			case bnz, brz, label, ret -> {
 				return false;
 			}
 			

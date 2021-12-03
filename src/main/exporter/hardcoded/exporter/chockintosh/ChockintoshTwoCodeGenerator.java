@@ -12,8 +12,8 @@ import hardcoded.compiler.instruction.*;
 import hardcoded.compiler.instruction.Param.*;
 import hardcoded.utils.error.CodeGenException;
 
-public class ChockintoshCodeGenerator implements ICodeGenerator {
-	private static final Logger LOGGER = LogManager.getLogger(ChockintoshCodeGenerator.class);
+public class ChockintoshTwoCodeGenerator implements ICodeGenerator {
+	private static final Logger LOGGER = LogManager.getLogger(ChockintoshTwoCodeGenerator.class);
 	
 	@Override
 	public byte[] getBytecode(IRProgram program) throws CodeGenException {
@@ -79,7 +79,7 @@ public class ChockintoshCodeGenerator implements ICodeGenerator {
 		for(int i = 0; i < code.length; i++) {
 			byte inst = code[i];
 			
-			OpCodeOld op = OpCodeOld.get(inst & 15);
+			OpCodeOld op = OpCodeOld.get(Byte.toUnsignedInt(inst));
 			int reg = (inst >>> 4) & 15;
 			
 			if(op != null) {
@@ -143,6 +143,60 @@ public class ChockintoshCodeGenerator implements ICodeGenerator {
 		
 		for(IRInstruction inst : func.getInstructions()) {
 			switch(inst.type()) {
+				case add, sub, and, xor, or, shr, shl -> { 
+					RegParam dst = (RegParam)inst.getParam(0);
+					RegParam op0 = (RegParam)inst.getParam(1);
+					Param op1 = inst.getParam(2);
+					
+					// MOVECR [AUX], [Constant]
+					// MOVERW [AUX]
+					// MOVEWR [RAMAD]
+					// MOVERW [RAMAD]
+					// MOVERW [RAMAD]
+					
+//					bs.write(createWide(OpCode.LDL, op0.getIndex())); // w = <reg>
+//					bs.write(createInst(OpCode.SDR, Reg.RAMA));       // ram_addr = <reg>
+//					bs.write(createInst(OpCode.LDR, Reg.RAM));        // w = *(<reg>)
+//					bs.write(createInst(OpCode.SDR, Reg.AL2));        // AL2 = *(<reg>)
+//					
+//					if(op1 instanceof NumParam numParam) {
+//						bs.write(createWide(OpCodeOld.LDL, numParam.getValue())); // w = <num>
+//					} else if(op1 instanceof RegParam regParam) {
+//						bs.write(createWide(OpCodeOld.LDL, regParam.getIndex())); // w = <reg>
+//						bs.write(createInst(OpCodeOld.SDR, Reg.RAMA));            // ram_addr = <reg>
+//						bs.write(createInst(OpCodeOld.LDR, Reg.RAM));             // w = *(<reg>)
+//					}
+//					
+//					// w = w <op> AL2
+//					switch(inst.type()) {
+//						case add -> bs.write(createInst(OpCodeOld.ADD));
+//						case sub -> bs.write(createInst(OpCodeOld.SUB));
+//						case xor -> bs.write(createInst(OpCodeOld.XOR));
+//						case and -> bs.write(createInst(OpCodeOld.AND));
+//						case or -> bs.write(createInst(OpCodeOld.OR));
+//						case shr -> bs.write(createInst(OpCodeOld.BSP));
+//						case shl -> bs.write(createInst(OpCodeOld.BSM));
+//					}
+//					
+//					if(inst.type() == IRType.shr || inst.type() == IRType.shl) {
+//						if(op1 instanceof NumParam numParam) {
+//							if(numParam.getValue() != 1) {
+//								throw new CodeGenException("Shift does not allow shifts with values other than 1.");
+//							}
+//						} else {
+//							throw new CodeGenException("Shift does not allow non number shifts.");
+//						}
+//					}
+//					
+//					bs.write(createInst(OpCodeOld.SDR, Reg.AL2));        // AL2 = (w <op> AL2)
+//					bs.write(createWide(OpCodeOld.LDL, dst.getIndex())); // w = <dst>
+//					bs.write(createInst(OpCodeOld.SDR, Reg.RAMA));       // ram_addr = <dst>
+//					bs.write(createWide(OpCodeOld.LDL, 0));              // w = 0
+//					bs.write(createInst(OpCodeOld.OR));                  // w = (w <op> AL2)
+//					bs.write(createInst(OpCodeOld.SDR, Reg.RAM));        // *(<dst>) = (w <op> AL2)
+					// w = w + AL2
+				}
+				/*
 				case add, sub, and, xor, or, shr, shl -> { 
 					RegParam dst = (RegParam)inst.getParam(0);
 					RegParam op0 = (RegParam)inst.getParam(1);
@@ -339,7 +393,7 @@ public class ChockintoshCodeGenerator implements ICodeGenerator {
 				case mod, mul, div -> {
 					throw new CodeGenException("To complex instructions.");
 				}
-				
+				*/
 				default -> {
 					LOGGER.info("Missing instruction: {}", inst);
 				}
@@ -363,56 +417,23 @@ public class ChockintoshCodeGenerator implements ICodeGenerator {
 		return code;
 	}
 	
-	private byte createInst(OpCodeOld op) {
+	private byte createInst(OpCode op) {
 		return (byte)(op.code & 255);
 	}
 	
-	private byte createInst(OpCodeOld op, Reg register) {
-		switch(op) {
-			case LDL, GOTO, SIF -> {
-				throw new CodeGenException("Multibyte instruction cannot use 1 byte.");
-			}
-		}
-		
-		return (byte)((((register.index & 15) << 4) | op.code) & 255);
+	private byte createInst(OpCode op, Reg register) {
+		return (byte)(op.code | register.id);
 	}
 	
-	private byte[] createWide(OpCodeOld op, long value) {
+	private byte[] createWide(OpCode op, long value) {
 		return createWide(op, 0, value);
 	}
 	
-	private byte[] createWide(OpCodeOld op, int index, long value) {
+	private byte[] createWide(OpCode op, int index, long value) {
 		return new byte[] {
 			(byte)((((index & 15) << 4) | op.code) & 255),
 			(byte)(value)
 		};
-	}
-	
-	private enum Reg {
-		FLG(0),
-		IFF(1),
-		RAMA(2),
-		RAM(3),
-		INP(4),
-		OUT(5),
-		AL2(6),
-		PGC(7),
-		STACK(8);
-		
-		private int index;
-		private Reg(int index) {
-			this.index = index;
-		}
-		
-		private static String getName(int reg) {
-			for(Reg r : values()) {
-				if(r.index == reg) {
-					return r.toString();
-				}
-			}
-			
-			return "unknown(%d)".formatted(reg);
-		}
 	}
 	
 	private static class Jump {

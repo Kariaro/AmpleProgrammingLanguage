@@ -38,11 +38,7 @@ public enum IRType {
 	not(2),			// not			[R0], [R1]						Set R0 to (!R1)
 	
 	
-	/* Boolean instructions are instructions that returns either true
-	 * or false.
-	 * 
-	 * The return value of these instructions will always be be integer.
-	 */
+	// Boolean instructions
 	eq(3),			// eq			[R0], [R1], [R2]				Set R0 to (R1== R2)
 	neq(3),			// neq			[R0], [R1], [R2]				Set R0 to (R1!= R2)
 	lt(3),			// lt			[R0], [R1], [R2]				Set R0 to (R1 < R2)
@@ -62,7 +58,6 @@ public enum IRType {
 	// Misc
 	nop(-1),		// nop											No operation
 	label(1),		// label		[LABEL]							Define a label
-	data(2),		// data			[LABEL], [VALUE]				Define data of type [TYPE]
 	
 	//virtual(1),	// virtual		[LABEL]							Reserved
 	;

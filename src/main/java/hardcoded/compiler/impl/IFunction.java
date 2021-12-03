@@ -24,20 +24,12 @@ public interface IFunction extends IBlock, IStatement {
 	HighType getReturnType();
 	
 	/**
-	 * Returns a unmodifiable set of modifiers.
+	 * Returns a unmodifiable list of modifiers.
 	 */
 	List<Modifier> getModifiers();
 	
 	/**
-	 * Returns a unmodifiable set of statements inside of this function.
+	 * Returns a list of statements inside this function.
 	 */
 	List<IStatement> getStatements();
-	
-	/**
-	 * Always returns {@code true}.
-	 * @return {@code true}
-	 */
-	default boolean hasStatements() {
-		return true;
-	}
 }

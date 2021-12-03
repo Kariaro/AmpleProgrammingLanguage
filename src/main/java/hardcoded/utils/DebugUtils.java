@@ -11,6 +11,8 @@ import java.util.regex.Pattern;
 public class DebugUtils {
 	public static final boolean DEBUG_PARSE_TREE_OPTIMIZATION = true;
 	public static final boolean DEBUG_LANGCONTEXT_STACK_TRACE = false;
+	public static final boolean DEBUG_IRCODE_OPTIMIZATION = true;
+	public static final boolean DEBUG_IRCODE_SIZE = false;
 	
 	public static void startDebugTrace() {
 		final Thread mainThread = Thread.currentThread();

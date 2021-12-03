@@ -12,7 +12,7 @@ import java.util.Set;
  */
 public interface IProgram {
 	/**
-	 * Returns a unmodifiable list of functions.
+	 * Returns a list of functions inside this program.
 	 */
 	List<IFunction> getFunctions();
 	
@@ -22,7 +22,7 @@ public interface IProgram {
 	Set<String> getImportedFiles();
 	
 	/**
-	 * Returns a unmodifiable list of syntax markers.
+	 * Returns a list of syntax markers.
 	 */
 	List<ISyntaxMarker> getSyntaxMarkers();
 	

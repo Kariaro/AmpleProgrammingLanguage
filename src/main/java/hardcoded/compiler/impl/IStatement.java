@@ -11,14 +11,7 @@ import java.util.List;
  */
 public interface IStatement extends ISyntaxLocation {
 	/**
-	 * Returns a list of elements inside of this statement or {@code null} if {@link #hasStatements} was {@code false}.
-	 * The returned list does not update if the internal list gets modified.
-	 * @return a list of elements inside of this statement
+	 * Returns a list of elements inside this statement
 	 */
 	List<IStatement> getStatements();
-	
-	/**
-	 * Returns {@code true} if this statement has elements.
-	 */
-	boolean hasStatements();
 }

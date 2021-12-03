@@ -49,17 +49,17 @@ public final class StringUtils {
 	}
 	
 	/**
-	 * This method will convert a number into a string using a custom base. Calling this
+	 * This method convert a number into a string using a custom base. Calling this
 	 * method with a base of {@code "012346789abcdef"} will return a hexadecimal string
 	 * and will do the same thing as calling {@code Long.toString(value, 16)}.
 	 * 
 	 * @param	value	the input number
 	 * @param	base	the custom base
-	 * @return	a {@code number} written with a custom base.
+	 * @return	a {@code number} written with a custom base
 	 * @throws	NullPointerException
 	 * 			if the base was {@code null}
 	 * @throws	IllegalArgumentException
-	 * 			if the base string had a length less than 2
+	 * 			if the base was smaller than 2 characters
 	 */
 	public static String toStringCustomBase(long value, String base) {
 		return toStringCustomBase(value, base, true);
@@ -92,7 +92,7 @@ public final class StringUtils {
 	 * @throws	NullPointerException
 	 * 			if the base string was {@code null}
 	 * @throws	IllegalArgumentException
-	 * 			if the base string had a length less than 2
+	 * 			if the base was smaller than 2 characters
 	 */
 	public static String toStringCustomBase(long value, String base, boolean isAlphabetical) {
 		if(base == null) throw new NullPointerException();
@@ -314,13 +314,13 @@ public final class StringUtils {
 	}
 	
 	// NOTE: Why is this printHexString method not using a byte array?
-		public static String printHexString(CharSequence separator, byte[] array) {
-			if(array == null || array.length == 0) return "";
-			StringBuilder sb = new StringBuilder();
-			for(int i : array) {
-				sb.append(separator).append(String.format("%02x", i & 0xff));
-			}
-			
-			return sb.toString().substring(separator.length()).trim();
+	public static String printHexString(CharSequence separator, byte[] array) {
+		if(array == null || array.length == 0) return "";
+		StringBuilder sb = new StringBuilder();
+		for(int i : array) {
+			sb.append(separator).append(String.format("%02x", i & 0xff));
 		}
+		
+		return sb.toString().substring(separator.length()).trim();
+	}
 }

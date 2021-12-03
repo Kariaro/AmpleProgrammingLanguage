@@ -29,9 +29,4 @@ public interface IExpression extends ISyntaxLocation {
 	 * @return a list of elements inside of this expression
 	 */
 	List<IExpression> getExpressions();
-	
-	/**
-	 * Returns {@code true} if this expression has elements.
-	 */
-	boolean hasExpressions();
 }
