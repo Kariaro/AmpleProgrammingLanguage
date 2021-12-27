@@ -2,7 +2,7 @@ package hardcoded.compiler.impl;
 
 import java.util.List;
 
-import hardcoded.compiler.constants.ExprType;
+import hardcoded.compiler.expression.ExprType;
 import hardcoded.compiler.expression.LowType;
 
 /**

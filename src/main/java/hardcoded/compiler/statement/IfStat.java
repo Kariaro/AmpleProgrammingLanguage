@@ -13,7 +13,6 @@ public class IfStat extends NestedStat {
 	}
 	
 	public Expression getCondition() {
-		// TODO: These are never null
 		return ((ExprStat)get(0)).expr();
 	}
 	

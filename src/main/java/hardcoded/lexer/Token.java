@@ -101,6 +101,7 @@ public class Token {
 		BREAK,
 		RETURN,
 		GOTO,
+		CONSTRUCT,
 		
 		// Compiler annotations
 		COMPILER,

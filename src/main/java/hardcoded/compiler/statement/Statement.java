@@ -7,7 +7,7 @@ import hardcoded.compiler.impl.IStatement;
 import hardcoded.compiler.impl.ISyntaxPosition;
 import hardcoded.visualization.Printable;
 
-public class Statement implements IStatement, Printable {
+public abstract class Statement implements IStatement, Printable {
 	private final List<Statement> list;
 	private final boolean hasElements;
 	

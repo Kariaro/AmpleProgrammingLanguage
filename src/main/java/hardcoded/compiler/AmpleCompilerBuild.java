@@ -56,7 +56,7 @@ class AmpleCompilerBuild {
 	}
 	
 	/**
-	 * Compile the file at the specified file into a {@code IRProgram}.
+	 * Compile the file at the specified file into a {@code IRProgram}
 	 * 
 	 * @param	config
 	 * 

@@ -92,6 +92,11 @@ public enum CompilerError {
 	EXPRESSION_NESTED_TOO_DEEP("Expression was nested too deep"),
 	
 	INVALID_SYNTAX("Invalid syntax. %s"),
+	
+	
+	
+
+	INVALID_IDENTIFIER("Invalid identifier name. %s"),
 	;
 	
 	public final String message;

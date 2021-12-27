@@ -1,7 +1,5 @@
 package hardcoded.compiler.expression;
 
-import hardcoded.compiler.constants.ExprType;
-
 public final class ExpressionParser {
 	private static final boolean isNumbers(Expression... array) {
 		for(Expression e : array) {
@@ -92,32 +90,32 @@ public final class ExpressionParser {
 		// TODO: cand, cor
 		// TODO: add, sub contains multiple values sometimes.
 		switch(type) {
-			case neg: return NEG.run(a);
-			case nor: return NOR.run(a);
-			case not: return NOT.run(a);
+			case neg -> { return NEG.run(a); }
+			case nor -> { return NOR.run(a); }
+			case not -> { return NOT.run(a); }
 			
-			case mul: return MUL.run(a, b);
-			case div: return DIV.run(a, b);
-			case mod: return MOD.run(a, b);
+			case mul -> { return MUL.run(a, b); }
+			case div -> { return DIV.run(a, b); }
+			case mod -> { return MOD.run(a, b); }
 
-			case add: return ADD.run(a, b);
-			case sub: return SUB.run(a, b);
+			case add -> { return ADD.run(a, b); }
+			case sub -> { return SUB.run(a, b); }
 			
-			case xor: return XOR.run(a, b);
+			case xor -> { return XOR.run(a, b); }
 			
-			case or: return OR.run(a, b);
-			case and: return AND.run(a, b);
-			case shr: return SHR.run(a, b);
-			case shl: return SHL.run(a, b);
+			case or -> { return OR.run(a, b); }
+			case and -> { return AND.run(a, b); }
+			case shr -> { return SHR.run(a, b); }
+			case shl -> { return SHL.run(a, b); }
 			
-			case eq: return EQ.run(a, b);
-			case neq: return NEQ.run(a, b);
-			case lt: return LT.run(a, b);
-			case lte: return LTE.run(a, b);
-			case gt: return GT.run(a, b);
-			case gte: return GTE.run(a, b);
+			case eq -> { return EQ.run(a, b); }
+			case neq -> { return NEQ.run(a, b); }
+			case lt -> { return LT.run(a, b); }
+			case lte -> { return LTE.run(a, b); }
+			case gt -> { return GT.run(a, b); }
+			case gte -> { return GTE.run(a, b); }
 			
-			default: return null;
+			default -> { return null; }
 		}
 	}
 }

@@ -20,12 +20,10 @@ public class ForStat extends NestedStat {
 	}
 	
 	public Expression getCondition() {
-		// TODO: These are never null
 		return ((ExprStat)get(1)).expr();
 	}
 	
 	public Expression getAction() {
-		// TODO: These are never null
 		return ((ExprStat)get(2)).expr();
 	}
 	

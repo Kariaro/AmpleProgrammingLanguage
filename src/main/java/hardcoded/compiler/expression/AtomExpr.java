@@ -3,7 +3,6 @@ package hardcoded.compiler.expression;
 import java.util.Objects;
 
 import hardcoded.compiler.constants.Atom;
-import hardcoded.compiler.constants.ExprType;
 import hardcoded.compiler.constants.Identifier;
 import hardcoded.compiler.errors.CompilerException;
 import hardcoded.utils.StringUtils;
@@ -56,14 +55,15 @@ public class AtomExpr extends Expression {
 		super(ExprType.atom, false);
 		this.atomType = LowType.create(type);
 		
-		if(type == Atom.string) {
-			s_value = value.toString();
-		} else if(type == Atom.ident) {
-			i_value = (Identifier)value;
-		} else if(type.isNumber()) {
-			n_value = ((Number)value).longValue();
-		} else {
-			throw new CompilerException("Invalid atom type '" + type + "'");
+		switch(type) {
+			case string -> s_value = value.toString();
+			case ident -> i_value = (Identifier)value;
+			case i8, i16, i32, i64, u8, u16, u32, u64 -> {
+				n_value = ((Number)value).longValue();
+			}
+			default -> {
+				throw new CompilerException("Invalid atom type '%s'", type);
+			}
 		}
 	}
 	
@@ -100,7 +100,7 @@ public class AtomExpr extends Expression {
 		if(type.type() == Atom.i16) return new AtomExpr((short)n_value);
 		if(type.type() == Atom.i8) return new AtomExpr((byte)n_value);
 		
-		throw new RuntimeException("Invalid type cast '" + type + "'");
+		throw new CompilerException("Invalid type cast '%s'", type);
 	}
 	
 	public boolean isZero() {
@@ -179,6 +179,6 @@ public class AtomExpr extends Expression {
 			}
 		}
 		
-		throw new RuntimeException("Invalid atom type '%s'".formatted(atomType));
+		throw new CompilerException("Invalid atom type '%s'", atomType);
 	}
 }
