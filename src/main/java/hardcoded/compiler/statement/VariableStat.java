@@ -10,10 +10,10 @@ public class VariableStat extends Statement {
 	public List<Expression> list;
 	
 	private final String name;
-	// TODO: Make this field final.
+	// TODO: Make this field final
 	private HighType type;
 	
-	// TODO: Make these variables private.
+	// TODO: Make these variables private
 	public boolean isArray;
 	public int arraySize;
 	
@@ -26,14 +26,14 @@ public class VariableStat extends Statement {
 	}
 	
 	/**
-	 * Returns the name of this variable statement.
+	 * Returns the name of this variable statement
 	 */
 	public String getName() {
 		return name;
 	}
 	
 	/**
-	 * Returns the type of this variable statement.
+	 * Returns the type of this variable statement
 	 */
 	public HighType getType() {
 		return type;

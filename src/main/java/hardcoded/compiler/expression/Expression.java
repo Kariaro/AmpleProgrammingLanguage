@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import hardcoded.compiler.constants.ExprType;
 import hardcoded.compiler.constants.Identifier;
 import hardcoded.compiler.impl.IExpression;
 import hardcoded.compiler.impl.ISyntaxPosition;

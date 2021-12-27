@@ -1,6 +1,6 @@
 package hardcoded.test;
 
-import static hardcoded.compiler.constants.ExprType.*;
+import static hardcoded.compiler.expression.ExprType.*;
 import static org.junit.Assert.*;
 
 import org.junit.Test;

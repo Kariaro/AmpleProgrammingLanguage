@@ -1,16 +1,13 @@
 package hardcoded.compiler.instruction;
 
-import static hardcoded.compiler.constants.ExprType.*;
+import static hardcoded.compiler.expression.ExprType.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import hardcoded.compiler.constants.ExprType;
 import hardcoded.compiler.constants.Identifier;
 import hardcoded.compiler.constants.Identifier.IdType;
-import hardcoded.compiler.expression.AtomExpr;
-import hardcoded.compiler.expression.Expression;
-import hardcoded.compiler.expression.LowType;
+import hardcoded.compiler.expression.*;
 import hardcoded.compiler.impl.IBlock;
 import hardcoded.compiler.instruction.Param.*;
 import hardcoded.compiler.statement.*;

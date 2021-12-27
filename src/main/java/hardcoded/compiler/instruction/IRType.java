@@ -1,6 +1,6 @@
 package hardcoded.compiler.instruction;
 
-import hardcoded.compiler.constants.ExprType;
+import hardcoded.compiler.expression.ExprType;
 
 /**
  * This is the full instruction set for the ir part of the compiler.

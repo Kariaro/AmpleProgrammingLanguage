@@ -1,6 +1,6 @@
 package hardcoded.compiler.parsetree;
 
-import static hardcoded.compiler.constants.ExprType.*;
+import static hardcoded.compiler.expression.ExprType.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,6 +13,7 @@ import hardcoded.compiler.errors.*;
 import hardcoded.compiler.expression.*;
 import hardcoded.compiler.impl.*;
 import hardcoded.compiler.statement.*;
+import hardcoded.compiler.types.ConstructType;
 import hardcoded.compiler.types.HighType;
 import hardcoded.compiler.types.PrimitiveType;
 import hardcoded.configuration.CompilerConfiguration;
@@ -131,6 +132,11 @@ public class ParseTreeGenerator {
 			return IBlock.EMPTY;
 		} else {
 			if(reader.type() == Type.EOF) return null;
+			
+			switch(reader.type()) {
+				case CONSTRUCT -> { return makeConstruct(); }
+			}
+			
 			return makeFunction();
 		}
 	}
@@ -509,7 +515,7 @@ public class ParseTreeGenerator {
 	}
 	
 	private Statement makeIfStatement() {
-		Position startPosition = reader.position();
+		Position startPos = reader.position();
 		
 		reader.advance();
 		tryMatchOrSyntaxError(Type.LEFT_PARENTHESIS, CompilerError.INVALID_IF_STATEMENT_EXPECTED_OPEN_PARENTHESIS, reader);
@@ -530,7 +536,41 @@ public class ParseTreeGenerator {
 			elseBody = Statement.newEmpty();
 		}
 		
-		return new IfStat(condition, body, elseBody, ISyntaxPosition.of(startPosition, reader.lastPositionEnd()));
+		return new IfStat(condition, body, elseBody, ISyntaxPosition.of(startPos, reader.lastPositionEnd()));
+	}
+	
+	private Construct makeConstruct() {
+		Position startPos = reader.position();
+		
+		reader.advance();
+		if(!isValidName(reader)) addSyntaxError(CompilerError.INVALID_IDENTIFIER, 0, 1, "Invalid construct name");
+		String name = reader.value();
+		reader.advance();
+		
+		MutableSyntaxImpl syntaxPosition = new MutableSyntaxImpl(startPos, null);
+		Construct construct = new Construct(name, syntaxPosition);
+		
+		tryMatchOrSyntaxError(Type.LEFT_CURLY_BRACKET, CompilerError.INVALID_SYNTAX, "Expected '{' after construct");
+		reader.advance();
+		
+		while(reader.type() != Type.RIGHT_CURLY_BRACKET) {
+			// Type
+			HighType memberType = getTypeFromSymbol();
+			String memberName = reader.value();
+			reader.advance();
+			
+			tryMatchOrSyntaxError(Type.SEMICOLON, CompilerError.INVALID_SYNTAX, "Expected ';' after member");
+			reader.advance();
+			
+			construct.addMember(memberType, memberName);
+		}
+		
+		tryMatchOrSyntaxError(Type.RIGHT_CURLY_BRACKET, CompilerError.INVALID_SYNTAX, "Expected closing '}'");
+		reader.advance();
+		
+		currentProgram.addDefinedType(name, new ConstructType(name, LowType.create(Atom.unf), construct));
+		syntaxPosition.end = reader.lastPositionEnd();
+		return construct;
 	}
 	
 	private Statement getVariableDefinition() {
@@ -1036,6 +1076,20 @@ public class ParseTreeGenerator {
 								left = expr;
 								continue;
 							}
+							
+							case MEMBER -> {
+								if((!(left instanceof AtomExpr atom) || !atom.isIdentifier())
+								|| ((left instanceof OpExpr expr) && expr.type() != ExprType.member)) {
+									// NOTE: What if this was a function pointer?
+									syntaxError(CompilerError.INVALID_SYNTAX, "Expected identifier");
+									break;
+								}
+								
+								reader.advance();
+								Expression right = atom();
+								left = new OpExpr(ExprType.member, left, right);
+								continue;
+							}
 						}
 						break;
 					}
@@ -1170,6 +1224,36 @@ public class ParseTreeGenerator {
 					syntaxError(CompilerError.INVALID_EXPRESSION, reader);
 					return Expression.EMPTY;
 				}
+				
+				Expression atom() {
+					switch(reader.type()) {
+						case IDENTIFIER -> {
+							String value = reader.value();
+							if(currentFunction == null || !currentFunction.hasIdentifier(value)) {
+								if(currentProgram.hasDefinedGlobal(value)) {
+									reader.advance();
+									return currentProgram.getDefinedGlobal(value);
+								}
+								
+								if(currentProgram.hasFunction(value)) {
+									reader.advance();
+									return new AtomExpr(currentProgram.getFunction(value));
+								}
+								
+								syntaxError(CompilerError.UNDECLARED_VARIABLE_OR_FUNCTION, value);
+							} else {
+								reader.advance();
+								return new AtomExpr(currentFunction.getIdentifier(value));
+							}
+							
+							reader.advance();
+							return Expression.EMPTY;
+						}
+					}
+					
+					syntaxError(CompilerError.INVALID_EXPRESSION, reader);
+					return Expression.EMPTY;
+				}
 			}.parse();
 			
 			// We clone the expression becuse we want to make all branches
@@ -1221,6 +1305,10 @@ public class ParseTreeGenerator {
 				return acceptModification(e.last());
 			}
 			
+			if(e.type() == member) {
+				return true;
+			}
+			
 			return e.type() == decptr
 				|| e.type() == incptr;
 		}
@@ -1254,6 +1342,16 @@ public class ParseTreeGenerator {
 	
 	private boolean isType(LangContext reader) {
 		return currentProgram.hasDefinedType(reader.value());
+	}
+	
+	private String nextIdentifier() {
+		if(!isValidName(reader)) {
+			// Throw
+		}
+		
+		String identifier = reader.value();
+		reader.advance();
+		return identifier;
 	}
 	
 	private boolean isValidName(LangContext reader) {

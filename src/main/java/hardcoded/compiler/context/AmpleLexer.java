@@ -112,6 +112,7 @@ public class AmpleLexer {
 			.addRule(Type.DEFAULT, i -> i.addString("default"))
 			.addRule(Type.GOTO, i -> i.addString("goto"))
 			.addRule(Type.COMPILER, i -> i.addString("compiler"))
+			.addRule(Type.CONSTRUCT, i -> i.addString("construct"))
 			
 			// Function Modifiers
 			.addRule(Type.EXPORT, i -> i.addString("export"))

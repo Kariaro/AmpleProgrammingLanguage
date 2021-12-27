@@ -7,8 +7,6 @@ package hardcoded.compiler.errors;
  * @author HardCoded
  */
 public class CompilerException extends Error {
-	private static final long serialVersionUID = -3780487404643365332L;
-	
 	/**
 	 * Construct a new compiler exception with no message.
 	 */
@@ -22,5 +20,14 @@ public class CompilerException extends Error {
 	 */
 	public CompilerException(String message) {
 		super(message);
+	}
+	
+	/**
+	 * Construct a new compiler exception with a formatted message.
+	 * @param format
+	 * @param args
+	 */
+	public CompilerException(String format, Object... args) {
+		super(format.formatted(args));
 	}
 }

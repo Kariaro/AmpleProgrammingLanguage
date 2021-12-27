@@ -4,7 +4,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import hardcoded.compiler.constants.Atom;
-import hardcoded.compiler.constants.ExprType;
 import hardcoded.compiler.constants.Identifier;
 import hardcoded.compiler.expression.*;
 import hardcoded.compiler.parsetree.ParseTreeOptimizer;

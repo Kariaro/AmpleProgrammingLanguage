@@ -1,4 +1,4 @@
-package hardcoded.compiler.constants;
+package hardcoded.compiler.expression;
 
 /**
  * All expression types that this compiler uses.
@@ -59,4 +59,5 @@ public enum ExprType {
 	// Misc
 	compiler, // Compiler annotation
 	invalid, // Invalid expression type
+	member, // Member expression
 }

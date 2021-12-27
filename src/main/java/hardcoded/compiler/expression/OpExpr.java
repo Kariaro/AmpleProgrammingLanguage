@@ -2,7 +2,6 @@ package hardcoded.compiler.expression;
 
 import java.util.Arrays;
 
-import hardcoded.compiler.constants.ExprType;
 import hardcoded.utils.StringUtils;
 
 public class OpExpr extends Expression {
