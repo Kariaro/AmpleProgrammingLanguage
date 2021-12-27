@@ -1,9 +1,0 @@
-Understanding Compiler Optimization - Chandler Carruth - Opening Keynote Meeting C++ 2015
-    https://www.youtube.com/watch?v=FnGCDLhaxKU
-    https://meetingcpp.com/files/mcpp/2015/talks/meetingcxx_2015-understanding_compiler_optimization_themed_copy.pdf
-
-
-CppCon 2014: Chandler Carruth "Efficiency with Algorithms, Performance with Data Structures"
-    https://www.youtube.com/watch?v=fHNmRkzxHWs
-    https://github.com/CppCon/CppCon2014
-   
