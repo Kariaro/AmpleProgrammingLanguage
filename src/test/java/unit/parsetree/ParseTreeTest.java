@@ -4,13 +4,11 @@ import java.util.List;
 
 import org.junit.Test;
 
-import hardcoded.compiler.constants.Utils;
-import hardcoded.compiler.errors.SyntaxMarker;
-import hardcoded.compiler.impl.IFunction;
-import hardcoded.compiler.impl.IProgram;
-import hardcoded.compiler.impl.IStatement;
+import hardcoded.compiler.impl.*;
 import hardcoded.compiler.parsetree.ParseTreeGenerator;
 import hardcoded.compiler.statement.Statement;
+import hardcoded.utils.Position;
+import hardcoded.utils.StatementUtils;
 
 public class ParseTreeTest {
 	private static byte[] generate(String code) {
@@ -45,11 +43,13 @@ public class ParseTreeTest {
 	}
 	
 	private static void dump(IProgram program) {
-		for(SyntaxMarker marker : program.getSyntaxMarkers()) {
-			System.err.printf("%s (%s:%s) : %s\n",
+		for(ISyntaxMarker marker : program.getSyntaxMarkers()) {
+			Position position = marker.getSyntaxPosition().getStartPosition();
+			
+			System.err.printf("%s(%s:%s) : %s",
 				marker.getCompilerMessage(),
-				marker.getLineIndex(),
-				marker.getColumnIndex(),
+				position.line + 1,
+				position.column + 1,
 				marker.getMessage()
 			);
 		}
@@ -75,7 +75,7 @@ public class ParseTreeTest {
 			List<IStatement> statements = func_body.get(0).getStatements();
 			for(int i = 8; i < statements.size(); i++) {
 				Statement stat = (Statement)statements.get(i);
-				sb.append(Utils.printPretty(stat).strip()).append("\n");
+				sb.append(StatementUtils.printPretty(stat).strip()).append("\n");
 			}
 		}
 		
