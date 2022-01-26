@@ -4,11 +4,11 @@ import java.util.List;
 
 import org.junit.Test;
 
-import hardcoded.compiler.impl.*;
-import hardcoded.compiler.parsetree.ParseTreeGenerator;
-import hardcoded.compiler.statement.Statement;
-import hardcoded.utils.Position;
-import hardcoded.utils.StatementUtils;
+import me.hardcoded.compiler.impl.*;
+import me.hardcoded.compiler.parsetree.ParseTreeGenerator;
+import me.hardcoded.compiler.statement.Statement;
+import me.hardcoded.utils.Position;
+import me.hardcoded.utils.StatementUtils;
 
 public class ParseTreeTest {
 	private static byte[] generate(String code) {

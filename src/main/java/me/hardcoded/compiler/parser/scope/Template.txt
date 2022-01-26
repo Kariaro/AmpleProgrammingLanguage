@@ -1,0 +1,42 @@
+// Locals are always scoped
+Locals:
+    // Scope 0 (Global)
+    {
+        // Scope 1 (Local)
+    }
+    void main() {
+        // Scope 1 (Local)
+        {
+            // Scope 2 (Local)
+        }
+    }
+
+
+// Labels are only local inside functions
+Labels:
+    // Scope 0 (Global)
+    {
+        // Scope 0 (Global)
+    }
+    void main() {
+        // Scope 1 (Local)
+        {
+            // Scope 1 (Local)
+        }
+    }
+
+
+// Functions are always global
+Functions:
+    // Scope 0 (Global)
+    {
+        // Scope 0 (Global)
+    }
+    void main() {
+        // Scope 0 (Global)
+        {
+            // Scope 0 (Global)
+        }
+    }
+
+
