@@ -74,7 +74,7 @@ void print(int v) {
 
 
 ## Lexer
-The compiler lexer is a large part of how this compiler functions. The lexer is located inside the directory `src/main/java/hardcoded/lexer`.
+The compiler lexer is a large part of how this compiler functions. The lexer is located inside the directory `src/main/java/me.hardcoded/lexer`.
 
 The lexer is first construction with a set of rules for how to group characters. All groups are written with regex currently.
 An example of a number matching group would be `[0-9]+`.
@@ -94,7 +94,7 @@ Input: "char hello ='a'"
 ```
 
 ## Visualization
-The visualization classes are located inside the directory `src/main/java/hardcoded/visualization`.
+The visualization classes are located inside the directory `src/main/java/me.hardcoded/visualization`.
 
 Visualizations are used to debug how the compiler works and can help a developer identify errors made by the compiler andd make it easier to fix them.
 

@@ -1,6 +1,6 @@
 package unit;
 
-import static hardcoded.compiler.numbers.Value.*;
+import static me.hardcoded.compiler.numbers.Value.*;
 
 import org.junit.Test;
 
