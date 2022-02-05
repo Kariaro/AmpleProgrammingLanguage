@@ -8,7 +8,6 @@ import me.hardcoded.compiler.parser.type.FuncParam;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.TreeType;
 import me.hardcoded.compiler.parser.type.ValueType;
-import me.hardcoded.utils.ObjectUtils;
 import me.hardcoded.utils.Position;
 
 import java.io.ByteArrayOutputStream;
@@ -17,10 +16,12 @@ import java.io.IOException;
 import java.util.*;
 
 public class LinkableSerializer {
-	private RefPos<String> stringPositions;
-	private RefPos<Reference> references;
-	private RefPos<ISyntaxPosition> syntaxPositions;
-	private RefPos<ValueType> valueTypes;
+	static final int MAGIC = 0x48434C46; // 'HCLF' HardCoded Linkable File
+	
+	private final RefPos<String> stringPositions;
+	private final RefPos<Reference> references;
+	private final RefPos<ISyntaxPosition> syntaxPositions;
+	private final RefPos<ValueType> valueTypes;
 	
 	private LinkableSerializer() {
 		this.references = new RefPos<>();
@@ -46,6 +47,13 @@ public class LinkableSerializer {
 		byte[] treeBytes = writeTree(obj);
 		byte[] refsBytes = writeRefs();
 		byte[] strnBytes = writeStrings();
+		
+		{
+			// Write file
+			DataOutputStream out = new DataOutputStream(full);
+			out.writeInt(MAGIC);
+			out.writeUTF(obj.getFile().getAbsolutePath());
+		}
 		
 		full.writeBytes(strnBytes);
 		full.writeBytes(refsBytes);
@@ -291,6 +299,7 @@ public class LinkableSerializer {
 		// TODO: Save the number as a large number
 		boolean isFloating = expr.getAtom().isFloating();
 		out.writeBoolean(isFloating);
+		writeVarInt(expr.getAtom().ordinal(), out);
 		
 		if (isFloating) {
 			out.writeDouble(expr.getFloatingValue());

@@ -12,10 +12,15 @@ public class Reference {
 	private int flags;
 	private int usages;
 	
-	public Reference(String name, int id, int flags) {
+	public Reference(String name, int id, int flags, int usages) {
 		this.name = name;
 		this.id = id;
 		this.flags = flags;
+		this.usages = usages;
+	}
+	
+	public Reference(String name, int id, int flags) {
+		this(name, id, flags, 0);
 	}
 	
 	public String getName() {
