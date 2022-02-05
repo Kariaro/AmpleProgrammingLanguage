@@ -12,9 +12,9 @@ import java.util.List;
  * When combining linkable objects all unresolved references will need to be resolved to compile.
  */
 public class LinkableObject {
-	private List<Reference> missingReferences;
+	private final List<Reference> missingReferences;
+	private final File file;
 	private ProgStat program;
-	private File file;
 	
 	public LinkableObject(File file, ProgStat program) {
 		this.file = file;
@@ -37,6 +37,4 @@ public class LinkableObject {
 	public List<Reference> getMissingReferences() {
 		return missingReferences;
 	}
-	
-	// TODO: Serialize these objects
 }

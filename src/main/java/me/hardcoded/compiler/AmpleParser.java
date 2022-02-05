@@ -65,28 +65,13 @@ public class AmpleParser {
 		ProgStat program = parse();
 		
 		LinkableObject linkableObject = new LinkableObject(file, program);
-		System.out.println(ParseUtil.stat(linkableObject.getProgram()));
+//		System.out.println(ParseUtil.stat(linkableObject.getProgram()));
 		
 		for (Reference reference : currentScope.getImportedReferences().values()) {
 			// If the reference is used we add it to the linkable object
 			if (reference.getUsages() > 0) {
 				linkableObject.addMissingReference(reference);
 			}
-		}
-		
-		try {
-			byte[] bytesFull = LinkableSerializer.serializeLinkable(linkableObject);
-			
-			File debugFolder = new File("debug/out.serial");
-			if (debugFolder.exists() || debugFolder.createNewFile()) {
-				try (FileOutputStream out = new FileOutputStream(debugFolder)) {
-					out.write(bytesFull == null ? new byte[0] : bytesFull);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
 		
 		reader = oldContext;
@@ -623,7 +608,7 @@ public class AmpleParser {
 			Position startPos = reader.position();
 			reader.advance();
 			Expr expr = comparisonExpression();
-			return new UnaryExpr(expr, Operation.UNARY_NOT, true, ISyntaxPosition.of(startPos, expr.getSyntaxPosition().getEndPosition()));
+			return new UnaryExpr(expr, Operation.UNARY_NOT, ISyntaxPosition.of(startPos, expr.getSyntaxPosition().getEndPosition()));
 		}
 		
 		Expr left = shiftExpression();
@@ -788,7 +773,7 @@ public class AmpleParser {
 				reader.advance();
 				
 				Expr expr = memberExpression();
-				return new UnaryExpr(expr, Operation.unaryPrefix(token), true, ISyntaxPosition.of(startPos, reader.lastPositionEnd()));
+				return new UnaryExpr(expr, Operation.unaryPrefix(token), ISyntaxPosition.of(startPos, reader.lastPositionEnd()));
 			}
 		}
 		
@@ -808,7 +793,7 @@ public class AmpleParser {
 				}
 				case INCREMENT, DECREMENT -> {
 					reader.advance();
-					return new UnaryExpr(left, Operation.unarySuffix(token), false, ISyntaxPosition.of(left.getSyntaxPosition().getStartPosition(), reader.lastPositionEnd()));
+					return new UnaryExpr(left, Operation.unarySuffix(token), ISyntaxPosition.of(left.getSyntaxPosition().getStartPosition(), reader.lastPositionEnd()));
 				}
 				default -> {
 					return left;
@@ -893,13 +878,13 @@ public class AmpleParser {
 					}
 				}
 				
-				return new UnaryExpr(right, Operation.REFERENCE, true, ISyntaxPosition.of(startPos, reader.lastPositionEnd()));
+				return new UnaryExpr(right, Operation.REFERENCE, ISyntaxPosition.of(startPos, reader.lastPositionEnd()));
 			}
 			case MINUS, PLUS, MUL, NOR -> {
 				Position startPos = reader.position();
 				reader.advance();
 				Expr right = unaryExpression();
-				return new UnaryExpr(right, Operation.unaryPrefix(token), true, ISyntaxPosition.of(startPos, reader.lastPositionEnd()));
+				return new UnaryExpr(right, Operation.unaryPrefix(token), ISyntaxPosition.of(startPos, reader.lastPositionEnd()));
 			}
 			case LEFT_PARENTHESIS -> {
 				if (reader.peak(1).type == Token.Type.COLON) {

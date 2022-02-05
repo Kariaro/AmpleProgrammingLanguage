@@ -8,12 +8,10 @@ import me.hardcoded.lexer.Token;
 public class UnaryExpr extends Expr {
 	private Expr expr;
 	private Operation operation;
-	private boolean prefix;
 	
-	public UnaryExpr(Expr expr, Operation operation, boolean prefix, ISyntaxPosition syntaxPosition) {
+	public UnaryExpr(Expr expr, Operation operation, ISyntaxPosition syntaxPosition) {
 		super(syntaxPosition);
 		this.expr = expr;
-		this.prefix = prefix;
 		this.operation = operation;
 	}
 	
@@ -26,7 +24,7 @@ public class UnaryExpr extends Expr {
 	}
 	
 	public boolean isPrefix() {
-		return prefix;
+		return operation.isPrefix();
 	}
 	
 	@Override

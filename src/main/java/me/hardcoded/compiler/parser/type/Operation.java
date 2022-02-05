@@ -26,8 +26,8 @@ public enum Operation {
 	
 	PRE_INCREMENT("++"),
 	PRE_DECREMENT("--"),
-	POST_INCREMENT("++"),
-	POST_DECREMENT("--"),
+	POST_INCREMENT("++", false),
+	POST_DECREMENT("--", false),
 	
 	// Comparison
 	EQUALS("=="),
@@ -42,9 +42,22 @@ public enum Operation {
 	ARRAY("[]"),
 	;
 	
+	public static final Operation[] VALUES = values();
+	
+	private final boolean prefix;
 	private final String name;
-	private Operation(String name) {
+	
+	Operation(String name, boolean prefix) {
 		this.name = name;
+		this.prefix = prefix;
+	}
+	
+	Operation(String name) {
+		this(name, true);
+	}
+	
+	public boolean isPrefix() {
+		return prefix;
 	}
 	
 	@Override

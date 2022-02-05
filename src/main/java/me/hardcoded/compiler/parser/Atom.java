@@ -15,6 +15,8 @@ public enum Atom {
 	float_32(true, false, 32),
 	;
 	
+	public static final Atom[] VALUES = values();
+	
 	private final boolean unsigned;
 	private final boolean floating;
 	private final int size;

@@ -22,5 +22,7 @@ public enum TreeType {
 	NULL,
 	NUM,
 	STR,
-	UNARY
+	UNARY;
+	
+	public static final TreeType[] VALUES = values();
 }

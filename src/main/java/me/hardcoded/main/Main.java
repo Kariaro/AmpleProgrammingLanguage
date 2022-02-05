@@ -3,10 +3,15 @@ package me.hardcoded.main;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.Objects;
 
 import me.hardcoded.compiler.AmpleParser;
+import me.hardcoded.compiler.parser.LinkableObject;
+import me.hardcoded.compiler.parser.ParseUtil;
+import me.hardcoded.compiler.parser.serial.LinkableDeserializer;
+import me.hardcoded.compiler.parser.serial.LinkableSerializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -76,7 +81,23 @@ public class Main {
 		
 		try {
 			AmpleParser parser = new AmpleParser();
-			parser.fromFile(config.getSourceFile());
+			LinkableObject obj = parser.fromFile(config.getSourceFile());
+			
+			byte[] bytes = LinkableSerializer.serializeLinkable(obj);
+			
+			File debugFolder = new File("debug/out.serial");
+			if (debugFolder.exists() || debugFolder.createNewFile()) {
+				try (FileOutputStream out = new FileOutputStream(debugFolder)) {
+					out.write(bytes == null ? new byte[0] : bytes);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			LinkableObject obj2 = LinkableDeserializer.deserializeLinkable(bytes);
+			byte[] bytesAgain = LinkableSerializer.serializeLinkable(obj2);
+			
+			System.out.println("Equals: " + Arrays.compare(bytes, bytesAgain));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
