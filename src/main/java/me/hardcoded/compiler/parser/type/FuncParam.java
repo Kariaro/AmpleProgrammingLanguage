@@ -9,6 +9,14 @@ public class FuncParam {
 		this.reference = reference;
 	}
 	
+	public ValueType getType() {
+		return type;
+	}
+	
+	public Reference getReference() {
+		return reference;
+	}
+	
 	@Override
 	public String toString() {
 		return type + " " + reference;

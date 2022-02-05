@@ -4,6 +4,7 @@ import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.expr.Expr;
 import me.hardcoded.compiler.parser.type.FuncParam;
 import me.hardcoded.compiler.parser.type.Reference;
+import me.hardcoded.compiler.parser.type.TreeType;
 import me.hardcoded.compiler.parser.type.ValueType;
 
 import java.util.List;
@@ -53,5 +54,10 @@ public class FuncStat extends Stat {
 	@Override
 	public boolean isPure() {
 		return body.isPure();
+	}
+	
+	@Override
+	public TreeType getTreeType() {
+		return TreeType.FUNC;
 	}
 }

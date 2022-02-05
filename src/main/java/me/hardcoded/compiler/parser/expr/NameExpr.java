@@ -3,6 +3,7 @@ package me.hardcoded.compiler.parser.expr;
 import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.scope.ReferenceHolder;
 import me.hardcoded.compiler.parser.type.Reference;
+import me.hardcoded.compiler.parser.type.TreeType;
 import me.hardcoded.lexer.Token;
 
 public class NameExpr extends Expr implements ReferenceHolder {
@@ -33,5 +34,10 @@ public class NameExpr extends Expr implements ReferenceHolder {
 	@Override
 	public boolean isPure() {
 		return true;
+	}
+	
+	@Override
+	public TreeType getTreeType() {
+		return TreeType.NAME;
 	}
 }

@@ -10,6 +10,7 @@ public class Reference {
 	private int id;
 	private String name;
 	private int flags;
+	private int usages;
 	
 	public Reference(String name, int id, int flags) {
 		this.name = name;
@@ -19,6 +20,18 @@ public class Reference {
 	
 	public String getName() {
 		return name;
+	}
+	
+	public int getUsages() {
+		return usages;
+	}
+	
+	public void incUsages() {
+		usages++;
+	}
+	
+	public void decUsages() {
+		usages--;
 	}
 	
 	public int getId() {
@@ -31,6 +44,10 @@ public class Reference {
 	
 	public int getType() {
 		return flags & 0x1f;
+	}
+	
+	public int getFlags() {
+		return flags;
 	}
 	
 	public boolean isVariable() {
@@ -66,7 +83,7 @@ public class Reference {
 	
 	@Override
 	public String toString() {
-		if (id == -1) {
+		if (id < 0) {
 			return name;
 		}
 		

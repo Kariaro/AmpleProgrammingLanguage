@@ -1,6 +1,7 @@
 package me.hardcoded.compiler.parser.expr;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.parser.type.TreeType;
 
 public class StrExpr extends Expr {
 	private String value;
@@ -22,5 +23,10 @@ public class StrExpr extends Expr {
 	@Override
 	public boolean isPure() {
 		return true;
+	}
+	
+	@Override
+	public TreeType getTreeType() {
+		return TreeType.STR;
 	}
 }

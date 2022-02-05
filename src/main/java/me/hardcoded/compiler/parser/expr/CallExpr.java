@@ -1,6 +1,7 @@
 package me.hardcoded.compiler.parser.expr;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.parser.type.TreeType;
 
 import java.util.List;
 
@@ -31,5 +32,10 @@ public class CallExpr extends Expr {
 	public boolean isPure() {
 		// A call is never pure unless the called function is pure
 		return false;
+	}
+	
+	@Override
+	public TreeType getTreeType() {
+		return TreeType.CALL;
 	}
 }

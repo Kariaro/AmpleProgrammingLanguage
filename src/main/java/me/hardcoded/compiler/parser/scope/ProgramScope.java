@@ -18,6 +18,7 @@ import java.util.*;
 // TODO: Keep a list of references that needs to be imported
 public class ProgramScope {
 	private int count;
+	private int tempCount;
 	private final LinkedList<DataScope<Locals>> localScope;
 	private final LinkedList<DataScope<Labels>> labelScope;
 	private final Map<String, Reference> importedReference;
@@ -133,9 +134,9 @@ public class ProgramScope {
 		labelScope.getLast().getScope().addGoto(stat);
 	}
 	
-//	public Set<String> getLables() {
-//		return labelScope.getLast().getScope().getDefinedLabels();
-//	}
+	public Map<String, Reference> getImportedReferences() {
+		return importedReference;
+	}
 	
 	public Reference getLocalLabel(String name) {
 		return labelScope.getLast().getScope().getLabel(name);
@@ -177,7 +178,7 @@ public class ProgramScope {
 	}
 	
 	public Reference createEmptyReference(String name) {
-		return new Reference(name, -1, 0);
+		return new Reference(name, -1 - (tempCount++), 0);
 	}
 	
 	public class Locals {

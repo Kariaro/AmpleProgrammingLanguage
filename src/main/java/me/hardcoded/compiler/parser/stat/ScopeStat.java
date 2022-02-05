@@ -1,6 +1,7 @@
 package me.hardcoded.compiler.parser.stat;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.parser.type.TreeType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,5 +39,10 @@ public class ScopeStat extends Stat {
 		}
 		
 		return true;
+	}
+	
+	@Override
+	public TreeType getTreeType() {
+		return TreeType.SCOPE;
 	}
 }

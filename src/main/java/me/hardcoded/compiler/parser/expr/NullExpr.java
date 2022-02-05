@@ -1,6 +1,7 @@
 package me.hardcoded.compiler.parser.expr;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.parser.type.TreeType;
 
 public class NullExpr extends Expr {
 	public NullExpr(ISyntaxPosition syntaxPosition) {
@@ -15,5 +16,10 @@ public class NullExpr extends Expr {
 	@Override
 	public boolean isPure() {
 		return true;
+	}
+	
+	@Override
+	public TreeType getTreeType() {
+		return TreeType.NULL;
 	}
 }

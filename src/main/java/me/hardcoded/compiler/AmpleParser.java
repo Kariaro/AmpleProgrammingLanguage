@@ -5,6 +5,7 @@ import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.*;
 import me.hardcoded.compiler.parser.expr.*;
 import me.hardcoded.compiler.parser.scope.ProgramScope;
+import me.hardcoded.compiler.parser.serial.LinkableSerializer;
 import me.hardcoded.compiler.parser.stat.*;
 import me.hardcoded.compiler.parser.type.*;
 import me.hardcoded.configuration.CompilerConfiguration;
@@ -14,8 +15,7 @@ import me.hardcoded.utils.MutableSyntaxImpl;
 import me.hardcoded.utils.Position;
 import me.hardcoded.utils.StringUtils;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,6 +66,28 @@ public class AmpleParser {
 		
 		LinkableObject linkableObject = new LinkableObject(file, program);
 		System.out.println(ParseUtil.stat(linkableObject.getProgram()));
+		
+		for (Reference reference : currentScope.getImportedReferences().values()) {
+			// If the reference is used we add it to the linkable object
+			if (reference.getUsages() > 0) {
+				linkableObject.addMissingReference(reference);
+			}
+		}
+		
+		try {
+			byte[] bytesFull = LinkableSerializer.serializeLinkable(linkableObject);
+			
+			File debugFolder = new File("debug/out.serial");
+			if (debugFolder.exists() || debugFolder.createNewFile()) {
+				try (FileOutputStream out = new FileOutputStream(debugFolder)) {
+					out.write(bytesFull == null ? new byte[0] : bytesFull);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		
 		reader = oldContext;
 		currentFile = oldFile;
@@ -854,6 +876,11 @@ public class AmpleParser {
 					Reference reference = null;
 					
 					if ((reference = currentScope.getLocal(e.geName())) != null) {
+						if (e.getReference() != reference) {
+							e.getReference().decUsages();;
+							reference.incUsages();
+						}
+						
 						e.setReference(reference);
 					}
 					
@@ -936,6 +963,11 @@ public class AmpleParser {
 							reference = currentScope.createImportedReference(name);
 						}
 					}
+				}
+				
+				if (reference != null) {
+					// Increment the usage count
+					reference.incUsages();
 				}
 				
 				NameExpr expr = new NameExpr(reference, reader.syntaxPosition());
@@ -1110,11 +1142,17 @@ public class AmpleParser {
 	 */
 	private boolean popLablesAndErrorCheck() {
 		for (GotoStat stat : currentScope.getGotos()) {
-			String name = stat.getDestination();
+			Reference gotoRef = stat.getReference();
+			String name = gotoRef.getName();
 			
 			Reference reference = currentScope.getLocalLabel(name);
 			if (reference == null) {
 				throw createParseException(stat.getSyntaxPosition().getStartPosition(), "The label '%s' was not defined", name);
+			}
+			
+			if (gotoRef != reference) {
+				gotoRef.decUsages();
+				reference.incUsages();
 			}
 			
 			// Update the goto reference
@@ -1127,6 +1165,12 @@ public class AmpleParser {
 			
 			Reference reference = currentScope.getLocalLabel(exprRef.getName());
 			if (reference != null) {
+				// Because we are removing the exprRef we decrement the usages
+				if (exprRef != reference) {
+					exprRef.decUsages();
+					reference.incUsages();
+				}
+				
 				expr.setReference(reference);
 			} else {
 				if (currentScope.isGlobalLabelScope()) {
@@ -1136,6 +1180,12 @@ public class AmpleParser {
 					// Check for a function
 					reference = currentScope.getFunc(exprRef.getName());
 					if (reference != null) {
+						// Decrement the usage
+						if (exprRef != reference) {
+							exprRef.decUsages();
+							reference.incUsages();
+						}
+						
 						expr.setReference(reference);
 					} else {
 						// Global label or imported function

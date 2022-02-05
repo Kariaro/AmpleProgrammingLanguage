@@ -3,6 +3,7 @@ package me.hardcoded.compiler.parser.stat;
 import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.scope.ReferenceHolder;
 import me.hardcoded.compiler.parser.type.Reference;
+import me.hardcoded.compiler.parser.type.TreeType;
 
 public class GotoStat extends Stat implements ReferenceHolder {
 	private Reference reference;
@@ -32,5 +33,10 @@ public class GotoStat extends Stat implements ReferenceHolder {
 	@Override
 	public boolean isPure() {
 		return true;
+	}
+	
+	@Override
+	public TreeType getTreeType() {
+		return TreeType.GOTO;
 	}
 }
