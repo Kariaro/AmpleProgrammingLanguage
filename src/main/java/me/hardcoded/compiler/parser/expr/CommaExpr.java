@@ -1,6 +1,7 @@
 package me.hardcoded.compiler.parser.expr;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.parser.type.TreeType;
 
 import java.util.List;
 
@@ -30,5 +31,10 @@ public class CommaExpr extends Expr {
 		}
 		
 		return true;
+	}
+	
+	@Override
+	public TreeType getTreeType() {
+		return TreeType.COMMA;
 	}
 }

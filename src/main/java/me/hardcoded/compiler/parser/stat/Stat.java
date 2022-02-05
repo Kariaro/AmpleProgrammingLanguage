@@ -1,6 +1,8 @@
 package me.hardcoded.compiler.parser.stat;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.parser.type.TreeType;
+import org.junit.validator.PublicClassValidator;
 
 public abstract class Stat {
 	private final ISyntaxPosition syntaxPosition;
@@ -22,4 +24,9 @@ public abstract class Stat {
 	 * Returns if this statement modifies memory in some way
 	 */
 	public abstract boolean isPure();
+	
+	/**
+	 * Returns the type of this statement
+	 */
+	public abstract TreeType getTreeType();
 }

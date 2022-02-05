@@ -2,6 +2,7 @@ package me.hardcoded.compiler.parser.stat;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.expr.Expr;
+import me.hardcoded.compiler.parser.type.TreeType;
 
 public class ForStat extends Stat {
 	private Stat start;
@@ -42,5 +43,10 @@ public class ForStat extends Stat {
 	public boolean isPure() {
 		// TODO: If the for loop only modifies its own values we could optimize it away
 		return false;
+	}
+	
+	@Override
+	public TreeType getTreeType() {
+		return TreeType.FOR;
 	}
 }

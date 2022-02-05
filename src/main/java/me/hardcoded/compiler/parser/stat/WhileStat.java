@@ -2,6 +2,7 @@ package me.hardcoded.compiler.parser.stat;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.expr.Expr;
+import me.hardcoded.compiler.parser.type.TreeType;
 
 public class WhileStat extends Stat {
 	private Expr condition;
@@ -29,5 +30,10 @@ public class WhileStat extends Stat {
 	@Override
 	public boolean isPure() {
 		return condition.isPure() && body.isPure();
+	}
+	
+	@Override
+	public TreeType getTreeType() {
+		return TreeType.WHILE;
 	}
 }

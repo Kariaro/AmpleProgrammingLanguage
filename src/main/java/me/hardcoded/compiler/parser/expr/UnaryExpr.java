@@ -2,6 +2,7 @@ package me.hardcoded.compiler.parser.expr;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.type.Operation;
+import me.hardcoded.compiler.parser.type.TreeType;
 import me.hardcoded.lexer.Token;
 
 public class UnaryExpr extends Expr {
@@ -42,5 +43,10 @@ public class UnaryExpr extends Expr {
 		}
 		
 		return expr.isPure();
+	}
+	
+	@Override
+	public TreeType getTreeType() {
+		return TreeType.UNARY;
 	}
 }

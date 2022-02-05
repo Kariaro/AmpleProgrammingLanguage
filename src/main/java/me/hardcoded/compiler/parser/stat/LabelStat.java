@@ -2,6 +2,7 @@ package me.hardcoded.compiler.parser.stat;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.type.Reference;
+import me.hardcoded.compiler.parser.type.TreeType;
 
 public class LabelStat extends Stat {
 	private final Reference reference;
@@ -27,5 +28,10 @@ public class LabelStat extends Stat {
 	@Override
 	public boolean isPure() {
 		return true;
+	}
+	
+	@Override
+	public TreeType getTreeType() {
+		return TreeType.LABEL;
 	}
 }

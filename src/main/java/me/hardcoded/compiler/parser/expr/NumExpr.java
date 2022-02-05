@@ -2,6 +2,7 @@ package me.hardcoded.compiler.parser.expr;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.Atom;
+import me.hardcoded.compiler.parser.type.TreeType;
 
 public class NumExpr extends Expr {
 	private double f_value;
@@ -34,6 +35,11 @@ public class NumExpr extends Expr {
 	@Override
 	public boolean isPure() {
 		return true;
+	}
+	
+	@Override
+	public TreeType getTreeType() {
+		return TreeType.NUM;
 	}
 	
 	public Atom getAtom() {

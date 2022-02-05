@@ -25,12 +25,20 @@ public class ValueType {
 		return new ValueType(name, size, depth, flags);
 	}
 	
+	public String getName() {
+		return name;
+	}
+	
 	public int getSize() {
 		return size;
 	}
 	
 	public int getFlags() {
 		return flags;
+	}
+	
+	public int getDepth() {
+		return depth;
 	}
 	
 	private String getShortName() {

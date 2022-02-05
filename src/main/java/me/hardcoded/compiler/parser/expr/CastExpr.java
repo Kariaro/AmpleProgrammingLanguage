@@ -1,6 +1,7 @@
 package me.hardcoded.compiler.parser.expr;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.parser.type.TreeType;
 import me.hardcoded.compiler.parser.type.ValueType;
 import me.hardcoded.lexer.Token;
 
@@ -30,5 +31,10 @@ public class CastExpr extends Expr {
 	@Override
 	public boolean isPure() {
 		return expr.isPure();
+	}
+	
+	@Override
+	public TreeType getTreeType() {
+		return TreeType.CAST;
 	}
 }

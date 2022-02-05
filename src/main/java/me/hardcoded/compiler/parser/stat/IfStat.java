@@ -2,6 +2,7 @@ package me.hardcoded.compiler.parser.stat;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.expr.Expr;
+import me.hardcoded.compiler.parser.type.TreeType;
 
 public class IfStat extends Stat {
 	private Expr condition;
@@ -42,5 +43,10 @@ public class IfStat extends Stat {
 	public boolean isPure() {
 		// TODO: Make sure that we calculate the condition
 		return condition.isPure() && body.isPure() && elseBody.isPure();
+	}
+	
+	@Override
+	public TreeType getTreeType() {
+		return TreeType.IF;
 	}
 }
