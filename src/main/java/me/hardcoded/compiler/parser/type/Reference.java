@@ -1,7 +1,8 @@
 package me.hardcoded.compiler.parser.type;
 
 public class Reference {
-	public static final int IMPORT = 1 << 5;
+	public static final int IMPORT = 1 << 5,
+							EXPORT = 1 << 6;
 	
 	public static final int VARIABLE = 0,
 							LABEL = 1,
@@ -71,6 +72,14 @@ public class Reference {
 		return (flags & IMPORT) != 0;
 	}
 	
+	public boolean isExported() {
+		return (flags & EXPORT) != 0;
+	}
+	
+	public void setExported(boolean enable) {
+		flags = (flags & ~EXPORT) | (enable ? EXPORT : 0);
+	}
+	
 	public void setFlags(int flags) {
 		this.flags = flags;
 	}
@@ -83,7 +92,7 @@ public class Reference {
 			default -> "unk";
 		};
 		
-		return type + "_" + id + (isImported() ? "_import" : "");
+		return type + "_" + id + (isExported() ? "_export" : "") + (isImported() ? "_import" : "");
 	}
 	
 	@Override

@@ -46,6 +46,7 @@ public class LinkableSerializer {
 		
 		byte[] treeBytes = writeTree(obj);
 		byte[] refsBytes = writeRefs();
+		byte[] missBytes = writeContext(obj);
 		byte[] strnBytes = writeStrings();
 		
 		{
@@ -57,6 +58,7 @@ public class LinkableSerializer {
 		
 		full.writeBytes(strnBytes);
 		full.writeBytes(refsBytes);
+		full.writeBytes(missBytes);
 		full.writeBytes(treeBytes);
 		
 		stringPositions.clear();
@@ -89,6 +91,28 @@ public class LinkableSerializer {
 		writeVarInt(valueTypes.list.size(), out);
 		for (ValueType valueType : valueTypes.list) {
 			writeValueType(valueType, out);
+		}
+		
+		return bs.toByteArray();
+	}
+	
+	private byte[] writeContext(LinkableObject obj) throws IOException {
+		ByteArrayOutputStream bs = new ByteArrayOutputStream();
+		DataOutputStream out = new DataOutputStream(bs);
+		
+		writeVarInt(obj.getImports().size(), out);
+		for (String str : obj.getImports()) {
+			serializeString(str, out);
+		}
+		
+		writeVarInt(obj.getExportedReferences().size(), out);
+		for (Reference reference : obj.getExportedReferences()) {
+			serializeReference(reference, out);
+		}
+		
+		writeVarInt(obj.getImportedReferences().size(), out);
+		for (Reference reference : obj.getImportedReferences()) {
+			serializeReference(reference, out);
 		}
 		
 		return bs.toByteArray();

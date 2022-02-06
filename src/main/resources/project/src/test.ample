@@ -1,0 +1,16 @@
+link "src/test2.ample"
+
+bool isPrime(int number) {
+	if (number < 2) return false;
+	for (int i = 2; i * i <= number; i = i + 1) {
+		if(!(number % i))
+			return false;
+	}
+
+	return true;
+}
+
+int main() {
+    int test = getValue(100) * isPrime(1000);
+    return test;
+}

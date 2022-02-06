@@ -22,6 +22,7 @@ public class ProgramScope {
 	private final LinkedList<DataScope<Locals>> localScope;
 	private final LinkedList<DataScope<Labels>> labelScope;
 	private final Map<String, Reference> importedReference;
+	private final List<Reference> allReferences;
 	private final Set<Reference> functions;
 	
 	public ProgramScope() {
@@ -29,6 +30,7 @@ public class ProgramScope {
 		this.localScope = new LinkedList<>();
 		this.labelScope = new LinkedList<>();
 		this.functions = new HashSet<>();
+		this.allReferences = new ArrayList<>();
 	}
 	
 	/**
@@ -63,6 +65,7 @@ public class ProgramScope {
 		
 		Reference reference = new Reference(name, count++, Reference.FUNCTION);
 		functions.add(reference);
+		allReferences.add(reference);
 		return reference;
 	}
 	
@@ -116,7 +119,9 @@ public class ProgramScope {
 		return null;
 	}
 	
-	
+	public List<Reference> getAllReferences() {
+		return allReferences;
+	}
 	
 	public void pushLabels() {
 		labelScope.getLast().pushScope();
@@ -174,11 +179,14 @@ public class ProgramScope {
 		
 		reference = new Reference(name, count++, Reference.IMPORT);
 		importedReference.put(name, reference);
+		allReferences.add(reference);
 		return reference;
 	}
 	
 	public Reference createEmptyReference(String name) {
-		return new Reference(name, -1 - (tempCount++), 0);
+		Reference reference = new Reference(name, -1 - (tempCount++), 0);
+		allReferences.add(reference);
+		return reference;
 	}
 	
 	public class Locals {
@@ -195,6 +203,7 @@ public class ProgramScope {
 			
 			Reference reference = new Reference(name, count++, 0);
 			locals.put(name, reference);
+			allReferences.add(reference);
 			return reference;
 		}
 		
@@ -234,6 +243,7 @@ public class ProgramScope {
 			
 			Reference reference = new Reference(name, count++, Reference.LABEL);
 			definedLabels.put(name, reference);
+			allReferences.add(reference);
 			return reference;
 		}
 		

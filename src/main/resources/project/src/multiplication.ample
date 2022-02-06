@@ -63,7 +63,8 @@ void prints(char* chars) {
 	int v = (:int)(a);
 
 	while (*chars != 0) {
-		char b = *(chars = chars + 1);
+		char b = *(chars);
+		chars = chars + 1;
 		int a = b + (b / b) * 0;
 		print(a);
 	}

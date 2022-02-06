@@ -1,7 +1,7 @@
 package me.hardcoded.compiler.parser.serial;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
-import me.hardcoded.compiler.parser.Atom;
+import me.hardcoded.compiler.parser.type.Atom;
 import me.hardcoded.compiler.parser.LinkableObject;
 import me.hardcoded.compiler.parser.expr.*;
 import me.hardcoded.compiler.parser.stat.*;
@@ -51,10 +51,13 @@ public class LinkableDeserializer {
 		
 		readStrings(in);
 		readRefs(in);
-		ProgStat program = (ProgStat)readTree(in);
+		List<String> imports = new ArrayList<>();
+		List<Reference> exportedReferences = new ArrayList<>();
+		List<Reference> importedRefereces = new ArrayList<>();
+		readContext(imports, exportedReferences, importedRefereces, in);
 		
-		return new LinkableObject(file, program);
-		// TODO: Imported files
+		ProgStat program = (ProgStat)readTree(in);
+		return new LinkableObject(file, program, imports, exportedReferences, importedRefereces);
 	}
 	
 	private Stat readTree(DataInputStream in) throws IOException {
@@ -80,6 +83,25 @@ public class LinkableDeserializer {
 		for (int i = 0; i < size; i++) {
 			ValueType valueType = readValueType(in);
 			valueTypeMap.put(i, valueType);
+		}
+	}
+	
+	private void readContext(List<String> imports, List<Reference> exportedReferences, List<Reference> importedRefereces, DataInputStream in) throws IOException {
+		int size;
+		
+		size = readVarInt(in);
+		for (int i = 0; i < size; i++) {
+			imports.add(deserializeString(in));
+		}
+		
+		size = readVarInt(in);
+		for (int i = 0; i < size; i++) {
+			exportedReferences.add(deserializeReference(in));
+		}
+		
+		size = readVarInt(in);
+		for (int i = 0; i < size; i++) {
+			importedRefereces.add(deserializeReference(in));
 		}
 	}
 	

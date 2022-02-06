@@ -1,11 +1,10 @@
 package me.hardcoded.compiler.parser.stat;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
-import me.hardcoded.compiler.parser.scope.ReferenceHolder;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.TreeType;
 
-public class GotoStat extends Stat implements ReferenceHolder {
+public class GotoStat extends Stat {
 	private Reference reference;
 	
 	public GotoStat(Reference reference, ISyntaxPosition syntaxPosition) {

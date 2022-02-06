@@ -1,75 +1,41 @@
 package me.hardcoded.compiler;
 
-import me.hardcoded.compiler.errors.CompilerException;
-import me.hardcoded.compiler.impl.ICodeGenerator;
-import me.hardcoded.compiler.instruction.IRProgram;
+import me.hardcoded.compiler.intermediate.AmpleLinker;
+import me.hardcoded.compiler.parser.AmpleParser;
+import me.hardcoded.compiler.parser.LinkableObject;
 import me.hardcoded.configuration.CompilerConfiguration;
-import me.hardcoded.configuration.TargetFormat;
 
-/**
- * @author HardCoded
- */
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+
 public class AmpleCompiler {
-	private CompilerConfiguration config;
-	private IRProgram program;
-	private byte[] bytes;
+	private final CompilerConfiguration config;
 	
-	public AmpleCompiler() {
-		
-	}
-	
-	public void setConfiguration(CompilerConfiguration config) {
+	public AmpleCompiler(CompilerConfiguration config) {
 		this.config = config;
 	}
 	
-	/**
-	 * Build using the specified compiler configuration.
-	 * 
-	 * @throws CompilerException a compiler exception
-	 */
-	public void build() throws CompilerException {
-		if(config == null) {
-			throw new CompilerException("Configuration has not been set");
+	public void compile() throws IOException {
+		File inputFile = config.getSourceFile();
+		File workingDir = config.getWorkingDirectory();
+		
+		Set<String> importedPaths = new HashSet<>();
+		importedPaths.add(inputFile.getAbsolutePath());
+		LinkableObject main = new AmpleParser().fromFile(inputFile);
+		
+		LinkedList<String> importableFiles = new LinkedList<>(main.getImports());
+		List<LinkableObject> list = new ArrayList<>();
+		
+		while (!importableFiles.isEmpty()) {
+			File file = new File(workingDir, importableFiles.poll());
+			
+			if (importedPaths.add(file.getAbsolutePath())) {
+				list.add(new AmpleParser().fromFile(file));
+			}
 		}
 		
-		IRProgram program;
-		byte[] bytes;
-		
-		AmpleCompilerBuild builder = new AmpleCompilerBuild();
-		program = builder.build(config);
-		
-		ICodeGenerator generator = config.getOutputFormat().createNew();
-		if(config.getTargetFormat() == TargetFormat.BYTECODE) {
-			bytes = generator.getBytecode(program);
-		} else {
-			bytes = generator.getAssembler(program);
-		}
-		
-		this.program = program;
-		this.bytes = bytes;
-	}
-	
-	/**
-	 * Returns the exported format. This result will either represent
-	 * <b>Bytecode</b> or <b>Assembler</b> depending on the compiler options.
-	 */
-	public byte[] getBytes() {
-		return bytes;
-	}
-	
-	/**
-	 * Returns the compiled ir code.
-	 */
-	public IRProgram getProgram() {
-		return program;
-	}
-	
-	/**
-	 * Reset the compiler.
-	 */
-	public void reset() {
-		program = null;
-		config = null;
-		bytes = null;
+		AmpleLinker linker = new AmpleLinker();
+		linker.link(main, list);
 	}
 }

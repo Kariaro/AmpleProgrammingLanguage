@@ -1,14 +1,11 @@
 package me.hardcoded.compiler.parser.type;
 
-import me.hardcoded.compiler.parser.ParseException;
+import me.hardcoded.compiler.errors.ParseException;
 import me.hardcoded.lexer.Token;
 
 public enum Operation {
 	REFERENCE("&"),
 	DEREFERENCE("*"),
-	UNARY_PLUS("+"),
-	UNARY_MINUS("-"),
-	UNARY_NOT("!"),
 	MULTIPLY("*"),
 	ADD("+"),
 	SUBTRACT("-"),
@@ -16,7 +13,6 @@ public enum Operation {
 	MODULO("%"),
 	AND("&"),
 	OR("|"),
-	UNARY_NOR("~"),
 	XOR("^"),
 	MEMBER("."),
 	SHIFT_LEFT("<<"),
@@ -24,6 +20,11 @@ public enum Operation {
 	CONDITIONAL_AND("&&"),
 	CONDITIONAL_OR("||"),
 	
+	// Unary
+	UNARY_PLUS("+"),
+	UNARY_MINUS("-"),
+	UNARY_NOT("!"),
+	UNARY_NOR("~"),
 	PRE_INCREMENT("++"),
 	PRE_DECREMENT("--"),
 	POST_INCREMENT("++", false),
