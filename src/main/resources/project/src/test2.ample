@@ -1,0 +1,4 @@
+// Exported value
+export int getValue(int value) {
+    return value;
+}

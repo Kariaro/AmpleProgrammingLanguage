@@ -95,10 +95,7 @@ public class AmpleLexer {
 			.addRule(Type.POINTER, i -> i.addString("->"))
 			
 			// Preprocessors
-			.addRule(Type.DEFINE_TYPE, i -> i.addString("@type"))
-			.addRule(Type.DEFINE, i -> i.addString("@set"))
-			.addRule(Type.UNDEFINE, i -> i.addString("@unset"))
-			.addRule(Type.IMPORT, i -> i.addString("@import"))
+			.addRule(Type.LINK, i -> i.addString("link"))
 			
 			// Keywords
 			.addRule(Type.IF, i -> i.addString("if"))

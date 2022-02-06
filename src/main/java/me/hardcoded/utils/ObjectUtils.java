@@ -7,8 +7,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
-import me.hardcoded.compiler.expression.LowType;
-
 /**
  * This class is used to print a java objects content. It will print all private,
  * protected and public fields and return it in a tree type string.
@@ -61,14 +59,15 @@ public class ObjectUtils {
 		String ty = name + clazz.getSimpleName() + " ";
 		
 		if(clazz == String.class) {
-			return "%s(\"%s\")".formatted(StringUtils.escapeString(obj.toString()));
+			return "%s(\"%s\")".formatted(ty, StringUtils.escapeString(obj.toString()));
 		} else if(clazz == Pattern.class) {
-			return "%s(\"%s\")".formatted(((Pattern)obj).pattern());
+			return "%s(\"%s\")".formatted(ty, ((Pattern)obj).pattern());
 		} else if(clazz.isEnum() || clazz == Boolean.class || clazz == AtomicInteger.class || Number.class.isAssignableFrom(clazz)) {
 			return "%s(%s)".formatted(ty, obj);
-		} else if(clazz == LowType.class) {
-			return "%s(%s, %d)".formatted(ty, ((LowType)obj).type(), ((LowType)obj).depth());
 		}
+//		else if(clazz == LowType.class) {
+//			return "%s(%s, %d)".formatted(ty, ((LowType)obj).type(), ((LowType)obj).depth());
+//		}
 		
 		if(Collection.class.isAssignableFrom(clazz)) {
 			Collection<?> list = (Collection<?>)obj;

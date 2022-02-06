@@ -4,7 +4,6 @@ import me.hardcoded.compiler.parser.stat.ProgStat;
 import me.hardcoded.compiler.parser.type.Reference;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -12,18 +11,22 @@ import java.util.List;
  * When combining linkable objects all unresolved references will need to be resolved to compile.
  */
 public class LinkableObject {
-	private final List<Reference> missingReferences;
+	private final List<Reference> importedReferences;
+	private final List<Reference> exportedReferences;
+	private final List<String> imports;
 	private final File file;
-	private ProgStat program;
+	private final ProgStat program;
 	
-	public LinkableObject(File file, ProgStat program) {
+	public LinkableObject(File file, ProgStat program, List<String> imports, List<Reference> exportedReferences, List<Reference> importedReferences) {
 		this.file = file;
 		this.program = program;
-		this.missingReferences = new ArrayList<>();
+		this.importedReferences = importedReferences;
+		this.exportedReferences = exportedReferences;
+		this.imports = imports;
 	}
 	
-	public void addMissingReference(Reference reference) {
-		missingReferences.add(reference);
+	public List<String> getImports() {
+		return imports;
 	}
 	
 	public File getFile() {
@@ -34,7 +37,11 @@ public class LinkableObject {
 		return program;
 	}
 	
-	public List<Reference> getMissingReferences() {
-		return missingReferences;
+	public List<Reference> getImportedReferences() {
+		return importedReferences;
+	}
+	
+	public List<Reference> getExportedReferences() {
+		return exportedReferences;
 	}
 }

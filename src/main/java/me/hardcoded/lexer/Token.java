@@ -140,10 +140,7 @@ public class Token {
 		POINTER,
 		
 		// Preprocessors
-		DEFINE_TYPE,
-		DEFINE,
-		UNDEFINE,
-		IMPORT,
+		LINK,
 		
 		// Type prefixes
 		UNSIGNED,
