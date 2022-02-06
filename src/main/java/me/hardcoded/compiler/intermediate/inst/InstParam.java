@@ -1,9 +1,8 @@
 package me.hardcoded.compiler.intermediate.inst;
 
-import me.hardcoded.compiler.parser.type.Reference;
+import me.hardcoded.compiler.parser.type.ValueType;
 
 public interface InstParam {
-	
 	class Ref implements InstParam {
 		private final InstRef ref;
 		
@@ -17,10 +16,9 @@ public interface InstParam {
 		
 		@Override
 		public String toString() {
-			return ref.toString();
+			return ref.toSimpleString();
 		}
 	}
-	
 	
 	class Num implements InstParam {
 		private final String TEMP;
@@ -32,6 +30,40 @@ public interface InstParam {
 		@Override
 		public String toString() {
 			return TEMP;
+		}
+	}
+	
+	class Str implements InstParam {
+		private final String value;
+		
+		public Str(String value) {
+			this.value = value;
+		}
+		
+		public String getValue() {
+			return value;
+		}
+		
+		@Override
+		public String toString() {
+			return value;
+		}
+	}
+	
+	class Type implements InstParam {
+		private final ValueType valueType;
+		
+		public Type(ValueType valueType) {
+			this.valueType = valueType;
+		}
+		
+		public ValueType getValueType() {
+			return valueType;
+		}
+		
+		@Override
+		public String toString() {
+			return valueType.toString();
 		}
 	}
 }
