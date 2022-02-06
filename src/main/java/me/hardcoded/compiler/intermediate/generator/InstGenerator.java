@@ -10,6 +10,7 @@ import me.hardcoded.compiler.parser.type.Operation;
 import me.hardcoded.compiler.parser.type.Reference;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 public class InstGenerator {
@@ -56,13 +57,13 @@ public class InstGenerator {
 			// Expressions
 			case BINARY -> generateBinaryExpr((BinaryExpr)stat, procedure);
 			case CALL -> generateCallExpr((CallExpr)stat, procedure);
-			case CAST -> NONE;
-			case COMMA -> NONE;
+			case CAST -> generateCastExpr((CastExpr)stat, procedure);
+			case COMMA -> generateCommaExpr((CommaExpr)stat, procedure);
 			case NAME -> generateNameExpr((NameExpr)stat, procedure);
-			case NULL -> NONE;
+			case NULL -> generateNullExpr((NullExpr)stat, procedure);
 			case NUM -> generateNumExpr((NumExpr)stat, procedure);
-			case STR -> NONE;
-			case UNARY -> NONE;
+			case STR -> generateStrExpr((StrExpr)stat, procedure);
+			case UNARY -> generateUnaryExpr((UnaryExpr)stat, procedure);
 		};
 	}
 	
@@ -123,6 +124,9 @@ public class InstGenerator {
 			.addParam(new InstParam.Ref(endBranch)));
 		
 		// loop:
+		procedure.addInst(new Inst(Opcode.LABLE, stat.getSyntaxPosition())
+			.addParam(new InstParam.Ref(loopBranch)));
+		
 		generateStat(stat.getBody(), procedure);
 		procedure.addInst(new Inst(Opcode.JMP, stat.getSyntaxPosition())
 			.addParam(new InstParam.Ref(nextBranch)));
@@ -283,8 +287,40 @@ public class InstGenerator {
 		return holder;
 	}
 	
+	private InstRef generateCastExpr(CastExpr expr, Procedure procedure) {
+		InstRef holder = createDataReference(".cast");
+		InstRef value = generateStat(expr.getValue(), procedure);
+		
+		procedure.addInst(new Inst(Opcode.CAST, expr.getSyntaxPosition())
+			.addParam(new InstParam.Ref(holder))
+			.addParam(new InstParam.Type(expr.getCastType()))
+			.addParam(new InstParam.Ref(value)));
+		
+		return holder;
+	}
+	
+	private InstRef generateCommaExpr(CommaExpr expr, Procedure procedure) {
+		InstRef holder = NONE;
+		
+		Iterator<Expr> iter = expr.getValues().iterator();
+		if (iter.hasNext()) {
+			holder = generateStat(iter.next(), procedure);
+		}
+		
+		while (iter.hasNext()) {
+			generateStat(iter.next(), procedure);
+		}
+		
+		return holder;
+	}
+	
 	private InstRef generateNameExpr(NameExpr expr, Procedure procedure) {
 		return wrapReference(expr.getReference());
+	}
+	
+	private InstRef generateNullExpr(NullExpr expr, Procedure procedure) {
+		// TODO: Create a better null value
+		return createDataReference(".null");
 	}
 	
 	private InstRef generateNumExpr(NumExpr expr, Procedure procedure) {
@@ -294,6 +330,27 @@ public class InstGenerator {
 		procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
 			.addParam(new InstParam.Ref(holder))
 			.addParam(new InstParam.Num(expr.toString())));
+		
+		return holder;
+	}
+	
+	private InstRef generateStrExpr(StrExpr expr, Procedure procedure) {
+		InstRef holder = createDataReference(".string");
+		procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
+			.addParam(new InstParam.Ref(holder))
+			.addParam(new InstParam.Str(expr.getValue())));
+		
+		return holder;
+	}
+	
+	private InstRef generateUnaryExpr(UnaryExpr expr, Procedure procedure) {
+		InstRef holder = createDataReference(".unary");
+		InstRef value = generateStat(expr.getValue(), procedure);
+		
+		// TODO: Post and Pre modification of the expression
+		procedure.addInst(new Inst(getUnaryOpcode(expr.getOperation()), expr.getSyntaxPosition())
+			.addParam(new InstParam.Ref(holder))
+			.addParam(new InstParam.Ref(value)));
 		
 		return holder;
 	}
@@ -309,9 +366,7 @@ public class InstGenerator {
 	
 	private InstRef wrapReference(Reference reference) {
 		if (reference.isImported() || reference.isExported()) {
-			System.out.println(reference + " >>> CREATE WRAPPER");
 			reference = exportMap.getReference(reference);
-			System.out.println(">>> " + reference);
 		}
 		
 		InstRef result = wrappedReferences.get(reference);
@@ -319,7 +374,8 @@ public class InstGenerator {
 			return result;
 		}
 		
-		result = new InstRef(reference.getName(), count++, reference.getFlags());
+		result = new InstRef(reference.getName(), count++, 0);
+		result.setType(reference.getType());
 		wrappedReferences.put(reference, result);
 		return result;
 	}
@@ -348,6 +404,16 @@ public class InstGenerator {
 			case EQUALS -> Opcode.EQ;
 			case NOT_EQUALS -> Opcode.NEQ;
 			default -> throw new ParseException("Unknown binary operation '%s'", operation);
+		};
+	}
+	
+	public Opcode getUnaryOpcode(Operation operation) {
+		return switch (operation) {
+			case UNARY_MINUS -> Opcode.NEG;
+			case UNARY_PLUS -> Opcode.POS;
+			case UNARY_NOT -> Opcode.NOT;
+			case UNARY_NOR -> Opcode.NOR;
+			default -> throw new ParseException("Unknown unary operation '%s'", operation);
 		};
 	}
 }

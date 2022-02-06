@@ -26,6 +26,9 @@ public enum Opcode {
 	POS,				// r0 = +(r1)
 	NOR,				// r0 = ~(r1)
 	
+	// Size instructions
+	CAST,				// r0 = ( SIZE )(r1)
+	
 	// Memory instructions
 	STR,				// (*r0) = r1
 	LDL,				// r0 = (*r1)
