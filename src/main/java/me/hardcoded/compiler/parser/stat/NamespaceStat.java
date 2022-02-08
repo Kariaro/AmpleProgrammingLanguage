@@ -1,49 +1,46 @@
 package me.hardcoded.compiler.parser.stat;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
-import me.hardcoded.compiler.parser.expr.Expr;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.TreeType;
-import me.hardcoded.compiler.parser.type.ValueType;
 
-public class VarStat extends Stat {
+import java.util.ArrayList;
+import java.util.List;
+
+public class NamespaceStat extends Stat {
 	private Reference reference;
-	private Expr value;
+	private List<Stat> elements;
 	
-	public VarStat(Reference reference, Expr value, ISyntaxPosition syntaxPosition) {
+	public NamespaceStat(Reference reference, ISyntaxPosition syntaxPosition) {
 		super(syntaxPosition);
 		this.reference = reference;
-		this.value = value;
-	}
-	
-	public ValueType getType() {
-		return reference.getValueType();
-	}
-	
-	public String getName() {
-		return reference.getName();
+		this.elements = new ArrayList<>();
 	}
 	
 	public Reference getReference() {
 		return reference;
 	}
 	
-	public Expr getValue() {
-		return value;
+	public void addElement(Stat stat) {
+		elements.add(stat);
+	}
+	
+	public List<Stat> getElements() {
+		return elements;
 	}
 	
 	@Override
 	public boolean isEmpty() {
-		return false;
+		return elements.isEmpty();
 	}
 	
 	@Override
 	public boolean isPure() {
-		return true;
+		return false;
 	}
 	
 	@Override
 	public TreeType getTreeType() {
-		return TreeType.VAR;
+		return TreeType.NAMESPACE;
 	}
 }

@@ -75,14 +75,14 @@ public class LinkableDeserializer {
 		
 		size = readVarInt(in);
 		for (int i = 0; i < size; i++) {
-			ISyntaxPosition syntaxPosition = readISyntaxPosition(in);
-			syntaxPositionMap.put(i, syntaxPosition);
+			ValueType valueType = readValueType(in);
+			valueTypeMap.put(i, valueType);
 		}
 		
 		size = readVarInt(in);
 		for (int i = 0; i < size; i++) {
-			ValueType valueType = readValueType(in);
-			valueTypeMap.put(i, valueType);
+			ISyntaxPosition syntaxPosition = readISyntaxPosition(in);
+			syntaxPositionMap.put(i, syntaxPosition);
 		}
 	}
 	
@@ -124,20 +124,22 @@ public class LinkableDeserializer {
 			result |= (value << (7 * numRead));
 			
 			numRead++;
-			if(numRead > 5) {
+			if (numRead > 5) {
 				throw new RuntimeException("VarInt is too big");
 			}
-		} while((read & 0b10000000) != 0);
+		} while ((read & 0b10000000) != 0);
 		
 		return result;
 	}
 	
 	private Reference readReference(DataInputStream in) throws IOException {
 		String name = deserializeString(in);
+		// TODO: Cache value types?
+		ValueType valueType = readValueType(in);
 		int usages = readVarInt(in);
 		int id = readVarInt(in);
 		int flags = readVarInt(in);
-		return new Reference(name, id, flags, usages);
+		return new Reference(name, valueType, id, flags, usages);
 	}
 	
 	private ISyntaxPosition readISyntaxPosition(DataInputStream in) throws IOException {
@@ -181,6 +183,7 @@ public class LinkableDeserializer {
 			case SCOPE -> deserializeScopeStat(in);
 			case VAR -> deserializeVarStat(in);
 			case WHILE -> deserializeWhileStat(in);
+			case NAMESPACE -> deserializeNamespaceStat(in);
 			
 			/* Expressions */
 			case BINARY -> deserializeBinaryExpr(in);
@@ -192,6 +195,7 @@ public class LinkableDeserializer {
 			case NUM -> deserializeNumExpr(in);
 			case STR -> deserializeStrExpr(in);
 			case UNARY -> deserializeUnaryExpr(in);
+			case CONDITIONAL -> deserializeConditionalExpr(in);
 		};
 	}
 	
@@ -221,19 +225,17 @@ public class LinkableDeserializer {
 	
 	private FuncStat deserializeFuncStat(DataInputStream in) throws IOException {
 		ISyntaxPosition syntaxPosition = deserializeISyntaxPosition(in);
-		ValueType returnType = deserializeValueType(in);
 		Reference reference = deserializeReference(in);
 		
-		List<FuncParam> parameters = new ArrayList<>();
+		List<Reference> parameters = new ArrayList<>();
 		int size = readVarInt(in);
 		for (int i = 0; i < size; i++) {
-			ValueType paramType = deserializeValueType(in);
 			Reference paramReference = deserializeReference(in);
-			parameters.add(new FuncParam(paramType, paramReference));
+			parameters.add(paramReference);
 		}
 		
 		Stat body = deserializeStat(in);
-		FuncStat result = new FuncStat(returnType, reference, parameters, syntaxPosition);
+		FuncStat result = new FuncStat(reference, parameters, syntaxPosition);
 		result.complete(body);
 		return result;
 	}
@@ -291,9 +293,8 @@ public class LinkableDeserializer {
 	private VarStat deserializeVarStat(DataInputStream in) throws IOException {
 		ISyntaxPosition syntaxPosition = deserializeISyntaxPosition(in);
 		Reference reference = deserializeReference(in);
-		ValueType valueType = deserializeValueType(in);
 		Expr value = (Expr)deserializeStat(in);
-		return new VarStat(valueType, reference, value, syntaxPosition);
+		return new VarStat(reference, value, syntaxPosition);
 	}
 	
 	private WhileStat deserializeWhileStat(DataInputStream in) throws IOException {
@@ -301,6 +302,19 @@ public class LinkableDeserializer {
 		Expr condition = (Expr)deserializeStat(in);
 		Stat body = deserializeStat(in);
 		return new WhileStat(condition, body, syntaxPosition);
+	}
+	
+	private NamespaceStat deserializeNamespaceStat(DataInputStream in) throws IOException {
+		ISyntaxPosition syntaxPosition = deserializeISyntaxPosition(in);
+		Reference reference = deserializeReference(in);
+		
+		NamespaceStat result = new NamespaceStat(reference, syntaxPosition);
+		int size = readVarInt(in);
+		for (int i = 0; i < size; i++) {
+			result.addElement(deserializeStat(in));
+		}
+		
+		return result;
 	}
 	
 	// Expressions
@@ -377,6 +391,20 @@ public class LinkableDeserializer {
 		Operation operation = Operation.VALUES[readVarInt(in)];
 		Expr value = (Expr)deserializeStat(in);
 		return new UnaryExpr(value, operation, syntaxPosition);
+	}
+	
+	private ConditionalExpr deserializeConditionalExpr(DataInputStream in) throws IOException {
+		ISyntaxPosition syntaxPosition = deserializeISyntaxPosition(in);
+		Operation operation = Operation.VALUES[readVarInt(in)];
+		
+		ConditionalExpr result = new ConditionalExpr(operation, syntaxPosition);
+		
+		int size = readVarInt(in);
+		for (int i = 0; i < size; i++) {
+			result.addElement((Expr) deserializeStat(in));
+		}
+		
+		return result;
 	}
 	
 	// Type deserializers

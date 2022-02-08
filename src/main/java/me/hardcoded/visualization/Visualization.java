@@ -3,61 +3,85 @@ package me.hardcoded.visualization;
 import java.awt.Graphics;
 import java.awt.image.BufferStrategy;
 
-import javax.swing.JComponent;
-import javax.swing.JFrame;
+import javax.swing.*;
 
-public abstract class Visualization {
-	public static final Visualization DUMMY = new Visualization("null") {
+/**
+ * This class is used for the visualization api
+ *
+ * @author HardCoded
+ */
+public abstract class Visualization<T> {
+	public static final Visualization<Object> DUMMY = new Visualization<>("null") {
 		@Override
-		public void show(Object... parameters) {
-			
-		}
+		protected void setup() {}
 		
 		@Override
-		public void hide() {
-			
-		}
+		protected void showObject(Object value) {}
+		
+		@Override
+		public void hide() {}
 	};
 	
 	protected BufferStrategy bs;
 	protected JFrame frame;
 	
+	private boolean hasSetup;
+	// Used to store early objects that was displayed before the frame had fully loaded
+	private T earlyObject;
+	
 	protected Visualization(String name) {
 		this(name, 2);
 	}
 	
-	protected Visualization(String title, int buffers) {
-		// This allows for repaints directly from a bufferStrategy
-		frame = new JFrame() {
-			private static final long serialVersionUID = 1L;
-			
-			@Override
-			public void paint(Graphics g) {
-				if(bs == null) {
-					createBufferStrategy(buffers);
-					bs = getBufferStrategy();
+	protected Visualization(String defaultTitle, int buffers) {
+		SwingUtilities.invokeLater(() -> {
+			frame = new JFrame(defaultTitle) {
+				@Override
+				public void paint(Graphics g) {
+					if (bs == null) {
+						createBufferStrategy(buffers);
+						bs = getBufferStrategy();
+					}
+					super.paint(g);
 				}
-				super.paint(g);
+			};
+			frame.setLocationRelativeTo(null);
+			frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+			setup();
+			
+			synchronized (this) {
+				hasSetup = true;
+				
+				// If we had an object displayed before we initialized the frame
+				// we will now show that object and make sure it is unloaded
+				if (earlyObject != null) {
+					showObject(earlyObject);
+					earlyObject = null;
+				}
 			}
-		};
-		frame.setTitle(title);
-		frame.setLocationRelativeTo(null);
-		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		});
 	}
 	
 	/**
-	 * Shows the visualization with the specified arguments.
-	 * 
-	 * @param	parameters
+	 * This method is called after the window objects has been created
 	 */
-	public abstract void show(Object... parameters);
+	protected abstract void setup();
 	
 	/**
-	 * Hides the visualization.
+	 * Display the object with this visualization
 	 */
+	public synchronized final void show(T value) {
+		if (hasSetup) {
+			showObject(value);
+		} else {
+			earlyObject = value;
+		}
+	}
+	
+	/**
+	 * This is called when the visualization shows an object
+	 */
+	protected abstract void showObject(T value);
+	
 	public abstract void hide();
-	
-	public final JComponent getComponent() {
-		return frame.getRootPane();
-	}
 }

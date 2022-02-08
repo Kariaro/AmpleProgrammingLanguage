@@ -4,7 +4,6 @@ import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.LinkableObject;
 import me.hardcoded.compiler.parser.expr.*;
 import me.hardcoded.compiler.parser.stat.*;
-import me.hardcoded.compiler.parser.type.FuncParam;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.TreeType;
 import me.hardcoded.compiler.parser.type.ValueType;
@@ -46,7 +45,7 @@ public class LinkableSerializer {
 		
 		byte[] treeBytes = writeTree(obj);
 		byte[] refsBytes = writeRefs();
-		byte[] missBytes = writeContext(obj);
+		byte[] cntxBytes = writeContext(obj);
 		byte[] strnBytes = writeStrings();
 		
 		{
@@ -58,7 +57,7 @@ public class LinkableSerializer {
 		
 		full.writeBytes(strnBytes);
 		full.writeBytes(refsBytes);
-		full.writeBytes(missBytes);
+		full.writeBytes(cntxBytes);
 		full.writeBytes(treeBytes);
 		
 		stringPositions.clear();
@@ -83,14 +82,14 @@ public class LinkableSerializer {
 			writeReference(reference, out);
 		}
 		
-		writeVarInt(syntaxPositions.list.size(), out);
-		for (ISyntaxPosition syntaxPosition : syntaxPositions.list) {
-			writeISyntaxPosition(syntaxPosition, out);
-		}
-		
 		writeVarInt(valueTypes.list.size(), out);
 		for (ValueType valueType : valueTypes.list) {
 			writeValueType(valueType, out);
+		}
+		
+		writeVarInt(syntaxPositions.list.size(), out);
+		for (ISyntaxPosition syntaxPosition : syntaxPositions.list) {
+			writeISyntaxPosition(syntaxPosition, out);
 		}
 		
 		return bs.toByteArray();
@@ -144,6 +143,7 @@ public class LinkableSerializer {
 	
 	private void writeReference(Reference reference, DataOutputStream out) throws IOException {
 		serializeString(reference.getName(), out);
+		writeValueType(reference.getValueType(), out);
 		writeVarInt(reference.getUsages(), out);
 		writeVarInt(reference.getId(), out);
 		writeVarInt(reference.getFlags(), out);
@@ -192,6 +192,7 @@ public class LinkableSerializer {
 			case SCOPE -> serializeScopeStat((ScopeStat)stat, out);
 			case VAR -> serializeVarStat((VarStat)stat, out);
 			case WHILE -> serializeWhileStat((WhileStat)stat, out);
+			case NAMESPACE -> serializeNamespaceStat((NamespaceStat)stat, out);
 			
 			/* Expressions */
 			case BINARY -> serializeBinaryExpr((BinaryExpr)stat, out);
@@ -203,6 +204,7 @@ public class LinkableSerializer {
 			case NUM -> serializeNumExpr((NumExpr)stat, out);
 			case STR -> serializeStrExpr((StrExpr)stat, out);
 			case UNARY -> serializeUnaryExpr((UnaryExpr)stat, out);
+			case CONDITIONAL -> serializeConditionalExpr((ConditionalExpr)stat, out);
 		}
 	}
 	
@@ -226,13 +228,11 @@ public class LinkableSerializer {
 	}
 	
 	private void serializeFuncStat(FuncStat stat, DataOutputStream out) throws IOException {
-		serializeValueType(stat.getReturnType(), out);
 		serializeReference(stat.getReference(), out);
-		List<FuncParam> parameters = stat.getParameters();
+		List<Reference> parameters = stat.getParameters();
 		writeVarInt(parameters.size(), out);
-		for (FuncParam param : parameters) {
-			serializeValueType(param.getType(), out);
-			serializeReference(param.getReference(), out);
+		for (Reference param : parameters) {
+			serializeReference(param, out);
 		}
 		serializeStat(stat.getBody(), out);
 	}
@@ -273,13 +273,22 @@ public class LinkableSerializer {
 	
 	private void serializeVarStat(VarStat stat, DataOutputStream out) throws IOException {
 		serializeReference(stat.getReference(), out);
-		serializeValueType(stat.getType(), out);
 		serializeStat(stat.getValue(), out);
 	}
 	
 	private void serializeWhileStat(WhileStat stat, DataOutputStream out) throws IOException {
 		serializeStat(stat.getCondition(), out);
 		serializeStat(stat.getBody(), out);
+	}
+	
+	private void serializeNamespaceStat(NamespaceStat stat, DataOutputStream out) throws IOException {
+		serializeReference(stat.getReference(), out);
+		
+		List<Stat> elements = stat.getElements();
+		writeVarInt(elements.size(), out);
+		for (Stat s : elements) {
+			serializeStat(s, out);
+		}
 	}
 	
 	// Expressions
@@ -341,10 +350,22 @@ public class LinkableSerializer {
 		serializeStat(expr.getValue(), out);
 	}
 	
+	private void serializeConditionalExpr(ConditionalExpr expr, DataOutputStream out) throws IOException {
+		writeVarInt(expr.getOperation().ordinal(), out);
+		List<Expr> values = expr.getValues();
+		writeVarInt(values.size(), out);
+		for (Expr e : values) {
+			serializeStat(e, out);
+		}
+	}
+	
 	
 	// Type serializers
 	private void serializeReference(Reference reference, DataOutputStream out) throws IOException {
 		int idx = references.put(reference);
+		if (reference == null) {
+			Thread.dumpStack();
+		}
 		writeVarInt(idx, out);
 	}
 	

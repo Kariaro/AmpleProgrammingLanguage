@@ -53,6 +53,7 @@ public class InstGenerator {
 			case SCOPE -> generateScopeStat((ScopeStat)stat, procedure);
 			case VAR -> generateVarStat((VarStat)stat, procedure);
 			case WHILE -> generateWhileStat((WhileStat)stat, procedure);
+			case NAMESPACE -> generateNamespaceStat((NamespaceStat)stat, procedure);
 			
 			// Expressions
 			case BINARY -> generateBinaryExpr((BinaryExpr)stat, procedure);
@@ -64,6 +65,7 @@ public class InstGenerator {
 			case NUM -> generateNumExpr((NumExpr)stat, procedure);
 			case STR -> generateStrExpr((StrExpr)stat, procedure);
 			case UNARY -> generateUnaryExpr((UnaryExpr)stat, procedure);
+			case CONDITIONAL -> generateConditionalExpr((ConditionalExpr)stat, procedure);
 		};
 	}
 	
@@ -246,13 +248,36 @@ public class InstGenerator {
 		return NONE;
 	}
 	
+	private InstRef generateNamespaceStat(NamespaceStat stat, Procedure prodedure) {
+		// A namespace is only a container of functions
+		
+		for (Stat s : stat.getElements()) {
+			generateStat(s, prodedure);
+		}
+		
+		return NONE;
+	}
+	
 	// Expressions
 	private InstRef generateBinaryExpr(BinaryExpr expr, Procedure procedure) {
-		InstRef left = generateStat(expr.getLeft(), procedure);
-		InstRef right = generateStat(expr.getRight(), procedure);
+		Opcode opcode = getBinaryOpcode(expr.getOperation());
 		InstRef holder;
 		
-		Opcode opcode = getBinaryOpcode(expr.getOperation());
+		if (opcode == Opcode.MOV) {
+			if (expr.getLeft() instanceof UnaryExpr e && e.getOperation() == Operation.DEREFERENCE) {
+				InstRef left = generateStat(e.getValue(), procedure);
+				InstRef right = generateStat(expr.getRight(), procedure);
+				
+				procedure.addInst(new Inst(Opcode.STORE, expr.getSyntaxPosition())
+					.addParam(new InstParam.Ref(left))
+					.addParam(new InstParam.Ref(right)));
+				
+				return right;
+			}
+		}
+		
+		InstRef left = generateStat(expr.getLeft(), procedure);
+		InstRef right = generateStat(expr.getRight(), procedure);
 		if (opcode == Opcode.MOV) {
 			holder = left;
 			procedure.addInst(new Inst(opcode, expr.getSyntaxPosition())
@@ -355,6 +380,73 @@ public class InstGenerator {
 		return holder;
 	}
 	
+	private InstRef generateConditionalExpr(ConditionalExpr expr, Procedure procedure) {
+		boolean isAnd = expr.getOperation() == Operation.CONDITIONAL_AND;
+		
+		InstRef jmpBranch = createLocalLabel(isAnd ? ".cand.end" : ".cor.value");
+		InstRef holder = createDataReference(isAnd ? ".cand" : ".cor");
+		
+		procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
+			.addParam(new InstParam.Ref(holder))
+			.addParam(new InstParam.Num(0)));
+		
+		for (Expr e : expr.getValues()) {
+			InstRef check = generateStat(e, procedure);
+			procedure.addInst(new Inst(isAnd ? Opcode.JZ : Opcode.JNZ, e.getSyntaxPosition())
+				.addParam(new InstParam.Ref(check))
+				.addParam(new InstParam.Ref(jmpBranch)));
+		}
+		
+		if (isAnd) {
+			procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
+				.addParam(new InstParam.Ref(holder))
+				.addParam(new InstParam.Num(1)));
+			
+			// :end
+			procedure.addInst(new Inst(Opcode.LABLE, expr.getSyntaxPosition())
+				.addParam(new InstParam.Ref(jmpBranch)));
+		} else {
+			InstRef corEndBranch = createLocalLabel(".cor.end");
+			procedure.addInst(new Inst(Opcode.JMP, expr.getSyntaxPosition())
+				.addParam(new InstParam.Ref(corEndBranch)));
+			
+			// :value
+			procedure.addInst(new Inst(Opcode.LABLE, expr.getSyntaxPosition())
+				.addParam(new InstParam.Ref(jmpBranch)));
+			procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
+				.addParam(new InstParam.Ref(holder))
+				.addParam(new InstParam.Num(1)));
+			
+			// :end
+			procedure.addInst(new Inst(Opcode.LABLE, expr.getSyntaxPosition())
+				.addParam(new InstParam.Ref(corEndBranch)));
+		}
+		
+		// a && b && c && d && e
+		// MOV [tmp], [0]
+		// JZ [a], [:end0]
+		// JZ [b], [:end0]
+		// JZ [c], [:end0]
+		// JZ [d], [:end0]
+		// JZ [e], [:end0]
+		// MOV [tmp], [1]
+		// :end0
+		
+		// a || b || c || d || e
+		// MOV [tmp], [0]
+		// JNZ [a], [:val0]
+		// JNZ [b], [:val0]
+		// JNZ [c], [:val0]
+		// JNZ [d], [:val0]
+		// JNZ [e], [:val0]
+		// JMP [:end0]
+		// :val0
+		// MOV [tmp], [1]
+		// :end0
+		
+		return holder;
+	}
+	
 	// Reference
 	private InstRef createLocalLabel(String name) {
 		return new InstRef(name, ++count, Reference.LABEL);
@@ -380,10 +472,32 @@ public class InstGenerator {
 		return result;
 	}
 	
+	// Type checks
+	private Expr getDereferenceLeaf(Expr expr) {
+		while (true) {
+			if (expr instanceof CommaExpr e) {
+				if (!e.getValues().isEmpty()) {
+					expr = e.getLast();
+					continue;
+				} else {
+					return null;
+				}
+			}
+			
+			if (expr instanceof UnaryExpr e) {
+				if (e.getOperation() == Operation.DEREFERENCE) {
+					return e.getValue();
+				}
+			}
+			
+			return null;
+		}
+	}
+	
 	// Type conversions
 	public Opcode getBinaryOpcode(Operation operation) {
 		return switch (operation) {
-			// ???
+			// Special
 			case ASSIGN -> Opcode.MOV;
 			
 			// Binary
@@ -409,6 +523,9 @@ public class InstGenerator {
 	
 	public Opcode getUnaryOpcode(Operation operation) {
 		return switch (operation) {
+			case REFERENCE -> Opcode.REF;
+			case DEREFERENCE -> Opcode.LOAD;
+			
 			case UNARY_MINUS -> Opcode.NEG;
 			case UNARY_PLUS -> Opcode.POS;
 			case UNARY_NOT -> Opcode.NOT;

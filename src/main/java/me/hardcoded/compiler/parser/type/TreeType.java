@@ -1,6 +1,7 @@
 package me.hardcoded.compiler.parser.type;
 
 public enum TreeType {
+	// Statements
 	BREAK,
 	CONTINUE,
 	EMPTY,
@@ -14,6 +15,9 @@ public enum TreeType {
 	SCOPE,
 	VAR,
 	WHILE,
+	NAMESPACE,
+	
+	// Expressions
 	BINARY,
 	CALL,
 	CAST,
@@ -22,7 +26,8 @@ public enum TreeType {
 	NULL,
 	NUM,
 	STR,
-	UNARY;
+	UNARY,
+	CONDITIONAL;
 	
 	public static final TreeType[] VALUES = values();
 }

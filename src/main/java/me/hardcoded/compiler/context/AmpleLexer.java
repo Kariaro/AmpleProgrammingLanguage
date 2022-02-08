@@ -91,7 +91,7 @@ public class AmpleLexer {
 			.addRule(Type.AT, i -> i.addString("@"))
 			
 			// Classes
-			.addRule(Type.NAMESPACE, i -> i.addString("::"))
+			.addRule(Type.NAMESPACE_OPERATOR, i -> i.addString("::"))
 			.addRule(Type.POINTER, i -> i.addString("->"))
 			
 			// Preprocessors
@@ -110,8 +110,7 @@ public class AmpleLexer {
 			.addRule(Type.CASE, i -> i.addString("case"))
 			.addRule(Type.DEFAULT, i -> i.addString("default"))
 			.addRule(Type.GOTO, i -> i.addString("goto"))
-			.addRule(Type.COMPILER, i -> i.addString("compiler"))
-			.addRule(Type.CONSTRUCT, i -> i.addString("construct"))
+			.addRule(Type.NAMESPACE, i -> i.addString("namespace"))
 			
 			// Function Modifiers
 			.addRule(Type.EXPORT, i -> i.addString("export"))

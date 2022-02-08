@@ -30,8 +30,9 @@ public enum Opcode {
 	CAST,				// r0 = ( SIZE )(r1)
 	
 	// Memory instructions
-	STR,				// (*r0) = r1
-	LDL,				// r0 = (*r1)
+	STORE,				// (*r0) = r1
+	REF,				// r0 = (&r1)
+	LOAD,				// r0 = (*r1)
 	
 	// Branching instructions
 	LABLE,				// A label

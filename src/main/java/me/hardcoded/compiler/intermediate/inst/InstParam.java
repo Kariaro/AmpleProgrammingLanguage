@@ -16,14 +16,21 @@ public interface InstParam {
 		
 		@Override
 		public String toString() {
-			return ref.toSimpleString();
+			return ref.toString();
 		}
 	}
 	
 	class Num implements InstParam {
 		private final String TEMP;
 		
+		@Deprecated
+		public Num(int value) {
+			// TODO: Allow numbers here
+			this.TEMP = "" + value;
+		}
+		
 		public Num(String TEMP) {
+			// TODO: Allow numbers here
 			this.TEMP = TEMP;
 		}
 		

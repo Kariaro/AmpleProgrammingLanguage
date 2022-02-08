@@ -22,6 +22,22 @@ public class CommaExpr extends Expr {
 		return values.isEmpty();
 	}
 	
+	public Expr getLast() {
+		if (values.isEmpty()) {
+			return null;
+		}
+		
+		return values.get(values.size() - 1);
+	}
+	
+	public void setLast(Expr expr) {
+		if (values.isEmpty()) {
+			values.add(expr);
+		} else {
+			values.set(values.size() - 1, expr);
+		}
+	}
+	
 	@Override
 	public boolean isPure() {
 		for (Expr expr : values) {
