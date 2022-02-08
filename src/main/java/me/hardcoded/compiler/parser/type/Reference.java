@@ -1,5 +1,7 @@
 package me.hardcoded.compiler.parser.type;
 
+import me.hardcoded.utils.DebugUtils;
+
 public class Reference {
 	public static final int IMPORT = 1 << 5,
 							EXPORT = 1 << 6;
@@ -8,24 +10,34 @@ public class Reference {
 							LABEL = 1,
 							FUNCTION = 2;
 	
-	private int id;
-	private String name;
+	private final int id;
+	private final String name;
+	private ValueType valueType;
 	private int flags;
 	private int usages;
 	
-	public Reference(String name, int id, int flags, int usages) {
+	public Reference(String name, ValueType valueType, int id, int flags, int usages) {
 		this.name = name;
 		this.id = id;
+		this.valueType = valueType;
 		this.flags = flags;
 		this.usages = usages;
 	}
 	
-	public Reference(String name, int id, int flags) {
-		this(name, id, flags, 0);
+	public Reference(String name, ValueType valueType, int id, int flags) {
+		this(name, valueType, id, flags, 0);
 	}
 	
 	public String getName() {
 		return name;
+	}
+	
+	public ValueType getValueType() {
+		return valueType;
+	}
+	
+	public void setValueType(ValueType valueType) {
+		this.valueType = valueType;
 	}
 	
 	public int getUsages() {
@@ -101,6 +113,14 @@ public class Reference {
 			return name;
 		}
 		
-		return name + ":" + toSimpleString();
+		if (DebugUtils.DEBUG_REFERENCE_INFORMATION) {
+			if (valueType != null) {
+				return valueType + " " + name + ":" + toSimpleString();
+			}
+			
+			return name + ":" + toSimpleString();
+		}
+		
+		return name;
 	}
 }

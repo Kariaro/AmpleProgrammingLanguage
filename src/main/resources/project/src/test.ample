@@ -1,3 +1,4 @@
+/*
 link "src/test2.ample"
 
 bool isPrime(int number) {
@@ -9,8 +10,67 @@ bool isPrime(int number) {
 
 	return true;
 }
+*/
+
+export namespace Kernel {
+    namespace Two {
+        int two_method(int a) {
+            return 100 * a;
+        }
+    }
+
+    int kernel_method(int a, int b) {
+        return Two::two_method(a) * b;
+    }
+}
 
 int main() {
+    //int value = 1000;
+    //int b = (*(:int*)value = 10);
+
+    int tt = Kernel::kernel_method(2);
+
+    int* value;
+    /*
+    CASE_1:
+    (main(), main(), *value) = 32;
+
+    CASE_2:
+    *(main(), main(), value) = 32;
+
+    CASE_3:
+    (main(), main(), *value = 32);
+    */
+
+    CASE_4:
+    value = (1, 2, 3) | 4 | 5;
+    value = ((1, 2, 3) <= 3) == 4;
+    (1, (2, 3 - (4, (5, 6 * (7, !(8, -(9, 10, 11), 12), 13), 14), 15), 16), 17);
+
+    (1, 2, 3)(1, 1, 1);
+    (1, 2, value)(1, 1, 1);
+    &(1, 2, label);
+
+    label:
+
+    (1, 2, 3) = 4;
+    value = 5 == 3;
+    value = !!!!!(1, 2, 3);
+    value = 1 && 2 && 3;
+
+    CASE_5:
+    value = (3, 2, 1) && 2 && 3;
+
+
+
+    CASE_6:
+    value = 1 && 2 && 3 && 4 && 5 && 6 && 7 || 3 || 4;
+
+    CASE_7:
+    value = 1 || 2 || 3 || 4 || 5 || 6 || 7;
+
+    /*
     int test = getValue(100) * isPrime(1000);
     return test;
+    */
 }

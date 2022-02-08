@@ -2,3 +2,15 @@
 export int getValue(int value) {
     return value;
 }
+
+export namespace Test2 {
+    export namespace Scope {
+        int getTest() {
+            return 100;
+        }
+    }
+
+    int getValues() {
+        return 100;
+    }
+}

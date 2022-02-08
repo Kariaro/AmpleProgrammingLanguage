@@ -41,6 +41,7 @@ public enum Operation {
 	// Memory
 	ASSIGN("="),
 	ARRAY("[]"),
+	NAMESPACE("::"),
 	;
 	
 	public static final Operation[] VALUES = values();

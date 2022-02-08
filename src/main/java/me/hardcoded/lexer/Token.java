@@ -117,7 +117,7 @@ public class Token {
 		BREAK,
 		RETURN,
 		GOTO,
-		CONSTRUCT,
+		NAMESPACE,
 		
 		// Compiler annotations
 		COMPILER,
@@ -135,7 +135,7 @@ public class Token {
 		AT,
 		
 		// Classes
-		NAMESPACE,
+		NAMESPACE_OPERATOR,
 		MEMBER,
 		POINTER,
 		

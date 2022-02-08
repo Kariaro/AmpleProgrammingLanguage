@@ -55,7 +55,7 @@ public class Main {
 		}
 		
 		if (DebugUtils.isDeveloper()) {
-			String file = "test.ample";
+			String file = "link.ample";
 			File dir = new File("src/main/resources/test/ample/");
 			
 			String workingDirectory = new File("src/main/resources/project").getAbsolutePath();

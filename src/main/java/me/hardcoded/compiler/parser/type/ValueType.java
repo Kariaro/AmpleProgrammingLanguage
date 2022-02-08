@@ -1,6 +1,8 @@
 package me.hardcoded.compiler.parser.type;
 
 public class ValueType {
+	public static final ValueType UNDEFINED = new ValueType("", 0, 0, 0);
+	
 	private static final String FLAGS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/";
 	
 	public static final int UNSIGNED = 1,

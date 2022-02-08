@@ -7,13 +7,13 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.font.FontRenderContext;
 import java.awt.geom.AffineTransform;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.IllegalFormatCodePointException;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 
 import javax.imageio.ImageIO;
-import javax.swing.JPanel;
+import javax.swing.*;
 
 import me.hardcoded.compiler.parser.expr.*;
 import me.hardcoded.compiler.parser.stat.*;
@@ -23,14 +23,20 @@ import me.hardcoded.compiler.parser.stat.*;
  * 
  * @author HardCoded
  */
-public final class ParseTreeVisualization extends Visualization {
+public final class ParseTreeVisualization extends Visualization<ProgStat> {
 	private PTPanel panel;
 	
 	public ParseTreeVisualization() {
 		super("ParseTree - Visualization", 2);
-		
+	}
+	
+	@Override
+	protected void setup() {
 		try {
-			frame.setIconImage(ImageIO.read(ParseTreeVisualization.class.getResourceAsStream("/icons/parsetree.png")));
+			InputStream stream = ParseTreeVisualization.class.getResourceAsStream("/icons/parsetree.png");
+			if (stream != null) {
+				frame.setIconImage(ImageIO.read(stream));
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -58,11 +64,9 @@ public final class ParseTreeVisualization extends Visualization {
 				double last = scroll;
 				scroll = Math.pow(1.3, scrollam - 1);
 				
-				{
-					Point mouse = event.getPoint();
-					panel.xpos += mouse.x * (scroll - last);
-					panel.ypos += mouse.y * (scroll - last);
-				}
+				Point mouse = event.getPoint();
+				panel.xpos += mouse.x * (scroll - last);
+				panel.ypos += mouse.y * (scroll - last);
 				
 				panel.zoom = 1.0 / scroll;
 				panel.repaint();
@@ -70,11 +74,10 @@ public final class ParseTreeVisualization extends Visualization {
 			
 			@Override
 			public void mousePressed(MouseEvent event) {
-				if (event.getButton() != MouseEvent.BUTTON1) {
-					return;
+				if (event.getButton() == MouseEvent.BUTTON1) {
+					selectedX = event.getX() * scroll - panel.xpos;
+					selectedY = event.getY() * scroll - panel.ypos;
 				}
-				selectedX = event.getX() * scroll - panel.xpos;
-				selectedY = event.getY() * scroll - panel.ypos;
 			}
 			
 			@Override
@@ -98,9 +101,9 @@ public final class ParseTreeVisualization extends Visualization {
 					
 					if (fullBox) {
 						boolean smallBox = mx > (e.x + (e.offset - e.width) / 2.0)
-										&& mx < (e.x + (e.offset + e.width) / 2.0)
-										&& my > (e.y - 20)
-										&& my < (e.y + e.height + 20);
+							&& mx < (e.x + (e.offset + e.width) / 2.0)
+							&& my > (e.y - 20)
+							&& my < (e.y + e.height + 20);
 						
 						e.hover = smallBox;
 						if (smallBox) {
@@ -129,11 +132,7 @@ public final class ParseTreeVisualization extends Visualization {
 	}
 	
 	@Override
-	public void show(Object... args) {
-		if(args.length != 1) throw new IllegalArgumentException("Expected one argument.");
-		Object object = args[0];
-		if (!(object instanceof ProgStat)) throw new IllegalArgumentException("Expected a Program object");
-		ProgStat program = (ProgStat)object;
+	protected void showObject(ProgStat program) {
 		panel.display(program);
 		frame.setVisible(true);
 	}
@@ -144,10 +143,8 @@ public final class ParseTreeVisualization extends Visualization {
 	}
 	
 	private class PTPanel extends JPanel {
-		private static final long serialVersionUID = 1L;
-		
-		private List<Element> elements = new ArrayList<>();
-		private Font font = new Font("Consolas", Font.PLAIN, 18);
+		private final List<Element> elements = new ArrayList<>();
+		private final Font font = new Font("Consolas", Font.PLAIN, 18);
 		
 		private double zoom = 1;
 		private double xpos = 0;
@@ -170,15 +167,6 @@ public final class ParseTreeVisualization extends Visualization {
 				for (Element e : elements) e.paintLines(g);
 				for (Element e : elements) e.paint(g);
 			}
-			
-//			Font[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts();
-//			for (int i = 0; i < fonts.length; i++) {
-//				Font font = fonts[i];
-//				g.setFont(font.deriveFont(32.0f));
-//				
-//				g.drawString("The brown fox jumped over the lazy dog", 0, i * 100);
-//				g.drawString(font.getName(), 1000, i * 100);
-//			}
 		}
 		
 		public void display(ProgStat program) {
@@ -208,7 +196,7 @@ public final class ParseTreeVisualization extends Visualization {
 		public double offset;
 		public boolean hover;
 		
-		private List<Element> elements;
+		private final List<Element> elements;
 		private String content;
 		private Color body = Color.lightGray;
 		
@@ -257,7 +245,6 @@ public final class ParseTreeVisualization extends Visualization {
 		
 		public void setContent(String value) {
 			content = value;
-			
 			width = content.length() * 12 + 10;
 			width = (int)getStringWidth(content) + 10;
 			height = 20;
@@ -267,7 +254,9 @@ public final class ParseTreeVisualization extends Visualization {
 		public void move(double x, double y) {
 			this.x += x;
 			this.y += y;
-			for(Element e : elements) e.move(x, y);
+			for (Element e : elements) {
+				e.move(x, y);
+			}
 		}
 		
 		public void paint(Graphics2D g) {
@@ -280,12 +269,10 @@ public final class ParseTreeVisualization extends Visualization {
 				xp += (offset - width) / 2;
 			}
 			
-			if ((xp + width + panel.xpos < 0)
-			|| (xp - width + panel.xpos > panel.getWidth() / panel.zoom)
-			|| (y - 5 + (height + 10) + panel.ypos < 0)
-			|| (y - 5 - (height + 10) + panel.ypos > panel.getHeight() / panel.zoom)) {
-				
-			} else {
+			if ((xp + width + panel.xpos >= 0)
+			&& (xp - width + panel.xpos <= panel.getWidth() / panel.zoom)
+			&& (y - 5 + (height + 10) + panel.ypos >= 0)
+			&& (y - 5 - (height + 10) + panel.ypos <= panel.getHeight() / panel.zoom)) {
 				g.setColor(hover ? body.darker():body);
 				g.fillRoundRect(xp, y - 5, width, height + 10, 10, 10);
 				
@@ -296,14 +283,19 @@ public final class ParseTreeVisualization extends Visualization {
 				g.setStroke(stroke);
 				
 				g.setColor(Color.black);
-				FontMetrics fm = g.getFontMetrics(); {
-					Rectangle rect = fm.getStringBounds(content, g).getBounds();
-					g.drawString(content, x - rect.x + ((int)offset - rect.width) / 2, y - rect.y + (height - rect.height) / 2 + 3);
-				}
+				FontMetrics fm = g.getFontMetrics();
+				Rectangle rect = fm.getStringBounds(content, g).getBounds();
+				g.drawString(content, x - rect.x + ((int)offset - rect.width) / 2, y - rect.y + (height - rect.height) / 2 + 3);
 			}
 			
-			for (Element elm : elements) {
-				elm.paint(g);
+//			g.setColor(hover ? Color.red : Color.gray);
+//			g.fillRect(xp - (int)((offset - width) / 2.0), y - 10, (int)offset, 10);
+			
+			double xx = xp + (width - offset) / 2.0 + panel.xpos;
+			if ((xx + offset > 0) && (xx < panel.getWidth() / panel.zoom)) {
+				for (Element elm : elements) {
+					elm.paint(g);
+				}
 			}
 		}
 		
@@ -311,13 +303,22 @@ public final class ParseTreeVisualization extends Visualization {
 			int x0 = (int)(x + offset / 2D);
 			int y0 = (int)y;
 			
-			g.setColor(Color.black);
-			for (Element elm : elements) {
-				int x1 = (int)(elm.x + elm.offset / 2D);
-				int y1 = (int)elm.y;
-				
-				g.drawLine(x0, y0, x1, y1);
-				elm.paintLines(g);
+			int xxp = (int)this.x;
+			
+			if (!elements.isEmpty()) {
+				xxp += (offset - width) / 2;
+			}
+			
+			double xx = xxp + (width - offset) / 2.0 + panel.xpos;
+			if ((xx + offset > 0) && (xx < panel.getWidth() / panel.zoom)) {
+				g.setColor(Color.black);
+				for (Element elm : elements) {
+					int x1 = (int)(elm.x + elm.offset / 2D);
+					int y1 = (int)elm.y;
+					
+					g.drawLine(x0, y0, x1, y1);
+					elm.paintLines(g);
+				}
 			}
 		}
 	}
@@ -335,7 +336,7 @@ public final class ParseTreeVisualization extends Visualization {
 				}
 				case FUNC -> {
 					FuncStat s = (FuncStat)stat;
-					yield List.of(s.getReturnType(), s.getReference(), s.getParameters(), s.getBody());
+					yield List.of(s.getReference(), s.getParameters(), s.getBody());
 				}
 				case GOTO -> {
 					GotoStat s = (GotoStat)stat;
@@ -363,11 +364,15 @@ public final class ParseTreeVisualization extends Visualization {
 				}
 				case VAR -> {
 					VarStat s = (VarStat)stat;
-					yield List.of(s.getType(), s.getReference(), s.getValue());
+					yield List.of(s.getReference(), s.getValue());
 				}
 				case WHILE -> {
 					WhileStat s = (WhileStat)stat;
 					yield List.of(s.getCondition(), s.getBody());
+				}
+				case NAMESPACE -> {
+					NamespaceStat s = (NamespaceStat)stat;
+					yield List.of(s.getReference(), s.getElements());
 				}
 				
 				// Expression
@@ -394,6 +399,20 @@ public final class ParseTreeVisualization extends Visualization {
 						yield List.of(e.getOperation(), e.getValue());
 					}
 					yield List.of(e.getValue(), e.getOperation());
+				}
+				case CONDITIONAL -> {
+					ConditionalExpr e = (ConditionalExpr)stat;
+					List<Object> list = new ArrayList<>();
+					Iterator<Expr> iter = e.getValues().iterator();
+					
+					while (iter.hasNext()) {
+						list.add(iter.next());
+						
+						if (iter.hasNext()) {
+							list.add(e.getOperation());
+						}
+					}
+					yield list;
 				}
 			};
 		}

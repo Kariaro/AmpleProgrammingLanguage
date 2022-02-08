@@ -3,7 +3,6 @@ package me.hardcoded.compiler.parser;
 import me.hardcoded.compiler.context.LangContext;
 import me.hardcoded.compiler.errors.ParseException;
 import me.hardcoded.compiler.impl.ISyntaxPosition;
-import me.hardcoded.compiler.parser.*;
 import me.hardcoded.compiler.parser.expr.*;
 import me.hardcoded.compiler.parser.scope.ProgramScope;
 import me.hardcoded.compiler.parser.stat.*;
@@ -14,11 +13,9 @@ import me.hardcoded.lexer.Token;
 import me.hardcoded.utils.MutableSyntaxImpl;
 import me.hardcoded.utils.Position;
 import me.hardcoded.utils.StringUtils;
-import me.hardcoded.visualization.ParseTreeVisualization;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.sql.Ref;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -87,9 +84,6 @@ public class AmpleParser {
 		
 		LinkableObject linkableObject = new LinkableObject(file, program, importedFiles, exportedReferences, missingReferences);
 		
-//		ParseTreeVisualization vs = new ParseTreeVisualization();
-//		vs.show(program);
-		
 		reader = oldContext;
 		currentFile = oldFile;
 		
@@ -106,8 +100,9 @@ public class AmpleParser {
 		ProgStat list = new ProgStat(mutableSyntax);
 		
 		// Push a new variable block
-		currentScope.pushVariableBlock();
-		currentScope.pushLabelBlock();
+		currentScope.getFunctionScope().pushBlock();
+		currentScope.getLocalScope().pushBlock();
+		currentScope.getLabelScope().pushBlock();
 		while (reader.remaining() > 0) {
 			Stat stat = parseStatement();
 			
@@ -120,7 +115,8 @@ public class AmpleParser {
 		// Make sure we check lables
 		popLablesAndErrorCheck();
 		
-		currentScope.popVariableBlock();
+		currentScope.getLocalScope().popBlock();
+		currentScope.getFunctionScope().popBlock();
 		
 		return list;
 	}
@@ -130,6 +126,7 @@ public class AmpleParser {
 	 *
 	 * <pre>
 	 * ParseStatement ::= LinkStatement
+	 *   | NamespaceStatement
 	 *   | FunctionStatement
 	 *   | Statement
 	 * </pre>
@@ -147,11 +144,70 @@ public class AmpleParser {
 			return new EmptyStat(ISyntaxPosition.of(startPos, reader.lastPositionEnd()));
 		}
 		
+		if (isNamespaceDeclaration()) {
+			return namespaceStatement();
+		}
+		
 		if (isFunctionDeclaration()) {
 			return functionStatement();
 		}
 		
 		return statement();
+	}
+	
+	/**
+	 * Returns a namespace statement
+	 */
+	private Stat namespaceStatement() {
+		Position startPos = reader.position();
+		
+		boolean isExport = false;
+		if (reader.type() == Token.Type.EXPORT) {
+			isExport = true;
+			reader.advance();
+		}
+		
+		tryMatchOrError(Token.Type.NAMESPACE);
+		reader.advance();
+		
+		tryMatchOrError(Token.Type.IDENTIFIER);
+		String name = reader.value();
+		
+		Reference reference = currentScope.createEmptyReference(name);
+		reference.setExported(isExport);
+		
+		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(startPos, null);
+		NamespaceStat result = new NamespaceStat(reference, mutableSyntax);
+		reader.advance();
+		
+		tryMatchOrError(Token.Type.LEFT_CURLY_BRACKET);
+		reader.advance();
+		
+		currentScope.getFunctionScope().pushBlock(name);
+		
+		while (reader.type() != Token.Type.RIGHT_CURLY_BRACKET) {
+			Stat stat;
+			
+			if (isNamespaceDeclaration()) {
+				stat = namespaceStatement();
+			} else {
+				stat = functionStatement();
+				
+				if (stat instanceof FuncStat funcStat) {
+					// Make sure all functions are exported
+					funcStat.getReference().setExported(isExport);
+				}
+			}
+			
+			result.addElement(stat);
+		}
+		
+		currentScope.getFunctionScope().popBlock();
+		
+		tryMatchOrError(Token.Type.RIGHT_CURLY_BRACKET);
+		reader.advance();
+		mutableSyntax.end = reader.lastPositionEnd();
+		return result;
 	}
 	
 	/**
@@ -179,17 +235,10 @@ public class AmpleParser {
 		tryMatchOrError(Token.Type.LEFT_PARENTHESIS);
 		reader.advance();
 		
-		List<FuncParam> parameters = new ArrayList<>();
+		List<Reference> parameters = new ArrayList<>();
 		
-		Reference reference = currentScope.addFunc(name);
-		if (reference == null) {
-			throw createParseException("The function '%s' has already been declared", name);
-		}
-		reference.incUsages();
-		reference.setExported(isExport);
-		
-		currentScope.pushVariableBlock();
-		currentScope.pushLabelBlock();
+		currentScope.getLocalScope().pushBlock();
+		currentScope.getLabelScope().pushBlock();
 		
 		while (reader.type() != Token.Type.RIGHT_PARENTHESIS) {
 			ValueType paramType = getValueType();
@@ -199,14 +248,15 @@ public class AmpleParser {
 			
 			tryMatchOrError(Token.Type.IDENTIFIER);
 			String paramName = reader.value();
-			Reference paramReference = currentScope.addLocalVariable(paramName);
+			Reference paramReference = currentScope.getLocalScope().addLocalVariable(paramType, paramName);
 			
 			reader.advance();
 			if (paramReference == null) {
 				throw createParseException("The parameter '%s' has already been defined", paramName);
 			}
+			paramReference.setValueType(paramType);
 			
-			parameters.add(new FuncParam(paramType, paramReference));
+			parameters.add(paramReference);
 			
 			if (reader.type() == Token.Type.COMMA) {
 				reader.advance();
@@ -217,17 +267,25 @@ public class AmpleParser {
 			}
 		}
 		
+		// Create the function after the parameters has been parsed
+		Reference reference = currentScope.getFunctionScope().addFunction(returnType, name, parameters);
+		if (reference == null) {
+			throw createParseException("The function '%s' has already been declared", name);
+		}
+		reference.incUsages();
+		reference.setExported(isExport);
+		
 		tryMatchOrError(Token.Type.RIGHT_PARENTHESIS);
 		reader.advance();
 		
 		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(startPos, null);
-		FuncStat result = new FuncStat(returnType, reference, parameters, mutableSyntax);
+		FuncStat result = new FuncStat(reference, parameters, mutableSyntax);
 		
 		Stat body = statements();
 		result.complete(body);
 		mutableSyntax.end = reader.lastPositionEnd();
 		
-		currentScope.popVariableBlock();
+		currentScope.getLocalScope().popBlock();
 		
 		// Make sure we check lables
 		popLablesAndErrorCheck();
@@ -260,7 +318,7 @@ public class AmpleParser {
 		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(startPos, null);
 		ScopeStat result = new ScopeStat(mutableSyntax);
 		
-		currentScope.pushLocals();
+		currentScope.getLocalScope().pushLocals();
 		while (reader.type() != Token.Type.RIGHT_CURLY_BRACKET) {
 			Stat stat = statement();
 			
@@ -271,7 +329,7 @@ public class AmpleParser {
 			
 			result.addElement(stat);
 		}
-		currentScope.popLocals();
+		currentScope.getLocalScope().popLocals();
 		
 		reader.advance();
 		mutableSyntax.end = reader.lastPositionEnd();
@@ -322,7 +380,7 @@ public class AmpleParser {
 					Position startPos = reader.position();
 					String location = reader.value();
 					Reference reference;
-					if ((reference = currentScope.addLabel(location)) == null) {
+					if ((reference = currentScope.getLabelScope().addLabel(location)) == null) {
 						throw createParseException("The label '%s' has already been defined", location);
 					}
 					reader.advance();
@@ -375,7 +433,7 @@ public class AmpleParser {
 				reader.advance();
 				Reference reference = currentScope.createEmptyReference(destination);
 				GotoStat gotoStat = new GotoStat(reference, ISyntaxPosition.of(startPos, reader.nextPositionEnd()));
-				currentScope.addGoto(gotoStat);
+				currentScope.getLabelScope().addGoto(gotoStat);
 				
 				yield gotoStat;
 			}
@@ -403,7 +461,7 @@ public class AmpleParser {
 		tryMatchOrError(Token.Type.IDENTIFIER);
 		String name = reader.value();
 		
-		Reference reference = currentScope.addLocalVariable(name);
+		Reference reference = currentScope.getLocalScope().addLocalVariable(type, name);
 		if (reference == null) {
 			throw createParseException("A variable '%s' has already been declared in this scope", name);
 		}
@@ -418,7 +476,7 @@ public class AmpleParser {
 			value = new NullExpr(ISyntaxPosition.of(reader.position(), reader.position()));
 		}
 		
-		return new VarStat(type, reference, value, ISyntaxPosition.of(startPos, reader.nextPositionEnd()));
+		return new VarStat(reference, value, ISyntaxPosition.of(startPos, reader.nextPositionEnd()));
 	}
 	
 	/**
@@ -530,7 +588,7 @@ public class AmpleParser {
 	 * Returns an expression
 	 *
 	 * <pre>
-	 * Expression ::= ModifyVariable
+	 * Expression ::= CommaExpression
 	 *   | SizeExpression
 	 * </pre>
 	 */
@@ -543,7 +601,11 @@ public class AmpleParser {
 			while (reader.type() == Token.Type.COMMA) {
 				reader.advance();
 				Expr right = sizeExpression();
-				list.add(right);
+				if (right instanceof CommaExpr e) {
+					list.addAll(e.getValues());
+				} else {
+					list.add(right);
+				}
 			}
 			
 			return new CommaExpr(list, ISyntaxPosition.of(list.get(0).getSyntaxPosition(), list.get(list.size() - 1).getSyntaxPosition()));
@@ -563,12 +625,37 @@ public class AmpleParser {
 	private Expr sizeExpression() {
 		Expr left = orExpression();
 		
-		if (reader.type() == Token.Type.CAND || reader.type() == Token.Type.COR) {
-			Token.Type operation = reader.type();
-			reader.advance();
+		while (true) {
+			Token.Type matchType = reader.type();
+			if (matchType == Token.Type.CAND || matchType == Token.Type.COR) {
+				MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(left.getSyntaxPosition().getStartPosition(), null);
+				ConditionalExpr condExpr = new ConditionalExpr(Operation.conditional(matchType), mutableSyntax);
+				
+				// (a, b, c) && d
+				// (a, b, c && d)
+				CommaExpr comma;
+				if ((comma = getCommaExpr(left)) != null) {
+					condExpr.addElement(comma.getLast());
+					while (reader.type() == matchType) {
+						reader.advance();
+						condExpr.addElement(orExpression());
+					}
+					comma.setLast(condExpr);
+				} else {
+					condExpr.addElement(left);
+					while (reader.type() == matchType) {
+						reader.advance();
+						condExpr.addElement(orExpression());
+					}
+					left = condExpr;
+				}
+				
+				mutableSyntax.end = reader.lastPositionEnd();
+				// We will try continue matching
+				continue;
+			}
 			
-			Expr right = sizeExpression();
-			left = new BinaryExpr(left, right, Operation.conditional(operation), ISyntaxPosition.of(left.getSyntaxPosition(), right.getSyntaxPosition()));
+			break;
 		}
 		
 		return left;
@@ -587,7 +674,15 @@ public class AmpleParser {
 		while (reader.type() == Token.Type.OR) {
 			reader.advance();
 			Expr right = xorExpression();
-			left = new BinaryExpr(left, right, Operation.OR, ISyntaxPosition.of(left.getSyntaxPosition(), right.getSyntaxPosition()));
+			
+			CommaExpr comma;
+			if ((comma = getCommaExpr(left)) != null) {
+				comma.setLast(
+					new BinaryExpr(comma.getLast(), right, Operation.OR, ISyntaxPosition.of(left.getSyntaxPosition(), right.getSyntaxPosition()))
+				);
+			} else {
+				left = new BinaryExpr(left, right, Operation.OR, ISyntaxPosition.of(left.getSyntaxPosition(), right.getSyntaxPosition()));
+			}
 		}
 		
 		return left;
@@ -606,7 +701,15 @@ public class AmpleParser {
 		while (reader.type() == Token.Type.XOR) {
 			reader.advance();
 			Expr right = andExpression();
-			left = new BinaryExpr(left, right, Operation.XOR, ISyntaxPosition.of(left.getSyntaxPosition(), right.getSyntaxPosition()));
+			
+			CommaExpr comma;
+			if ((comma = getCommaExpr(left)) != null) {
+				comma.setLast(
+					new BinaryExpr(comma.getLast(), right, Operation.XOR, ISyntaxPosition.of(left.getSyntaxPosition(), right.getSyntaxPosition()))
+				);
+			} else {
+				left = new BinaryExpr(left, right, Operation.XOR, ISyntaxPosition.of(left.getSyntaxPosition(), right.getSyntaxPosition()));
+			}
 		}
 		
 		return left;
@@ -625,7 +728,15 @@ public class AmpleParser {
 		while (reader.type() == Token.Type.AND) {
 			reader.advance();
 			Expr right = comparisonExpression();
-			left = new BinaryExpr(left, right, Operation.AND, ISyntaxPosition.of(left.getSyntaxPosition(), right.getSyntaxPosition()));
+			
+			CommaExpr comma;
+			if ((comma = getCommaExpr(left)) != null) {
+				comma.setLast(
+					new BinaryExpr(comma.getLast(), right, Operation.AND, ISyntaxPosition.of(left.getSyntaxPosition(), right.getSyntaxPosition()))
+				);
+			} else {
+				left = new BinaryExpr(left, right, Operation.AND, ISyntaxPosition.of(left.getSyntaxPosition(), right.getSyntaxPosition()));
+			}
 		}
 		
 		return left;
@@ -645,7 +756,16 @@ public class AmpleParser {
 			Position startPos = reader.position();
 			reader.advance();
 			Expr expr = comparisonExpression();
-			return new UnaryExpr(expr, Operation.UNARY_NOT, ISyntaxPosition.of(startPos, expr.getSyntaxPosition().getEndPosition()));
+			
+			CommaExpr comma;
+			if ((comma = getCommaExpr(expr)) != null) {
+				comma.setLast(
+					new UnaryExpr(comma.getLast(), Operation.UNARY_NOT, ISyntaxPosition.of(startPos, expr.getSyntaxPosition().getEndPosition()))
+				);
+				return expr;
+			} else {
+				return new UnaryExpr(expr, Operation.UNARY_NOT, ISyntaxPosition.of(startPos, expr.getSyntaxPosition().getEndPosition()));
+			}
 		}
 		
 		Expr left = shiftExpression();
@@ -655,7 +775,15 @@ public class AmpleParser {
 			case EQUALS, NOT_EQUALS, LESS_THAN, LESS_THAN_EQUAL, MORE_THAN, MORE_THAN_EQUAL -> {
 				reader.advance();
 				Expr expr = shiftExpression();
-				left = new BinaryExpr(left, expr, Operation.comparison(token), ISyntaxPosition.of(left.getSyntaxPosition(), expr.getSyntaxPosition()));
+				
+				CommaExpr comma;
+				if ((comma = getCommaExpr(left)) != null) {
+					comma.setLast(
+						new BinaryExpr(comma.getLast(), expr, Operation.comparison(token), ISyntaxPosition.of(left.getSyntaxPosition(), expr.getSyntaxPosition()))
+					);
+				} else {
+					left = new BinaryExpr(left, expr, Operation.comparison(token), ISyntaxPosition.of(left.getSyntaxPosition(), expr.getSyntaxPosition()));
+				}
 			}
 		}
 		
@@ -679,7 +807,15 @@ public class AmpleParser {
 				case SHIFT_LEFT, SHIFT_RIGHT -> {
 					reader.advance();
 					Expr expr = arithmeticExpression();
-					left = new BinaryExpr(left, expr, Operation.shift(token), ISyntaxPosition.of(left.getSyntaxPosition(), expr.getSyntaxPosition()));
+					
+					CommaExpr comma;
+					if ((comma = getCommaExpr(left)) != null) {
+						comma.setLast(
+							new BinaryExpr(comma.getLast(), expr, Operation.shift(token), ISyntaxPosition.of(left.getSyntaxPosition(), expr.getSyntaxPosition()))
+						);
+					} else {
+						left = new BinaryExpr(left, expr, Operation.shift(token), ISyntaxPosition.of(left.getSyntaxPosition(), expr.getSyntaxPosition()));
+					}
 				}
 				default -> {
 					return left;
@@ -705,7 +841,15 @@ public class AmpleParser {
 				case PLUS, MINUS -> {
 					reader.advance();
 					Expr expr = termExpression();
-					left = new BinaryExpr(left, expr, Operation.arithmetic(token), ISyntaxPosition.of(left.getSyntaxPosition(), expr.getSyntaxPosition()));
+					
+					CommaExpr comma;
+					if ((comma = getCommaExpr(left)) != null) {
+						comma.setLast(
+							new BinaryExpr(comma.getLast(), expr, Operation.arithmetic(token), ISyntaxPosition.of(left.getSyntaxPosition(), expr.getSyntaxPosition()))
+						);
+					} else {
+						left = new BinaryExpr(left, expr, Operation.arithmetic(token), ISyntaxPosition.of(left.getSyntaxPosition(), expr.getSyntaxPosition()));
+					}
 				}
 				default -> {
 					return left;
@@ -731,7 +875,15 @@ public class AmpleParser {
 				case MUL, DIV, MOD -> {
 					reader.advance();
 					Expr expr = factorExpression();
-					left = new BinaryExpr(left, expr, Operation.factor(token), ISyntaxPosition.of(left.getSyntaxPosition(), expr.getSyntaxPosition()));
+					
+					CommaExpr comma;
+					if ((comma = getCommaExpr(left)) != null) {
+						comma.setLast(
+							new BinaryExpr(comma.getLast(), expr, Operation.factor(token), ISyntaxPosition.of(left.getSyntaxPosition(), expr.getSyntaxPosition()))
+						);
+					} else {
+						left = new BinaryExpr(left, expr, Operation.factor(token), ISyntaxPosition.of(left.getSyntaxPosition(), expr.getSyntaxPosition()));
+					}
 				}
 				default -> {
 					return left;
@@ -744,8 +896,10 @@ public class AmpleParser {
 	 * Returns a factor expression
 	 *
 	 * <pre>
-	 * FactorExpression ::= ArrayExpression [ '(' FuncParams ')' ]
-	 * FuncParams ::= FuncParam ( ',' FuncParam )*
+	 * FactorExpression ::= ArrayExpression FactorOps
+	 * FactorOps ::= '=' SizeExpression
+	 *   | [ FuncParams ]
+	 * FuncParams ::= '(' FuncParam ( ',' FuncParam )* ')'
 	 * FuncParam ::= SizeExpression
 	 * </pre>
 	 */
@@ -754,8 +908,17 @@ public class AmpleParser {
 		
 		if (reader.type() == Token.Type.ASSIGN) {
 			reader.advance();
-			Expr right = expression();
-			return new BinaryExpr(left, right, Operation.ASSIGN, ISyntaxPosition.of(left.getSyntaxPosition(), right.getSyntaxPosition()));
+			Expr right = sizeExpression();
+			
+			CommaExpr comma;
+			if ((comma = getCommaExpr(left)) != null) {
+				comma.setLast(
+					new BinaryExpr(comma.getLast(), right, Operation.ASSIGN, ISyntaxPosition.of(left.getSyntaxPosition(), right.getSyntaxPosition()))
+				);
+				return left;
+			} else {
+				return new BinaryExpr(left, right, Operation.ASSIGN, ISyntaxPosition.of(left.getSyntaxPosition(), right.getSyntaxPosition()));
+			}
 		}
 		
 		if (reader.type() == Token.Type.LEFT_PARENTHESIS) {
@@ -786,7 +949,14 @@ public class AmpleParser {
 				}
 			}
 			
-			left = new CallExpr(left, parameters, ISyntaxPosition.of(left.getSyntaxPosition().getStartPosition(), reader.lastPositionEnd()));
+			CommaExpr comma;
+			if ((comma = getCommaExpr(left)) != null) {
+				comma.setLast(
+					new CallExpr(comma.getLast(), parameters,  ISyntaxPosition.of(left.getSyntaxPosition().getStartPosition(), reader.lastPositionEnd()))
+				);
+			} else {
+				left = new CallExpr(left, parameters, ISyntaxPosition.of(left.getSyntaxPosition().getStartPosition(), reader.lastPositionEnd()));
+			}
 		}
 		
 		return left;
@@ -810,7 +980,16 @@ public class AmpleParser {
 				reader.advance();
 				
 				Expr expr = memberExpression();
-				return new UnaryExpr(expr, Operation.unaryPrefix(token), ISyntaxPosition.of(startPos, reader.lastPositionEnd()));
+				
+				CommaExpr comma;
+				if ((comma = getCommaExpr(expr)) != null) {
+					comma.setLast(
+						new UnaryExpr(comma.getLast(), Operation.unaryPrefix(token), ISyntaxPosition.of(startPos, reader.lastPositionEnd()))
+					);
+					return expr;
+				} else {
+					return new UnaryExpr(expr, Operation.unaryPrefix(token), ISyntaxPosition.of(startPos, reader.lastPositionEnd()));
+				}
 			}
 		}
 		
@@ -826,11 +1005,27 @@ public class AmpleParser {
 					tryMatchOrError(Token.Type.RIGHT_SQUARE_BRACKET);
 					reader.advance();
 					
-					left = new BinaryExpr(left, right, Operation.ARRAY, ISyntaxPosition.of(left.getSyntaxPosition().getStartPosition(), reader.lastPositionEnd()));
+					CommaExpr comma;
+					if ((comma = getCommaExpr(left)) != null) {
+						comma.setLast(
+							new BinaryExpr(comma.getLast(), right, Operation.ARRAY, ISyntaxPosition.of(left.getSyntaxPosition().getStartPosition(), reader.lastPositionEnd()))
+						);
+					} else {
+						left = new BinaryExpr(left, right, Operation.ARRAY, ISyntaxPosition.of(left.getSyntaxPosition().getStartPosition(), reader.lastPositionEnd()));
+					}
 				}
 				case INCREMENT, DECREMENT -> {
 					reader.advance();
-					return new UnaryExpr(left, Operation.unarySuffix(token), ISyntaxPosition.of(left.getSyntaxPosition().getStartPosition(), reader.lastPositionEnd()));
+					
+					CommaExpr comma;
+					if ((comma = getCommaExpr(left)) != null) {
+						comma.setLast(
+							new UnaryExpr(comma.getLast(), Operation.unarySuffix(token), ISyntaxPosition.of(left.getSyntaxPosition().getStartPosition(), reader.lastPositionEnd()))
+						);
+						return left;
+					} else {
+						return new UnaryExpr(left, Operation.unarySuffix(token), ISyntaxPosition.of(left.getSyntaxPosition().getStartPosition(), reader.lastPositionEnd()));
+					}
 				}
 				default -> {
 					return left;
@@ -858,7 +1053,14 @@ public class AmpleParser {
 				Expr right = new NameExpr(currentScope.createEmptyReference(reader.value()), reader.syntaxPosition());
 				reader.advance();
 				
-				left = new BinaryExpr(left, right, Operation.MEMBER, ISyntaxPosition.of(left.getSyntaxPosition(), right.getSyntaxPosition()));
+				CommaExpr comma;
+				if ((comma = getCommaExpr(left)) != null) {
+					comma.setLast(
+						new BinaryExpr(comma.getLast(), right, Operation.MEMBER, ISyntaxPosition.of(left.getSyntaxPosition(), right.getSyntaxPosition()))
+					);
+				} else {
+					left = new BinaryExpr(left, right, Operation.MEMBER, ISyntaxPosition.of(left.getSyntaxPosition(), right.getSyntaxPosition()));
+				}
 			}
 			
 			return left;
@@ -881,8 +1083,6 @@ public class AmpleParser {
 		
 		switch (token) {
 			case AND -> {
-				// When AND is used we will first get the reference of a local variable defined
-				
 				Position startPos = reader.position();
 				reader.advance();
 				Expr right = unaryExpression();
@@ -893,35 +1093,61 @@ public class AmpleParser {
 				//    Functions
 				//    Global variables
 				
+				NameExpr nameExpr = null;
+				CommaExpr comma;
+				if ((comma = getCommaExpr(right)) != null) {
+					if (comma.getLast() instanceof NameExpr e) {
+						nameExpr = e;
+					}
+				} else if (right instanceof NameExpr e) {
+					nameExpr = e;
+				}
+				
 				// Local variables need to be checked first
-				if (right instanceof NameExpr e) {
+				if (nameExpr != null) {
 					Reference reference = null;
 					
-					if ((reference = currentScope.getLocal(e.geName())) != null) {
-						if (e.getReference() != reference) {
-							e.getReference().decUsages();;
+					if ((reference = currentScope.getLocalScope().getLocal(nameExpr.geName())) != null) {
+						if (nameExpr.getReference() != reference) {
+							nameExpr.getReference().decUsages();
 							reference.incUsages();
 						}
 						
-						e.setReference(reference);
+						nameExpr.setReference(reference);
 					}
 					
 					if (reference == null) {
 						// Add this to a list of unresolved references
 						//    Local labels
 						//    Functions
-						//    Global variables
-						currentScope.addMissingLabelReference(e);
+						//    Global variablesS
+						currentScope.getLabelScope().addMissingLabelReference(nameExpr);
 					}
 				}
 				
-				return new UnaryExpr(right, Operation.REFERENCE, ISyntaxPosition.of(startPos, reader.lastPositionEnd()));
+				if ((comma = getCommaExpr(right)) != null) {
+					comma.setLast(
+						new UnaryExpr(comma.getLast(), Operation.REFERENCE, ISyntaxPosition.of(startPos, reader.lastPositionEnd()))
+					);
+					return right;
+				} else {
+					return new UnaryExpr(right, Operation.REFERENCE, ISyntaxPosition.of(startPos, reader.lastPositionEnd()));
+				}
 			}
 			case MINUS, PLUS, MUL, NOR -> {
 				Position startPos = reader.position();
 				reader.advance();
 				Expr right = unaryExpression();
-				return new UnaryExpr(right, Operation.unaryPrefix(token), ISyntaxPosition.of(startPos, reader.lastPositionEnd()));
+				
+				CommaExpr comma;
+				if ((comma = getCommaExpr(right)) != null) {
+					comma.setLast(
+						new UnaryExpr(comma.getLast(), Operation.unaryPrefix(token), ISyntaxPosition.of(startPos, reader.lastPositionEnd()))
+					);
+					return right;
+				} else {
+					return new UnaryExpr(right, Operation.unaryPrefix(token), ISyntaxPosition.of(startPos, reader.lastPositionEnd()));
+				}
 			}
 			case LEFT_PARENTHESIS -> {
 				if (reader.peak(1).type == Token.Type.COLON) {
@@ -938,7 +1164,16 @@ public class AmpleParser {
 					reader.advance();
 					
 					Expr right = unaryExpression();
-					return new CastExpr(right, type, ISyntaxPosition.of(startPos, reader.lastPositionEnd()));
+					
+					CommaExpr comma;
+					if ((comma = getCommaExpr(right)) != null) {
+						comma.setLast(
+							new CastExpr(comma.getLast(), type, ISyntaxPosition.of(startPos, reader.lastPositionEnd()))
+						);
+						return right;
+					} else {
+						return new CastExpr(right, type, ISyntaxPosition.of(startPos, reader.lastPositionEnd()));
+					}
 				}
 			}
 		}
@@ -974,13 +1209,30 @@ public class AmpleParser {
 				// Then we check the functions
 				// Then we check the globals
 				// After that we mark it as IMPORT
-				String name = reader.value();
+				Position startPos = reader.position();
+				String name;
+				{
+					StringBuilder sb = new StringBuilder();
+					
+					while (reader.type() == Token.Type.IDENTIFIER) {
+						sb.append(reader.value());
+						reader.advance();
+						
+						if (reader.type() == Token.Type.NAMESPACE_OPERATOR) {
+							sb.append("::");
+							reader.advance();
+							tryMatchOrError(Token.Type.IDENTIFIER);
+						}
+					}
+					
+					name = sb.toString();
+				}
 				
-				Reference reference = currentScope.getLocal(name);
+				Reference reference = currentScope.getLocalScope().getLocal(name);
 				if (reference == null) {
-					reference = currentScope.getFunc(name);
+					reference = currentScope.getFunctionScope().getFunction(name);
 					if (reference == null) {
-						reference = currentScope.getVariable(name);
+						reference = currentScope.getLocalScope().getVariable(name);
 						if (reference == null) {
 							reference = currentScope.createImportedReference(name);
 						}
@@ -992,14 +1244,7 @@ public class AmpleParser {
 					reference.incUsages();
 				}
 				
-				NameExpr expr = new NameExpr(reference, reader.syntaxPosition());
-				reader.advance();
-				// TODO: This name should be imported differently depening on how it is used
-				//    func() <-- FUNCTION IMPORT
-				//    (A).B  <-- VARIABLE IMPORT
-				//    &test  <-- LABEL OR FUNCTION IMPORT
-				
-				return expr;
+				return new NameExpr(reference, ISyntaxPosition.of(startPos, reader.lastPositionEnd()));
 			}
 			case STRING -> {
 				String value = reader.value();
@@ -1055,6 +1300,22 @@ public class AmpleParser {
 		System.out.println(reader.position().line);
 		System.out.println(reader.position().column);
 		throw createParseException("Invalid character");
+	}
+	
+	private boolean isNamespaceDeclaration() {
+		int prevIndex = reader.readerIndex();
+		if (reader.type() == Token.Type.EXPORT) {
+			reader.advance();
+		}
+		
+		if (reader.type() == Token.Type.NAMESPACE
+		&& reader.peak(1).type == Token.Type.IDENTIFIER) {
+			reader.readerIndex(prevIndex);
+			return true;
+		}
+		
+		reader.readerIndex(prevIndex);
+		return false;
 	}
 	
 	private boolean isFunctionDeclaration() {
@@ -1167,11 +1428,11 @@ public class AmpleParser {
 	 * Check that all lables are resolved inside the current scope
 	 */
 	private boolean popLablesAndErrorCheck() {
-		for (GotoStat stat : currentScope.getGotos()) {
+		for (GotoStat stat : currentScope.getLabelScope().getGotos()) {
 			Reference gotoRef = stat.getReference();
 			String name = gotoRef.getName();
 			
-			Reference reference = currentScope.getLocalLabel(name);
+			Reference reference = currentScope.getLabelScope().getLocalLabel(name);
 			if (reference == null) {
 				throw createParseException(stat.getSyntaxPosition().getStartPosition(), "The label '%s' was not defined", name);
 			}
@@ -1186,10 +1447,10 @@ public class AmpleParser {
 		}
 		
 		// Only resolve locals
-		for (NameExpr expr : currentScope.getMissingLabelReferences()) {
+		for (NameExpr expr : currentScope.getLabelScope().getMissingLabelReferences()) {
 			Reference exprRef = expr.getReference();
 			
-			Reference reference = currentScope.getLocalLabel(exprRef.getName());
+			Reference reference = currentScope.getLabelScope().getLocalLabel(exprRef.getName());
 			if (reference != null) {
 				// Because we are removing the exprRef we decrement the usages
 				if (exprRef != reference) {
@@ -1199,12 +1460,12 @@ public class AmpleParser {
 				
 				expr.setReference(reference);
 			} else {
-				if (currentScope.isGlobalLabelScope()) {
+				if (currentScope.getLabelScope().isGlobalLabelScope()) {
 					// Imported function reference
 					expr.getReference().setFlags(Reference.IMPORT | Reference.FUNCTION);
 				} else {
 					// Check for a function
-					reference = currentScope.getFunc(exprRef.getName());
+					reference = currentScope.getFunctionScope().getLocalFunction(exprRef.getName());
 					if (reference != null) {
 						// Decrement the usage
 						if (exprRef != reference) {
@@ -1215,15 +1476,26 @@ public class AmpleParser {
 						expr.setReference(reference);
 					} else {
 						// Global label or imported function
-						currentScope.addGlobalMissingLabelReference(expr);
+						currentScope.getLabelScope().addGlobalMissingLabelReference(expr);
 					}
 				}
 			}
 		}
 		
-		currentScope.popLabelBlock();
+		currentScope.getLabelScope().popBlock();
 		
 		return true;
+	}
+	
+	private CommaExpr getCommaExpr(Expr expr) {
+		CommaExpr lastComma = null;
+		
+		while (expr instanceof CommaExpr e) {
+			lastComma = e;
+			expr = e.getLast();
+		}
+		
+		return lastComma;
 	}
 	
 	private ParseException createParseException(String format, Object... args) {

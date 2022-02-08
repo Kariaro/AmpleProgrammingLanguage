@@ -1,6 +1,7 @@
 package me.hardcoded.compiler.intermediate.inst;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.utils.Position;
 
 import java.util.ArrayList;
 import java.util.List;

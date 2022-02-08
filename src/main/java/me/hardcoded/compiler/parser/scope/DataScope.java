@@ -13,6 +13,14 @@ public class DataScope<T> {
 		this.scopes.add(supplier.get());
 	}
 	
+	public void clear() {
+		scopes.clear();
+	}
+	
+	public boolean isEmpty() {
+		return scopes.isEmpty();
+	}
+	
 	public void pushScope() {
 		scopes.addLast(supplier.get());
 	}

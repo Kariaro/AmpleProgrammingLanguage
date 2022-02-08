@@ -9,15 +9,13 @@ import me.hardcoded.compiler.parser.type.ValueType;
 import java.util.List;
 
 public class FuncStat extends Stat {
-	private ValueType returnType;
-	private List<FuncParam> parameters;
+	private List<Reference> parameters;
 	private Reference reference;
 	private Stat body;
 	
-	public FuncStat(ValueType returnType, Reference reference, List<FuncParam> parameters, ISyntaxPosition syntaxPosition) {
+	public FuncStat(Reference reference, List<Reference> parameters, ISyntaxPosition syntaxPosition) {
 		super(syntaxPosition);
 		this.reference = reference;
-		this.returnType = returnType;
 		this.parameters = parameters;
 	}
 	
@@ -26,7 +24,7 @@ public class FuncStat extends Stat {
 	}
 	
 	public ValueType getReturnType() {
-		return returnType;
+		return reference.getValueType();
 	}
 	
 	public String getName() {
@@ -37,7 +35,7 @@ public class FuncStat extends Stat {
 		return reference;
 	}
 	
-	public List<FuncParam> getParameters() {
+	public List<Reference> getParameters() {
 		return parameters;
 	}
 	

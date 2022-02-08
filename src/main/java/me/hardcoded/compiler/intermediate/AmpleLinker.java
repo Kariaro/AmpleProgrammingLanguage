@@ -7,13 +7,18 @@ import me.hardcoded.compiler.intermediate.inst.InstFile;
 import me.hardcoded.compiler.intermediate.inst.Opcode;
 import me.hardcoded.compiler.intermediate.inst.Procedure;
 import me.hardcoded.compiler.parser.LinkableObject;
+import me.hardcoded.compiler.parser.ParseUtil;
+import me.hardcoded.compiler.parser.serial.LinkableDeserializer;
+import me.hardcoded.compiler.parser.serial.LinkableSerializer;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.visualization.ParseTreeVisualization;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.*;
 
 /**
  * This class is responsible for linking {@link LinkableObject}.
@@ -38,6 +43,34 @@ public class AmpleLinker {
 		allObjects.add(main);
 		allObjects.addAll(list);
 		
+		try {
+			for (int i = 0; i < allObjects.size(); i++) {
+				LinkableObject obj = allObjects.get(i);
+				byte[] bytes = LinkableSerializer.serializeLinkable(obj);
+				
+				File debugFolder = new File("debug/out_" + obj.getFile().getName() + ".serial");
+				if (debugFolder.exists() || debugFolder.createNewFile()) {
+					try (FileOutputStream out = new FileOutputStream(debugFolder)) {
+						out.write(bytes == null ? new byte[0] : bytes);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+				
+				byte[] readBytes = Files.readAllBytes(debugFolder.toPath());
+				LinkableObject loaded = LinkableDeserializer.deserializeLinkable(readBytes);
+				byte[] recombined = LinkableSerializer.serializeLinkable(loaded);
+				
+				if (Arrays.compare(bytes, recombined) != 0) {
+					throw new ParseException("Linkable serializer did not match");
+				}
+				
+				System.out.println(ParseUtil.stat(loaded.getProgram()));
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
 		for (LinkableObject link : allObjects) {
 			System.out.println(link + ", " + link.getFile());
 		}
@@ -46,6 +79,14 @@ public class AmpleLinker {
 		if (!checkImports(exportMap, allObjects)) {
 			throw new ParseException("Project is not linkable");
 		}
+		
+		AmpleValidator validator = new AmpleValidator(exportMap);
+		validator.validate(main, list);
+		
+		// Type checking would be easier to do but the file might consume a lot of memory when combining it
+		// That's why we should separate them
+		
+		// TODO: Before we generate the instructions we need to validate types
 		
 		InstGenerator generator = new InstGenerator(file, exportMap);
 		for (LinkableObject link : allObjects) {
