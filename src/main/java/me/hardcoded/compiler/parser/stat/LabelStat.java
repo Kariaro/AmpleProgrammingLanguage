@@ -5,7 +5,7 @@ import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.TreeType;
 
 public class LabelStat extends Stat {
-	private final Reference reference;
+	private Reference reference;
 	
 	public LabelStat(Reference reference, ISyntaxPosition syntaxPosition) {
 		super(syntaxPosition);
@@ -18,6 +18,10 @@ public class LabelStat extends Stat {
 	
 	public Reference getReference() {
 		return reference;
+	}
+	
+	public void setReference(Reference reference) {
+		this.reference = reference;
 	}
 	
 	@Override

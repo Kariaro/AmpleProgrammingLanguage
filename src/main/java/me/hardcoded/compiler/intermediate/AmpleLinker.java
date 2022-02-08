@@ -80,8 +80,17 @@ public class AmpleLinker {
 			throw new ParseException("Project is not linkable");
 		}
 		
+		
+		System.out.println("=".repeat(100));
+		
 		AmpleValidator validator = new AmpleValidator(exportMap);
-		validator.validate(main, list);
+		validator.validate(allObjects);
+		
+		for (LinkableObject link : allObjects) {
+			System.out.println(ParseUtil.stat(link.getProgram()));
+		}
+		
+		System.out.println("=".repeat(100));
 		
 		// Type checking would be easier to do but the file might consume a lot of memory when combining it
 		// That's why we should separate them

@@ -3,6 +3,7 @@ package me.hardcoded.compiler.parser;
 import me.hardcoded.compiler.parser.expr.*;
 import me.hardcoded.compiler.parser.stat.*;
 import me.hardcoded.compiler.parser.type.Reference;
+import me.hardcoded.utils.DebugUtils;
 import me.hardcoded.utils.StringUtils;
 
 import java.util.Iterator;
@@ -55,11 +56,12 @@ public class ParseUtil {
 	
 	public static String funcStat(FuncStat stat) {
 		StringBuilder sb = new StringBuilder();
-		sb.append(stat.getReturnType()).append(" ").append(stat.getName()).append("(");
+		sb.append(stat.getReturnType()).append(" ").append(getReferenceName(stat.getReference())).append("(");
 		
 		Iterator<Reference> iter = stat.getParameters().iterator();
 		while (iter.hasNext()) {
-			sb.append(iter.next());
+			Reference reference = iter.next();
+			sb.append(reference.getValueType()).append(" ").append(getReferenceName(reference));
 			
 			if (iter.hasNext()) {
 				sb.append(", ");
@@ -118,7 +120,7 @@ public class ParseUtil {
 	}
 	
 	private static String varStat(VarStat s) {
-		return s.getType() + " " + s.getReference() + " = " + expr(s.getValue()) + ";";
+		return s.getType() + " " + getReferenceName(s.getReference()) + " = " + expr(s.getValue()) + ";";
 	}
 	
 	public static String whileStat(WhileStat s) {
@@ -203,7 +205,7 @@ public class ParseUtil {
 	}
 	
 	public static String nameExpr(NameExpr e) {
-		return e.getReference().toString();
+		return getReferenceName(e.getReference());
 	}
 	
 	public static String nullExpr(NullExpr e) {
@@ -240,5 +242,14 @@ public class ParseUtil {
 		}
 		
 		return sb.append(")").toString();
+	}
+	
+	// References
+	private static String getReferenceName(Reference reference) {
+		if (DebugUtils.DEBUG_REFERENCE_INFORMATION) {
+			return reference.getName() + ":" + reference.toSimpleString();
+		}
+		
+		return reference.getName();
 	}
 }

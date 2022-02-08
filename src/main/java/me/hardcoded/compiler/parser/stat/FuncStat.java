@@ -35,6 +35,10 @@ public class FuncStat extends Stat {
 		return reference;
 	}
 	
+	public void setReference(Reference reference) {
+		this.reference = reference;
+	}
+	
 	public List<Reference> getParameters() {
 		return parameters;
 	}

@@ -1,6 +1,5 @@
 link "src/test2.ample"
 
-
 int main() {
     int a = Test2::getValues();
     int b = Test2::Scope::getTest();
