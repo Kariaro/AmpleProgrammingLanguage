@@ -2,15 +2,16 @@ package me.hardcoded.compiler.parser.expr;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.type.TreeType;
+import me.hardcoded.compiler.parser.type.ValueType;
 
-public class NullExpr extends Expr {
-	public NullExpr(ISyntaxPosition syntaxPosition) {
+public class NoneExpr extends Expr {
+	public NoneExpr(ISyntaxPosition syntaxPosition) {
 		super(syntaxPosition);
 	}
 	
 	@Override
 	public boolean isEmpty() {
-		return false;
+		return true;
 	}
 	
 	@Override
@@ -19,7 +20,12 @@ public class NullExpr extends Expr {
 	}
 	
 	@Override
+	public ValueType getType() {
+		throw new UnsupportedOperationException();
+	}
+	
+	@Override
 	public TreeType getTreeType() {
-		return TreeType.NULL;
+		return TreeType.EMPTY;
 	}
 }

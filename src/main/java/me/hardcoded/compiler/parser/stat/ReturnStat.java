@@ -2,18 +2,23 @@ package me.hardcoded.compiler.parser.stat;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.expr.Expr;
+import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.TreeType;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 public class ReturnStat extends Stat {
-	private Expr expr;
+	private Expr value;
 	
-	public ReturnStat(Expr expr, ISyntaxPosition syntaxPosition) {
+	public ReturnStat(ISyntaxPosition syntaxPosition, Expr value) {
 		super(syntaxPosition);
-		this.expr = expr;
+		this.value = value;
 	}
 	
 	public Expr getValue() {
-		return expr;
+		return value;
 	}
 	
 	@Override
@@ -23,7 +28,7 @@ public class ReturnStat extends Stat {
 	
 	@Override
 	public boolean isPure() {
-		return expr.isPure();
+		return value.isPure();
 	}
 	
 	@Override

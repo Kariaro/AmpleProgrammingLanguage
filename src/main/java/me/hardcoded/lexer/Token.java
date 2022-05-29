@@ -33,6 +33,11 @@ public class Token {
 		WHITESPACE,
 		EOF,
 		
+		// Test
+		FUNC,
+		PROC, // Procedure
+		COMMA,
+		
 		// Comparisons
 		EQUALS,
 		NOT_EQUALS,
@@ -44,12 +49,12 @@ public class Token {
 		COR,
 		
 		// Brackets
-		LEFT_PARENTHESIS,
-		RIGHT_PARENTHESIS,
-		LEFT_SQUARE_BRACKET,
-		RIGHT_SQUARE_BRACKET,
-		LEFT_CURLY_BRACKET,
-		RIGHT_CURLY_BRACKET,
+		L_PAREN,
+		R_PAREN,
+		L_SQUARE,
+		R_SQUARE,
+		L_CURLY,
+		R_CURLY,
 		
 		// Arithmetics
 		NOT,
@@ -128,7 +133,6 @@ public class Token {
 		
 		// Delimiters
 		SEMICOLON,
-		COMMA,
 		QUESTION_MARK,
 		COLON,
 		DOT,

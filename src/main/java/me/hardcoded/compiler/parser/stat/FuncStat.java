@@ -1,46 +1,33 @@
 package me.hardcoded.compiler.parser.stat;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
-import me.hardcoded.compiler.parser.type.FuncParam;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.TreeType;
-import me.hardcoded.compiler.parser.type.ValueType;
 
 import java.util.List;
+import java.util.Objects;
 
 public class FuncStat extends Stat {
 	private List<Reference> parameters;
 	private Reference reference;
 	private Stat body;
 	
-	public FuncStat(Reference reference, List<Reference> parameters, ISyntaxPosition syntaxPosition) {
+	public FuncStat(ISyntaxPosition syntaxPosition, List<Reference> parameters, Reference reference) {
 		super(syntaxPosition);
-		this.reference = reference;
 		this.parameters = parameters;
-	}
-	
-	public void complete(Stat stat) {
-		this.body = stat;
-	}
-	
-	public ValueType getReturnType() {
-		return reference.getValueType();
-	}
-	
-	public String getName() {
-		return reference.getName();
+		this.reference = Objects.requireNonNull(reference);
 	}
 	
 	public Reference getReference() {
 		return reference;
 	}
 	
-	public void setReference(Reference reference) {
-		this.reference = reference;
-	}
-	
 	public List<Reference> getParameters() {
 		return parameters;
+	}
+	
+	public void setBody(Stat body) {
+		this.body = body;
 	}
 	
 	public Stat getBody() {

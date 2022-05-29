@@ -75,18 +75,16 @@ public class AmpleLexer {
 			.addRule(Type.SHIFT_RIGHT_ASSIGN, i -> i.addString(">>="))
 			
 			// Brackets
-			.addRule(Type.LEFT_PARENTHESIS, i -> i.addString("("))
-			.addRule(Type.RIGHT_PARENTHESIS, i -> i.addString(")"))
-			.addRule(Type.LEFT_SQUARE_BRACKET, i -> i.addString("["))
-			.addRule(Type.RIGHT_SQUARE_BRACKET, i -> i.addString("]"))
-			.addRule(Type.LEFT_CURLY_BRACKET, i -> i.addString("{"))
-			.addRule(Type.RIGHT_CURLY_BRACKET, i -> i.addString("}"))
+			.addRule(Type.L_PAREN, i -> i.addString("("))
+			.addRule(Type.R_PAREN, i -> i.addString(")"))
+			.addRule(Type.L_SQUARE, i -> i.addString("["))
+			.addRule(Type.R_SQUARE, i -> i.addString("]"))
+			.addRule(Type.L_CURLY, i -> i.addString("{"))
+			.addRule(Type.R_CURLY, i -> i.addString("}"))
 			
 			// Delimiters
 			.addRule(Type.SEMICOLON, i -> i.addString(";"))
-			.addRule(Type.COMMA, i -> i.addString(","))
 			.addRule(Type.QUESTION_MARK, i -> i.addString("?"))
-			.addRule(Type.COLON, i -> i.addString(":"))
 			.addRule(Type.DOT, i -> i.addString("."))
 			.addRule(Type.AT, i -> i.addString("@"))
 			
@@ -95,7 +93,12 @@ public class AmpleLexer {
 			.addRule(Type.POINTER, i -> i.addString("->"))
 			
 			// Preprocessors
+			.addRule(Type.FUNC, i -> i.addString("func"))
+			.addRule(Type.PROC, i -> i.addString("proc"))
 			.addRule(Type.LINK, i -> i.addString("link"))
+			.addRule(Type.RETURN, i -> i.addString("ret"))
+			.addRule(Type.COLON, i -> i.addString(":"))
+			.addRule(Type.COMMA, i -> i.addString(","))
 			
 			// Keywords
 			.addRule(Type.IF, i -> i.addString("if"))
@@ -105,7 +108,6 @@ public class AmpleLexer {
 			.addRule(Type.WHILE, i -> i.addString("while"))
 			.addRule(Type.CONTINUE, i -> i.addString("continue"))
 			.addRule(Type.BREAK, i -> i.addString("break"))
-			.addRule(Type.RETURN, i -> i.addString("return"))
 			.addRule(Type.SWITCH, i -> i.addString("switch"))
 			.addRule(Type.CASE, i -> i.addString("case"))
 			.addRule(Type.DEFAULT, i -> i.addString("default"))
@@ -116,6 +118,7 @@ public class AmpleLexer {
 			.addRule(Type.EXPORT, i -> i.addString("export"))
 			.addRule(Type.INLINE, i -> i.addString("inline"))
 			
+			/*
 			// Variable Types
 			.addRule(Type.VOID_TYPE, i -> i.addString("void"))
 			.addRule(Type.CHAR_TYPE, i -> i.addString("char"))
@@ -126,12 +129,13 @@ public class AmpleLexer {
 			.addRule(Type.LONG_TYPE, i -> i.addString("long"))
 			.addRule(Type.FLOAT_TYPE, i -> i.addString("float"))
 			.addRule(Type.DOUBLE_TYPE, i -> i.addString("double"))
-			
+		
 			// Type prefix
 			.addRule(Type.UNSIGNED, i -> i.addString("unsigned"))
 			.addRule(Type.SIGNED, i -> i.addString("signed"))
 			.addRule(Type.VOLATILE, i -> i.addString("volatile"))
 			.addRule(Type.CONST, i -> i.addString("const"))
+			*/
 			
 			.toImmutable();
 	}

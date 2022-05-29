@@ -45,7 +45,7 @@ public class LexerTokenizer {
 				}
 			}
 			
-			Position endPosition = new Position(file, column, line, offset);
+			Position endPosition = new Position(file, column, line, offset + lexerToken.length);
 			
 			if (lexerToken.type != Type.WHITESPACE) {
 				tokenList.add(new Token(

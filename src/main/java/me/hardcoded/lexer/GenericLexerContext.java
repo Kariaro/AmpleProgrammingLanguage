@@ -34,10 +34,10 @@ public class GenericLexerContext<T> {
 		int last_length = 0;
 		
 		LexerToken lexerToken;
-		while((lexerToken = nextToken(input)) != null) {
-			if(input.isEmpty() || (last_length == input.length())) break;
+		while ((lexerToken = nextToken(input)) != null) {
+			if (input.isEmpty() || (last_length == input.length())) break;
 			
-			if(lexerToken.type != whitespace) {
+			if (lexerToken.type != whitespace) {
 				tokenList.add(lexerToken);
 			}
 			
@@ -55,10 +55,10 @@ public class GenericLexerContext<T> {
 	public LexerToken nextToken(String input) {
 		LexerRule selectedRule = null;
 		int longestRule = 1;
-		for(LexerRule rule : rules) {
+		for (LexerRule rule : rules) {
 			int length = rule.getMatchLength(input);
 			
-			if(length >= longestRule) {
+			if (length >= longestRule) {
 				longestRule = length;
 				selectedRule = rule;
 			}
@@ -107,7 +107,7 @@ public class GenericLexerContext<T> {
 		}
 		
 		public LexerRule addRegexes(String... regexes) {
-			for(String regex : regexes) {
+			for (String regex : regexes) {
 				addRegex(regex);
 			}
 			
@@ -135,7 +135,7 @@ public class GenericLexerContext<T> {
 			String c = StringUtils.regexEscape(close);
 			
 			String regex;
-			if(escape.isEmpty()) {
+			if (escape.isEmpty()) {
 				regex = s + ".*?" + c;
 			} else {
 				String e = StringUtils.regexEscape(escape);
@@ -148,9 +148,9 @@ public class GenericLexerContext<T> {
 		
 		public int getMatchLength(String string) {
 			int length = 0;
-			for(Pattern pattern : matches) {
+			for (Pattern pattern : matches) {
 				Matcher matcher = pattern.matcher(string);
-				if(matcher.lookingAt()) {
+				if (matcher.lookingAt()) {
 					length = Math.max(length, matcher.end());
 				}
 			}
@@ -168,6 +168,5 @@ public class GenericLexerContext<T> {
 		public GenericLexerContext<T> addRule(T type, Consumer<LexerRule> consumer) {
 			throw new UnsupportedOperationException();
 		}
-		
 	}
 }

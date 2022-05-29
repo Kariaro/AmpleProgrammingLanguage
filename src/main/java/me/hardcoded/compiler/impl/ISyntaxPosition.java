@@ -20,7 +20,7 @@ public interface ISyntaxPosition {
 	Position getEndPosition();
 	
 	static ISyntaxPosition empty() {
-		return new ImmutableSyntaxImpl(new Position(0, 0, 0), new Position(0, 0, 0));
+		return empty(null);
 	}
 	
 	static ISyntaxPosition empty(File file) {

@@ -1,16 +1,11 @@
 package me.hardcoded.main;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
+import java.io.InputStream;
 import java.util.Locale;
 
 import me.hardcoded.compiler.AmpleCompiler;
-import me.hardcoded.compiler.parser.AmpleParser;
-import me.hardcoded.compiler.parser.LinkableObject;
-import me.hardcoded.compiler.parser.serial.LinkableDeserializer;
-import me.hardcoded.compiler.parser.serial.LinkableSerializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -18,19 +13,18 @@ import me.hardcoded.configuration.CompilerConfiguration;
 import me.hardcoded.configuration.CompilerConfiguration.Operation;
 import me.hardcoded.configuration.OutputFormat;
 import me.hardcoded.utils.DebugUtils;
-import me.hardcoded.utils.FileUtils;
 
 /**
  * This is the main entry point for the compiler.<br>
  * This compiler is a multi-stage compiler.<br>
- * 
+ *
  * 1. Generate a token list from an input.<br>
  * 2. Generate a basic parse tree.<br>
  * 3. Optimize the parse tree.<br>
  * 4. Generate the reduced instruction language.<br>
  * 5. Optimize the reduced instruction language.<br>
  * 6. Export the language with a code generator.<br>
- * 
+ *
  * @author HardCoded
  */
 public class Main {
@@ -41,8 +35,9 @@ public class Main {
 	}
 	
 	private static void printHelpMessage() {
-		try {
-			LOGGER.info("\n{}", new String(FileUtils.readInputStream(Main.class.getResourceAsStream("/command/help.txt"))));
+		try (InputStream stream = Main.class.getResourceAsStream("/command/help.txt")) {
+			assert stream != null;
+			LOGGER.info("\n{}", new String(stream.readAllBytes()));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -55,16 +50,16 @@ public class Main {
 		}
 		
 		if (DebugUtils.isDeveloper()) {
-			String file = "link.ample";
+			String file = "test.amp";
 			File dir = new File("src/main/resources/test/ample/");
 			
 			String workingDirectory = new File("src/main/resources/project").getAbsolutePath();
 			String inputFile = "src/" + file;
 			String outputFile = DebugUtils.getNextFileId(dir, "compiled_%d.txt");
 			
+			System.out.println(dir);
 			args = new String[] {
 				"--working-directory", workingDirectory,
-				"--source-folders", "src",
 				"--format", OutputFormat.IR.toString(),
 				"--input-file", inputFile,
 				"--output-file", outputFile,
@@ -111,7 +106,7 @@ public class Main {
 			printHelpMessage();
 			return;
 		}
-		
+
 //		AmpleCompiler compiler = new AmpleCompiler();
 //		compiler.setConfiguration(config);
 //
