@@ -4,24 +4,19 @@ import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.expr.Expr;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.TreeType;
-import me.hardcoded.compiler.parser.type.ValueType;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 public class VarStat extends Stat {
 	private Reference reference;
 	private Expr value;
 	
-	public VarStat(Reference reference, Expr value, ISyntaxPosition syntaxPosition) {
+	public VarStat(ISyntaxPosition syntaxPosition, Reference reference, Expr value) {
 		super(syntaxPosition);
-		this.reference = reference;
+		this.reference = Objects.requireNonNull(reference);
 		this.value = value;
-	}
-	
-	public ValueType getType() {
-		return reference.getValueType();
-	}
-	
-	public String getName() {
-		return reference.getName();
 	}
 	
 	public Reference getReference() {
@@ -39,11 +34,12 @@ public class VarStat extends Stat {
 	
 	@Override
 	public boolean isPure() {
-		return true;
+		// Depends on scope
+		return false;
 	}
 	
 	@Override
 	public TreeType getTreeType() {
-		return TreeType.VAR;
+		return TreeType.PROG;
 	}
 }

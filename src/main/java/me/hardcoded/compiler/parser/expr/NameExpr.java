@@ -3,30 +3,25 @@ package me.hardcoded.compiler.parser.expr;
 import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.TreeType;
+import me.hardcoded.compiler.parser.type.ValueType;
+
+import java.util.Objects;
 
 public class NameExpr extends Expr {
 	private Reference reference;
 	
-	public NameExpr(Reference reference, ISyntaxPosition syntaxPosition) {
+	public NameExpr(ISyntaxPosition syntaxPosition, Reference reference) {
 		super(syntaxPosition);
-		this.reference = reference;
+		this.reference = Objects.requireNonNull(reference);
 	}
 	
 	public Reference getReference() {
 		return reference;
 	}
 	
-	public void setReference(Reference reference) {
-		this.reference = reference;
-	}
-	
-	public String geName() {
-		return reference.getName();
-	}
-	
 	@Override
 	public boolean isEmpty() {
-		return false;
+		return true;
 	}
 	
 	@Override
@@ -35,7 +30,12 @@ public class NameExpr extends Expr {
 	}
 	
 	@Override
+	public ValueType getType() {
+		return reference.getValueType();
+	}
+	
+	@Override
 	public TreeType getTreeType() {
-		return TreeType.NAME;
+		return TreeType.NUM;
 	}
 }

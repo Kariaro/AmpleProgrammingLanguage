@@ -1,35 +1,24 @@
 package me.hardcoded.compiler.parser.expr;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
-import me.hardcoded.compiler.parser.type.Atom;
 import me.hardcoded.compiler.parser.type.TreeType;
+import me.hardcoded.compiler.parser.type.ValueType;
 
 public class NumExpr extends Expr {
-	private double f_value;
-	private long   i_value;
-	private Atom atom;
+	private int value;
 	
-	public NumExpr(double value, Atom atom, ISyntaxPosition syntaxPosition) {
+	public NumExpr(ISyntaxPosition syntaxPosition, int value) {
 		super(syntaxPosition);
-		this.f_value = value;
-		this.atom = atom;
+		this.value = value;
 	}
 	
-	public NumExpr(long value, Atom atom, ISyntaxPosition syntaxPosition) {
-		super(syntaxPosition);
-		this.i_value = value;
-		this.atom = atom;
-	}
-	
-	public NumExpr(boolean value, ISyntaxPosition syntaxPosition) {
-		super(syntaxPosition);
-		this.i_value = value ? 1 : 0;
-		this.atom = Atom.int_8;
+	public int getValue() {
+		return value;
 	}
 	
 	@Override
 	public boolean isEmpty() {
-		return false;
+		return true;
 	}
 	
 	@Override
@@ -38,29 +27,12 @@ public class NumExpr extends Expr {
 	}
 	
 	@Override
-	public TreeType getTreeType() {
-		return TreeType.NUM;
-	}
-	
-	public Atom getAtom() {
-		return atom;
-	}
-	
-	public double getFloatingValue() {
-		return f_value;
-	}
-	
-	public long getIntegerValue() {
-		return i_value;
+	public ValueType getType() {
+		throw new UnsupportedOperationException();
 	}
 	
 	@Override
-	public String toString() {
-		// TODO: Correct formatting
-		if (atom.isFloating()) {
-			return "" + getFloatingValue();
-		}
-		
-		return "" + getIntegerValue();
+	public TreeType getTreeType() {
+		return TreeType.NUM;
 	}
 }

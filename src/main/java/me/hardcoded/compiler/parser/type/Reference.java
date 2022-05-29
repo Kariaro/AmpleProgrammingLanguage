@@ -2,6 +2,8 @@ package me.hardcoded.compiler.parser.type;
 
 import me.hardcoded.utils.DebugUtils;
 
+import java.util.Objects;
+
 public class Reference {
 	public static final int IMPORT = 1 << 5,
 							EXPORT = 1 << 6;
@@ -16,16 +18,16 @@ public class Reference {
 	private int flags;
 	private int usages;
 	
+	public Reference(String name, ValueType valueType, int id, int flags) {
+		this(name, valueType, id, flags, 0);
+	}
+	
 	public Reference(String name, ValueType valueType, int id, int flags, int usages) {
 		this.name = name;
 		this.id = id;
-		this.valueType = valueType;
+		this.valueType = Objects.requireNonNull(valueType);
 		this.flags = flags;
 		this.usages = usages;
-	}
-	
-	public Reference(String name, ValueType valueType, int id, int flags) {
-		this(name, valueType, id, flags, 0);
 	}
 	
 	public String getName() {

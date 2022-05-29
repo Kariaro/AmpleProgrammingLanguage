@@ -9,15 +9,11 @@ options:
     -w --working-directory <path>
                   set the working directory
 
-    -s --source-folders "<path 1>;<path 2>; ..."
-                  add source folder paths
-
     -f --format <format>
                   the output format type
-                  [chockintosh]
-                  [spooky]
-                  [x86]
-                  [ir]
+
+    --format-list
+                  prints all available formats
 
     -i --input-file <pathname>
                   set the main entry point of the compiler

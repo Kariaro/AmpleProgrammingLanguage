@@ -41,8 +41,8 @@ public class FunctionScope {
 		functionScope.popScope();
 	}
 	
-	public Reference addFunction(ValueType returnType, String name, List<Reference> parameters) {
-		return functionScope.getScope().addFunction(returnType, name, parameters);
+	public Reference addFunction(ValueType type, String name, List<Reference> parameters) {
+		return functionScope.getScope().addFunction(type, name, parameters);
 	}
 	
 	public Reference getGlobalFunction(String name) {

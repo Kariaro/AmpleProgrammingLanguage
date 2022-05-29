@@ -7,8 +7,9 @@ import java.util.*;
 
 public class ProgramScope {
 	private final FunctionScope functionScope;
-	private final LabelScope labelScope;
+	//private final LabelScope labelScope;
 	private final LocalScope localScope;
+	private final TypeScope typeScope;
 	final Map<String, Reference> importedReference;
 	final List<Reference> allReferences;
 	int count;
@@ -20,13 +21,15 @@ public class ProgramScope {
 		
 		this.functionScope = new FunctionScope(this);
 		this.localScope = new LocalScope(this);
-		this.labelScope = new LabelScope(this);
+		//this.labelScope = new LabelScope(this);
+		this.typeScope = new TypeScope(this);
 	}
 	
 	public void clear() {
 		functionScope.clear();
 		localScope.clear();
-		labelScope.clear();
+		//labelScope.clear();
+		typeScope.clear();
 	}
 	
 	public FunctionScope getFunctionScope() {
@@ -37,8 +40,12 @@ public class ProgramScope {
 		return localScope;
 	}
 	
-	public LabelScope getLabelScope() {
-		return labelScope;
+	//public LabelScope getLabelScope() {
+	//	return labelScope;
+	//}
+	
+	public TypeScope getTypeScope() {
+		return typeScope;
 	}
 	
 	public List<Reference> getAllReferences() {

@@ -11,15 +11,15 @@ import me.hardcoded.lexer.Token.Type;
 import me.hardcoded.utils.DebugUtils;
 import me.hardcoded.utils.Position;
 
-public class LangContext {
-	private static final Logger LOGGER = LogManager.getLogger(LangContext.class);
+public class LangReader {
+	private static final Logger LOGGER = LogManager.getLogger(LangReader.class);
 	
 	private final List<Token> list;
 	private final Token start;
 	private final Token end;
 	private int index;
 	
-	private LangContext(List<Token> list) {
+	private LangReader(List<Token> list) {
 		this.list = list;
 		this.start = new Token(Type.WHITESPACE, ISyntaxPosition.empty());
 		
@@ -120,7 +120,7 @@ public class LangContext {
 		return value();
 	}
 	
-	public static LangContext wrap(List<Token> list) {
-		return new LangContext(list);
+	public static LangReader wrap(List<Token> list) {
+		return new LangReader(list);
 	}
 }

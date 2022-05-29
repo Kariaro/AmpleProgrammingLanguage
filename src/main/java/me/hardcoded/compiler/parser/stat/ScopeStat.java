@@ -1,19 +1,19 @@
 package me.hardcoded.compiler.parser.stat;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.TreeType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class ScopeStat extends Stat {
-	private final List<Stat> elements;
+	private List<Stat> elements;
 	
 	public ScopeStat(ISyntaxPosition syntaxPosition) {
 		super(syntaxPosition);
-		
-		// Create a new list for all elements in this scope
-		elements = new ArrayList<>();
+		this.elements = new ArrayList<>();
 	}
 	
 	public void addElement(Stat stat) {
@@ -31,7 +31,6 @@ public class ScopeStat extends Stat {
 	
 	@Override
 	public boolean isPure() {
-		// This statement is only pure if all sub elements are pure
 		for (Stat stat : elements) {
 			if (!stat.isPure()) {
 				return false;
@@ -43,6 +42,6 @@ public class ScopeStat extends Stat {
 	
 	@Override
 	public TreeType getTreeType() {
-		return TreeType.SCOPE;
+		return TreeType.PROG;
 	}
 }

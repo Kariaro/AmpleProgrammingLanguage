@@ -1,6 +1,6 @@
 package me.hardcoded.compiler;
 
-import me.hardcoded.compiler.intermediate.AmpleLinker;
+//import me.hardcoded.compiler.intermediate.AmpleLinker;
 import me.hardcoded.compiler.parser.AmpleParser;
 import me.hardcoded.compiler.parser.LinkableObject;
 import me.hardcoded.configuration.CompilerConfiguration;
@@ -24,6 +24,7 @@ public class AmpleCompiler {
 		importedPaths.add(inputFile.getAbsolutePath());
 		LinkableObject main = new AmpleParser().fromFile(inputFile);
 		
+		/*
 		LinkedList<String> importableFiles = new LinkedList<>(main.getImports());
 		List<LinkableObject> list = new ArrayList<>();
 		
@@ -37,5 +38,6 @@ public class AmpleCompiler {
 		
 		AmpleLinker linker = new AmpleLinker();
 		linker.link(main, list);
+	    */
 	}
 }
