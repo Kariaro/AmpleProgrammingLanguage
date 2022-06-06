@@ -67,23 +67,11 @@ public class Token {
 		MUL,
 		DIV,
 		MOD,
-		INCREMENT,
-		DECREMENT,
 		SHIFT_RIGHT,
 		SHIFT_LEFT,
 		
 		// Memory Operations
 		ASSIGN,
-		ADD_ASSIGN,
-		SUB_ASSIGN,
-		MUL_ASSIGN,
-		DIV_ASSIGN,
-		MOD_ASSIGN,
-		XOR_ASSIGN,
-		OR_ASSIGN,
-		AND_ASSIGN,
-		SHIFT_LEFT_ASSIGN,
-		SHIFT_RIGHT_ASSIGN,
 		REFERENCE,
 		DEREFERENCE,
 		
@@ -98,26 +86,11 @@ public class Token {
 		DOUBLE,
 		NULL,
 		
-		// Variable types
-		DOUBLE_TYPE,
-		FLOAT_TYPE,
-		BYTE_TYPE,
-		BOOL_TYPE,
-		CHAR_TYPE,
-		SHORT_TYPE,
-		INT_TYPE,
-		LONG_TYPE,
-		VOID_TYPE,
-		
 		// Keywords
 		IF,
 		ELSE,
 		FOR,
 		WHILE,
-		DO,
-		SWITCH,
-		CASE,
-		DEFAULT,
 		CONTINUE,
 		BREAK,
 		RETURN,
@@ -135,21 +108,11 @@ public class Token {
 		SEMICOLON,
 		QUESTION_MARK,
 		COLON,
-		DOT,
-		AT,
 		
 		// Classes
 		NAMESPACE_OPERATOR,
-		MEMBER,
-		POINTER,
 		
 		// Preprocessors
 		LINK,
-		
-		// Type prefixes
-		UNSIGNED,
-		SIGNED,
-		VOLATILE,
-		CONST,
 	}
 }

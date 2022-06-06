@@ -1,24 +1,24 @@
 package me.hardcoded.compiler.parser.expr;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
-import me.hardcoded.compiler.parser.type.Operator;
+import me.hardcoded.compiler.parser.type.Operation;
 import me.hardcoded.compiler.parser.type.TreeType;
 import me.hardcoded.compiler.parser.type.ValueType;
 
 public class BinaryExpr extends Expr {
 	private Expr left;
 	private Expr right;
-	private Operator operator;
+	private Operation operation;
 	
-	public BinaryExpr(ISyntaxPosition syntaxPosition, Operator operator, Expr left, Expr right) {
+	public BinaryExpr(ISyntaxPosition syntaxPosition, Operation operation, Expr left, Expr right) {
 		super(syntaxPosition);
 		this.left = left;
 		this.right = right;
-		this.operator = operator;
+		this.operation = operation;
 	}
 	
-	public Operator getOperator() {
-		return operator;
+	public Operation getOperation() {
+		return operation;
 	}
 	
 	public Expr getLeft() {
@@ -54,6 +54,6 @@ public class BinaryExpr extends Expr {
 	
 	@Override
 	public String toString() {
-		return "(" + left + " " + operator.getName() + " " + right + ")";
+		return "(" + left + " " + operation.getName() + " " + right + ")";
 	}
 }

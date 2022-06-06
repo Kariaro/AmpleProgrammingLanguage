@@ -1,136 +1,79 @@
 package me.hardcoded.compiler.parser.type;
 
-import me.hardcoded.compiler.errors.ParseException;
 import me.hardcoded.lexer.Token;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 public enum Operation {
-	REFERENCE("&"),
-	DEREFERENCE("*"),
-	MULTIPLY("*"),
-	ADD("+"),
-	SUBTRACT("-"),
-	DIVIDE("/"),
-	MODULO("%"),
-	AND("&"),
-	OR("|"),
-	XOR("^"),
-	MEMBER("."),
-	SHIFT_LEFT("<<"),
-	SHIFT_RIGHT(">>"),
-	CONDITIONAL_AND("&&"),
-	CONDITIONAL_OR("||"),
-	
-	// Unary
-	UNARY_PLUS("+"),
-	UNARY_MINUS("-"),
-	UNARY_NOT("!"),
-	UNARY_NOR("~"),
-	PRE_INCREMENT("++"),
-	PRE_DECREMENT("--"),
-	POST_INCREMENT("++", false),
-	POST_DECREMENT("--", false),
-	
-	// Comparison
-	EQUALS("=="),
-	NOT_EQUALS("!="),
-	LESS_THAN("<"),
-	LESS_THAN_EQUALS("<="),
-	MORE_THAN(">"),
-	MORE_THAN_EQUALS(">="),
-	
-	// Memory
-	ASSIGN("="),
-	ARRAY("[]"),
-	NAMESPACE("::"),
+	C_OR       ("||", 12, Token.Type.COR,        OperationType.Binary, Associativity.Right),
+	C_AND      ("&&", 11, Token.Type.CAND,       OperationType.Binary, Associativity.Right),
+	OR         ("|",  10, Token.Type.OR,         OperationType.Binary, Associativity.Left),
+	// XOR
+	AND        ("&",   8, Token.Type.AND,        OperationType.Binary, Associativity.Left),
+	EQUAL      ("==",  7, Token.Type.EQUALS,     OperationType.Binary, Associativity.Left),
+	NOT_EQUAL  ("!=",  7, Token.Type.NOT_EQUALS, OperationType.Binary, Associativity.Left),
+	LESS_THAN  ("<",   6, Token.Type.LESS_THAN,  OperationType.Binary, Associativity.Left),
+	LESS_EQUAL ("<=",  6, Token.Type.LESS_EQUAL, OperationType.Binary, Associativity.Left),
+	MORE_THAN  (">",   6, Token.Type.MORE_THAN,  OperationType.Binary, Associativity.Left),
+	MORE_EQUAL (">=",  6, Token.Type.MORE_EQUAL, OperationType.Binary, Associativity.Left),
+	// SHIFT LR
+	PLUS       ("+",   4, Token.Type.PLUS,       OperationType.Binary, Associativity.Left),
+	MINUS      ("-",   4, Token.Type.MINUS,      OperationType.Binary, Associativity.Left),
+	MULTIPLY   ("*",   3, Token.Type.MUL,        OperationType.Binary, Associativity.Left),
+	DIVIDE     ("/",   3, Token.Type.DIV,        OperationType.Binary, Associativity.Left),
+	// MODULO
+	NEGATIVE   ("-",   2, Token.Type.MINUS,      OperationType.Prefix, Associativity.Right),
+	NOT        ("!",   2, Token.Type.NOT,        OperationType.Suffix, Associativity.Left),
 	;
 	
-	public static final Operation[] VALUES = values();
+	public static final int MAX_PRECEDENCE = Arrays.stream(values()).mapToInt(Operation::getPrecedence).max().orElse(0);
+	public static final Map<Integer, List<Operation>> OPERATORS = IntStream.rangeClosed(0, MAX_PRECEDENCE)
+		.boxed().collect(Collectors.toMap(i -> i, i -> Arrays.stream(values()).filter(v -> v.precedence == i).toList()));
 	
-	private final boolean prefix;
 	private final String name;
+	private final int precedence;
+	private final Token.Type tokenType;
+	private final OperationType operationType;
+	private final Associativity associativity;
 	
-	Operation(String name, boolean prefix) {
+	Operation(String name, int precedence, Token.Type tokenType, OperationType operationType, Associativity associativity) {
 		this.name = name;
-		this.prefix = prefix;
+		this.precedence = precedence;
+		this.tokenType = tokenType;
+		this.operationType = operationType;
+		this.associativity = associativity;
 	}
 	
-	Operation(String name) {
-		this(name, true);
+	public Token.Type getTokenType() {
+		return tokenType;
 	}
 	
-	public boolean isPrefix() {
-		return prefix;
+	public Associativity getAssociativity() {
+		return associativity;
+	}
+	
+	public OperationType getOperationType() {
+		return operationType;
+	}
+	
+	public int getPrecedence() {
+		return precedence;
+	}
+	
+	public String getName() {
+		return name;
 	}
 	
 	@Override
 	public String toString() {
-		return name;
+		return "{ value: '" + name + "', id: " + name() + " }";
 	}
 	
-	public static Operation unaryPrefix(Token.Type token) {
-		return switch (token) {
-			case PLUS -> UNARY_PLUS;
-			case MINUS -> UNARY_MINUS;
-			case NOT -> UNARY_NOT;
-			case NOR -> UNARY_NOR;
-			case AND -> REFERENCE;
-			case MUL -> DEREFERENCE;
-			case INCREMENT -> PRE_INCREMENT;
-			case DECREMENT -> PRE_DECREMENT;
-			default -> throw new ParseException("Invalid unary prefix token '%s'", token);
-		};
-	}
-	
-	public static Operation unarySuffix(Token.Type token) {
-		return switch (token) {
-			case INCREMENT -> POST_INCREMENT;
-			case DECREMENT -> POST_DECREMENT;
-			default -> throw new ParseException("Invalid unary suffix token '%s'", token);
-		};
-	}
-	
-	public static Operation conditional(Token.Type token) {
-		return switch (token) {
-			case CAND -> CONDITIONAL_AND;
-			case COR -> CONDITIONAL_OR;
-			default -> throw new ParseException("Invalid conditional token '%s'", token);
-		};
-	}
-	
-	public static Operation shift(Token.Type token) {
-		return switch (token) {
-			case SHIFT_LEFT -> SHIFT_LEFT;
-			case SHIFT_RIGHT -> SHIFT_RIGHT;
-			default -> throw new ParseException("Invalid shift token '%s'", token);
-		};
-	}
-	
-	public static Operation arithmetic(Token.Type token) {
-		return switch (token) {
-			case PLUS -> ADD;
-			case MINUS -> SUBTRACT;
-			default -> throw new ParseException("Invalid arithmetic token '%s'", token);
-		};
-	}
-	
-	public static Operation factor(Token.Type token) {
-		return switch (token) {
-			case MUL -> MULTIPLY;
-			case DIV -> DIVIDE;
-			case MOD -> MODULO;
-			default -> throw new ParseException("Invalid factor token '%s'", token);
-		};
-	}
-	
-	public static Operation comparison(Token.Type token) {
-		return switch (token) {
-			case EQUALS -> EQUALS;
-			case NOT_EQUALS -> NOT_EQUALS;
-			case LESS_THAN -> LESS_THAN;
-			case LESS_EQUAL -> LESS_THAN_EQUALS;
-			case MORE_THAN -> MORE_THAN;
-			case MORE_EQUAL -> MORE_THAN_EQUALS;
-			default -> throw new ParseException("Invalid comparison token '%s'", token);
-		};
+	public static List<Operation> getPrecedence(int precedence) {
+		return OPERATORS.getOrDefault(precedence, List.of());
 	}
 }

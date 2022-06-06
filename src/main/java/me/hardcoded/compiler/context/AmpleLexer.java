@@ -60,19 +60,7 @@ public class AmpleLexer {
 			))
 			
 			// Memory operations
-			.addRule(Type.DECREMENT, i -> i.addString("--"))
-			.addRule(Type.INCREMENT, i -> i.addString("++"))
 			.addRule(Type.ASSIGN, i -> i.addString("="))
-			.addRule(Type.ADD_ASSIGN, i -> i.addString("+="))
-			.addRule(Type.SUB_ASSIGN, i -> i.addString("-="))
-			.addRule(Type.MUL_ASSIGN, i -> i.addString("*="))
-			.addRule(Type.DIV_ASSIGN, i -> i.addString("/="))
-			.addRule(Type.MOD_ASSIGN, i -> i.addString("%="))
-			.addRule(Type.XOR_ASSIGN, i -> i.addString("^="))
-			.addRule(Type.AND_ASSIGN, i -> i.addString("&="))
-			.addRule(Type.OR_ASSIGN, i -> i.addString("|="))
-			.addRule(Type.SHIFT_LEFT_ASSIGN, i -> i.addString("<<="))
-			.addRule(Type.SHIFT_RIGHT_ASSIGN, i -> i.addString(">>="))
 			
 			// Brackets
 			.addRule(Type.L_PAREN, i -> i.addString("("))
@@ -85,12 +73,9 @@ public class AmpleLexer {
 			// Delimiters
 			.addRule(Type.SEMICOLON, i -> i.addString(";"))
 			.addRule(Type.QUESTION_MARK, i -> i.addString("?"))
-			.addRule(Type.DOT, i -> i.addString("."))
-			.addRule(Type.AT, i -> i.addString("@"))
 			
 			// Classes
 			.addRule(Type.NAMESPACE_OPERATOR, i -> i.addString("::"))
-			.addRule(Type.POINTER, i -> i.addString("->"))
 			
 			// Preprocessors
 			.addRule(Type.FUNC, i -> i.addString("func"))
@@ -104,38 +89,10 @@ public class AmpleLexer {
 			.addRule(Type.IF, i -> i.addString("if"))
 			.addRule(Type.FOR, i -> i.addString("for"))
 			.addRule(Type.ELSE, i -> i.addString("else"))
-			.addRule(Type.DO, i -> i.addString("do"))
 			.addRule(Type.WHILE, i -> i.addString("while"))
 			.addRule(Type.CONTINUE, i -> i.addString("continue"))
 			.addRule(Type.BREAK, i -> i.addString("break"))
-			.addRule(Type.SWITCH, i -> i.addString("switch"))
-			.addRule(Type.CASE, i -> i.addString("case"))
-			.addRule(Type.DEFAULT, i -> i.addString("default"))
-			.addRule(Type.GOTO, i -> i.addString("goto"))
 			.addRule(Type.NAMESPACE, i -> i.addString("namespace"))
-			
-			// Function Modifiers
-			.addRule(Type.EXPORT, i -> i.addString("export"))
-			.addRule(Type.INLINE, i -> i.addString("inline"))
-			
-			/*
-			// Variable Types
-			.addRule(Type.VOID_TYPE, i -> i.addString("void"))
-			.addRule(Type.CHAR_TYPE, i -> i.addString("char"))
-			.addRule(Type.BYTE_TYPE, i -> i.addString("byte"))
-			.addRule(Type.BOOL_TYPE, i -> i.addString("bool"))
-			.addRule(Type.SHORT_TYPE, i -> i.addString("short"))
-			.addRule(Type.INT_TYPE, i -> i.addString("int"))
-			.addRule(Type.LONG_TYPE, i -> i.addString("long"))
-			.addRule(Type.FLOAT_TYPE, i -> i.addString("float"))
-			.addRule(Type.DOUBLE_TYPE, i -> i.addString("double"))
-		
-			// Type prefix
-			.addRule(Type.UNSIGNED, i -> i.addString("unsigned"))
-			.addRule(Type.SIGNED, i -> i.addString("signed"))
-			.addRule(Type.VOLATILE, i -> i.addString("volatile"))
-			.addRule(Type.CONST, i -> i.addString("const"))
-			*/
 			
 			.toImmutable();
 	}

@@ -6,6 +6,7 @@ public class ValueType {
 	private static final String FLAGS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/";
 	
 	public static final int UNSIGNED = 1,
+							SIGNED = 0,
 							CONST = 2,
 							VOLATILE = 4,
 							FLOATING = 8;

@@ -38,6 +38,6 @@ public class NumExpr extends Expr {
 	
 	@Override
 	public String toString() {
-		return "(" + value + ")";
+		return Integer.toString(value);
 	}
 }
