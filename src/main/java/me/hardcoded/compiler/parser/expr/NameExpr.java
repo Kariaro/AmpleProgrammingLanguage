@@ -38,4 +38,9 @@ public class NameExpr extends Expr {
 	public TreeType getTreeType() {
 		return TreeType.NUM;
 	}
+	
+	@Override
+	public String toString() {
+		return "(" + reference.getName() + ")";
+	}
 }

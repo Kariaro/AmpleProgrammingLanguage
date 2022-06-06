@@ -28,4 +28,9 @@ public class NoneExpr extends Expr {
 	public TreeType getTreeType() {
 		return TreeType.EMPTY;
 	}
+	
+	@Override
+	public String toString() {
+		return "(<none>)";
+	}
 }

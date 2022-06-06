@@ -42,9 +42,9 @@ public class Token {
 		EQUALS,
 		NOT_EQUALS,
 		LESS_THAN,
-		LESS_THAN_EQUAL,
+		LESS_EQUAL,
 		MORE_THAN,
-		MORE_THAN_EQUAL,
+		MORE_EQUAL,
 		CAND,
 		COR,
 		

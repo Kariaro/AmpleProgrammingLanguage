@@ -127,9 +127,9 @@ public enum Operation {
 			case EQUALS -> EQUALS;
 			case NOT_EQUALS -> NOT_EQUALS;
 			case LESS_THAN -> LESS_THAN;
-			case LESS_THAN_EQUAL -> LESS_THAN_EQUALS;
+			case LESS_EQUAL -> LESS_THAN_EQUALS;
 			case MORE_THAN -> MORE_THAN;
-			case MORE_THAN_EQUAL -> MORE_THAN_EQUALS;
+			case MORE_EQUAL -> MORE_THAN_EQUALS;
 			default -> throw new ParseException("Invalid comparison token '%s'", token);
 		};
 	}
