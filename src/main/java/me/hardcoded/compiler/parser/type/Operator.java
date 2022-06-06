@@ -4,6 +4,10 @@ import me.hardcoded.lexer.Token;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public enum Operator {
 	C_OR       ("||", 12, Token.Type.COR,        OperatorType.Binary, Associativity.Left),
@@ -28,8 +32,8 @@ public enum Operator {
 	;
 	
 	public static final int MAX_PRECEDENCE = Arrays.stream(values()).mapToInt(Operator::getPrecedence).max().orElse(0);
-	
-	public static final Operator[] VALUES = values();
+	public static final Map<Integer, List<Operator>> OPERATORS = IntStream.rangeClosed(0, MAX_PRECEDENCE)
+		.boxed().collect(Collectors.toMap(i -> i, Operator::getPrecedence0));
 	
 	private final String name;
 	private final int precedence;
@@ -74,10 +78,15 @@ public enum Operator {
 		return "{ value: '" + name + "', id: " + name() + " }";
 	}
 	
-	public static List<Operator> getPrecedence(int precedence) {
+	private static List<Operator> getPrecedence0(int precedence) {
 		return Arrays.stream(values()).filter(v -> v.precedence == precedence).toList();
 	}
 	
+	public static List<Operator> getPrecedence(int precedence) {
+		return OPERATORS.getOrDefault(precedence, List.of());
+	}
+	
+	/*
 	public static Operator unary(Token token) {
 		return switch (token.type) {
 			case MINUS -> Operator.NEGATIVE;
@@ -105,4 +114,5 @@ public enum Operator {
 			default -> null;
 		};
 	}
+	*/
 }
