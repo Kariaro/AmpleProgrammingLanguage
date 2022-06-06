@@ -183,7 +183,7 @@ public class AmpleParser {
 		context.getLocalScope().pushBlock();
 		
 		List<Reference> parameters = new ArrayList<>();
-		while (true) {
+		while (reader.type() != Token.Type.R_PAREN) {
 			ValueType type = context.getTypeScope().getType(reader.value());
 			if (type == null) {
 				throw createParseException("Missing type '%s' was not a type", reader.value());
@@ -198,14 +198,18 @@ public class AmpleParser {
 			parameters.add(reference);
 			reader.advance();
 			
-			if (reader.type() == Token.Type.R_PAREN) {
+			if (reader.type() == Token.Type.COMMA) {
 				reader.advance();
+				if (reader.type() == Token.Type.R_PAREN) {
+					throw createParseException("Invalid comma before ')'");
+				}
+			} else {
 				break;
 			}
-			
-			tryMatchOrError(Token.Type.COMMA, () -> "Missing parameter separator");
-			reader.advance();
 		}
+		
+		tryMatchOrError(Token.Type.R_PAREN, () -> "Missing parameter separator");
+		reader.advance();
 		
 		tryMatchOrError(Token.Type.COLON, () -> "Missing function return value");
 		reader.advance();

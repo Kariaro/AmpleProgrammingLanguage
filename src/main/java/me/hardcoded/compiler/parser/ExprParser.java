@@ -50,10 +50,6 @@ public class ExprParser {
 			lastToken = false;
 			
 			switch (reader.type()) {
-				case INT -> {
-					NumExpr expr = new NumExpr(reader.syntaxPosition(), Integer.parseInt(reader.value()));
-					reader.advance();
-				}
 				case IDENTIFIER -> {
 					Reference reference = context.getLocalScope().getVariable(reader.value());
 					NameExpr expr = new NameExpr(reader.syntaxPosition(), reference);
@@ -62,44 +58,9 @@ public class ExprParser {
 					// If this is followed by an `L_PAREN` it's a call
 					// If this is followed by an `L_SQUARE` it's an array lookup
 				}
-				case L_PAREN -> {
-					lastToken = true;
-					tokenStack.add(Operator.L_PAREN);
-					reader.advance();
-				}
-				case R_PAREN -> {
-					for (int i = tokenStack.size() - 1; i >= 0; i--) {
-						Operator operator = tokenStack.get(i);
-						tokenStack.remove(i);
-						
-						if (operator == Operator.L_PAREN) {
-							break;
-						} else {
-							output.add(operator);
-						}
-					}
-					reader.advance();
-				}
-				default -> {
-					lastToken = true;
-					
-					Operator operator;
-					if (prevToken) {
-						operator = Operator.unary(reader.token());
-					} else {
-						operator = Operator.infix(reader.token());
-					}
-					
-					if (operator == null) {
-						throw createParseException("Unknown operator '%s'", reader.value());
-					}
-					
-					tokenStack.add(operator);
-					reader.advance();
-				}
 			}
 			
-			int i =32;
+			int i = 32;
 			System.out.printf("output: %s\n", output);
 			System.out.printf("stack : %s\n", tokenStack);
 		}
@@ -137,28 +98,12 @@ public class ExprParser {
 	
 	public Expr parse(boolean allowComma, int precedence) {
 		if (precedence == 0) {
-			switch (reader.type()) {
-				case INT -> {
-					NumExpr expr = new NumExpr(reader.syntaxPosition(), Integer.parseInt(reader.value()));
-					reader.advance();
-					return expr;
-				}
-//				case IDENTIFIER -> {}
-				case L_PAREN -> {
-					reader.advance();
-					Expr expr = parse(false, Operator.MAX_PRECEDENCE);
-					tryMatchOrError(Token.Type.R_PAREN);
-					reader.advance();
-					return expr;
-				}
-				default -> {
-					throw createParseException("Unknown operator '%s'", reader.value());
-				}
-			}
+			return atomExpression();
 		}
 		
 		List<Operator> operators = Operator.getPrecedence(precedence);
 		
+		// Prefix
 		Expr left = null;
 		for (Operator operator : operators) {
 			if (operator.getOperatorType() != OperatorType.Prefix
@@ -178,19 +123,25 @@ public class ExprParser {
 			left = parse(false, precedence - 1);
 		}
 		
-		for (Operator operator : operators) {
-			if (operator.getOperatorType() != OperatorType.Suffix
-				|| operator.getTokenType() != reader.type()) continue;
-			reader.advance();
-			
-			left = new UnaryExpr(
-				ISyntaxPosition.of(left.getSyntaxPosition().getStartPosition(), reader.lastPositionEnd()),
-				operator,
-				left
-			);
-		}
-		
+		// Suffix
 		boolean shouldContinue;
+		do {
+			shouldContinue = false;
+			for (Operator operator : operators) {
+				if (operator.getOperatorType() != OperatorType.Suffix
+					|| operator.getTokenType() != reader.type()) continue;
+				reader.advance();
+				shouldContinue = true;
+				
+				left = new UnaryExpr(
+					ISyntaxPosition.of(left.getSyntaxPosition().getStartPosition(), reader.lastPositionEnd()),
+					operator,
+					left
+				);
+			}
+		} while (shouldContinue);
+		
+		// Binary
 		do {
 			shouldContinue = false;
 			
@@ -201,12 +152,80 @@ public class ExprParser {
 				reader.advance();
 				shouldContinue = true;
 				
+				// TODO: Right / Left associativity
 				Expr right = parse(false, precedence - 1);
 				left = new BinaryExpr(ISyntaxPosition.of(left.getSyntaxPosition(), right.getSyntaxPosition()), operator, left, right);
 			}
 		} while (shouldContinue);
 		
 		return left;
+	}
+	
+	// Atom expression
+	//
+	// This is the lowest part of an expression.
+	// The leaf branches of the expression tree.
+	private Expr atomExpression() {
+		switch (reader.type()) {
+			case INT -> {
+				NumExpr expr = new NumExpr(reader.syntaxPosition(), Integer.parseInt(reader.value()));
+				reader.advance();
+				return expr;
+			}
+			case IDENTIFIER -> {
+				if (reader.peak(1).type == Token.Type.L_PAREN) {
+					return callExpression();
+				}
+				
+				Reference reference = context.getLocalScope().getVariable(reader.value());
+				NameExpr expr = new NameExpr(reader.syntaxPosition(), reference);
+				reader.advance();
+				return expr;
+			}
+			case L_PAREN -> {
+				reader.advance();
+				Expr expr = parse(false, Operator.MAX_PRECEDENCE);
+				tryMatchOrError(Token.Type.R_PAREN);
+				reader.advance();
+				return expr;
+			}
+			default -> {
+				throw createParseException("Unknown atom expression '%s'", reader.value());
+			}
+		}
+	}
+	
+	private Expr callExpression() {
+		Position startPos = reader.position();
+		
+		String name = reader.value();
+		reader.advance();
+		
+		tryMatchOrError(Token.Type.L_PAREN);
+		reader.advance();
+		
+		List<Expr> parameters = new ArrayList<>();
+		while (reader.type() != Token.Type.R_PAREN) {
+			parameters.add(parse(false));
+			
+			if (reader.type() == Token.Type.COMMA) {
+				reader.advance();
+				if (reader.type() == Token.Type.R_PAREN) {
+					throw createParseException("Invalid comma before ')'");
+				}
+			} else {
+				break;
+			}
+		}
+		
+		// TODO: Get function with the specified parameters
+		//       and the specified types.
+		Reference reference = context.getFunctionScope().getFunction(name);
+		
+		tryMatchOrError(Token.Type.R_PAREN);
+		reader.advance();
+		
+		return new CallExpr(ISyntaxPosition.of(startPos, reader.lastPositionEnd()), reference, parameters);
 	}
 	
 	private ParseException createParseException(String format, Object... args) {
