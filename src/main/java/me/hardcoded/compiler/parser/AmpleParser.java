@@ -326,105 +326,15 @@ public class AmpleParser {
 	
 	// Shunting yard algorithm
 	private Expr expression() {
-		int startIndex = reader.readerIndex();
-		
-		boolean lastToken = false;
-		List<Object> output = new ArrayList<>();
-		List<Operator> tokenStack = new ArrayList<>();
-		while (reader.type() != Token.Type.SEMICOLON) {
-			int index = reader.readerIndex();
-			String tokens = reader.peakString(startIndex - index, index - startIndex + 1);
-			System.out.println("-".repeat(50));
-			System.out.printf("[%s]\n", tokens);
-			
-			boolean prevToken = lastToken;
-			lastToken = false;
-			
-			switch (reader.type()) {
-				case INT -> {
-					NumExpr expr = new NumExpr(reader.syntaxPosition(), Integer.parseInt(reader.value()));
-					reader.advance();
-					output.add(expr);
-				}
-				case IDENTIFIER -> {
-					Reference reference = context.getLocalScope().getVariable(reader.value());
-					NameExpr expr = new NameExpr(reader.syntaxPosition(), reference);
-					reader.advance();
-					output.add(expr);
-					
-					// If this is followed by an `L_PAREN` it's a call
-					// If this is followed by an `L_SQUARE` it's an array lookup
-				}
-				case PLUS, MINUS, MUL, DIV, AND, CAND, COR -> {
-					lastToken = true;
-					
-					Operator operator;
-					if (prevToken) {
-						operator = Operator.unary(reader.token());
-					} else {
-						operator = Operator.infix(reader.token());
-					}
-					
-					tokenStack.add(operator);
-					reader.advance();
-				}
-				case L_PAREN -> {
-					lastToken = true;
-					tokenStack.add(Operator.L_PAREN);
-					reader.advance();
-				}
-				case R_PAREN -> {
-					for (int i = tokenStack.size() - 1; i >= 0; i--) {
-						Operator operator = tokenStack.get(i);
-						tokenStack.remove(i);
-						
-						if (operator == Operator.L_PAREN) {
-							break;
-						} else {
-							output.add(operator);
-						}
-					}
-					reader.advance();
-				}
-				
-				default -> throw createParseException("Unknown operator '%s'", reader.value());
-			}
-			
-			int i =32;
-			System.out.printf("output: %s\n", output);
-			System.out.printf("stack : %s\n", tokenStack);
-		}
-		
-		for (int i = tokenStack.size() - 1; i >= 0; i--) {
-			Operator operator = tokenStack.get(i);
-			tokenStack.remove(i);
-			output.add(operator);
-		}
-		
-		{
-			int index = reader.readerIndex();
-			String tokens = reader.peakString(startIndex - index, index - startIndex + 1);
-			System.out.println("-".repeat(50));
-			System.out.printf("[%s]\n", tokens);
-			System.out.printf("output: %s\n", output);
-			System.out.printf("stack : %s\n", tokenStack);
-			System.out.println();
-		}
-		
-		// - (32) + 16
-		// 32 <un_minus> 16 <plus>
-		
-		if (output.isEmpty()) {
-			throw createParseException("Invalid expression");
-		}
-		
-		return new NoneExpr(reader.syntaxPosition());
+		return expression(false);
 	}
 	
-	private Expr callExpression() {
-		// Handle a call expression
+	private Expr expression(boolean allowComma) {
+		Expr expr = new ExprParser(context, reader).parse(allowComma);
 		
-		return null;
+		System.out.println(expr);
+		
+		return expr;
 	}
 	
 	private boolean isType() {

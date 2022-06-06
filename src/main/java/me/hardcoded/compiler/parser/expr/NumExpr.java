@@ -35,4 +35,9 @@ public class NumExpr extends Expr {
 	public TreeType getTreeType() {
 		return TreeType.NUM;
 	}
+	
+	@Override
+	public String toString() {
+		return "(" + value + ")";
+	}
 }

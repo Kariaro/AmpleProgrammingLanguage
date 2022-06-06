@@ -19,8 +19,8 @@ public class AmpleLexer {
 			// Comparisons
 			.addRule(Type.EQUALS, i -> i.addString("=="))
 			.addRule(Type.NOT_EQUALS, i -> i.addString("!="))
-			.addRule(Type.LESS_THAN_EQUAL, i -> i.addString("<="))
-			.addRule(Type.MORE_THAN_EQUAL, i -> i.addString(">="))
+			.addRule(Type.LESS_EQUAL, i -> i.addString("<="))
+			.addRule(Type.MORE_EQUAL, i -> i.addString(">="))
 			.addRule(Type.LESS_THAN, i -> i.addString("<"))
 			.addRule(Type.MORE_THAN, i -> i.addString(">"))
 			.addRule(Type.CAND, i -> i.addString("&&"))
