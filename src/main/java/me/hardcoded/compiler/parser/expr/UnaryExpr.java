@@ -1,23 +1,23 @@
 package me.hardcoded.compiler.parser.expr;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
-import me.hardcoded.compiler.parser.type.Operator;
-import me.hardcoded.compiler.parser.type.OperatorType;
+import me.hardcoded.compiler.parser.type.Operation;
+import me.hardcoded.compiler.parser.type.OperationType;
 import me.hardcoded.compiler.parser.type.TreeType;
 import me.hardcoded.compiler.parser.type.ValueType;
 
 public class UnaryExpr extends Expr {
 	private Expr value;
-	private Operator operator;
+	private Operation operation;
 	
-	public UnaryExpr(ISyntaxPosition syntaxPosition, Operator operator, Expr value) {
+	public UnaryExpr(ISyntaxPosition syntaxPosition, Operation operation, Expr value) {
 		super(syntaxPosition);
 		this.value = value;
-		this.operator = operator;
+		this.operation = operation;
 	}
 	
-	public Operator getOperator() {
-		return operator;
+	public Operation getOperation() {
+		return operation;
 	}
 	
 	public Expr getValue() {
@@ -46,10 +46,10 @@ public class UnaryExpr extends Expr {
 	
 	@Override
 	public String toString() {
-		if (operator.getOperatorType() == OperatorType.Prefix) {
-			return "(" + operator.getName() + value + ")";
+		if (operation.getOperationType() == OperationType.Prefix) {
+			return "(" + operation.getName() + value + ")";
 		}
 		
-		return "(" + value + operator.getName() + ")";
+		return "(" + value + operation.getName() + ")";
 	}
 }

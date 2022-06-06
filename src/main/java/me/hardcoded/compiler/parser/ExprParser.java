@@ -5,8 +5,9 @@ import me.hardcoded.compiler.errors.ParseException;
 import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.expr.*;
 import me.hardcoded.compiler.parser.scope.ProgramScope;
-import me.hardcoded.compiler.parser.type.Operator;
-import me.hardcoded.compiler.parser.type.OperatorType;
+import me.hardcoded.compiler.parser.type.Associativity;
+import me.hardcoded.compiler.parser.type.Operation;
+import me.hardcoded.compiler.parser.type.OperationType;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.lexer.Token;
 import me.hardcoded.utils.Position;
@@ -16,16 +17,6 @@ import java.util.List;
 import java.util.function.Supplier;
 
 public class ExprParser {
-	public static class Group {
-		public Operator operator;
-		public Token token;
-		
-		public Group(Operator operator, Token token) {
-			this.token = token;
-			this.operator = operator;
-		}
-	}
-	
 	private final ProgramScope context;
 	private final LangReader reader;
 	
@@ -34,87 +25,30 @@ public class ExprParser {
 		this.reader = reader;
 	}
 	
-	// Read until no more input is valid
-	/*
-	public Expr parse(ProgramScope context, LangReader reader, boolean allowComma) {
-		int startIndex = reader.readerIndex();
-		
-		boolean lastToken = false;
-		List<Group> groups = new ArrayList<>();
-		while (reader.type() != Token.Type.SEMICOLON) {
-			String tokens = reader.peakString(startIndex - reader.readerIndex(), reader.readerIndex() - startIndex + 1);
-			System.out.println("-".repeat(50));
-			System.out.printf("[%s]\n", tokens);
-			
-			boolean prevToken = lastToken;
-			lastToken = false;
-			
-			switch (reader.type()) {
-				case IDENTIFIER -> {
-					Reference reference = context.getLocalScope().getVariable(reader.value());
-					NameExpr expr = new NameExpr(reader.syntaxPosition(), reference);
-					reader.advance();
-					
-					// If this is followed by an `L_PAREN` it's a call
-					// If this is followed by an `L_SQUARE` it's an array lookup
-				}
-			}
-			
-			int i = 32;
-			System.out.printf("output: %s\n", output);
-			System.out.printf("stack : %s\n", tokenStack);
-		}
-		
-		for (int i = tokenStack.size() - 1; i >= 0; i--) {
-			Operator operator = tokenStack.get(i);
-			tokenStack.remove(i);
-			output.add(operator);
-		}
-		
-		{
-			int index = reader.readerIndex();
-			String tokens = reader.peakString(startIndex - index, index - startIndex + 1);
-			System.out.println("-".repeat(50));
-			System.out.printf("[%s]\n", tokens);
-			System.out.printf("output: %s\n", output);
-			System.out.printf("stack : %s\n", tokenStack);
-			System.out.println();
-		}
-		
-		// - (32) + 16
-		// 32 <un_minus> 16 <plus>
-		
-		if (output.isEmpty()) {
-			throw createParseException("Invalid expression");
-		}
-		
-		return new NoneExpr(reader.syntaxPosition());
-	}
-	*/
-	
 	public Expr parse(boolean allowComma) {
-		return parse(allowComma, Operator.MAX_PRECEDENCE);
+		return parse(allowComma, Operation.MAX_PRECEDENCE);
 	}
 	
+	// At some point in the future. Unroll this and make it not recursive
 	public Expr parse(boolean allowComma, int precedence) {
 		if (precedence == 0) {
 			return atomExpression();
 		}
 		
-		List<Operator> operators = Operator.getPrecedence(precedence);
+		List<Operation> operators = Operation.getPrecedence(precedence);
 		
 		// Prefix
 		Expr left = null;
-		for (Operator operator : operators) {
-			if (operator.getOperatorType() != OperatorType.Prefix
-				|| operator.getTokenType() != reader.type()) continue;
+		for (Operation operation : operators) {
+			if (operation.getOperationType() != OperationType.Prefix
+				|| operation.getTokenType() != reader.type()) continue;
 			Position start = reader.position();
 			reader.advance();
 			
 			Expr value = parse(false, precedence);
 			left = new UnaryExpr(
 				ISyntaxPosition.of(start, value.getSyntaxPosition().getEndPosition()),
-				operator,
+				operation,
 				value
 			);
 		}
@@ -127,15 +61,15 @@ public class ExprParser {
 		boolean shouldContinue;
 		do {
 			shouldContinue = false;
-			for (Operator operator : operators) {
-				if (operator.getOperatorType() != OperatorType.Suffix
-					|| operator.getTokenType() != reader.type()) continue;
+			for (Operation operation : operators) {
+				if (operation.getOperationType() != OperationType.Suffix
+					|| operation.getTokenType() != reader.type()) continue;
 				reader.advance();
 				shouldContinue = true;
 				
 				left = new UnaryExpr(
 					ISyntaxPosition.of(left.getSyntaxPosition().getStartPosition(), reader.lastPositionEnd()),
-					operator,
+					operation,
 					left
 				);
 			}
@@ -145,16 +79,21 @@ public class ExprParser {
 		do {
 			shouldContinue = false;
 			
-			for (Operator operator : operators) {
-				if (operator.getOperatorType() != OperatorType.Binary
-					|| operator.getTokenType() != reader.type()) continue;
+			for (Operation operation : operators) {
+				if (operation.getOperationType() != OperationType.Binary
+					|| operation.getTokenType() != reader.type()) continue;
 					
 				reader.advance();
 				shouldContinue = true;
 				
-				// TODO: Right / Left associativity
-				Expr right = parse(false, precedence - 1);
-				left = new BinaryExpr(ISyntaxPosition.of(left.getSyntaxPosition(), right.getSyntaxPosition()), operator, left, right);
+				Expr right;
+				if (operation.getAssociativity() == Associativity.Right) {
+					right = parse(false, precedence);
+				} else {
+					right = parse(false, precedence - 1);
+				}
+				
+				left = new BinaryExpr(ISyntaxPosition.of(left.getSyntaxPosition(), right.getSyntaxPosition()), operation, left, right);
 			}
 		} while (shouldContinue);
 		
@@ -184,7 +123,7 @@ public class ExprParser {
 			}
 			case L_PAREN -> {
 				reader.advance();
-				Expr expr = parse(false, Operator.MAX_PRECEDENCE);
+				Expr expr = parse(false, Operation.MAX_PRECEDENCE);
 				tryMatchOrError(Token.Type.R_PAREN);
 				reader.advance();
 				return expr;
