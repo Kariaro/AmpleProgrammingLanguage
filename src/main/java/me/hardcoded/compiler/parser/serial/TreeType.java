@@ -1,7 +1,8 @@
-package me.hardcoded.compiler.parser.type;
+package me.hardcoded.compiler.parser.serial;
 
 public enum TreeType {
 	// Statements
+	PROGRAM,
 	BREAK,
 	CONTINUE,
 	EMPTY,
@@ -10,7 +11,6 @@ public enum TreeType {
 	GOTO,
 	IF,
 	LABEL,
-	PROG,
 	RETURN,
 	SCOPE,
 	VAR,
@@ -19,15 +19,17 @@ public enum TreeType {
 	
 	// Expressions
 	BINARY,
-	CALL,
-	CAST,
-	COMMA,
-	NAME,
-	NULL,
-	NUM,
-	STR,
 	UNARY,
-	CONDITIONAL;
+	CALL,
+	//CAST,
+	//COMMA,
+	NAME,
+	//NULL,
+	NUM,
+	NONE,
+	//STR,
+	//CONDITIONAL;
+	;
 	
 	public static final TreeType[] VALUES = values();
 }

@@ -1,7 +1,7 @@
 package me.hardcoded.compiler.parser.stat;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
-import me.hardcoded.compiler.parser.type.TreeType;
+import me.hardcoded.compiler.parser.serial.TreeType;
 
 public abstract class Stat {
 	private final ISyntaxPosition syntaxPosition;

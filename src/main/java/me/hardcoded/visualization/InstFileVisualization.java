@@ -1,5 +1,14 @@
 package me.hardcoded.visualization;
 
+import me.hardcoded.compiler.intermediate.inst.Inst;
+import me.hardcoded.compiler.intermediate.inst.InstFile;
+import me.hardcoded.compiler.intermediate.inst.Procedure;
+import me.hardcoded.compiler.parser.expr.*;
+import me.hardcoded.compiler.parser.stat.*;
+import me.hardcoded.compiler.parser.type.Reference;
+
+import javax.imageio.ImageIO;
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -9,36 +18,27 @@ import java.awt.geom.AffineTransform;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
-import javax.imageio.ImageIO;
-import javax.swing.*;
-
-import me.hardcoded.compiler.parser.expr.*;
-import me.hardcoded.compiler.parser.stat.*;
-import me.hardcoded.compiler.parser.type.Associativity;
-import me.hardcoded.compiler.parser.type.Reference;
-
 /**
- * A visualization of a parse tree
+ * A visualization of an instruction tree
  *
  * @author HardCoded
  */
-public final class ParseTreeVisualization extends Visualization<ProgStat> {
+public final class InstFileVisualization extends Visualization<InstFile> {
 	private PTPanel panel;
 	private boolean showReferenceType;
 	private boolean showReferenceId;
-	private ProgStat currentProgram;
+	private InstFile currentProgram;
 	
-	public ParseTreeVisualization() {
-		super("ParseTree - Visualization", 2);
+	public InstFileVisualization() {
+		super("InstFile - Visualization", 2);
 	}
 
 	@Override
 	protected void setup() {
 		try {
-			InputStream stream = ParseTreeVisualization.class.getResourceAsStream("/icons/parse_tree.png");
+			InputStream stream = InstFileVisualization.class.getResourceAsStream("/icons/parse_tree.png");
 			if (stream != null) {
 				frame.setIconImage(ImageIO.read(stream));
 			}
@@ -102,11 +102,11 @@ public final class ParseTreeVisualization extends Visualization<ProgStat> {
 
 			private void updateSelection(double mx, double my, List<Element> list, boolean parent, int depth) {
 				for (Element e : list) {
-					boolean fullBox = mx > (e.x) && mx < (e.x + e.offset);
+					boolean fullBox = mx > (e.x) && mx < (e.x + e.x_offset);
 
 					if (fullBox) {
-						boolean smallBox = mx > (e.x + (e.offset - e.width) / 2.0)
-							&& mx < (e.x + (e.offset + e.width) / 2.0)
+						boolean smallBox = mx > (e.x + (e.x_offset - e.width) / 2.0)
+							&& mx < (e.x + (e.x_offset + e.width) / 2.0)
 							&& my > (e.y - 20)
 							&& my < (e.y + e.height + 20);
 
@@ -172,7 +172,7 @@ public final class ParseTreeVisualization extends Visualization<ProgStat> {
 	}
 
 	@Override
-	protected void showObject(ProgStat program) {
+	protected void showObject(InstFile program) {
 		currentProgram = program;
 		
 		panel.display(program);
@@ -212,13 +212,13 @@ public final class ParseTreeVisualization extends Visualization<ProgStat> {
 			}
 		}
 
-		public void display(ProgStat program) {
+		public void display(InstFile program) {
 			synchronized (elements) {
 				elements.clear();
 
 				Element entry = new Element(null, program);
 				elements.add(entry);
-				entry.move(-(entry.x + (entry.offset - entry.width) / 2), -entry.y);
+				entry.move(-(entry.x + (entry.x_offset - entry.width) / 2), -entry.y);
 			}
 		}
 	}
@@ -236,7 +236,8 @@ public final class ParseTreeVisualization extends Visualization<ProgStat> {
 		public double y;
 		public int height;
 		public int width;
-		public double offset;
+		public double x_offset;
+		public double y_offset;
 		public boolean hover;
 
 		private final List<Element> elements;
@@ -276,25 +277,29 @@ public final class ParseTreeVisualization extends Visualization<ProgStat> {
 					setContent(object.toString());
 				}
 			}
-
+			
 			if (!children.isEmpty()) {
-				offset = 0;
+				y_offset = 0;
+				
+				double y_off = 0;
 
 				for (Object obj : children) {
 					Element e = new Element(this, obj);
-					e.move(offset, 100);
-					offset += e.offset;
+					e.move(width + 10, y_off);
+					y_off += e.height + 15;
 					elements.add(e);
 				}
+				
+				height = (int) y_off - 15;
 
-				if (width > offset) {
-					double diff = (width - offset) / 2.0;
-					for (Element e2 : elements) {
-						e2.move(diff, 0);
-					}
-
-					offset = width;
-				}
+//				if (height > offset) {
+//					double diff = (width - offset) / 2.0;
+//					for (Element e2 : elements) {
+//						e2.move(0, diff);
+//					}
+//
+//					offset = width;
+//				}
 			}
 		}
 
@@ -303,7 +308,8 @@ public final class ParseTreeVisualization extends Visualization<ProgStat> {
 			width = content.length() * 12 + 10;
 			width = (int)getStringWidth(content) + 10;
 			height = 20;
-			offset = width + 1;
+			x_offset = width + 1;
+			y_offset = 0;
 		}
 
 		public void move(double x, double y) {
@@ -315,143 +321,72 @@ public final class ParseTreeVisualization extends Visualization<ProgStat> {
 		}
 
 		public void paint(Graphics2D g) {
-			int x = (int)this.x;
-			int y = (int)this.y;
-
-			int xp = x;
-
-			if (!elements.isEmpty()) {
-				xp += (offset - width) / 2;
+			drawContent(g, x, y);
+			
+			for (Element elm : elements) {
+				elm.paint(g);
 			}
-
-			if ((xp + width + panel.xpos >= 0)
-			&& (xp - width + panel.xpos <= panel.getWidth() / panel.zoom)
-			&& (y - 5 + (height + 10) + panel.ypos >= 0)
-			&& (y - 5 - (height + 10) + panel.ypos <= panel.getHeight() / panel.zoom)) {
-				g.setColor(hover ? body.darker():body);
-				g.fillRoundRect(xp, y - 5, width, height + 10, 10, 10);
-
-				g.setColor(Color.black);
-				Stroke stroke = g.getStroke();
-				g.setStroke(new BasicStroke(2));
-				g.drawRoundRect(xp, y - 5, width, height + 10, 10, 10);
-				g.setStroke(stroke);
-
-				g.setColor(Color.black);
-				FontMetrics fm = g.getFontMetrics();
-				Rectangle rect = fm.getStringBounds(content, g).getBounds();
-				g.drawString(content, x - rect.x + ((int)offset - rect.width) / 2, y - rect.y + (height - rect.height) / 2 + 3);
-			}
-
-//			g.setColor(hover ? Color.red : Color.gray);
-//			g.fillRect(xp - (int)((offset - width) / 2.0), y - 10, (int)offset, 10);
-
-			double xx = xp + (width - offset) / 2.0 + panel.xpos;
-			if ((xx + offset > 0) && (xx < panel.getWidth() / panel.zoom)) {
-				for (Element elm : elements) {
-					elm.paint(g);
-				}
-			}
+		}
+		
+		/**
+		 * Draw the content of this element at the specified position
+		 *
+		 * @param g the graphics context
+		 * @param x the x position of the content
+		 * @param y the y position of the content
+		 */
+		public void drawContent(Graphics2D g, double x, double y) {
+			int xp = (int) x;
+			int yp = (int) y;
+			int margin = 5;
+			int dm = margin * 2;
+			
+			g.setColor(hover ? body.darker() : body);
+			g.fillRoundRect(xp, yp - margin, width, height + dm, dm, dm);
+			
+			g.setColor(Color.black);
+			Stroke stroke = g.getStroke();
+			g.setStroke(new BasicStroke(2));
+			g.drawRoundRect(xp, yp - margin, width, height + dm, dm, dm);
+			g.setStroke(stroke);
+			
+			g.setColor(Color.black);
+			FontMetrics fm = g.getFontMetrics();
+			Rectangle rect = fm.getStringBounds(content, g).getBounds();
+			g.drawString(content, xp + 5 - rect.x, yp - rect.y + (height - rect.height) / 2 + 3);
 		}
 
 		public void paintLines(Graphics2D g) {
-			int x0 = (int)(x + offset / 2D);
-			int y0 = (int)y;
-
-			int xxp = (int)this.x;
-
-			if (!elements.isEmpty()) {
-				xxp += (offset - width) / 2;
-			}
-
-			double xx = xxp + (width - offset) / 2.0 + panel.xpos;
-			if ((xx + offset > 0) && (xx < panel.getWidth() / panel.zoom)) {
-				g.setColor(Color.black);
-				for (Element elm : elements) {
-					int x1 = (int)(elm.x + elm.offset / 2D);
-					int y1 = (int)elm.y;
-
-					g.drawLine(x0, y0, x1, y1);
-					elm.paintLines(g);
-				}
-			}
+//			int x0 = (int) (x + x_offset / 2D);
+//			int y0 = (int) y;
+//
+//			int xxp = (int) this.x;
+//
+//			if (!elements.isEmpty()) {
+//				xxp += (x_offset - width) / 2;
+//			}
+//
+//			double xx = xxp + (width - x_offset) / 2.0 + panel.xpos;
+//			if ((xx + x_offset > 0) && (xx < panel.getWidth() / panel.zoom)) {
+//				g.setColor(Color.black);
+//				for (Element elm : elements) {
+//					int x1 = (int) (elm.x + elm.x_offset / 2D);
+//					int y1 = (int) elm.y;
+//
+//					g.drawLine(x0, y0, x1, y1);
+//					elm.paintLines(g);
+//				}
+//			}
 		}
 	}
 
 	private static List<Object> getElements(Object obj) {
-		if (obj instanceof Stat stat) {
-			return switch (stat.getTreeType()) {
-				// Statements
-				case PROGRAM -> {
-					ProgStat s = (ProgStat)stat;
-					yield List.of(s.getElements());
-				}
-				case FUNC -> {
-					FuncStat s = (FuncStat)stat;
-					yield List.of(s.getReference(), s.getParameters(), s.getBody());
-				}
-				case BREAK -> List.of();
-				case CONTINUE -> List.of();
-				case EMPTY -> List.of();
-//				case FOR -> {
-//					ForStat s = (ForStat)stat;
-//					yield List.of(s.getStart(), s.getCondition(), s.getAction(), s.getBody());
-//				}
-				case IF -> {
-					IfStat s = (IfStat) stat;
-					yield List.of(s.getValue(), s.getBody(), s.getElseBody());
-				}
-				case RETURN -> {
-					ReturnStat s = (ReturnStat) stat;
-					yield List.of(s.getValue());
-				}
-				case SCOPE -> {
-					ScopeStat s = (ScopeStat) stat;
-					yield List.of(s.getElements());
-				}
-				case VAR -> {
-					VarStat s = (VarStat) stat;
-					yield List.of(s.getReference(), s.getValue());
-				}
-//				case WHILE -> {
-//					WhileStat s = (WhileStat)stat;
-//					yield List.of(s.getCondition(), s.getBody());
-//				}
-//				case NAMESPACE -> {
-//					NamespaceStat s = (NamespaceStat)stat;
-//					yield List.of(s.getReference(), s.getElements());
-//				}
-
-				// Expression
-				case BINARY -> {
-					BinaryExpr e = (BinaryExpr) stat;
-					yield List.of(e.getLeft(), e.getOperation().getName(), e.getRight());
-				}
-				case UNARY -> {
-					UnaryExpr e = (UnaryExpr) stat;
-					if (e.getOperation().getAssociativity() == Associativity.Left) {
-						yield List.of(e.getOperation().getName(), e.getValue());
-					}
-					yield List.of(e.getValue(), e.getOperation().getName());
-				}
-				case CALL -> {
-					CallExpr e = (CallExpr) stat;
-					yield List.of(e.getReference(), e.getParameters());
-				}
-//				case CAST -> {
-//					CastExpr e = (CastExpr)stat;
-//					yield List.of(e.getCastType(), e.getValue());
-//				}
-//				case COMMA -> List.<Object>copyOf(((CommaExpr)stat).getValues());
-				case NAME -> List.of(((NameExpr) stat).getReference());
-//				case NULL -> List.of();
-				case NUM -> List.of(stat.toString());
-				default -> List.of("<%s Not Implement>".formatted(stat.getTreeType()));
-			};
+		if (obj instanceof InstFile file) {
+			return List.copyOf(file.getProcedures());
 		}
-
-		if (obj instanceof List list) {
-			return List.<Object>copyOf(list);
+		
+		if (obj instanceof Procedure proc) {
+			return List.copyOf(proc.getInstructions());
 		}
 
 		return List.of();

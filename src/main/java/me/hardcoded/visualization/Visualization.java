@@ -1,6 +1,6 @@
 package me.hardcoded.visualization;
 
-import java.awt.Graphics;
+import java.awt.*;
 import java.awt.image.BufferStrategy;
 
 import javax.swing.*;
@@ -16,6 +16,9 @@ public abstract class Visualization<T> {
 		protected void setup() {}
 		
 		@Override
+		protected void setupMenu(JMenuBar menuBar) {}
+		
+		@Override
 		protected void showObject(Object value) {}
 		
 		@Override
@@ -24,6 +27,7 @@ public abstract class Visualization<T> {
 	
 	protected BufferStrategy bs;
 	protected JFrame frame;
+	protected JMenuBar menuBar;
 	
 	private boolean hasSetup;
 	// Used to store early objects that was displayed before the frame had fully loaded
@@ -35,6 +39,12 @@ public abstract class Visualization<T> {
 	
 	protected Visualization(String defaultTitle, int buffers) {
 		SwingUtilities.invokeLater(() -> {
+			try {
+				UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			
 			frame = new JFrame(defaultTitle) {
 				@Override
 				public void paint(Graphics g) {
@@ -48,6 +58,11 @@ public abstract class Visualization<T> {
 			frame.setLocationRelativeTo(null);
 			frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 			setup();
+			
+			menuBar = new JMenuBar();
+			menuBar.setBorderPainted(false);
+			setupMenu(menuBar);
+			frame.setJMenuBar(menuBar);
 			
 			synchronized (this) {
 				hasSetup = true;
@@ -66,6 +81,11 @@ public abstract class Visualization<T> {
 	 * This method is called after the window objects has been created
 	 */
 	protected abstract void setup();
+	
+	/**
+	 * This method is called when the menu object should be created
+	 */
+	protected abstract void setupMenu(JMenuBar menuBar);
 	
 	/**
 	 * Display the object with this visualization

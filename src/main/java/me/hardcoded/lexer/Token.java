@@ -72,8 +72,6 @@ public class Token {
 		
 		// Memory Operations
 		ASSIGN,
-		REFERENCE,
-		DEREFERENCE,
 		
 		// Atoms
 		IDENTIFIER,
@@ -94,7 +92,6 @@ public class Token {
 		CONTINUE,
 		BREAK,
 		RETURN,
-		GOTO,
 		NAMESPACE,
 		
 		// Compiler annotations

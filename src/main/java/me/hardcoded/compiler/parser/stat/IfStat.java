@@ -4,16 +4,32 @@ import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.expr.Expr;
 import me.hardcoded.compiler.parser.serial.TreeType;
 
-public class ReturnStat extends Stat {
+public class IfStat extends Stat {
 	private Expr value;
+	private Stat body;
+	private Stat elseBody;
 	
-	public ReturnStat(ISyntaxPosition syntaxPosition, Expr value) {
+	public IfStat(ISyntaxPosition syntaxPosition, Expr value, Stat body, Stat elseBody) {
 		super(syntaxPosition);
 		this.value = value;
+		this.body = body;
+		this.elseBody = elseBody;
 	}
 	
 	public Expr getValue() {
 		return value;
+	}
+	
+	public Stat getBody() {
+		return body;
+	}
+	
+	public Stat getElseBody() {
+		return elseBody;
+	}
+	
+	public boolean hasElseBody() {
+		return !elseBody.isEmpty();
 	}
 	
 	@Override
@@ -23,11 +39,11 @@ public class ReturnStat extends Stat {
 	
 	@Override
 	public boolean isPure() {
-		return value.isPure();
+		return body.isPure() && elseBody.isPure();
 	}
 	
 	@Override
 	public TreeType getTreeType() {
-		return TreeType.RETURN;
+		return TreeType.IF;
 	}
 }

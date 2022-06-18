@@ -15,6 +15,6 @@ public class InstRef extends Reference {
 	}
 	
 	public InstRef(String name, int id, int flags) {
-		super(name, null, id, flags, 0);
+		super(name, ValueType.UNDEFINED, id, flags, 0);
 	}
 }

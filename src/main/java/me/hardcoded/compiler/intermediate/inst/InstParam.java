@@ -40,22 +40,22 @@ public interface InstParam {
 		}
 	}
 	
-	class Str implements InstParam {
-		private final String value;
-		
-		public Str(String value) {
-			this.value = value;
-		}
-		
-		public String getValue() {
-			return value;
-		}
-		
-		@Override
-		public String toString() {
-			return value;
-		}
-	}
+//	class Str implements InstParam {
+//		private final String value;
+//
+//		public Str(String value) {
+//			this.value = value;
+//		}
+//
+//		public String getValue() {
+//			return value;
+//		}
+//
+//		@Override
+//		public String toString() {
+//			return value;
+//		}
+//	}
 	
 	class Type implements InstParam {
 		private final ValueType valueType;
