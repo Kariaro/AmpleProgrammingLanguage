@@ -1,0 +1,308 @@
+package me.hardcoded.compiler.parser.serial;
+
+import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.parser.type.Reference;
+import me.hardcoded.compiler.parser.type.ValueType;
+import me.hardcoded.utils.Position;
+
+import java.io.*;
+import java.util.*;
+
+class LinkableHeader {
+	static final int MAGIC = 0x414d4C46; // 'AMLF' A Linkable File
+	
+	protected final RefPos<String> stringMap;
+	protected final RefPos<ValueType> valueTypeMap;
+	protected final RefPos<Reference> referenceMap;
+	protected final RefPos<ISyntaxPosition> syntaxPositionMap;
+	protected File file;
+	
+	public LinkableHeader() {
+		stringMap = new RefPos<>();
+		valueTypeMap = new RefPos<>();
+		referenceMap = new RefPos<>();
+		syntaxPositionMap = new RefPos<>();
+	}
+	
+	public void clear() {
+		stringMap.clear();
+		valueTypeMap.clear();
+		referenceMap.clear();
+		syntaxPositionMap.clear();
+	}
+	
+	public void setFile(File file) {
+		this.file = file;
+	}
+	
+	public File getFile() {
+		return file;
+	}
+	
+	public void readHeader(DataInputStream in) throws IOException {
+		int magic = in.readInt();
+		if (magic != MAGIC) {
+			throw new IOException("Wrong magic value");
+		}
+		
+		file = new File(readString(in));
+		clear();
+		
+		for (int i = 0, size = readVarInt(in); i < size; i++) {
+			String string = readString(in);
+			stringMap.put(string);
+		}
+		
+		for (int i = 0, size = readVarInt(in); i < size; i++) {
+			ValueType valueType = readValueType(in);
+			valueTypeMap.put(valueType);
+		}
+		
+		for (int i = 0, size = readVarInt(in); i < size; i++) {
+			Reference reference = readReference(in);
+			referenceMap.put(reference);
+		}
+		
+		for (int i = 0, size = readVarInt(in); i < size; i++) {
+			ISyntaxPosition syntaxPosition = readISyntaxPosition(in);
+			syntaxPositionMap.put(syntaxPosition);
+		}
+	}
+	
+	public void writeHeader(DataOutputStream out) throws IOException {
+		out.writeInt(MAGIC);
+		out.writeUTF(file.getAbsolutePath());
+		
+		byte[] refsBytes = writeRefs();
+		byte[] strsBytes = writeStrings();
+		
+		out.write(strsBytes);
+		out.write(refsBytes);
+	}
+	
+	private void processRefs() throws IOException {
+		DataOutputStream dummy = new DataOutputStream(OutputStream.nullOutputStream());
+		
+		for (Reference reference : referenceMap.list) {
+			writeReference(reference, dummy);
+		}
+	}
+	
+	private byte[] writeRefs() throws IOException {
+		ByteArrayOutputStream bs = new ByteArrayOutputStream();
+		DataOutputStream out = new DataOutputStream(bs);
+		
+		// Initialize all value types
+		processRefs();
+		
+		writeVarInt(valueTypeMap.list.size(), out);
+		for (ValueType valueType : valueTypeMap.list) {
+			writeValueType(valueType, out);
+		}
+		
+		writeVarInt(referenceMap.list.size(), out);
+		for (Reference reference : referenceMap.list) {
+			writeReference(reference, out);
+		}
+		
+		writeVarInt(syntaxPositionMap.list.size(), out);
+		for (ISyntaxPosition syntaxPosition : syntaxPositionMap.list) {
+			writeISyntaxPosition(syntaxPosition, out);
+		}
+		
+		return bs.toByteArray();
+	}
+	
+	private byte[] writeStrings() throws IOException {
+		ByteArrayOutputStream bs = new ByteArrayOutputStream();
+		DataOutputStream out = new DataOutputStream(bs);
+		
+		writeVarInt(stringMap.list.size(), out);
+		for (String str : stringMap.list) {
+			out.writeUTF(str);
+		}
+		
+		return bs.toByteArray();
+	}
+	
+	// Specific types
+	public int readVarInt(DataInputStream in) throws IOException {
+		int numRead = 0;
+		int result = 0;
+		int read;
+		
+		do {
+			read = in.read();
+			int value = (read & 0b01111111);
+			result |= (value << (7 * numRead));
+			
+			numRead++;
+			if (numRead > 5) {
+				throw new RuntimeException("VarInt is too big");
+			}
+		} while ((read & 0b10000000) != 0);
+		
+		return result;
+	}
+	
+	public void writeVarInt(int value, DataOutputStream out) throws IOException {
+		do {
+			int temp = (value & 0b01111111);
+			value >>>= 7;
+			if (value != 0) {
+				temp |= 0b10000000;
+			}
+			
+			out.write(temp);
+		} while (value != 0);
+	}
+	
+	
+	// Type readers
+	private String readString(DataInputStream in) throws IOException {
+		return in.readUTF();
+	}
+	
+	private ValueType readValueType(DataInputStream in) throws IOException {
+		String name = deserializeString(in);
+		int flags = readVarInt(in);
+		int depth = readVarInt(in);
+		int size = readVarInt(in);
+		return new ValueType(name, size, depth, flags);
+	}
+	
+	private Reference readReference(DataInputStream in) throws IOException {
+		String name = deserializeString(in);
+		ValueType valueType = deserializeValueType(in);
+		int usages = readVarInt(in);
+		int id = readVarInt(in);
+		int flags = readVarInt(in);
+		return new Reference(name, valueType, id, flags, usages);
+	}
+	
+	private ISyntaxPosition readISyntaxPosition(DataInputStream in) throws IOException {
+		Position start = readPosition(in);
+		Position end = readPosition(in);
+		return ISyntaxPosition.of(start, end);
+	}
+	
+	private Position readPosition(DataInputStream in) throws IOException {
+		String name = deserializeString(in);
+		int column = readVarInt(in);
+		int line = readVarInt(in);
+		int offset = readVarInt(in);
+		return new Position(new File(name), column, line, offset);
+	}
+	
+	
+	// Type writers
+	private void writeValueType(ValueType valueType, DataOutputStream out) throws IOException {
+		serializeString(valueType.getName(), out);
+		writeVarInt(valueType.getFlags(), out);
+		writeVarInt(valueType.getDepth(), out);
+		writeVarInt(valueType.getSize(), out);
+	}
+	
+	private void writeReference(Reference reference, DataOutputStream out) throws IOException {
+		serializeString(reference.getName(), out);
+		serializeValueType(reference.getValueType(), out);
+		writeVarInt(reference.getUsages(), out);
+		writeVarInt(reference.getId(), out);
+		writeVarInt(reference.getFlags(), out);
+	}
+	
+	private void writeISyntaxPosition(ISyntaxPosition syntaxPosition, DataOutputStream out) throws IOException {
+		writePosition(syntaxPosition.getStartPosition(), out);
+		writePosition(syntaxPosition.getEndPosition(), out);
+	}
+	
+	private void writePosition(Position position, DataOutputStream out) throws IOException {
+		serializeString(position.file == null ? "" : position.file.getAbsolutePath(), out);
+		writeVarInt(position.column, out);
+		writeVarInt(position.line, out);
+		writeVarInt(position.offset, out);
+	}
+	
+	
+	// Type deserializers
+	public String deserializeString(DataInputStream in) throws IOException {
+		int idx = readVarInt(in);
+		return stringMap.get(idx);
+	}
+	
+	public ValueType deserializeValueType(DataInputStream in) throws IOException {
+		int idx = readVarInt(in);
+		return valueTypeMap.get(idx);
+	}
+	
+	public Reference deserializeReference(DataInputStream in) throws IOException {
+		int idx = readVarInt(in);
+		return referenceMap.get(idx);
+	}
+	
+	public ISyntaxPosition deserializeISyntaxPosition(DataInputStream in) throws IOException {
+		int idx = readVarInt(in);
+		return syntaxPositionMap.get(idx);
+	}
+	
+	
+	// Type serializers
+	public void serializeString(String string, DataOutputStream out) throws IOException {
+		int idx = stringMap.put(string);
+		writeVarInt(idx, out);
+	}
+	
+	public void serializeValueType(ValueType valueType, DataOutputStream out) throws IOException {
+		int idx = valueTypeMap.put(valueType);
+		writeVarInt(idx, out);
+	}
+	
+	public void serializeReference(Reference reference, DataOutputStream out) throws IOException {
+		int idx = referenceMap.put(reference);
+		writeVarInt(idx, out);
+	}
+	
+	public void serializeISyntaxPosition(ISyntaxPosition syntaxPosition, DataOutputStream out) throws IOException {
+		int idx = syntaxPositionMap.put(syntaxPosition);
+		writeVarInt(idx, out);
+	}
+	
+	
+	// Classes
+	private static class RefPos<T> {
+		private final List<T> list;
+		private final Map<T, Integer> map;
+		
+		private RefPos() {
+			this.list = new ArrayList<>();
+			this.map = new LinkedHashMap<>();
+		}
+		
+		int put(T elm) {
+			Integer val = map.get(elm);
+			
+			if (val == null) {
+				int size = list.size();
+				map.put(elm, size);
+				list.add(elm);
+				return size;
+			}
+			
+			return val;
+		}
+		
+		T get(int idx) {
+			return list.get(idx);
+		}
+		
+		void clear() {
+			map.clear();
+			list.clear();
+		}
+		
+		@Override
+		public String toString() {
+			return map.toString();
+		}
+	}
+}

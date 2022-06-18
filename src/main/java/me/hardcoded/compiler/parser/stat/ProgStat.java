@@ -1,7 +1,7 @@
 package me.hardcoded.compiler.parser.stat;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
-import me.hardcoded.compiler.parser.type.TreeType;
+import me.hardcoded.compiler.parser.serial.TreeType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,6 +40,6 @@ public class ProgStat extends Stat {
 	
 	@Override
 	public TreeType getTreeType() {
-		return TreeType.PROG;
+		return TreeType.PROGRAM;
 	}
 }

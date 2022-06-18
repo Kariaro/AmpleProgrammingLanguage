@@ -1,5 +1,6 @@
 package me.hardcoded.compiler.impl;
 
+import me.hardcoded.compiler.intermediate.inst.InstFile;
 import me.hardcoded.utils.error.CodeGenException;
 
 public interface ICodeGenerator {
@@ -9,7 +10,7 @@ public interface ICodeGenerator {
 	 * @param program the {@code Object} to export
 	 * @return a byte array
 	 */
-	default byte[] getBytecode(Object program) throws CodeGenException {
+	default byte[] getBytecode(InstFile program) throws CodeGenException {
 		return null;
 	}
 	
@@ -18,7 +19,7 @@ public interface ICodeGenerator {
 	 * @param program the {@code Object} to export
 	 * @return a string
 	 */
-	default byte[] getAssembler(Object program) throws CodeGenException {
+	default byte[] getAssembler(InstFile program) throws CodeGenException {
 		return null;
 	}
 	

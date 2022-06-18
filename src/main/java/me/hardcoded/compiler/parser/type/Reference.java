@@ -115,14 +115,16 @@ public class Reference {
 			return name;
 		}
 		
-		if (DebugUtils.DEBUG_REFERENCE_INFORMATION) {
-			if (valueType != null) {
-				return valueType + " " + name + ":" + toSimpleString();
-			}
-			
-			return name + ":" + toSimpleString();
-		}
-		
-		return name;
+		return name + ":" + toSimpleString();
+//
+//		if (DebugUtils.DEBUG_REFERENCE_INFORMATION) {
+//			if (valueType != null) {
+//				return valueType + " " + name + ":" + toSimpleString();
+//			}
+//
+//			return name + ":" + toSimpleString();
+//		}
+//
+//		return name;
 	}
 }

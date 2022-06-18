@@ -40,7 +40,8 @@ public class ExprParser {
 		// Prefix
 		Expr left = null;
 		for (Operation operation : operators) {
-			if (operation.getOperationType() != OperationType.Prefix
+			if (operation.getOperationType() != OperationType.Unary
+				|| operation.getAssociativity() != Associativity.Right
 				|| operation.getTokenType() != reader.type()) continue;
 			Position start = reader.position();
 			reader.advance();
@@ -62,7 +63,8 @@ public class ExprParser {
 		do {
 			shouldContinue = false;
 			for (Operation operation : operators) {
-				if (operation.getOperationType() != OperationType.Suffix
+				if (operation.getOperationType() != OperationType.Unary
+					|| operation.getAssociativity() != Associativity.Left
 					|| operation.getTokenType() != reader.type()) continue;
 				reader.advance();
 				shouldContinue = true;
@@ -117,6 +119,10 @@ public class ExprParser {
 				}
 				
 				Reference reference = context.getLocalScope().getVariable(reader.value());
+				if (reference == null) {
+					throw createParseException("Could not find the variable '%s'", reader.value());
+				}
+				
 				NameExpr expr = new NameExpr(reader.syntaxPosition(), reference);
 				reader.advance();
 				return expr;

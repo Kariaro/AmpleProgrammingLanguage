@@ -2,7 +2,7 @@ package me.hardcoded.compiler.parser.expr;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.type.Reference;
-import me.hardcoded.compiler.parser.type.TreeType;
+import me.hardcoded.compiler.parser.serial.TreeType;
 import me.hardcoded.compiler.parser.type.ValueType;
 
 import java.util.Objects;
@@ -36,7 +36,7 @@ public class NameExpr extends Expr {
 	
 	@Override
 	public TreeType getTreeType() {
-		return TreeType.NUM;
+		return TreeType.NAME;
 	}
 	
 	@Override

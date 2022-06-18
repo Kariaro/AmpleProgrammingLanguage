@@ -26,13 +26,14 @@ public enum Operation {
 	MULTIPLY   ("*",   3, Token.Type.MUL,        OperationType.Binary, Associativity.Left),
 	DIVIDE     ("/",   3, Token.Type.DIV,        OperationType.Binary, Associativity.Left),
 	// MODULO
-	NEGATIVE   ("-",   2, Token.Type.MINUS,      OperationType.Prefix, Associativity.Right),
-	NOT        ("!",   2, Token.Type.NOT,        OperationType.Suffix, Associativity.Left),
+	NEGATIVE   ("-",   2, Token.Type.MINUS,      OperationType.Unary, Associativity.Right),
+	NOT        ("!",   2, Token.Type.NOT,        OperationType.Unary, Associativity.Left),
 	;
 	
-	public static final int MAX_PRECEDENCE = Arrays.stream(values()).mapToInt(Operation::getPrecedence).max().orElse(0);
-	public static final Map<Integer, List<Operation>> OPERATORS = IntStream.rangeClosed(0, MAX_PRECEDENCE)
-		.boxed().collect(Collectors.toMap(i -> i, i -> Arrays.stream(values()).filter(v -> v.precedence == i).toList()));
+	public static final Operation[] VALUES = values();
+	public static final int MAX_PRECEDENCE = Arrays.stream(VALUES).mapToInt(Operation::getPrecedence).max().orElse(0);
+	private static final Map<Integer, List<Operation>> OPERANDS = IntStream.rangeClosed(0, MAX_PRECEDENCE)
+		.boxed().collect(Collectors.toMap(i -> i, i -> Arrays.stream(VALUES).filter(v -> v.precedence == i).toList()));
 	
 	private final String name;
 	private final int precedence;
@@ -74,6 +75,6 @@ public enum Operation {
 	}
 	
 	public static List<Operation> getPrecedence(int precedence) {
-		return OPERATORS.getOrDefault(precedence, List.of());
+		return OPERANDS.getOrDefault(precedence, List.of());
 	}
 }

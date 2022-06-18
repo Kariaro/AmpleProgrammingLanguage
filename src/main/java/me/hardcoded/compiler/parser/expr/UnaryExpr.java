@@ -1,10 +1,8 @@
 package me.hardcoded.compiler.parser.expr;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
-import me.hardcoded.compiler.parser.type.Operation;
-import me.hardcoded.compiler.parser.type.OperationType;
-import me.hardcoded.compiler.parser.type.TreeType;
-import me.hardcoded.compiler.parser.type.ValueType;
+import me.hardcoded.compiler.parser.serial.TreeType;
+import me.hardcoded.compiler.parser.type.*;
 
 public class UnaryExpr extends Expr {
 	private Expr value;
@@ -46,7 +44,7 @@ public class UnaryExpr extends Expr {
 	
 	@Override
 	public String toString() {
-		if (operation.getOperationType() == OperationType.Prefix) {
+		if (operation.getAssociativity() == Associativity.Right) {
 			return "(" + operation.getName() + value + ")";
 		}
 		

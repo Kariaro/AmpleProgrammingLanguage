@@ -1,12 +1,10 @@
 package me.hardcoded.compiler.parser.stat;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
-import me.hardcoded.compiler.parser.type.Reference;
-import me.hardcoded.compiler.parser.type.TreeType;
+import me.hardcoded.compiler.parser.serial.TreeType;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 public class ScopeStat extends Stat {
 	private List<Stat> elements;
@@ -42,6 +40,6 @@ public class ScopeStat extends Stat {
 	
 	@Override
 	public TreeType getTreeType() {
-		return TreeType.PROG;
+		return TreeType.SCOPE;
 	}
 }

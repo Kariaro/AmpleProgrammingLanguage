@@ -29,6 +29,14 @@ public class Inst {
 		return this;
 	}
 	
+	public InstParam.Ref getRefParam(int index) {
+		return (InstParam.Ref) parameters.get(index);
+	}
+	
+	public InstParam getParam(int index) {
+		return parameters.get(index);
+	}
+	
 	public Opcode getOpcode() {
 		return opcode;
 	}

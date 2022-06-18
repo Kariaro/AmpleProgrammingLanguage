@@ -64,7 +64,15 @@ public class AmpleParser {
 	}
 	
 	public LinkableObject fromFile(File file) throws IOException {
-		return fromBytes(file, Files.readAllBytes(file.toPath()));
+		byte[] bytes;
+		try {
+			bytes = Files.readAllBytes(file.toPath());
+		} catch (IOException e) {
+			System.out.printf("Could not find the file '%s'\n", file.getAbsolutePath());
+			throw e;
+		}
+		
+		return fromBytes(file, bytes);
 	}
 	
 	private LinkableObject fromBytes(File file, byte[] bytes) {
@@ -166,7 +174,7 @@ public class AmpleParser {
 			return varStatement();
 		}
 		
-		return null;
+		throw createParseException(reader.position(), "Invalid statement");
 	}
 	
 	private Stat funcStatement() {
@@ -266,7 +274,7 @@ public class AmpleParser {
 		}
 		
 		switch (reader.type()) {
-			case IF -> {}
+			case IF -> { return ifStatement(); }
 			case WHILE -> {}
 			case FOR -> {}
 			case IDENTIFIER -> {}
@@ -293,6 +301,30 @@ public class AmpleParser {
 		reader.advance();
 		
 		return stat;
+	}
+	
+	private IfStat ifStatement() {
+		Position startPos = reader.position();
+		reader.advance();
+		
+		tryMatchOrError(Token.Type.L_PAREN);
+		reader.advance();
+		
+		Expr value = expression();
+		
+		tryMatchOrError(Token.Type.R_PAREN);
+		reader.advance();
+		
+		Stat body = statements();
+		Stat elseBody;
+		if (reader.type() == Token.Type.ELSE) {
+			reader.advance();
+			elseBody = statements();
+		} else {
+			elseBody = new EmptyStat(reader.syntaxPosition());
+		}
+		
+		return new IfStat(ISyntaxPosition.of(startPos, elseBody.getSyntaxPosition().getEndPosition()), value, body, elseBody);
 	}
 	
 	private VarStat varStatement() {
