@@ -9,15 +9,9 @@ import me.hardcoded.compiler.intermediate.inst.Opcode;
 import me.hardcoded.compiler.intermediate.inst.Procedure;
 import me.hardcoded.compiler.parser.LinkableObject;
 //import me.hardcoded.compiler.parser.ParseUtil;
-import me.hardcoded.compiler.parser.serial.LinkableDeserializer;
-import me.hardcoded.compiler.parser.serial.LinkableSerializer;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.visualization.ParseTreeVisualization;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.util.*;
 
 /**
@@ -77,7 +71,7 @@ public class AmpleLinker {
 		for (Procedure proc : file.getProcedures()) {
 			System.out.println("# proc " + proc);
 			for (Inst inst : proc.getInstructions()) {
-				if (inst.getOpcode() == Opcode.LABLE) {
+				if (inst.getOpcode() == Opcode.LABEL) {
 					System.out.println("    " + inst);
 				} else {
 					System.out.println("        " + inst);

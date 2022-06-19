@@ -29,6 +29,7 @@ public interface InstParam {
 			this.TEMP = "" + value;
 		}
 		
+		@Deprecated
 		public Num(String TEMP) {
 			// TODO: Allow numbers here
 			this.TEMP = TEMP;

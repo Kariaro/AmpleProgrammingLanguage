@@ -8,13 +8,15 @@ import me.hardcoded.compiler.parser.expr.*;
 import me.hardcoded.compiler.parser.stat.*;
 import me.hardcoded.compiler.parser.type.Operation;
 import me.hardcoded.compiler.parser.type.Reference;
+import me.hardcoded.compiler.parser.type.ValueType;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 public class InstGenerator {
-	private static final InstRef NONE = new InstRef("<invalid>", -1, 0);
+	private static final InstRef NONE = new InstRef("<invalid>", ValueType.UNDEFINED, -1, 0);
 	private final InstFile file;
 	private final ExportMap exportMap;
 
@@ -22,8 +24,8 @@ public class InstGenerator {
 	private final Map<Reference, InstRef> wrappedReferences;
 	private int count;
 	private int funcCount;
-	private InstRef breakBranch;
-	private InstRef continueBranch;
+	// private InstRef breakBranch;
+	// private InstRef continueBranch;
 
 	public InstGenerator(InstFile file, ExportMap exportMap) {
 		this.file = file;
@@ -74,6 +76,7 @@ public class InstGenerator {
 	private InstRef generateProgStat(ProgStat stat) {
 		for (Stat s : stat.getElements()) {
 			count = 0;
+			
 			Procedure procedure = new Procedure();
 			generateStat(s, procedure);
 			file.addProcedure(procedure);
@@ -104,7 +107,7 @@ public class InstGenerator {
 //		InstRef endBranch = createLocalLabel(".for.end");
 //
 //		InstRef oldBreakBranch = breakBranch;
-//		InstRef oldContinueBrach = continueBranch;
+//		InstRef oldContinueBranch = continueBranch;
 //		breakBranch = endBranch;
 //		continueBranch = nextBranch;
 //
@@ -119,7 +122,7 @@ public class InstGenerator {
 //			.addParam(new InstParam.Ref(loopBranch)));
 //
 //		// next:
-//		procedure.addInst(new Inst(Opcode.LABLE, stat.getSyntaxPosition())
+//		procedure.addInst(new Inst(Opcode.LABEL, stat.getSyntaxPosition())
 //			.addParam(new InstParam.Ref(nextBranch)));
 //		generateStat(stat.getAction(), procedure);
 //
@@ -137,20 +140,26 @@ public class InstGenerator {
 //			.addParam(new InstParam.Ref(nextBranch)));
 //
 //		// end:
-//		procedure.addInst(new Inst(Opcode.LABLE, stat.getSyntaxPosition())
+//		procedure.addInst(new Inst(Opcode.LABEL, stat.getSyntaxPosition())
 //			.addParam(new InstParam.Ref(endBranch)));
 //
 //		breakBranch = oldBreakBranch;
-//		continueBranch = oldContinueBrach;
+//		continueBranch = oldContinueBranch;
 //
 //		return NONE;
 //	}
 
 	private InstRef generateFuncStat(FuncStat stat, Procedure procedure) {
-		Inst functionLabel = new Inst(Opcode.LABLE, stat.getSyntaxPosition())
-			.addParam(new InstParam.Ref(wrapReference(stat.getReference(), funcCount++)));
+		InstRef reference = wrapReference(stat.getReference(), funcCount++);
+		
+		Inst functionLabel = new Inst(Opcode.LABEL, stat.getSyntaxPosition())
+			.addParam(new InstParam.Ref(reference));
 		procedure.addInst(functionLabel);
-
+		
+		// Fill procedure with function data
+		List<InstRef> parameters = stat.getParameters().stream().map(this::wrapReference).toList();
+		procedure.fillData(reference, parameters);
+	
 		generateStat(stat.getBody(), procedure);
 
 		return NONE;
@@ -176,19 +185,19 @@ public class InstGenerator {
 			.addParam(new InstParam.Ref(endBranch)));
 
 		// else:
-		procedure.addInst(new Inst(Opcode.LABLE, stat.getSyntaxPosition())
+		procedure.addInst(new Inst(Opcode.LABEL, stat.getSyntaxPosition())
 			.addParam(new InstParam.Ref(elseBranch)));
 		generateStat(stat.getElseBody(), procedure);
 
 		// end:
-		procedure.addInst(new Inst(Opcode.LABLE, stat.getSyntaxPosition())
+		procedure.addInst(new Inst(Opcode.LABEL, stat.getSyntaxPosition())
 			.addParam(new InstParam.Ref(endBranch)));
 
 		return NONE;
 	}
 
 //	private InstRef generateLabelStat(LabelStat stat, Procedure procedure) {
-//		procedure.addInst(new Inst(Opcode.LABLE, stat.getSyntaxPosition())
+//		procedure.addInst(new Inst(Opcode.LABEL, stat.getSyntaxPosition())
 //			.addParam(new InstParam.Ref(wrapReference(stat.getReference()))));
 //		return NONE;
 //	}
@@ -229,7 +238,7 @@ public class InstGenerator {
 //		continueBranch = nextBranch;
 //
 //		// next:
-//		procedure.addInst(new Inst(Opcode.LABLE, stat.getSyntaxPosition())
+//		procedure.addInst(new Inst(Opcode.LABEL, stat.getSyntaxPosition())
 //			.addParam(new InstParam.Ref(nextBranch)));
 //
 //		InstRef check = generateStat(stat.getCondition(), procedure);
@@ -242,7 +251,7 @@ public class InstGenerator {
 //			.addParam(new InstParam.Ref(nextBranch)));
 //
 //		// end:
-//		procedure.addInst(new Inst(Opcode.LABLE, stat.getSyntaxPosition())
+//		procedure.addInst(new Inst(Opcode.LABEL, stat.getSyntaxPosition())
 //			.addParam(new InstParam.Ref(endBranch)));
 //
 //		breakBranch = oldBreakBranch;
@@ -292,7 +301,7 @@ public class InstGenerator {
 				.addParam(new InstParam.Ref(left))
 				.addParam(new InstParam.Ref(right)));
 		} else {
-			holder = createDataReference(".binary");
+			holder = createDataReference(".binary", expr.getType());
 			procedure.addInst(new Inst(opcode, expr.getSyntaxPosition())
 				.addParam(new InstParam.Ref(holder))
 				.addParam(new InstParam.Ref(left))
@@ -303,9 +312,8 @@ public class InstGenerator {
 	}
 
 	private InstRef generateCallExpr(CallExpr expr, Procedure procedure) {
-		// InstRef caller = generateStat(expr.getCaller(), procedure);
 		InstRef caller = wrapReference(expr.getReference());
-		InstRef holder = createDataReference(".call");
+		InstRef holder = createDataReference(".call", expr.getType());
 
 		Inst callInst = new Inst(Opcode.CALL, expr.getSyntaxPosition())
 			.addParam(new InstParam.Ref(holder))
@@ -358,7 +366,7 @@ public class InstGenerator {
 //	}
 
 	private InstRef generateNumExpr(NumExpr expr, Procedure procedure) {
-		InstRef holder = createDataReference(".number");
+		InstRef holder = createDataReference(".number", expr.getType());
 		// TODO: Assign number value to ref
 		// TODO: Add type size value to ref
 		procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
@@ -378,7 +386,7 @@ public class InstGenerator {
 //	}
 
 	private InstRef generateUnaryExpr(UnaryExpr expr, Procedure procedure) {
-		InstRef holder = createDataReference(".unary");
+		InstRef holder = createDataReference(".unary", expr.getType());
 		InstRef value = generateStat(expr.getValue(), procedure);
 
 		// TODO: Post and Pre modification of the expression
@@ -393,7 +401,7 @@ public class InstGenerator {
 		boolean isAnd = expr.getOperation() == Operation.C_AND;
 
 		InstRef jmpBranch = createLocalLabel(isAnd ? ".cand.end" : ".cor.value");
-		InstRef holder = createDataReference(isAnd ? ".cand" : ".cor");
+		InstRef holder = createDataReference(isAnd ? ".cand" : ".cor", expr.getType());
 
 		procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
 			.addParam(new InstParam.Ref(holder))
@@ -422,7 +430,7 @@ public class InstGenerator {
 				.addParam(new InstParam.Num(1)));
 
 			// :end
-			procedure.addInst(new Inst(Opcode.LABLE, expr.getSyntaxPosition())
+			procedure.addInst(new Inst(Opcode.LABEL, expr.getSyntaxPosition())
 				.addParam(new InstParam.Ref(jmpBranch)));
 		} else {
 			InstRef corEndBranch = createLocalLabel(".cor.end");
@@ -430,14 +438,14 @@ public class InstGenerator {
 				.addParam(new InstParam.Ref(corEndBranch)));
 
 			// :value
-			procedure.addInst(new Inst(Opcode.LABLE, expr.getSyntaxPosition())
+			procedure.addInst(new Inst(Opcode.LABEL, expr.getSyntaxPosition())
 				.addParam(new InstParam.Ref(jmpBranch)));
 			procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
 				.addParam(new InstParam.Ref(holder))
 				.addParam(new InstParam.Num(1)));
 
 			// :end
-			procedure.addInst(new Inst(Opcode.LABLE, expr.getSyntaxPosition())
+			procedure.addInst(new Inst(Opcode.LABEL, expr.getSyntaxPosition())
 				.addParam(new InstParam.Ref(corEndBranch)));
 		}
 
@@ -468,11 +476,11 @@ public class InstGenerator {
 
 	// Reference
 	private InstRef createLocalLabel(String name) {
-		return new InstRef(name, ++count, Reference.LABEL);
+		return new InstRef(name, ValueType.UNDEFINED, ++count, Reference.LABEL);
 	}
 
-	private InstRef createDataReference(String name) {
-		return new InstRef(name, ++count, Reference.VARIABLE);
+	private InstRef createDataReference(String name, ValueType type) {
+		return new InstRef(name, type, ++count, Reference.VARIABLE);
 	}
 
 	private InstRef wrapReference(Reference reference) {
@@ -489,7 +497,7 @@ public class InstGenerator {
 			return result;
 		}
 		
-		result = new InstRef(reference.getName(), id, 0);
+		result = new InstRef(reference.getName(), reference.getValueType(), id, 0);
 		result.setType(reference.getType());
 		wrappedReferences.put(reference, result);
 		return result;

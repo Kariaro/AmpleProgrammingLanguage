@@ -3,6 +3,7 @@ package me.hardcoded.compiler.intermediate.inst;
 import java.util.ArrayList;
 import java.util.List;
 
+// TODO: Function procedures
 public class InstFile {
 	private final List<Procedure> procedures;
 	

@@ -23,7 +23,6 @@ public enum Opcode {
 	// Unary instructions
 	NOT,				// r0 = !(r1)
 	NEG,				// r0 = -(r1)
-	POS,				// r0 = +(r1)
 	NOR,				// r0 = ~(r1)
 	
 	// Size instructions
@@ -35,7 +34,7 @@ public enum Opcode {
 	LOAD,				// r0 = (*r1)
 	
 	// Branching instructions
-	LABLE,				// A label
+	LABEL,				// A label
 	JMP,				// Jump to a label
 	JNZ,				// Jump if not zero
 	JZ,					// Jump if zeros

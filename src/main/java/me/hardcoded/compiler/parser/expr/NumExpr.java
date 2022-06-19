@@ -2,6 +2,7 @@ package me.hardcoded.compiler.parser.expr;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.serial.TreeType;
+import me.hardcoded.compiler.parser.type.Primitives;
 import me.hardcoded.compiler.parser.type.ValueType;
 
 public class NumExpr extends Expr {
@@ -28,7 +29,8 @@ public class NumExpr extends Expr {
 	
 	@Override
 	public ValueType getType() {
-		throw new UnsupportedOperationException();
+		return Primitives.I32;
+//		throw new UnsupportedOperationException();
 	}
 	
 	@Override

@@ -37,6 +37,10 @@ public class Inst {
 		return parameters.get(index);
 	}
 	
+	public List<InstParam> getParameters() {
+		return parameters;
+	}
+	
 	public Opcode getOpcode() {
 		return opcode;
 	}
