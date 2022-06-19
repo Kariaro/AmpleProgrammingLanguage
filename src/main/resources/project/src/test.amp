@@ -6,26 +6,9 @@ func test() : i32 {
 
 func main () : i32 {
     i32: a = test();
-    if (a > 0 && (a < 5 || a == test())) {
-
+    if (a > 0 && (a < 5 && a != test())) {
+        ret 2;
     }
 
-    // ret a;
+    ret a;
 }
-
-func aaaa() : i32 {
-    i32: a = 2;
-    i32: b = 2;
-    i32: c = 2;
-    i32: d = 2;
-}
-func bb() : i32 {}
-func cc() : i32 {}
-func dd() : i32 {
-    i32: a = 2;
-    i32: b = 2;
-    i32: c = 2;
-    i32: d = 2;
-}
-func ee() : i32 {}
-func ff() : i32 {}

@@ -6,3 +6,6 @@
 
 # IntelliJ
 /.idea/
+
+# Custom
+/debug/

@@ -56,11 +56,9 @@ public class AmpleParser {
 		context.getLocalScope().pushBlock();
 		context.getFunctionScope().pushBlock();
 		
-		context.getTypeScope().addLocalType(new ValueType("none", 0, 0, 0));
-		context.getTypeScope().addLocalType(new ValueType("i8",   8, 0, 0));
-		context.getTypeScope().addLocalType(new ValueType("i16", 16, 0, 0));
-		context.getTypeScope().addLocalType(new ValueType("i32", 32, 0, 0));
-		context.getTypeScope().addLocalType(new ValueType("i64", 64, 0, 0));
+		for (ValueType type : Primitives.VALUES) {
+			context.getTypeScope().addLocalType(type);
+		}
 	}
 	
 	public LinkableObject fromFile(File file) throws IOException {
