@@ -1,26 +1,24 @@
 package me.hardcoded.compiler.parser;
 
 import me.hardcoded.compiler.context.LangReader;
-import me.hardcoded.compiler.errors.ParseException;
 import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.expr.*;
 import me.hardcoded.compiler.parser.scope.ProgramScope;
-import me.hardcoded.compiler.parser.type.Associativity;
-import me.hardcoded.compiler.parser.type.Operation;
-import me.hardcoded.compiler.parser.type.OperationType;
-import me.hardcoded.compiler.parser.type.Reference;
+import me.hardcoded.compiler.parser.type.*;
 import me.hardcoded.lexer.Token;
 import me.hardcoded.utils.Position;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
+import java.util.zip.ZipEntry;
 
 public class ExprParser {
+	private final AmpleParser parser;
 	private final ProgramScope context;
 	private final LangReader reader;
 	
-	public ExprParser(ProgramScope context, LangReader reader) {
+	public ExprParser(AmpleParser parser, ProgramScope context, LangReader reader) {
+		this.parser = parser;
 		this.context = context;
 		this.reader = reader;
 	}
@@ -114,13 +112,18 @@ public class ExprParser {
 				return expr;
 			}
 			case IDENTIFIER -> {
+				// Special functions
+				if (isSpecialFunction(reader.value())) {
+					return specialCallExpression();
+				}
+				
 				if (reader.peak(1).type == Token.Type.L_PAREN) {
 					return callExpression();
 				}
 				
 				Reference reference = context.getLocalScope().getVariable(reader.value());
 				if (reference == null) {
-					throw createParseException("Could not find the variable '%s'", reader.value());
+					throw parser.createParseException("Could not find the variable '%s'", reader.value());
 				}
 				
 				NameExpr expr = new NameExpr(reader.syntaxPosition(), reference);
@@ -130,12 +133,12 @@ public class ExprParser {
 			case L_PAREN -> {
 				reader.advance();
 				Expr expr = parse(false, Operation.MAX_PRECEDENCE);
-				tryMatchOrError(Token.Type.R_PAREN);
+				parser.tryMatchOrError(Token.Type.R_PAREN);
 				reader.advance();
 				return expr;
 			}
 			default -> {
-				throw createParseException("Unknown atom expression '%s'", reader.value());
+				throw parser.createParseException("Unknown atom expression '%s'", reader.value());
 			}
 		}
 	}
@@ -146,7 +149,7 @@ public class ExprParser {
 		String name = reader.value();
 		reader.advance();
 		
-		tryMatchOrError(Token.Type.L_PAREN);
+		parser.tryMatchOrError(Token.Type.L_PAREN);
 		reader.advance();
 		
 		List<Expr> parameters = new ArrayList<>();
@@ -156,7 +159,7 @@ public class ExprParser {
 			if (reader.type() == Token.Type.COMMA) {
 				reader.advance();
 				if (reader.type() == Token.Type.R_PAREN) {
-					throw createParseException("Invalid comma before ')'");
+					throw parser.createParseException("Invalid comma before ')'");
 				}
 			} else {
 				break;
@@ -167,35 +170,62 @@ public class ExprParser {
 		//       and the specified types.
 		Reference reference = context.getFunctionScope().getFunction(name);
 		
-		tryMatchOrError(Token.Type.R_PAREN);
+		parser.tryMatchOrError(Token.Type.R_PAREN);
 		reader.advance();
 		
 		return new CallExpr(ISyntaxPosition.of(startPos, reader.lastPositionEnd()), reference, parameters);
 	}
 	
-	private ParseException createParseException(String format, Object... args) {
-		return createParseException(reader == null ? null : reader.position(), format, args);
-	}
-	
-	private ParseException createParseException(Position position, String format, Object... args) {
-		String msg = String.format(format, args);
+	private Expr specialCallExpression() {
+		Position startPos = reader.position();
+		String name = reader.value();
+		reader.advance();
 		
-		if (position == null) {
-			return new ParseException("(?) (line: ?, column: ?): %s", msg);
+		switch (name) {
+			case "stack_data" -> {
+				parser.tryMatchOrError(Token.Type.LESS_THAN);
+				reader.advance();
+				
+				ValueType type = parser.readType();
+				
+				parser.tryMatchOrError(Token.Type.COMMA);
+				reader.advance();
+				
+				parser.tryMatchOrError(Token.Type.INT);
+				int size = Integer.parseInt(reader.value());
+				reader.advance();
+				
+				parser.tryMatchOrError(Token.Type.MORE_THAN);
+				reader.advance();
+				
+				parser.tryMatchOrError(Token.Type.L_PAREN);
+				reader.advance();
+				
+				Expr expr;
+				// Different data types
+				switch (reader.type()) {
+					case STRING -> {
+						// TODO: Implement
+						reader.advance();
+						expr = new StrExpr(reader.syntaxPosition(), reader.value());
+					}
+					default -> {
+						expr = new NoneExpr(reader.syntaxPosition());
+					}
+				}
+				
+				parser.tryMatchOrError(Token.Type.R_PAREN);
+				reader.advance();
+				
+				return new StackDataExpr(ISyntaxPosition.of(startPos, reader.lastPositionEnd()), type, size, expr);
+			}
 		}
 		
-		return new ParseException("(%s) (line: %d, column: %d): %s", position.file, position.line + 1, position.column + 1, msg);
+		return new NoneExpr(reader.syntaxPosition());
 	}
 	
-	private boolean tryMatchOrError(Token.Type type) {
-		return tryMatchOrError(type, () -> "Expected %s but got %s".formatted(type, reader.type()));
-	}
-	
-	private boolean tryMatchOrError(Token.Type type, Supplier<String> message) {
-		if (reader.type() != type) {
-			throw createParseException(reader.lastPositionEnd(), message.get());
-		}
-		
-		return true;
+	private boolean isSpecialFunction(String name) {
+		return name.equals("stack_data")
+			|| name.equals("cast");
 	}
 }

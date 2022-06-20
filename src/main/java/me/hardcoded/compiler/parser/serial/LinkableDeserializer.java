@@ -87,7 +87,7 @@ public class LinkableDeserializer {
 //			case CAST -> deserializeCastExpr(in);
 //			case COMMA -> deserializeCommaExpr(in);
 			case NAME -> deserializeNameExpr(in);
-//			case NULL -> deserializeNullExpr(in);
+			case NONE -> deserializeNoneExpr(in);
 //			case NONE -> deserializeNoneExpr(in);
 			case NUM -> deserializeNumExpr(in);
 //			case STR -> deserializeStrExpr(in);

@@ -49,29 +49,19 @@ public class AsmCodeGenerator implements ICodeGenerator {
 			header.append("    global _start:\n\n");
 			header.append("""
 printhex:
-	push rax
-	push rbx
-	push rcx
-	push rdx
 	mov rcx, 16
 	.loop:
-		sub rcx, 1
 		mov rbx, rax
 		and rbx, 15
 		mov bl, byte [rbx + hex_data]
-		mov byte [rcx + hex_strs], bl
+		mov byte [rcx + hex_strs - 1], bl
 		shr rax, 4
-		cmp rcx, 0
-		jg .loop
+		loop .loop
 	mov rax, 1
 	lea rsi, [hex_strs]
 	mov rdi, 1
 	mov rdx, 17
 	syscall
-	pop rdx
-	pop rcx
-	pop rbx
-	pop rax
 	ret
 """);
 			header.append("_start:\n");
@@ -127,12 +117,20 @@ printhex:
 				}
 			}
 			case RET -> {
-				InstRef src = inst.getRefParam(0).getReference();
-				String regName = getRegSize("AX", src);
-				sb.add("mov %s, %s".formatted(
-					regName,
-					getStackPtr(src, proc)
-				));
+				InstParam param = inst.getParam(0);
+				
+				if (param instanceof InstParam.Ref src) {
+					String regName = getRegSize("AX", src.getReference());
+					sb.add("mov %s, %s".formatted(
+						regName,
+						getStackPtr(src.getReference(), proc)
+					));
+				} else if (param instanceof InstParam.Num num) {
+					sb.add("mov RAX, %s".formatted(num.toString()));
+				} else {
+					throw new RuntimeException();
+				}
+				
 				sb.add("mov RSP, RBP");
 				sb.add("pop RBP");
 				sb.add("ret");

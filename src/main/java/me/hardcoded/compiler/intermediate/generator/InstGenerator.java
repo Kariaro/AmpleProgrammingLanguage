@@ -7,8 +7,10 @@ import me.hardcoded.compiler.parser.LinkableObject;
 import me.hardcoded.compiler.parser.expr.*;
 import me.hardcoded.compiler.parser.stat.*;
 import me.hardcoded.compiler.parser.type.Operation;
+import me.hardcoded.compiler.parser.type.Primitives;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ValueType;
+import org.apache.logging.log4j.core.jackson.ContextDataAsEntryListSerializer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -64,7 +66,7 @@ public class InstGenerator {
 //			case CAST -> generateCastExpr((CastExpr) stat, procedure);
 //			case COMMA -> generateCommaExpr((CommaExpr) stat, procedure);
 			case NAME -> generateNameExpr((NameExpr) stat, procedure);
-//			case NULL -> generateNullExpr((NullExpr) stat, procedure);
+			case NONE -> generateNoneExpr((NoneExpr) stat, procedure);
 			case NUM -> generateNumExpr((NumExpr) stat, procedure);
 //			case STR -> generateStrExpr((StrExpr) stat, procedure);
 			case UNARY -> generateUnaryExpr((UnaryExpr) stat, procedure);
@@ -203,9 +205,14 @@ public class InstGenerator {
 //	}
 
 	private InstRef generateReturnStat(ReturnStat stat, Procedure procedure) {
-		InstRef value = generateStat(stat.getValue(), procedure);
-		procedure.addInst(new Inst(Opcode.RET, stat.getSyntaxPosition())
-			.addParam(new InstParam.Ref(value)));
+		if (stat.hasValue()) {
+			InstRef value = generateStat(stat.getValue(), procedure);
+			procedure.addInst(new Inst(Opcode.RET, stat.getSyntaxPosition())
+				.addParam(new InstParam.Ref(value)));
+		} else {
+			procedure.addInst(new Inst(Opcode.RET, stat.getSyntaxPosition())
+				.addParam(new InstParam.Num(0)));
+		}
 		return NONE;
 	}
 
@@ -360,10 +367,9 @@ public class InstGenerator {
 		return wrapReference(expr.getReference());
 	}
 
-//	private InstRef generateNullExpr(NullExpr expr, Procedure procedure) {
-//		// TODO: Create a better null value
-//		return createDataReference(".null");
-//	}
+	private InstRef generateNoneExpr(NoneExpr expr, Procedure procedure) {
+		return createDataReference(".none", Primitives.NONE);
+	}
 
 	private InstRef generateNumExpr(NumExpr expr, Procedure procedure) {
 		InstRef holder = createDataReference(".number", expr.getType());

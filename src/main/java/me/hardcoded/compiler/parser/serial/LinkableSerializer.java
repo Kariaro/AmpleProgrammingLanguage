@@ -110,7 +110,7 @@ public class LinkableSerializer {
 //			case CAST -> serializeCastExpr((CastExpr) stat, out);
 //			case COMMA -> serializeCommaExpr((CommaExpr) stat, out);
 			case NAME -> serializeNameExpr((NameExpr) stat, out);
-//			case NULL -> serializeNullExpr((NullExpr) stat, out);
+			case NONE -> serializeNoneExpr((NoneExpr) stat, out);
 			case NUM -> serializeNumExpr((NumExpr) stat, out);
 //			case STR -> serializeStrExpr((StrExpr) stat, out);
 			case UNARY -> serializeUnaryExpr((UnaryExpr) stat, out);
@@ -228,9 +228,9 @@ public class LinkableSerializer {
 		header.serializeReference(expr.getReference(), out);
 	}
 
-//	private void serializeNullExpr(NullExpr expr, DataOutputStream out) throws IOException {
-//
-//	}
+	private void serializeNoneExpr(NoneExpr expr, DataOutputStream out) throws IOException {
+
+	}
 
 	private void serializeNumExpr(NumExpr expr, DataOutputStream out) throws IOException {
 //		boolean isFloating = expr.getAtom().isFloating();

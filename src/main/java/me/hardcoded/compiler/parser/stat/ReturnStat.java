@@ -2,6 +2,7 @@ package me.hardcoded.compiler.parser.stat;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.expr.Expr;
+import me.hardcoded.compiler.parser.expr.NoneExpr;
 import me.hardcoded.compiler.parser.serial.TreeType;
 
 public class ReturnStat extends Stat {
@@ -14,6 +15,10 @@ public class ReturnStat extends Stat {
 	
 	public Expr getValue() {
 		return value;
+	}
+	
+	public boolean hasValue() {
+		return !(value instanceof NoneExpr);
 	}
 	
 	@Override

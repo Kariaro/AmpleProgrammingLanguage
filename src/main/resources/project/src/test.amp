@@ -1,5 +1,26 @@
 // link "test.amp"
 
+func printhex (i64: number) {
+/*
+    i8[]: hex_data = stack_data<i8, 16>("0123456789abcdef");
+    i8[]: hex_strs = stack_data<i8, 17>("................\n");
+
+    for (i32: i = 0; i < 16; i = i + 1) {
+        hex_strs[i] = hex_data[number & 15];
+        number = number >> 4;
+    }
+
+    compiler<asm>(
+        "mov rsi, {}" : hex_strs
+        "mov rdi, 1"
+        "mov rax, 1"
+        "mov rdx, 17"
+        "syscall"
+    );
+*/
+    ret;
+}
+
 func test() : i32 {
     ret 32;
 }

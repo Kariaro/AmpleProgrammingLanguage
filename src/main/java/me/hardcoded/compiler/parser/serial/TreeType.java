@@ -27,8 +27,9 @@ public enum TreeType {
 	//NULL,
 	NUM,
 	NONE,
-	//STR,
+	STRING,
 	//CONDITIONAL;
+	STACK_DATA,
 	;
 	
 	public static final TreeType[] VALUES = values();

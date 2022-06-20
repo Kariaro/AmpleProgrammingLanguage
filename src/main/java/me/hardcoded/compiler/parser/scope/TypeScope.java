@@ -40,13 +40,17 @@ public class TypeScope {
 		return localScope.getLast().getScope().addType(valueType);
 	}
 	
-	public ValueType getType(String name) {
+//	public ValueType getType(String name) {
+//		return getType(name, 0);
+//	}
+	
+	public ValueType getType(String name, int depth) {
 		Iterator<DataScope<Types>> iter = localScope.descendingIterator();
 		
 		while (iter.hasNext()) {
 			Iterator<Types> iter2 = iter.next().getAllScopes().descendingIterator();
 			while (iter2.hasNext()) {
-				ValueType type = iter2.next().getType(name);
+				ValueType type = iter2.next().getType(name, depth);
 				if (type != null) {
 					return type;
 				}
@@ -56,10 +60,14 @@ public class TypeScope {
 		return null;
 	}
 	
-	public ValueType getLocalType(String name) {
+//	public ValueType getLocalType(String name) {
+//		return getLocalType(name, 0);
+//	}
+	
+	public ValueType getLocalType(String name, int depth) {
 		Iterator<Types> iter = localScope.getLast().getAllScopes().descendingIterator();
 		while (iter.hasNext()) {
-			ValueType type = iter.next().getType(name);
+			ValueType type = iter.next().getType(name, depth);
 			if (type != null) {
 				return type;
 			}
@@ -70,11 +78,14 @@ public class TypeScope {
 	
 	public class Types {
 		public final Map<String, ValueType> types;
+		public final Map<ValueType, Map<Integer, ValueType>> arrayTypes;
 		
 		private Types() {
 			this.types = new HashMap<>();
+			this.arrayTypes = new HashMap<>();
 		}
 		
+		// TODO: This should only add primitive non array types
 		public ValueType addType(ValueType valueType) {
 			if (types.containsKey(valueType.getName())) {
 				// TODO: Throw exception
@@ -85,8 +96,17 @@ public class TypeScope {
 			return valueType;
 		}
 		
-		public ValueType getType(String name) {
-			return types.get(name);
+		public ValueType getType(String name, int depth) {
+			ValueType type = types.get(name);
+			
+			if (type != null && depth > 0) {
+				// Found a primitive type. Make that into a pointer type
+				return arrayTypes
+					.computeIfAbsent(type, v -> new HashMap<>())
+					.computeIfAbsent(depth, v -> type.createArray(depth));
+			}
+			
+			return type;
 		}
 		
 		@Override
