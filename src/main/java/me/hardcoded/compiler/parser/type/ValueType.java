@@ -28,6 +28,14 @@ public class ValueType {
 		return new ValueType(name, size, depth, flags);
 	}
 	
+	/**
+	 * Create an array of this type
+	 */
+	public ValueType createArray(int depth) {
+		// TODO: Make sure this is not already an array
+		return new ValueType(name, size, depth, flags);
+	}
+	
 	public String getName() {
 		return name;
 	}
@@ -46,6 +54,15 @@ public class ValueType {
 	
 	private String getShortName() {
 		return name + "@" + getFlagsChar(flags) + "%02x".formatted(size) + "p".repeat(depth);
+	}
+	
+	@Override
+	public int hashCode() {
+		int result = name != null ? name.hashCode() : 0;
+		result = 31 * result + flags;
+		result = 31 * result + depth;
+		result = 31 * result + size;
+		return result;
 	}
 	
 	public String toShortName() {

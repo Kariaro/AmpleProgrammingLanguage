@@ -190,12 +190,10 @@ public class AmpleParser {
 		
 		List<Reference> parameters = new ArrayList<>();
 		while (reader.type() != Token.Type.R_PAREN) {
-			ValueType type = context.getTypeScope().getType(reader.value());
+			ValueType type = readType();
 			if (type == null) {
 				throw createParseException("Missing type '%s' was not a type", reader.value());
 			}
-			
-			reader.advance();
 			
 			tryMatchOrError(Token.Type.COLON);
 			reader.advance();
@@ -217,11 +215,13 @@ public class AmpleParser {
 		tryMatchOrError(Token.Type.R_PAREN, () -> "Missing parameter separator");
 		reader.advance();
 		
-		tryMatchOrError(Token.Type.COLON, () -> "Missing function return value");
-		reader.advance();
-		
-		ValueType returnType = context.getTypeScope().getType(reader.value());
-		reader.advance();
+		ValueType returnType;
+		if (reader.type() == Token.Type.COLON) {
+			reader.advance();
+			returnType = readType();
+		} else {
+			returnType = Primitives.NONE;
+		}
 		
 		Reference reference = context.getFunctionScope().addFunction(returnType, functionName, parameters);
 		FuncStat stat = new FuncStat(mutableSyntax, parameters, reference);
@@ -328,8 +328,7 @@ public class AmpleParser {
 	private VarStat varStatement() {
 		Position startPos = reader.position();
 		
-		ValueType type = context.getTypeScope().getType(reader.value());
-		reader.advance();
+		ValueType type = readType();
 		
 		tryMatchOrError(Token.Type.COLON);
 		reader.advance();
@@ -364,22 +363,36 @@ public class AmpleParser {
 	}
 	
 	private Expr expression(boolean allowComma) {
-		Expr expr = new ExprParser(context, reader).parse(allowComma);
+		Expr expr = new ExprParser(this, context, reader).parse(allowComma);
 		
 		System.out.println(expr);
 		
 		return expr;
 	}
 	
-	private boolean isType() {
-		return context.getTypeScope().getType(reader.value()) != null;
+	boolean isType() {
+		return context.getTypeScope().getType(reader.value(), 0) != null;
 	}
 	
-	private ParseException createParseException(String format, Object... args) {
+	ValueType readType() {
+		String name = reader.value();
+		reader.advance();
+		int depth = 0;
+		while (reader.type() == Token.Type.L_SQUARE) {
+			reader.advance();
+			tryMatchOrError(Token.Type.R_SQUARE);
+			reader.advance();
+			depth ++;
+		}
+		
+		return context.getTypeScope().getType(name, depth);
+	}
+	
+	ParseException createParseException(String format, Object... args) {
 		return createParseException(reader == null ? null : reader.position(), format, args);
 	}
 	
-	private ParseException createParseException(Position position, String format, Object... args) {
+	ParseException createParseException(Position position, String format, Object... args) {
 		String msg = String.format(format, args);
 		
 		if (position == null) {
@@ -389,11 +402,11 @@ public class AmpleParser {
 		return new ParseException("(%s) (line: %d, column: %d): %s", position.file, position.line + 1, position.column + 1, msg);
 	}
 	
-	private boolean tryMatchOrError(Token.Type type) {
+	boolean tryMatchOrError(Token.Type type) {
 		return tryMatchOrError(type, () -> "Expected %s but got %s".formatted(type, reader.type()));
 	}
 	
-	private boolean tryMatchOrError(Token.Type type, Supplier<String> message) {
+	boolean tryMatchOrError(Token.Type type, Supplier<String> message) {
 		if (reader.type() != type) {
 			throw createParseException(reader.lastPositionEnd(), message.get());
 		}
