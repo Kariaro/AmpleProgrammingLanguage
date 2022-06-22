@@ -10,9 +10,7 @@ import me.hardcoded.compiler.parser.type.Operation;
 import me.hardcoded.compiler.parser.type.Primitives;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ValueType;
-import org.apache.logging.log4j.core.jackson.ContextDataAsEntryListSerializer;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +47,7 @@ public class InstGenerator {
 //			case BREAK -> generateBreakStat((BreakStat) stat, procedure);
 //			case CONTINUE -> generateContinueStat((ContinueStat) stat, procedure);
 			case EMPTY -> generateEmptyStat((EmptyStat) stat, procedure);
-//			case FOR -> generateForStat((ForStat) stat, procedure);
+			case FOR -> generateForStat((ForStat) stat, procedure);
 			case FUNC -> generateFuncStat((FuncStat) stat, procedure);
 //			case GOTO -> generateGotoStat((GotoStat) stat, procedure);
 			case IF -> generateIfStat((IfStat) stat, procedure);
@@ -61,6 +59,7 @@ public class InstGenerator {
 //			case NAMESPACE -> generateNamespaceStat((NamespaceStat) stat, procedure);
 
 			// Expressions
+			case STACK_DATA -> generateStackDataExpr((StackDataExpr) stat, procedure);
 			case BINARY -> generateBinaryExpr((BinaryExpr) stat, procedure);
 			case CALL -> generateCallExpr((CallExpr) stat, procedure);
 //			case CAST -> generateCastExpr((CastExpr) stat, procedure);
@@ -103,53 +102,53 @@ public class InstGenerator {
 		return NONE;
 	}
 
-//	private InstRef generateForStat(ForStat stat, Procedure procedure) {
-//		InstRef nextBranch = createLocalLabel(".for.next");
-//		InstRef loopBranch = createLocalLabel(".for.loop");
-//		InstRef endBranch = createLocalLabel(".for.end");
-//
+	private InstRef generateForStat(ForStat stat, Procedure procedure) {
+		InstRef nextBranch = createLocalLabel(".for.next");
+		InstRef loopBranch = createLocalLabel(".for.loop");
+		InstRef endBranch = createLocalLabel(".for.end");
+
 //		InstRef oldBreakBranch = breakBranch;
 //		InstRef oldContinueBranch = continueBranch;
 //		breakBranch = endBranch;
 //		continueBranch = nextBranch;
-//
-//		generateStat(stat.getStart(), procedure);
-//
-//		// start:
-//		InstRef check_1 = generateStat(stat.getCondition(), procedure);
-//		procedure.addInst(new Inst(Opcode.JZ, stat.getSyntaxPosition())
-//			.addParam(new InstParam.Ref(check_1))
-//			.addParam(new InstParam.Ref(endBranch)));
-//		procedure.addInst(new Inst(Opcode.JMP, stat.getSyntaxPosition())
-//			.addParam(new InstParam.Ref(loopBranch)));
-//
-//		// next:
-//		procedure.addInst(new Inst(Opcode.LABEL, stat.getSyntaxPosition())
-//			.addParam(new InstParam.Ref(nextBranch)));
-//		generateStat(stat.getAction(), procedure);
-//
-//		InstRef check_2 = generateStat(stat.getCondition(), procedure);
-//		procedure.addInst(new Inst(Opcode.JZ, stat.getSyntaxPosition())
-//			.addParam(new InstParam.Ref(check_2))
-//			.addParam(new InstParam.Ref(endBranch)));
-//
-//		// loop:
-//		procedure.addInst(new Inst(Opcode.LABLE, stat.getSyntaxPosition())
-//			.addParam(new InstParam.Ref(loopBranch)));
-//
-//		generateStat(stat.getBody(), procedure);
-//		procedure.addInst(new Inst(Opcode.JMP, stat.getSyntaxPosition())
-//			.addParam(new InstParam.Ref(nextBranch)));
-//
-//		// end:
-//		procedure.addInst(new Inst(Opcode.LABEL, stat.getSyntaxPosition())
-//			.addParam(new InstParam.Ref(endBranch)));
-//
+
+		generateStat(stat.getInitializer(), procedure);
+
+		// start:
+		InstRef check_1 = generateStat(stat.getCondition(), procedure);
+		procedure.addInst(new Inst(Opcode.JZ, stat.getSyntaxPosition())
+			.addParam(new InstParam.Ref(check_1))
+			.addParam(new InstParam.Ref(endBranch)));
+		procedure.addInst(new Inst(Opcode.JMP, stat.getSyntaxPosition())
+			.addParam(new InstParam.Ref(loopBranch)));
+
+		// next:
+		procedure.addInst(new Inst(Opcode.LABEL, stat.getSyntaxPosition())
+			.addParam(new InstParam.Ref(nextBranch)));
+		generateStat(stat.getAction(), procedure);
+
+		InstRef check_2 = generateStat(stat.getCondition(), procedure);
+		procedure.addInst(new Inst(Opcode.JZ, stat.getSyntaxPosition())
+			.addParam(new InstParam.Ref(check_2))
+			.addParam(new InstParam.Ref(endBranch)));
+
+		// loop:
+		procedure.addInst(new Inst(Opcode.LABEL, stat.getSyntaxPosition())
+			.addParam(new InstParam.Ref(loopBranch)));
+
+		generateStat(stat.getBody(), procedure);
+		procedure.addInst(new Inst(Opcode.JMP, stat.getSyntaxPosition())
+			.addParam(new InstParam.Ref(nextBranch)));
+
+		// end:
+		procedure.addInst(new Inst(Opcode.LABEL, stat.getSyntaxPosition())
+			.addParam(new InstParam.Ref(endBranch)));
+
 //		breakBranch = oldBreakBranch;
 //		continueBranch = oldContinueBranch;
-//
-//		return NONE;
-//	}
+
+		return NONE;
+	}
 
 	private InstRef generateFuncStat(FuncStat stat, Procedure procedure) {
 		InstRef reference = wrapReference(stat.getReference(), funcCount++);
@@ -278,6 +277,38 @@ public class InstGenerator {
 //	}
 
 	// Expressions
+	private InstRef generateStackDataExpr(StackDataExpr expr, Procedure procedure) {
+		ValueType stackType = expr.getType().createArray(1);
+		InstRef handle = createDataReference(".stack", new ValueType(stackType.getName(), expr.getSize() * stackType.getSize(), 1, stackType.getFlags()));
+		
+		procedure.addInst(new Inst(Opcode.STACK_ALLOC, expr.getSyntaxPosition())
+			.addParam(new InstParam.Ref(handle))
+			.addParam(new InstParam.Num(expr.getSize())));
+		
+		Expr value = expr.getValue();
+		System.out.println(value + ", " + value.getClass());
+		if (value instanceof StrExpr s) {
+			InstRef index = createDataReference(".index", stackType);
+			procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
+				.addParam(new InstParam.Ref(index))
+				.addParam(new InstParam.Ref(handle)));
+			
+			String text = s.getValue();
+			
+			int minLength = Math.min(text.length(), expr.getSize());
+			System.out.println("minLength: " + minLength);
+			System.out.println("text: [" + s.getValue() + "]");
+			for (int i = 0; i < minLength; i++) {
+				procedure.addInst(new Inst(Opcode.STORE, expr.getSyntaxPosition())
+					.addParam(new InstParam.Ref(index))
+					.addParam(new InstParam.Num(i))
+					.addParam(new InstParam.Num(text.charAt(i) & 0xff)));
+			}
+		}
+		
+		return handle;
+	}
+	
 	private InstRef generateBinaryExpr(BinaryExpr expr, Procedure procedure) {
 //		if (opcode == Opcode.MOV) {
 //			if (expr.getLeft() instanceof UnaryExpr e && e.getOperation() == Operation.DEREFERENCE) {
@@ -297,12 +328,22 @@ public class InstGenerator {
 			return generateConditionalExpr(expr, procedure);
 		}
 		
+		if (expr.getOperation() == Operation.ASSIGN) {
+			return generateAssignExpr(expr, procedure);
+		}
+		
+		if (expr.getOperation() == Operation.ARRAY) {
+			return generateArrayExpr(expr, procedure);
+		}
+		
 		Opcode opcode = getBinaryOpcode(expr.getOperation());
 		InstRef holder;
 		
 		InstRef left = generateStat(expr.getLeft(), procedure);
 		InstRef right = generateStat(expr.getRight(), procedure);
 		if (opcode == Opcode.MOV) {
+			// TODO: If left is an array operation we should use STORE
+			
 			holder = left;
 			procedure.addInst(new Inst(opcode, expr.getSyntaxPosition())
 				.addParam(new InstParam.Ref(left))
@@ -402,7 +443,42 @@ public class InstGenerator {
 
 		return holder;
 	}
-
+	
+	private InstRef generateArrayExpr(BinaryExpr expr, Procedure procedure) {
+		InstRef holder = createDataReference(".array", expr.getType().createArray(0));
+		InstRef left = generateStat(expr.getLeft(), procedure);
+		InstRef right = generateStat(expr.getRight(), procedure);
+		procedure.addInst(new Inst(Opcode.LOAD, expr.getSyntaxPosition())
+			.addParam(new InstParam.Ref(holder))
+			.addParam(new InstParam.Ref(left))
+			.addParam(new InstParam.Ref(right)));
+		return holder;
+	}
+	
+	private InstRef generateAssignExpr(BinaryExpr expr, Procedure procedure) {
+		InstRef holder;
+		if (expr.getLeft() instanceof BinaryExpr left
+		&& left.getOperation() == Operation.ARRAY) {
+			InstRef arrayObject = generateStat(left.getLeft(), procedure);
+			InstRef arrayOffset = generateStat(left.getRight(), procedure);
+			InstRef right = generateStat(expr.getRight(), procedure);
+			holder = right;
+			procedure.addInst(new Inst(Opcode.STORE, expr.getSyntaxPosition())
+				.addParam(new InstParam.Ref(arrayObject))
+				.addParam(new InstParam.Ref(arrayOffset))
+				.addParam(new InstParam.Ref(right)));
+		} else {
+			InstRef left = generateStat(expr.getLeft(), procedure);
+			InstRef right = generateStat(expr.getRight(), procedure);
+			holder = left;
+			procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
+				.addParam(new InstParam.Ref(left))
+				.addParam(new InstParam.Ref(right)));
+		}
+		
+		return holder;
+	}
+	
 	private InstRef generateConditionalExpr(BinaryExpr expr, Procedure procedure) {
 		boolean isAnd = expr.getOperation() == Operation.C_AND;
 
@@ -534,9 +610,6 @@ public class InstGenerator {
 	// Type conversions
 	public Opcode getBinaryOpcode(Operation operation) {
 		return switch (operation) {
-			// Special
-//			case ASSIGN -> Opcode.MOV;
-
 			// Binary
 			case PLUS -> Opcode.ADD;
 			case MINUS -> Opcode.SUB;
@@ -546,8 +619,8 @@ public class InstGenerator {
 			case AND -> Opcode.AND;
 //			case XOR -> Opcode.XOR;
 			case OR -> Opcode.OR;
-//			case SHIFT_RIGHT -> Opcode.SHR;
-//			case SHIFT_LEFT -> Opcode.SHL;
+			case SHIFT_RIGHT -> Opcode.SHR;
+			case SHIFT_LEFT -> Opcode.SHL;
 			case MORE_EQUAL -> Opcode.GTE;
 			case MORE_THAN -> Opcode.GT;
 			case LESS_EQUAL -> Opcode.LTE;

@@ -12,7 +12,7 @@ public enum Opcode {
 	XOR,				// r0 = r1 ^ r2
 	OR,					// r0 = r1 | r2
 	SHR,				// r0 = r1 >> r2
-	SHL,				// r0 = r1 << r2s
+	SHL,				// r0 = r1 << r2
 	GTE,				// r0 = r1 >= r2
 	GT,					// r0 = r1 > r2
 	LTE,				// r0 = r1 <= r2
@@ -25,8 +25,11 @@ public enum Opcode {
 	NEG,				// r0 = -(r1)
 	NOR,				// r0 = ~(r1)
 	
-	// Size instructions
+	// Type instructions
 	CAST,				// r0 = ( SIZE )(r1)
+	
+	// Special instructions
+	STACK_ALLOC,        // allocate memory on the stack
 	
 	// Memory instructions
 	STORE,				// (*r0) = r1

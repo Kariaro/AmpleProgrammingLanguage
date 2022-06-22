@@ -21,6 +21,10 @@ public class StackDataExpr extends Expr {
 		return value;
 	}
 	
+	public int getSize() {
+		return size;
+	}
+	
 	@Override
 	public boolean isEmpty() {
 		return false;
@@ -43,6 +47,6 @@ public class StackDataExpr extends Expr {
 	
 	@Override
 	public String toString() {
-		return "stack_data<" + type + ", " + size + ">( " + value + " )";
+		return "stack_alloc<" + type + ", " + size + ">( " + value + " )";
 	}
 }

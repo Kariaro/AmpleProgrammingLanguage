@@ -273,9 +273,8 @@ public class AmpleParser {
 		
 		switch (reader.type()) {
 			case IF -> { return ifStatement(); }
+			case FOR -> { return forStatement(); }
 			case WHILE -> {}
-			case FOR -> {}
-			case IDENTIFIER -> {}
 		}
 		
 		Stat stat = switch (reader.type()) {
@@ -299,6 +298,44 @@ public class AmpleParser {
 		reader.advance();
 		
 		return stat;
+	}
+	
+	private ForStat forStatement() {
+		Position startPos = reader.position();
+		reader.advance();
+		
+		tryMatchOrError(Token.Type.L_PAREN);
+		reader.advance();
+		
+		Stat initializer = varStatement();
+		
+//		tryMatchOrError(Token.Type.SEMICOLON);
+//		reader.advance();
+		
+		Expr condition;
+		if (reader.type() != Token.Type.SEMICOLON) {
+			condition = expression();
+		} else {
+			condition = new NumExpr(reader.syntaxPosition(), 1);
+		}
+		
+		tryMatchOrError(Token.Type.SEMICOLON);
+		reader.advance();
+		
+		Expr action;
+		if (reader.type() != Token.Type.R_PAREN) {
+			action = expression();
+		} else {
+			action = new NoneExpr(reader.syntaxPosition());
+		}
+		
+		tryMatchOrError(Token.Type.R_PAREN);
+		reader.advance();
+		
+		ScopeStat body = statements();
+		System.out.println(body.getElements());
+		
+		return new ForStat(ISyntaxPosition.of(startPos, body.getSyntaxPosition().getEndPosition()), initializer, condition, action, body);
 	}
 	
 	private IfStat ifStatement() {

@@ -33,6 +33,10 @@ public class Inst {
 		return (InstParam.Ref) parameters.get(index);
 	}
 	
+	public InstParam.Num getNumParam(int index) {
+		return (InstParam.Num) parameters.get(index);
+	}
+	
 	public InstParam getParam(int index) {
 		return parameters.get(index);
 	}

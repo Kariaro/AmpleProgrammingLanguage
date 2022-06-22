@@ -19,6 +19,7 @@ import me.hardcoded.compiler.parser.expr.*;
 import me.hardcoded.compiler.parser.stat.*;
 import me.hardcoded.compiler.parser.type.Associativity;
 import me.hardcoded.compiler.parser.type.Reference;
+import me.hardcoded.utils.StringUtils;
 
 /**
  * A visualization of a parse tree
@@ -393,10 +394,10 @@ public final class ParseTreeVisualization extends Visualization<ProgStat> {
 				case BREAK -> List.of();
 				case CONTINUE -> List.of();
 				case EMPTY -> List.of();
-//				case FOR -> {
-//					ForStat s = (ForStat)stat;
-//					yield List.of(s.getStart(), s.getCondition(), s.getAction(), s.getBody());
-//				}
+				case FOR -> {
+					ForStat s = (ForStat) stat;
+					yield List.of(s.getInitializer(), s.getCondition(), s.getAction(), s.getBody());
+				}
 				case IF -> {
 					IfStat s = (IfStat) stat;
 					yield List.of(s.getValue(), s.getBody(), s.getElseBody());
@@ -412,6 +413,10 @@ public final class ParseTreeVisualization extends Visualization<ProgStat> {
 				case VAR -> {
 					VarStat s = (VarStat) stat;
 					yield List.of(s.getReference(), s.getValue());
+				}
+				case STACK_DATA -> {
+					StackDataExpr s = (StackDataExpr) stat;
+					yield List.of(s.getSize(), s.getValue());
 				}
 //				case WHILE -> {
 //					WhileStat s = (WhileStat)stat;
@@ -445,6 +450,7 @@ public final class ParseTreeVisualization extends Visualization<ProgStat> {
 //				case COMMA -> List.<Object>copyOf(((CommaExpr)stat).getValues());
 				case NAME -> List.of(((NameExpr) stat).getReference());
 //				case NULL -> List.of();
+				case STRING -> List.of('"' + StringUtils.escapeString(stat.toString()) + '"');
 				case NUM -> List.of(stat.toString());
 				default -> List.of("<%s Not Implement>".formatted(stat.getTreeType()));
 			};

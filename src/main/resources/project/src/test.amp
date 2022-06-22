@@ -1,9 +1,8 @@
 // link "test.amp"
 
 func printhex (i64: number) {
-/*
-    i8[]: hex_data = stack_data<i8, 16>("0123456789abcdef");
-    i8[]: hex_strs = stack_data<i8, 17>("................\n");
+    i8[]: hex_data = stack_alloc<i8, 16>("0123456789abcdef");
+    i8[]: hex_strs = stack_alloc<i8, 17>("................\n");
 
     for (i32: i = 0; i < 16; i = i + 1) {
         hex_strs[i] = hex_data[number & 15];
@@ -17,8 +16,6 @@ func printhex (i64: number) {
         "mov rdx, 17"
         "syscall"
     );
-*/
-    ret;
 }
 
 func test() : i32 {
@@ -26,10 +23,14 @@ func test() : i32 {
 }
 
 func main () : i32 {
+    printhex(0x7e00aaaa);
+
+    /*
     i32: a = test();
     if (a > 0 && (a < 5 && a != test())) {
         ret 2;
     }
+    */
 
-    ret a;
+    ret 0;
 }

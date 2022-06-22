@@ -93,7 +93,7 @@ public class LinkableSerializer {
 //			case BREAK -> serializeBreakStat((BreakStat) stat, out);
 //			case CONTINUE -> serializeContinueStat((ContinueStat) stat, out);
 			case EMPTY -> serializeEmptyStat((EmptyStat) stat, out);
-//			case FOR -> serializeForStat((ForStat) stat, out);
+			case FOR -> serializeForStat((ForStat) stat, out);
 			case FUNC -> serializeFuncStat((FuncStat) stat, out);
 //			case GOTO -> serializeGotoStat((GotoStat) stat, out);
 			case IF -> serializeIfStat((IfStat) stat, out);
@@ -105,6 +105,7 @@ public class LinkableSerializer {
 //			case NAMESPACE -> serializeNamespaceStat((NamespaceStat) stat, out);
 
 			/* Expressions */
+			case STACK_DATA -> serializeStackDataExpr((StackDataExpr) stat, out);
 			case BINARY -> serializeBinaryExpr((BinaryExpr) stat, out);
 			case CALL -> serializeCallExpr((CallExpr) stat, out);
 //			case CAST -> serializeCastExpr((CastExpr) stat, out);
@@ -112,7 +113,7 @@ public class LinkableSerializer {
 			case NAME -> serializeNameExpr((NameExpr) stat, out);
 			case NONE -> serializeNoneExpr((NoneExpr) stat, out);
 			case NUM -> serializeNumExpr((NumExpr) stat, out);
-//			case STR -> serializeStrExpr((StrExpr) stat, out);
+			case STRING -> serializeStrExpr((StrExpr) stat, out);
 			case UNARY -> serializeUnaryExpr((UnaryExpr) stat, out);
 //			case CONDITIONAL -> serializeConditionalExpr((ConditionalExpr) stat, out);
 			
@@ -132,12 +133,12 @@ public class LinkableSerializer {
 
 	}
 
-//	private void serializeForStat(ForStat stat, DataOutputStream out) throws IOException {
-//		serializeStat(stat.getStart(), out);
-//		serializeStat(stat.getCondition(), out);
-//		serializeStat(stat.getAction(), out);
-//		serializeStat(stat.getBody(), out);
-//	}
+	private void serializeForStat(ForStat stat, DataOutputStream out) throws IOException {
+		serializeStat(stat.getInitializer(), out);
+		serializeStat(stat.getCondition(), out);
+		serializeStat(stat.getAction(), out);
+		serializeStat(stat.getBody(), out);
+	}
 
 	private void serializeFuncStat(FuncStat stat, DataOutputStream out) throws IOException {
 		header.serializeReference(stat.getReference(), out);
@@ -196,6 +197,12 @@ public class LinkableSerializer {
 //	}
 
 	// Expressions
+	private void serializeStackDataExpr(StackDataExpr expr, DataOutputStream out) throws IOException {
+		serializeStat(expr.getValue(), out);
+		header.writeVarInt(expr.getSize(), out);
+		header.serializeValueType(expr.getType(), out);
+	}
+	
 	private void serializeBinaryExpr(BinaryExpr expr, DataOutputStream out) throws IOException {
 		serializeStat(expr.getLeft(), out);
 		header.writeVarInt(expr.getOperation().ordinal(), out);
@@ -244,9 +251,9 @@ public class LinkableSerializer {
 //		}
 	}
 
-//	private void serializeStrExpr(StrExpr expr, DataOutputStream out) throws IOException {
-//		serializeString(expr.getValue(), out);
-//	}
+	private void serializeStrExpr(StrExpr expr, DataOutputStream out) throws IOException {
+		header.serializeString(expr.getValue(), out);
+	}
 
 	private void serializeUnaryExpr(UnaryExpr expr, DataOutputStream out) throws IOException {
 		header.writeVarInt(expr.getOperation().ordinal(), out);

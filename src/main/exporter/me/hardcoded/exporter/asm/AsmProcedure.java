@@ -19,14 +19,14 @@ class AsmProcedure {
 			List<InstRef> params = procedure.getParameters();
 			for (InstRef ref : params) {
 				ValueType type = ref.getValueType();
-				paramSize += AsmCodeGenerator.getTypeSize(type);
+				paramSize += AsmCodeGenerator.getTypeByteSize(type);
 			}
 			
 			// -8 is params
 			int offset = 0;
 			for (InstRef ref : params) {
 				stackOffset.put(ref, offset - paramSize - 8);
-				offset += AsmCodeGenerator.getTypeSize(ref.getValueType());
+				offset += AsmCodeGenerator.getTypeByteSize(ref.getValueType());
 			}
 		}
 		
@@ -38,7 +38,7 @@ class AsmProcedure {
 						InstRef reference = refParam.getReference();
 						if (reference.isVariable() && seenVariables.add(reference)) {
 							stackOffset.put(reference, stackSize + 8);
-							stackSize += AsmCodeGenerator.getTypeSize(reference.getValueType());
+							stackSize += AsmCodeGenerator.getTypeByteSize(reference.getValueType());
 						}
 					}
 				}
