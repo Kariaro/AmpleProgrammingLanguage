@@ -95,6 +95,19 @@ printhex:
 		sb.add("; %s".formatted(inst));
 		
 		switch (inst.getOpcode()) {
+			case STACK_ALLOC -> {
+				InstRef dst = inst.getRefParam(0).getReference();
+				
+				String regName = getRegSize("AX", dst);
+				sb.add("lea %s, %s".formatted(
+					regName,
+					getRawStackPtr(dst, proc)
+				));
+				sb.add("mov %s, %s".formatted(
+					getStackPtr(dst, proc),
+					regName
+				));
+			}
 			case MOV -> {
 				InstRef dst = inst.getRefParam(0).getReference();
 				InstParam src = inst.getParam(1);
@@ -112,6 +125,49 @@ printhex:
 					));
 					sb.add("mov %s, %s".formatted(
 						getStackPtr(dst, proc),
+						regName
+					));
+				}
+			}
+			case STORE -> {
+				InstRef dst = inst.getRefParam(0).getReference();
+				InstParam offset = inst.getParam(1);
+				InstParam src = inst.getParam(2);
+				
+				String srcValue = getParamValue(src, proc);
+				sb.add("mov RBX, %s".formatted(
+					getStackPtr(dst, proc)
+				));
+				
+				String offsetValue;
+				if (offset instanceof InstParam.Num value) {
+					offsetValue = "0x%x".formatted(Integer.parseInt(value.toString()));
+				} else if (offset instanceof InstParam.Ref value) {
+					offsetValue = "RCX";
+					sb.add("xor RCX, RCX");
+					sb.add("mov %s, %s".formatted(
+						getRegSize("CX", value.getReference()),
+						getStackPtr(value.getReference(), proc)
+					));
+				} else {
+					throw new RuntimeException();
+				}
+				
+				if (src instanceof InstParam.Num) {
+					sb.add("mov %s [RBX + %s], %s".formatted(
+						getPtrName(dst.getValueType().getSize()),
+						offsetValue,
+						srcValue
+					));
+				} else {
+					String regName = getRegSize("AX", getLowerTypeSize(dst.getValueType())); // Size of one lower
+					sb.add("mov %s, %s".formatted(
+						regName,
+						srcValue
+					));
+					sb.add("mov %s [RBX + %s], %s".formatted(
+						getPtrName(dst.getValueType().getSize()),
+						offsetValue,
 						regName
 					));
 				}
@@ -134,6 +190,48 @@ printhex:
 				sb.add("mov RSP, RBP");
 				sb.add("pop RBP");
 				sb.add("ret");
+			}
+			case ADD, SUB, AND, XOR, OR -> {
+				InstRef dst = inst.getRefParam(0).getReference();
+				InstRef a = inst.getRefParam(1).getReference();
+				InstParam b = inst.getParam(2);
+				
+				String regAName = getRegSize("AX", a);
+				sb.add("mov %s, %s".formatted(
+					regAName,
+					getStackPtr(a, proc)
+				));
+				
+				String type = switch (inst.getOpcode()) {
+					case ADD -> "add";
+					case SUB -> "sub";
+					case AND -> "and";
+					case XOR -> "xor";
+					case OR -> "or";
+					default -> throw new RuntimeException();
+				};
+				
+				if (b instanceof InstParam.Num value) {
+					sb.add("%s %s, %s".formatted(
+						type,
+						regAName,
+						value.toString()
+					));
+				} else if (b instanceof InstParam.Ref value) {
+					// TODO: Make sure b and a have the same size
+					sb.add("%s %s, %s".formatted(
+						type,
+						regAName,
+						getParamValue(value, proc)
+					));
+				} else {
+					throw new RuntimeException();
+				}
+				
+				sb.add("mov %s, %s".formatted(
+					getStackPtr(dst, proc),
+					regAName
+				));
 			}
 			case GT, GTE, LT, LTE, EQ, NEQ -> {
 				// GT is required to only have references
@@ -213,6 +311,7 @@ printhex:
 			}
 			default -> {
 				sb.add("; NOT IMPLEMENTED");
+				sb.add("ud2");
 			}
 		}
 		
@@ -224,6 +323,22 @@ printhex:
 
 	}
 	
+	public String getParamValue(InstParam param, AsmProcedure proc) {
+		if (param instanceof InstParam.Ref value) {
+			return getStackPtr(value.getReference(), proc);
+		} else if (param instanceof InstParam.Num value) {
+			return value.toString();
+		}
+		
+		throw new RuntimeException();
+	}
+	
+	public String getRawStackPtr(InstRef ref, AsmProcedure proc) {
+		return "[RBP - 0x%x]".formatted(
+			proc.getStackOffset(ref)
+		);
+	}
+	
 	public String getStackPtr(InstRef ref, AsmProcedure proc) {
 		return "%s [RBP - 0x%x]".formatted(
 			getPtrName(ref),
@@ -231,8 +346,19 @@ printhex:
 		);
 	}
 	
+	public String getStackPtrPointer(InstRef ref, AsmProcedure proc) {
+		return "%s [RBP - 0x%x]".formatted(
+			getPtrName(ref),
+			proc.getStackOffset(ref)
+		);
+	}
+	
 	public String getPtrName(InstRef ref) {
-		return switch (ref.getValueType().getSize()) {
+		return getPtrName(getTypeSize(ref.getValueType()));
+	}
+	
+	public String getPtrName(int size) {
+		return switch (size) {
 			case 8 -> "byte";
 			case 16 -> "word";
 			case 32 -> "dword";
@@ -242,7 +368,11 @@ printhex:
 	}
 	
 	private static String getRegSize(String name, InstRef ref) {
-		return switch (ref.getValueType().getSize()) {
+		return getRegSize(name, getTypeSize(ref.getValueType()));
+	}
+	
+	private static String getRegSize(String name, int size) {
+		return switch (size) {
 			case 8 -> name.charAt(0) + "L";
 			case 16 -> name;
 			case 32 -> "E" + name;
@@ -250,7 +380,16 @@ printhex:
 			default -> throw new RuntimeException();
 		};
 	}
+	
+	public static int getLowerTypeSize(ValueType type) {
+		return ((type.getDepth() > 1) ? getPointerSize() : (type.getSize() >> 3)) << 3;
+	}
+	
 	public static int getTypeSize(ValueType type) {
+		return getTypeByteSize(type) << 3;
+	}
+	
+	public static int getTypeByteSize(ValueType type) {
 		return (type.getDepth() > 0) ? getPointerSize() : (type.getSize() >> 3);
 	}
 	

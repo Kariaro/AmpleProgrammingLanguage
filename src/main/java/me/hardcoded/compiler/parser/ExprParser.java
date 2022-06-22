@@ -7,6 +7,7 @@ import me.hardcoded.compiler.parser.scope.ProgramScope;
 import me.hardcoded.compiler.parser.type.*;
 import me.hardcoded.lexer.Token;
 import me.hardcoded.utils.Position;
+import me.hardcoded.utils.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -82,7 +83,7 @@ public class ExprParser {
 			for (Operation operation : operators) {
 				if (operation.getOperationType() != OperationType.Binary
 					|| operation.getTokenType() != reader.type()) continue;
-					
+				
 				reader.advance();
 				shouldContinue = true;
 				
@@ -97,6 +98,31 @@ public class ExprParser {
 			}
 		} while (shouldContinue);
 		
+		do {
+			shouldContinue = false;
+			
+			for (Operation operation : operators) {
+				if (operation.getOperationType() != OperationType.SpecialBinary
+					|| operation.getTokenType() != reader.type()) continue;
+				
+				reader.advance();
+				boolean found = true;
+				switch (operation) {
+					case ARRAY -> {
+						Expr right = parse(false);
+						
+						parser.tryMatchOrError(Token.Type.R_SQUARE);
+						reader.advance();
+						
+						left = new BinaryExpr(ISyntaxPosition.of(left.getSyntaxPosition(), right.getSyntaxPosition()), operation, left, right);
+					}
+					default -> found = false;
+				}
+				
+				shouldContinue |= found;
+			}
+		} while (shouldContinue);
+		
 		return left;
 	}
 	
@@ -107,7 +133,13 @@ public class ExprParser {
 	private Expr atomExpression() {
 		switch (reader.type()) {
 			case INT -> {
-				NumExpr expr = new NumExpr(reader.syntaxPosition(), Integer.parseInt(reader.value()));
+				long value;
+				if (reader.value().startsWith("0x")) {
+					value = Long.parseLong(reader.value().substring(2), 16);
+				} else {
+					value = Long.parseLong(reader.value());
+				}
+				NumExpr expr = new NumExpr(reader.syntaxPosition(), (int) value);
 				reader.advance();
 				return expr;
 			}
@@ -182,7 +214,7 @@ public class ExprParser {
 		reader.advance();
 		
 		switch (name) {
-			case "stack_data" -> {
+			case "stack_alloc" -> {
 				parser.tryMatchOrError(Token.Type.LESS_THAN);
 				reader.advance();
 				
@@ -205,9 +237,13 @@ public class ExprParser {
 				// Different data types
 				switch (reader.type()) {
 					case STRING -> {
-						// TODO: Implement
+						// TODO: Catch exceptions
+						String val = reader.value();
+						val = val.substring(1, val.length() - 1);
+						val = StringUtils.unescapeString(val);
+						
+						expr = new StrExpr(reader.syntaxPosition(), val);
 						reader.advance();
-						expr = new StrExpr(reader.syntaxPosition(), reader.value());
 					}
 					default -> {
 						expr = new NoneExpr(reader.syntaxPosition());
@@ -219,13 +255,41 @@ public class ExprParser {
 				
 				return new StackDataExpr(ISyntaxPosition.of(startPos, reader.lastPositionEnd()), type, size, expr);
 			}
+			case "compiler" -> {
+				parser.tryMatchOrError(Token.Type.LESS_THAN);
+				reader.advance();
+				
+				String type = reader.value();
+				reader.advance();
+				
+				parser.tryMatchOrError(Token.Type.MORE_THAN);
+				reader.advance();
+				
+				parser.tryMatchOrError(Token.Type.L_PAREN);
+				reader.advance();
+				
+				// TODO: Read strings until R_PAREN
+				while (reader.type() != Token.Type.R_PAREN) {
+					reader.advance();
+					
+					// "mov RAX, {}" : local_value
+					// "lea RBX, [{}]" : other_value
+					// TODO: Parse values
+				}
+				
+				parser.tryMatchOrError(Token.Type.R_PAREN);
+				reader.advance();
+				
+				return new NoneExpr(reader.syntaxPosition());
+			}
 		}
 		
 		return new NoneExpr(reader.syntaxPosition());
 	}
 	
 	private boolean isSpecialFunction(String name) {
-		return name.equals("stack_data")
+		return name.equals("stack_alloc")
+			|| name.equals("compiler")
 			|| name.equals("cast");
 	}
 }

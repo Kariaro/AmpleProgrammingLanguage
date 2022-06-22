@@ -115,7 +115,7 @@ public class Reference {
 			return name;
 		}
 		
-		return name + ":" + toSimpleString();
+		return valueType + " " + name + ":" + toSimpleString();
 //
 //		if (DebugUtils.DEBUG_REFERENCE_INFORMATION) {
 //			if (valueType != null) {

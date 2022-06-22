@@ -72,7 +72,7 @@ public class LinkableDeserializer {
 //			case BREAK -> deserializeBreakStat(in);
 //			case CONTINUE -> deserializeContinueStat(in);
 			case EMPTY -> deserializeEmptyStat(in);
-//			case FOR -> deserializeForStat(in);
+			case FOR -> deserializeForStat(in);
 			case FUNC -> deserializeFuncStat(in);
 			case IF -> deserializeIfStat(in);
 			case RETURN -> deserializeReturnStat(in);
@@ -82,6 +82,7 @@ public class LinkableDeserializer {
 //			case NAMESPACE -> deserializeNamespaceStat(in);
 
 			/* Expressions */
+			case STACK_DATA -> deserializeStackDataExpr(in);
 			case BINARY -> deserializeBinaryExpr(in);
 			case CALL -> deserializeCallExpr(in);
 //			case CAST -> deserializeCastExpr(in);
@@ -90,7 +91,7 @@ public class LinkableDeserializer {
 			case NONE -> deserializeNoneExpr(in);
 //			case NONE -> deserializeNoneExpr(in);
 			case NUM -> deserializeNumExpr(in);
-//			case STR -> deserializeStrExpr(in);
+			case STRING -> deserializeStrExpr(in);
 			case UNARY -> deserializeUnaryExpr(in);
 			
 			default -> throw new RuntimeException("%s".formatted(type));
@@ -116,14 +117,14 @@ public class LinkableDeserializer {
 		return new EmptyStat(syntaxPosition);
 	}
 
-//	private ForStat deserializeForStat(DataInputStream in) throws IOException {
-//		ISyntaxPosition syntaxPosition = header.deserializeISyntaxPosition(in);
-//		Stat start = deserializeStat(in);
-//		Expr condition = deserializeExpr(in);
-//		Expr action = deserializeExpr(in);
-//		Stat body = deserializeStat(in);
-//		return new ForStat(start, condition, action, body, syntaxPosition);
-//	}
+	private ForStat deserializeForStat(DataInputStream in) throws IOException {
+		ISyntaxPosition syntaxPosition = header.deserializeISyntaxPosition(in);
+		Stat initializer = deserializeStat(in);
+		Expr condition = deserializeExpr(in);
+		Expr action = deserializeExpr(in);
+		Stat body = deserializeStat(in);
+		return new ForStat(syntaxPosition, initializer, condition, action, body);
+	}
 
 	private FuncStat deserializeFuncStat(DataInputStream in) throws IOException {
 		ISyntaxPosition syntaxPosition = header.deserializeISyntaxPosition(in);
@@ -220,11 +221,19 @@ public class LinkableDeserializer {
 //	}
 
 	// Expressions
+	private StackDataExpr deserializeStackDataExpr(DataInputStream in) throws IOException {
+		ISyntaxPosition syntaxPosition = header.deserializeISyntaxPosition(in);
+		Expr value = deserializeExpr(in);
+		int size = header.readVarInt(in);
+		ValueType type = header.deserializeValueType(in);
+		return new StackDataExpr(syntaxPosition, type, size, value);
+	}
+	
 	private BinaryExpr deserializeBinaryExpr(DataInputStream in) throws IOException {
 		ISyntaxPosition syntaxPosition = header.deserializeISyntaxPosition(in);
-		Expr left = (Expr)deserializeStat(in);
+		Expr left = deserializeExpr(in);
 		Operation operation = Operation.VALUES[header.readVarInt(in)];
-		Expr right = (Expr)deserializeStat(in);
+		Expr right = deserializeExpr(in);
 		return new BinaryExpr(syntaxPosition, operation, left, right);
 	}
 
@@ -275,11 +284,11 @@ public class LinkableDeserializer {
 		return new NumExpr(syntaxPosition, (int) value);
 	}
 
-//	private StrExpr deserializeStrExpr(DataInputStream in) throws IOException {
-//		ISyntaxPosition syntaxPosition = deserializeISyntaxPosition(in);
-//		String string = deserializeString(in);
-//		return new StrExpr(string, syntaxPosition);
-//	}
+	private StrExpr deserializeStrExpr(DataInputStream in) throws IOException {
+		ISyntaxPosition syntaxPosition = header.deserializeISyntaxPosition(in);
+		String string = header.deserializeString(in);
+		return new StrExpr(syntaxPosition, string);
+	}
 
 	private UnaryExpr deserializeUnaryExpr(DataInputStream in) throws IOException {
 		ISyntaxPosition syntaxPosition = header.deserializeISyntaxPosition(in);

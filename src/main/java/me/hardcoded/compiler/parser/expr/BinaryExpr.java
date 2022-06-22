@@ -31,7 +31,8 @@ public class BinaryExpr extends Expr {
 	
 	@Override
 	public boolean isEmpty() {
-		return true;
+		// TODO: Some binary operations are not empty
+		return operation != Operation.ASSIGN;
 	}
 	
 	@Override
