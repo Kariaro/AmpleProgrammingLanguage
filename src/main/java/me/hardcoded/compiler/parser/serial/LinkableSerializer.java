@@ -101,6 +101,7 @@ public class LinkableSerializer {
 			case RETURN -> serializeReturnStat((ReturnStat) stat, out);
 			case SCOPE -> serializeScopeStat((ScopeStat) stat, out);
 			case VAR -> serializeVarStat((VarStat) stat, out);
+ 			case COMPILER -> serializeCompilerStat((CompilerStat) stat, out);
 //			case WHILE -> serializeWhileStat((WhileStat) stat, out);
 //			case NAMESPACE -> serializeNamespaceStat((NamespaceStat) stat, out);
 
@@ -108,7 +109,7 @@ public class LinkableSerializer {
 			case STACK_DATA -> serializeStackDataExpr((StackDataExpr) stat, out);
 			case BINARY -> serializeBinaryExpr((BinaryExpr) stat, out);
 			case CALL -> serializeCallExpr((CallExpr) stat, out);
-//			case CAST -> serializeCastExpr((CastExpr) stat, out);
+			case CAST -> serializeCastExpr((CastExpr) stat, out);
 //			case COMMA -> serializeCommaExpr((CommaExpr) stat, out);
 			case NAME -> serializeNameExpr((NameExpr) stat, out);
 			case NONE -> serializeNoneExpr((NoneExpr) stat, out);
@@ -180,6 +181,21 @@ public class LinkableSerializer {
 		header.serializeReference(stat.getReference(), out);
 		serializeStat(stat.getValue(), out);
 	}
+	
+	private void serializeCompilerStat(CompilerStat stat, DataOutputStream out) throws IOException {
+		header.serializeString(stat.getTargetType(), out);
+		List<CompilerStat.Part> parts = stat.getParts();
+		header.writeVarInt(parts.size(), out);
+		for (CompilerStat.Part part : parts) {
+			header.serializeISyntaxPosition(part.syntaxPosition(), out);
+			header.serializeString(part.command(), out);
+			List<Reference> references = part.references();
+			header.writeVarInt(references.size(), out);
+			for (Reference reference : references) {
+				header.serializeReference(reference, out);
+			}
+		}
+	}
 
 //	private void serializeWhileStat(WhileStat stat, DataOutputStream out) throws IOException {
 //		serializeStat(stat.getValue(), out);
@@ -218,11 +234,11 @@ public class LinkableSerializer {
 		}
 	}
 
-//	private void serializeCastExpr(CastExpr expr, DataOutputStream out) throws IOException {
-//		serializeValueType(expr.getCastType(), out);
-//		serializeStat(expr.getValue(), out);
-//	}
-//
+	private void serializeCastExpr(CastExpr expr, DataOutputStream out) throws IOException {
+		header.serializeValueType(expr.getType(), out);
+		serializeStat(expr.getValue(), out);
+	}
+
 //	private void serializeCommaExpr(CommaExpr expr, DataOutputStream out) throws IOException {
 //		List<Expr> values = expr.getValues();
 //		writeVarInt(values.size(), out);
@@ -240,15 +256,8 @@ public class LinkableSerializer {
 	}
 
 	private void serializeNumExpr(NumExpr expr, DataOutputStream out) throws IOException {
-//		boolean isFloating = expr.getAtom().isFloating();
-//		out.writeBoolean(isFloating);
-//		writeVarInt(expr.getAtom().ordinal(), out);
-
-//		if (isFloating) {
-//			out.writeDouble(expr.getFloatingValue());
-//		} else {
-			out.writeLong(expr.getValue());
-//		}
+		header.serializeValueType(expr.getType(), out);
+		out.writeLong(expr.getValue());
 	}
 
 	private void serializeStrExpr(StrExpr expr, DataOutputStream out) throws IOException {

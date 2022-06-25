@@ -1,7 +1,6 @@
 package me.hardcoded.compiler.intermediate.inst;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
-import me.hardcoded.utils.Position;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +32,10 @@ public class Inst {
 		return (InstParam.Ref) parameters.get(index);
 	}
 	
+	public InstParam.Str getStrParam(int index) {
+		return (InstParam.Str) parameters.get(index);
+	}
+	
 	public InstParam.Num getNumParam(int index) {
 		return (InstParam.Num) parameters.get(index);
 	}
@@ -43,6 +46,10 @@ public class Inst {
 	
 	public List<InstParam> getParameters() {
 		return parameters;
+	}
+	
+	public int getParamCount() {
+		return parameters.size();
 	}
 	
 	public Opcode getOpcode() {

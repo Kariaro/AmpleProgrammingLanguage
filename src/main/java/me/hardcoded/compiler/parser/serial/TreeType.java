@@ -21,15 +21,15 @@ public enum TreeType {
 	BINARY,
 	UNARY,
 	CALL,
-	//CAST,
+	CAST,
 	//COMMA,
 	NAME,
 	//NULL,
 	NUM,
 	NONE,
 	STRING,
-	//CONDITIONAL;
 	STACK_DATA,
+	COMPILER,
 	;
 	
 	public static final TreeType[] VALUES = values();

@@ -45,7 +45,6 @@ public class AmpleLexer {
 			.addRule(Type.BOOLEAN, i -> i.addStrings("true", "false"))
 			.addRule(Type.CHARACTER, i -> i.addMultiline("'", "\\", "'"))
 			.addRule(Type.STRING, i -> i.addMultiline("\"", "\\", "\""))
-			.addRule(Type.NULL, i -> i.addStrings("null"))
 			.addRule(Type.DOUBLE, i -> i.addRegex("[0-9]+(\\.[0-9]+)?[dD]?"))
 			.addRule(Type.FLOAT, i -> i.addRegex("[0-9]+(\\.[0-9]+)?[fF]"))
 			.addRule(Type.LONG, i -> i.addRegexes(
@@ -84,6 +83,7 @@ public class AmpleLexer {
 			.addRule(Type.RETURN, i -> i.addString("ret"))
 			.addRule(Type.COLON, i -> i.addString(":"))
 			.addRule(Type.COMMA, i -> i.addString(","))
+			.addRule(Type.COMPILER, i -> i.addString("compiler"))
 			
 			// Keywords
 			.addRule(Type.IF, i -> i.addString("if"))

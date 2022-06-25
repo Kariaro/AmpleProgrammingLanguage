@@ -1,15 +1,16 @@
 package me.hardcoded.compiler.parser.type;
 
 public class ValueType {
-	public static final ValueType UNDEFINED = new ValueType("", 0, 0, 0);
-	
 	private static final String FLAGS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/";
 	
-	public static final int UNSIGNED = 1,
-							SIGNED = 0,
-							CONST = 2,
-							VOLATILE = 4,
-							FLOATING = 8;
+	public static final int SIGNED = 0,
+							UNSIGNED = 1,
+							FLOATING = 2,
+							GENERIC = 3;
+	
+	public static final int STORAGE_TYPE = 7,
+							CONST = 8,
+							VOLATILE = 16;
 	
 	// The name of the type
 	private String name;
@@ -28,6 +29,9 @@ public class ValueType {
 		return new ValueType(name, size, depth, flags);
 	}
 	
+	public ValueType parallel(int size) {
+		return new ValueType(name, size, depth, flags);
+	}
 	/**
 	 * Create an array of this type
 	 */
@@ -50,6 +54,18 @@ public class ValueType {
 	
 	public int getDepth() {
 		return depth;
+	}
+	
+	public boolean isSigned() {
+		return (flags & STORAGE_TYPE) == SIGNED;
+	}
+	
+	public boolean isFloating() {
+		return (flags & STORAGE_TYPE) == FLOATING;
+	}
+	
+	public boolean isUnsigned() {
+		return (flags & STORAGE_TYPE) == UNSIGNED;
 	}
 	
 	private String getShortName() {

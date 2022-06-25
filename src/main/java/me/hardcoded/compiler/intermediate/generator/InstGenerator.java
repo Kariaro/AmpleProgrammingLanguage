@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 public class InstGenerator {
-	private static final InstRef NONE = new InstRef("<invalid>", ValueType.UNDEFINED, -1, 0);
+	private static final InstRef NONE = new InstRef("<invalid>", Primitives.NONE, -1, 0);
 	private final InstFile file;
 	private final ExportMap exportMap;
 
@@ -55,6 +55,7 @@ public class InstGenerator {
 			case RETURN -> generateReturnStat((ReturnStat) stat, procedure);
 			case SCOPE -> generateScopeStat((ScopeStat) stat, procedure);
 			case VAR -> generateVarStat((VarStat) stat, procedure);
+			case COMPILER -> generateCompilerStat((CompilerStat) stat, procedure);
 //			case WHILE -> generateWhileStat((WhileStat) stat, procedure);
 //			case NAMESPACE -> generateNamespaceStat((NamespaceStat) stat, procedure);
 
@@ -62,7 +63,7 @@ public class InstGenerator {
 			case STACK_DATA -> generateStackDataExpr((StackDataExpr) stat, procedure);
 			case BINARY -> generateBinaryExpr((BinaryExpr) stat, procedure);
 			case CALL -> generateCallExpr((CallExpr) stat, procedure);
-//			case CAST -> generateCastExpr((CastExpr) stat, procedure);
+			case CAST -> generateCastExpr((CastExpr) stat, procedure);
 //			case COMMA -> generateCommaExpr((CommaExpr) stat, procedure);
 			case NAME -> generateNameExpr((NameExpr) stat, procedure);
 			case NONE -> generateNoneExpr((NoneExpr) stat, procedure);
@@ -162,6 +163,11 @@ public class InstGenerator {
 		procedure.fillData(reference, parameters);
 	
 		generateStat(stat.getBody(), procedure);
+		
+		List<Inst> list = procedure.getInstructions();
+		if (list.isEmpty() || list.get(list.size() - 1).getOpcode() != Opcode.RET) {
+			throw new RuntimeException("Missing return statement : " + stat.getReference());
+		}
 
 		return NONE;
 	}
@@ -209,8 +215,7 @@ public class InstGenerator {
 			procedure.addInst(new Inst(Opcode.RET, stat.getSyntaxPosition())
 				.addParam(new InstParam.Ref(value)));
 		} else {
-			procedure.addInst(new Inst(Opcode.RET, stat.getSyntaxPosition())
-				.addParam(new InstParam.Num(0)));
+			procedure.addInst(new Inst(Opcode.RET, stat.getSyntaxPosition()));
 		}
 		return NONE;
 	}
@@ -231,6 +236,23 @@ public class InstGenerator {
 			.addParam(new InstParam.Ref(holder))
 			.addParam(new InstParam.Ref(value)));
 
+		return NONE;
+	}
+	
+	private InstRef generateCompilerStat(CompilerStat stat, Procedure procedure) {
+		String targetType = stat.getTargetType();
+		for (CompilerStat.Part part : stat.getParts()) {
+			Inst inst = new Inst(Opcode.INLINE_ASM, stat.getSyntaxPosition())
+				.addParam(new InstParam.Str(stat.getTargetType()))
+				.addParam(new InstParam.Str(part.command()));
+			
+			for (Reference reference : part.references()) {
+				inst.addParam(new InstParam.Ref(wrapReference(reference)));
+			}
+			
+			procedure.addInst(inst);
+		}
+		
 		return NONE;
 	}
 
@@ -279,50 +301,31 @@ public class InstGenerator {
 	// Expressions
 	private InstRef generateStackDataExpr(StackDataExpr expr, Procedure procedure) {
 		ValueType stackType = expr.getType().createArray(1);
-		InstRef handle = createDataReference(".stack", new ValueType(stackType.getName(), expr.getSize() * stackType.getSize(), 1, stackType.getFlags()));
+		InstRef stack = createDataReference(".stack", stackType);
 		
 		procedure.addInst(new Inst(Opcode.STACK_ALLOC, expr.getSyntaxPosition())
-			.addParam(new InstParam.Ref(handle))
-			.addParam(new InstParam.Num(expr.getSize())));
+			.addParam(new InstParam.Ref(stack))
+			.addParam(new InstParam.Num(Primitives.I32, expr.getSize())));
 		
 		Expr value = expr.getValue();
-		System.out.println(value + ", " + value.getClass());
 		if (value instanceof StrExpr s) {
-			InstRef index = createDataReference(".index", stackType);
-			procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
-				.addParam(new InstParam.Ref(index))
-				.addParam(new InstParam.Ref(handle)));
-			
 			String text = s.getValue();
 			
 			int minLength = Math.min(text.length(), expr.getSize());
-			System.out.println("minLength: " + minLength);
-			System.out.println("text: [" + s.getValue() + "]");
 			for (int i = 0; i < minLength; i++) {
 				procedure.addInst(new Inst(Opcode.STORE, expr.getSyntaxPosition())
-					.addParam(new InstParam.Ref(index))
-					.addParam(new InstParam.Num(i))
-					.addParam(new InstParam.Num(text.charAt(i) & 0xff)));
+					.addParam(new InstParam.Ref(stack))
+					.addParam(new InstParam.Num(Primitives.I32, i))
+					.addParam(new InstParam.Num(Primitives.I8, text.charAt(i) & 0xff)));
 			}
+			
+			return stack;
+		} else {
+			throw new RuntimeException();
 		}
-		
-		return handle;
 	}
 	
 	private InstRef generateBinaryExpr(BinaryExpr expr, Procedure procedure) {
-//		if (opcode == Opcode.MOV) {
-//			if (expr.getLeft() instanceof UnaryExpr e && e.getOperation() == Operation.DEREFERENCE) {
-//				InstRef left = generateStat(e.getValue(), procedure);
-//				InstRef right = generateStat(expr.getRight(), procedure);
-//
-//				procedure.addInst(new Inst(Opcode.STORE, expr.getSyntaxPosition())
-//					.addParam(new InstParam.Ref(left))
-//					.addParam(new InstParam.Ref(right)));
-//
-//				return right;
-//			}
-//		}
-		
 		if (expr.getOperation() == Operation.C_AND
 		|| expr.getOperation() == Operation.C_OR) {
 			return generateConditionalExpr(expr, procedure);
@@ -377,17 +380,17 @@ public class InstGenerator {
 		return holder;
 	}
 
-//	private InstRef generateCastExpr(CastExpr expr, Procedure procedure) {
-//		InstRef holder = createDataReference(".cast");
-//		InstRef value = generateStat(expr.getValue(), procedure);
-//
-//		procedure.addInst(new Inst(Opcode.CAST, expr.getSyntaxPosition())
-//			.addParam(new InstParam.Ref(holder))
-//			.addParam(new InstParam.Type(expr.getCastType()))
-//			.addParam(new InstParam.Ref(value)));
-//
-//		return holder;
-//	}
+	private InstRef generateCastExpr(CastExpr expr, Procedure procedure) {
+		InstRef holder = createDataReference(".cast", expr.getType());
+		InstRef value = generateStat(expr.getValue(), procedure);
+		
+		procedure.addInst(new Inst(Opcode.CAST, expr.getSyntaxPosition())
+			.addParam(new InstParam.Ref(holder))
+			.addParam(new InstParam.Type(expr.getType()))
+			.addParam(new InstParam.Ref(value)));
+
+		return holder;
+	}
 
 //	private InstRef generateCommaExpr(CommaExpr expr, Procedure procedure) {
 //		InstRef holder = NONE;
@@ -418,7 +421,7 @@ public class InstGenerator {
 		// TODO: Add type size value to ref
 		procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
 			.addParam(new InstParam.Ref(holder))
-			.addParam(new InstParam.Num(expr.toString())));
+			.addParam(new InstParam.Num(expr.getType(), expr.getValue())));
 
 		return holder;
 	}
@@ -487,8 +490,8 @@ public class InstGenerator {
 
 		procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
 			.addParam(new InstParam.Ref(holder))
-			.addParam(new InstParam.Num(0)));
-
+			.addParam(new InstParam.Num(expr.getType(), 0)));
+		
 		{
 			Expr e = expr.getLeft();
 			InstRef check = generateStat(e, procedure);
@@ -509,7 +512,7 @@ public class InstGenerator {
 			// :value
 			procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
 				.addParam(new InstParam.Ref(holder))
-				.addParam(new InstParam.Num(1)));
+				.addParam(new InstParam.Num(expr.getType(), 1)));
 
 			// :end
 			procedure.addInst(new Inst(Opcode.LABEL, expr.getSyntaxPosition())
@@ -524,7 +527,7 @@ public class InstGenerator {
 				.addParam(new InstParam.Ref(jmpBranch)));
 			procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
 				.addParam(new InstParam.Ref(holder))
-				.addParam(new InstParam.Num(1)));
+				.addParam(new InstParam.Num(expr.getType(), 1)));
 
 			// :end
 			procedure.addInst(new Inst(Opcode.LABEL, expr.getSyntaxPosition())
@@ -558,7 +561,7 @@ public class InstGenerator {
 
 	// Reference
 	private InstRef createLocalLabel(String name) {
-		return new InstRef(name, ValueType.UNDEFINED, ++count, Reference.LABEL);
+		return new InstRef(name, Primitives.NONE, ++count, Reference.LABEL);
 	}
 
 	private InstRef createDataReference(String name, ValueType type) {

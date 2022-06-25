@@ -10,12 +10,14 @@ import me.hardcoded.compiler.parser.serial.LinkableDeserializer;
 import me.hardcoded.compiler.parser.serial.LinkableSerializer;
 import me.hardcoded.configuration.CompilerConfiguration;
 import me.hardcoded.exporter.asm.AsmCodeGenerator;
+import me.hardcoded.utils.DebugUtils;
 import me.hardcoded.visualization.InstFileVisualization;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 public class AmpleCompiler {
@@ -83,8 +85,13 @@ public class AmpleCompiler {
 		AsmCodeGenerator asmCodeGenerator = new AsmCodeGenerator();
 		byte[] bytes = asmCodeGenerator.getAssembler(file);
 		
+		String path = DebugUtils.getNextFileId(new File("debug"), "out_%d.asm");
+		Files.write(Path.of(path), bytes);
+		
+		
 		System.out.println("=".repeat(100));
 		System.out.println(new String(bytes));
+		System.out.println(path);
 		
 		new InstFileVisualization().show(file);
 	}

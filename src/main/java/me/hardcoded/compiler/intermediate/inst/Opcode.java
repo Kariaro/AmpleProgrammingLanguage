@@ -5,20 +5,21 @@ public enum Opcode {
 	MOV,				// r0 = r1
 	ADD,				// r0 = r1 + r2
 	SUB,				// r0 = r1 - r2
-	MUL,				// r0 = r1 * r2
-	DIV,				// r0 = r1 / r2
-	MOD,				// r0 = r1 % r2
 	AND,				// r0 = r1 & r2
 	XOR,				// r0 = r1 ^ r2
 	OR,					// r0 = r1 | r2
+	EQ,					// r0 = r1 == r2
+	NEQ,				// r0 = r1 != r2
+	// Not unsigned safe
+	MOD,				// r0 = r1 % r2
+	MUL,				// r0 = r1 * r2
+	DIV,				// r0 = r1 / r2
 	SHR,				// r0 = r1 >> r2
 	SHL,				// r0 = r1 << r2
 	GTE,				// r0 = r1 >= r2
 	GT,					// r0 = r1 > r2
 	LTE,				// r0 = r1 <= r2
 	LT,					// r0 = r1 < r2
-	EQ,					// r0 = r1 == r2
-	NEQ,				// r0 = r1 != r2
 	
 	// Unary instructions
 	NOT,				// r0 = !(r1)
@@ -30,6 +31,7 @@ public enum Opcode {
 	
 	// Special instructions
 	STACK_ALLOC,        // allocate memory on the stack
+	INLINE_ASM,         // asm('type', 'command', references...)
 	
 	// Memory instructions
 	STORE,				// (*r0) = r1
