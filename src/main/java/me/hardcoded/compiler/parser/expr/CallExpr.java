@@ -28,12 +28,12 @@ public class CallExpr extends Expr {
 	
 	@Override
 	public boolean isEmpty() {
-		return true;
+		return false;
 	}
 	
 	@Override
 	public boolean isPure() {
-		return true;
+		return false;
 	}
 	
 	@Override

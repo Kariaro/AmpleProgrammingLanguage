@@ -1,5 +1,6 @@
 package me.hardcoded.compiler.parser.scope;
 
+import me.hardcoded.compiler.parser.type.Primitives;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ValueType;
 
@@ -62,14 +63,14 @@ public class ProgramScope {
 			return reference;
 		}
 		
-		reference = new Reference(name, ValueType.UNDEFINED, count++, Reference.IMPORT);
+		reference = new Reference(name, Primitives.NONE, count++, Reference.IMPORT);
 		importedReference.put(name, reference);
 		allReferences.add(reference);
 		return reference;
 	}
 	
 	public Reference createEmptyReference(String name) {
-		Reference reference = new Reference(name, ValueType.UNDEFINED, -1 - (tempCount++), 0);
+		Reference reference = new Reference(name, Primitives.NONE, -1 - (tempCount++), 0);
 		allReferences.add(reference);
 		return reference;
 	}

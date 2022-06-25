@@ -4,7 +4,6 @@ import me.hardcoded.compiler.context.LangReader;
 import me.hardcoded.compiler.errors.ParseException;
 import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.expr.Expr;
-import me.hardcoded.compiler.parser.expr.NameExpr;
 import me.hardcoded.compiler.parser.expr.NoneExpr;
 import me.hardcoded.compiler.parser.expr.NumExpr;
 import me.hardcoded.compiler.parser.scope.ProgramScope;
@@ -14,10 +13,8 @@ import me.hardcoded.configuration.CompilerConfiguration;
 import me.hardcoded.lexer.LexerTokenizer;
 import me.hardcoded.lexer.Token;
 import me.hardcoded.utils.MutableSyntaxImpl;
-import me.hardcoded.utils.ObjectUtils;
 import me.hardcoded.utils.Position;
 
-import javax.print.DocFlavor;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -291,6 +288,7 @@ public class AmpleParser {
 				
 				yield new ReturnStat(ISyntaxPosition.of(startPos, reader.nextPositionEnd()), expr);
 			}
+			case COMPILER -> compilerStatement();
 			default -> expression();
 		};
 		
@@ -298,6 +296,56 @@ public class AmpleParser {
 		reader.advance();
 		
 		return stat;
+	}
+	
+	private CompilerStat compilerStatement() {
+		Position startPos = reader.position();
+		reader.advance();
+		
+		tryMatchOrError(Token.Type.LESS_THAN);
+		reader.advance();
+		
+		String targetType = reader.value();
+		reader.advance();
+		
+		tryMatchOrError(Token.Type.MORE_THAN);
+		reader.advance();
+		
+		tryMatchOrError(Token.Type.L_PAREN);
+		reader.advance();
+		
+		List<CompilerStat.Part> parts = new ArrayList<>();
+		
+		// TODO: Read strings until R_PAREN
+		while (reader.type() != Token.Type.R_PAREN) {
+			tryMatchOrError(Token.Type.STRING);
+			
+			Position partStartPos = reader.position();
+			
+			// TODO: Create a utility method for this
+			String command = reader.value();
+			command = command.substring(1, command.length() - 1);
+			reader.advance();
+			
+			List<Reference> references = new ArrayList<>();
+			while (reader.type() == Token.Type.COLON) {
+				reader.advance();
+				
+				Reference reference = context.getLocalScope().getVariable(reader.value());
+				if (reference == null) {
+					throw createParseException("Could not find the variable '%s'", reader.value());
+				}
+				reader.advance();
+				references.add(reference);
+			}
+			
+			parts.add(new CompilerStat.Part(ISyntaxPosition.of(partStartPos, reader.lastPositionEnd()), command, references));
+		}
+		
+		tryMatchOrError(Token.Type.R_PAREN);
+		reader.advance();
+		
+		return new CompilerStat(ISyntaxPosition.of(startPos, reader.lastPositionEnd()), targetType, parts);
 	}
 	
 	private ForStat forStatement() {
@@ -316,7 +364,7 @@ public class AmpleParser {
 		if (reader.type() != Token.Type.SEMICOLON) {
 			condition = expression();
 		} else {
-			condition = new NumExpr(reader.syntaxPosition(), 1);
+			condition = new NumExpr(reader.syntaxPosition(), Primitives.I32, 1);
 		}
 		
 		tryMatchOrError(Token.Type.SEMICOLON);

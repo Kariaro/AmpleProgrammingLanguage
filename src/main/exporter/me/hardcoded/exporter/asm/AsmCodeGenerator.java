@@ -6,6 +6,8 @@ import java.util.List;
 
 import me.hardcoded.compiler.impl.ICodeGenerator;
 import me.hardcoded.compiler.intermediate.inst.*;
+import me.hardcoded.compiler.parser.type.Primitives;
+import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ValueType;
 import me.hardcoded.utils.error.CodeGenException;
 
@@ -44,11 +46,37 @@ public class AsmCodeGenerator implements ICodeGenerator {
 			header.append("BITS 64\n\n");
 			header.append("section .data\n");
 			header.append("    hex_data db \"0123456789abcdef\"\n");
-			header.append("    hex_strs db \"................\", 0ah\n\n");
+			header.append("    hex_strs db \"................\", 0ah\n");
+			header.append("    new_line db 0ah\n\n");
 			header.append("section .text\n");
 			header.append("    global _start:\n\n");
 			header.append("""
+printnewline:
+	push rsi
+	push rdi
+	push rax
+	push rbx
+	push rcx
+	push rdx
+	mov rax, 1
+	lea rsi, [new_line]
+	mov rdi, 1
+	mov rdx, 1
+	syscall
+	pop rdx
+	pop rcx
+	pop rbx
+	pop rax
+	pop rdi
+	pop rsi
+	ret
 printhex:
+	push rsi
+	push rdi
+	push rax
+	push rbx
+	push rcx
+	push rdx
 	mov rcx, 16
 	.loop:
 		mov rbx, rax
@@ -62,6 +90,12 @@ printhex:
 	mov rdi, 1
 	mov rdx, 17
 	syscall
+	pop rdx
+	pop rcx
+	pop rbx
+	pop rax
+	pop rdi
+	pop rsi
 	ret
 """);
 			header.append("_start:\n");
@@ -79,13 +113,34 @@ printhex:
 		if (inst.getOpcode() == Opcode.LABEL) {
 			InstRef reference = inst.getRefParam(0).getReference();
 			if (reference.isFunction()) {
-				StringBuilder sb = new StringBuilder();
-				sb.append(reference.toSimpleString() + ":\n");
-				sb.append("    push RBP\n");
-				sb.append("    mov RBP, RSP\n");
-				sb.append("    sub RSP, 0x%x\n".formatted(proc.getStackSize()));
+				List<String> sb = new ArrayList<>();
+				sb.add("push RBP");
+				sb.add("mov RBP, RSP");
+				sb.add("sub RSP, 0x%x".formatted(proc.getStackSize()));
+				sb.add("");
 				
-				return sb.toString().stripTrailing();
+				int offset = 16;
+				for (int i = 0; i < proc.getParamCount(); i++) {
+					InstRef param = proc.getParam(i);
+					
+					int size = AsmUtils.getTypeSize(param.getValueType());
+					String regName = AsmUtils.getRegSize("AX", param);
+					
+					sb.add("mov %s, %s [RBP + 0x%x]".formatted(
+						regName,
+						AsmUtils.getPointerName(size),
+						offset
+					));
+					sb.add("mov %s, %s".formatted(
+						AsmUtils.getParamValue(param, proc),
+						regName
+					));
+					
+					offset += (size >> 3);
+				}
+				
+				String label = reference.toSimpleString() + ":\n";
+				return label + sb.stream().reduce("", (a, b) -> a + '\n' + b).indent(4).stripTrailing().replaceFirst("    \n", "");
 			}
 			
 			return "  ." + reference.toSimpleString() + ':';
@@ -97,46 +152,109 @@ printhex:
 		switch (inst.getOpcode()) {
 			case STACK_ALLOC -> {
 				InstRef dst = inst.getRefParam(0).getReference();
+				int size = Integer.parseInt(inst.getNumParam(1).toString());
 				
-				String regName = getRegSize("AX", dst);
+				String regName = AsmUtils.getRegSize("AX", dst);
 				sb.add("lea %s, %s".formatted(
 					regName,
-					getRawStackPtr(dst, proc)
+					AsmUtils.getRawStackPtr(dst, -size, proc)
 				));
 				sb.add("mov %s, %s".formatted(
-					getStackPtr(dst, proc),
+					AsmUtils.getStackPtr(dst, proc),
 					regName
 				));
+			}
+			case INLINE_ASM -> {
+				String targetType = inst.getStrParam(0).getValue();
+				
+				// We only inline assembly instructions
+				if (!targetType.equals("asm")) {
+					return "";
+				}
+				
+				String command = inst.getStrParam(1).getValue();
+				for (int i = 2; i < inst.getParamCount(); i++) {
+					InstRef src = inst.getRefParam(i).getReference();
+					command = command.replaceFirst("\\{\\}", AsmUtils.getStackPtr(src, proc));
+				}
+				
+				sb.add(command);
 			}
 			case MOV -> {
 				InstRef dst = inst.getRefParam(0).getReference();
 				InstParam src = inst.getParam(1);
 				
 				if (src instanceof InstParam.Num value) {
+					long number = value.getValue();
+					
+					System.out.printf("0x%016x : %s\n", number, value.getSize());
+					
+					String regName;
+					if ((number >>> 32) != 0) {
+						sb.add("mov RAX, %s".formatted(value));
+						regName = "RAX";
+					} else {
+						// TODO: FIXME
+						regName = value.toString();
+					}
+					
 					sb.add("mov %s, %s".formatted(
-						getStackPtr(dst, proc),
-						value
+						AsmUtils.getStackPtr(dst, proc),
+						regName
 					));
 				} else if (src instanceof InstParam.Ref value) {
-					String regName = getRegSize("AX", value.getReference());
+					String regName = AsmUtils.getRegSize("AX", value.getReference());
 					sb.add("mov %s, %s".formatted(
 						regName,
-						getStackPtr(value.getReference(), proc)
+						AsmUtils.getStackPtr(value.getReference(), proc)
 					));
 					sb.add("mov %s, %s".formatted(
-						getStackPtr(dst, proc),
+						AsmUtils.getStackPtr(dst, proc),
 						regName
 					));
 				}
+			}
+			case LOAD -> {
+				InstRef dst = inst.getRefParam(0).getReference();
+				InstRef src = inst.getRefParam(1).getReference();
+				InstParam offset = inst.getParam(2);
+				
+				String offsetValue;
+				if (offset instanceof InstParam.Num value) {
+					offsetValue = "0x%x".formatted(Integer.parseInt(value.toString()));
+				} else if (offset instanceof InstParam.Ref value) {
+					offsetValue = "RCX";
+					sb.add("xor RCX, RCX");
+					sb.add("mov %s, %s".formatted(
+						AsmUtils.getRegSize("CX", value.getReference()),
+						AsmUtils.getStackPtr(value.getReference(), proc)
+					));
+				} else {
+					throw new RuntimeException();
+				}
+				
+				String regName = AsmUtils.getRegSize("AX", dst);
+				sb.add("mov RBX, %s".formatted(
+					AsmUtils.getParamValue(src, proc)
+				));
+				sb.add("mov %s, %s [RBX + %s]".formatted(
+					regName,
+					AsmUtils.getPointerName(dst),
+					offsetValue
+				));
+				sb.add("mov %s, %s".formatted(
+					AsmUtils.getParamValue(dst, proc),
+					regName
+				));
 			}
 			case STORE -> {
 				InstRef dst = inst.getRefParam(0).getReference();
 				InstParam offset = inst.getParam(1);
 				InstParam src = inst.getParam(2);
 				
-				String srcValue = getParamValue(src, proc);
+				String srcValue = AsmUtils.getParamValue(src, proc);
 				sb.add("mov RBX, %s".formatted(
-					getStackPtr(dst, proc)
+					AsmUtils.getStackPtr(dst, proc)
 				));
 				
 				String offsetValue;
@@ -146,8 +264,8 @@ printhex:
 					offsetValue = "RCX";
 					sb.add("xor RCX, RCX");
 					sb.add("mov %s, %s".formatted(
-						getRegSize("CX", value.getReference()),
-						getStackPtr(value.getReference(), proc)
+						AsmUtils.getRegSize("CX", value.getReference()),
+						AsmUtils.getStackPtr(value.getReference(), proc)
 					));
 				} else {
 					throw new RuntimeException();
@@ -155,36 +273,54 @@ printhex:
 				
 				if (src instanceof InstParam.Num) {
 					sb.add("mov %s [RBX + %s], %s".formatted(
-						getPtrName(dst.getValueType().getSize()),
+						AsmUtils.getPointerName(dst.getValueType().getSize()),
 						offsetValue,
 						srcValue
 					));
 				} else {
-					String regName = getRegSize("AX", getLowerTypeSize(dst.getValueType())); // Size of one lower
+					String regName = AsmUtils.getRegSize("AX", AsmUtils.getLowerTypeSize(dst.getValueType())); // Size of one lower
 					sb.add("mov %s, %s".formatted(
 						regName,
 						srcValue
 					));
 					sb.add("mov %s [RBX + %s], %s".formatted(
-						getPtrName(dst.getValueType().getSize()),
+						AsmUtils.getPointerName(dst.getValueType().getSize()),
 						offsetValue,
 						regName
 					));
 				}
 			}
-			case RET -> {
-				InstParam param = inst.getParam(0);
+			case CAST -> {
+				InstParam dst = inst.getParam(0);
+				InstParam src = inst.getParam(2);
 				
-				if (param instanceof InstParam.Ref src) {
-					String regName = getRegSize("AX", src.getReference());
-					sb.add("mov %s, %s".formatted(
-						regName,
-						getStackPtr(src.getReference(), proc)
-					));
-				} else if (param instanceof InstParam.Num num) {
-					sb.add("mov RAX, %s".formatted(num.toString()));
-				} else {
-					throw new RuntimeException();
+				String regSrcName = AsmUtils.getRegSize("AX", src);
+				String regDstName = AsmUtils.getRegSize("AX", dst);
+				sb.add("xor RAX, RAX");
+				sb.add("mov %s, %s".formatted(
+					regSrcName,
+					AsmUtils.getParamValue(src, proc)
+				));
+				sb.add("mov %s, %s".formatted(
+					AsmUtils.getParamValue(dst, proc),
+					regDstName
+				));
+			}
+			case RET -> {
+				if (inst.getParamCount() == 1) {
+					InstParam param = inst.getParam(0);
+					
+					if (param instanceof InstParam.Ref src) {
+						String regName = AsmUtils.getRegSize("AX", src.getReference());
+						sb.add("mov %s, %s".formatted(
+							regName,
+							AsmUtils.getStackPtr(src.getReference(), proc)
+						));
+					} else if (param instanceof InstParam.Num num) {
+						sb.add("mov RAX, %s".formatted(num.toString()));
+					} else {
+						throw new RuntimeException();
+					}
 				}
 				
 				sb.add("mov RSP, RBP");
@@ -196,10 +332,10 @@ printhex:
 				InstRef a = inst.getRefParam(1).getReference();
 				InstParam b = inst.getParam(2);
 				
-				String regAName = getRegSize("AX", a);
+				String regAName = AsmUtils.getRegSize("AX", a);
 				sb.add("mov %s, %s".formatted(
 					regAName,
-					getStackPtr(a, proc)
+					AsmUtils.getStackPtr(a, proc)
 				));
 				
 				String type = switch (inst.getOpcode()) {
@@ -222,14 +358,43 @@ printhex:
 					sb.add("%s %s, %s".formatted(
 						type,
 						regAName,
-						getParamValue(value, proc)
+						AsmUtils.getParamValue(value, proc)
 					));
 				} else {
 					throw new RuntimeException();
 				}
 				
 				sb.add("mov %s, %s".formatted(
-					getStackPtr(dst, proc),
+					AsmUtils.getStackPtr(dst, proc),
+					regAName
+				));
+			}
+			case SHR, SHL -> {
+				InstRef dst = inst.getRefParam(0).getReference();
+				InstRef a = inst.getRefParam(1).getReference();
+				InstParam b = inst.getParam(2);
+				
+				String regAName = AsmUtils.getRegSize("AX", a);
+				String regCName = AsmUtils.getRegSize("CX", b);
+				sb.add("xor RCX, RCX");
+				sb.add("mov %s, %s".formatted(
+					regCName,
+					AsmUtils.getParamValue(b, proc)
+				));
+				sb.add("mov %s, %s".formatted(
+					regAName,
+					AsmUtils.getParamValue(a, proc)
+				));
+				
+				// TODO: Signed and unsigned shifts
+				String type = switch (inst.getOpcode()) {
+					case SHR -> "shr";
+					case SHL -> "shl";
+					default -> throw new RuntimeException();
+				};
+				sb.add("%s %s, CL".formatted(type, regAName));
+				sb.add("mov %s, %s".formatted(
+					AsmUtils.getParamValue(dst, proc),
 					regAName
 				));
 			}
@@ -239,17 +404,17 @@ printhex:
 				InstRef a = inst.getRefParam(1).getReference();
 				InstRef b = inst.getRefParam(2).getReference();
 				
-				String regAName = getRegSize("AX", a);
-				String regBName = getRegSize("BX", b);
-				String regCName = getRegSize("CX", a);
+				String regAName = AsmUtils.getRegSize("AX", a);
+				String regBName = AsmUtils.getRegSize("BX", b);
+				String regCName = AsmUtils.getRegSize("CX", a);
 				sb.add("mov %s, 0".formatted(regAName));
 				sb.add("mov %s, 1".formatted(regCName));
 				sb.add("mov %s, %s".formatted(
 					regBName,
-					getStackPtr(b, proc)
+					AsmUtils.getStackPtr(b, proc)
 				));
 				sb.add("cmp %s, %s".formatted(
-					getStackPtr(a, proc),
+					AsmUtils.getStackPtr(a, proc),
 					regBName
 				));
 				
@@ -264,19 +429,55 @@ printhex:
 				};
 				sb.add("cmov%s %s, %s".formatted(type, regAName, regCName));
 				sb.add("mov %s, %s".formatted(
-					getStackPtr(dst, proc),
+					AsmUtils.getStackPtr(dst, proc),
 					regAName
 				));
 			}
 			case CALL -> {
+				// All call follow the 'cdecl' standard
+				
 				InstRef dst = inst.getRefParam(0).getReference();
-				InstRef reference = inst.getRefParam(1).getReference();
-				sb.add("call %s".formatted(reference.toSimpleString()));
+				InstRef fun = inst.getRefParam(1).getReference();
+				
+				int offset = 0;
+				for (int i = 2; i < inst.getParamCount(); i++) {
+					InstParam param = inst.getParam(i);
+					int size = AsmUtils.getTypeSize(param.getSize());
+					offset += (size >> 3);
+				}
+				
+				if (offset != 0) {
+					sb.add("sub RSP, 0x%x".formatted(offset));
+				}
+				
+				offset = 0;
+				for (int i = 2; i < inst.getParamCount(); i++) {
+					InstParam param = inst.getParam(i);
+					int size = AsmUtils.getTypeSize(param.getSize());
+					String regName = AsmUtils.getRegSize("AX", param);
+					
+					sb.add("mov %s, %s".formatted(
+						regName,
+						AsmUtils.getParamValue(param, proc)
+					));
+					sb.add("mov %s [RSP + 0x%x], %s".formatted(
+						AsmUtils.getPointerName(size),
+						offset,
+						regName
+					));
+					
+					offset += (size >> 3);
+				}
+				sb.add("call %s".formatted(fun.toSimpleString()));
+				
+				if (offset != 0) {
+					sb.add("add RSP, 0x%x".formatted(offset));
+				}
 				
 				if (dst.getValueType().getSize() != 0) {
-					String regName = getRegSize("AX", dst);
+					String regName = AsmUtils.getRegSize("AX", dst);
 					sb.add("mov %s, %s".formatted(
-						getStackPtr(dst, proc),
+						AsmUtils.getStackPtr(dst, proc),
 						regName
 					));
 				}
@@ -285,9 +486,9 @@ printhex:
 				InstRef src = inst.getRefParam(0).getReference();
 				InstRef dst = inst.getRefParam(1).getReference();
 				
-				String regName = getRegSize("AX", src);
+				String regName = AsmUtils.getRegSize("AX", src);
 				sb.add("mov %s, %s".formatted(
-					getStackPtr(src, proc),
+					AsmUtils.getStackPtr(src, proc),
 					regName
 				));
 				sb.add("test %s, %s".formatted(regName, regName));
@@ -297,9 +498,9 @@ printhex:
 				InstRef src = inst.getRefParam(0).getReference();
 				InstRef dst = inst.getRefParam(1).getReference();
 				
-				String regName = getRegSize("AX", src);
+				String regName = AsmUtils.getRegSize("AX", src);
 				sb.add("mov %s, %s".formatted(
-					getStackPtr(src, proc),
+					AsmUtils.getStackPtr(src, proc),
 					regName
 				));
 				sb.add("test %s, %s".formatted(regName, regName));
@@ -321,68 +522,6 @@ printhex:
 	@Override
 	public void reset() {
 
-	}
-	
-	public String getParamValue(InstParam param, AsmProcedure proc) {
-		if (param instanceof InstParam.Ref value) {
-			return getStackPtr(value.getReference(), proc);
-		} else if (param instanceof InstParam.Num value) {
-			return value.toString();
-		}
-		
-		throw new RuntimeException();
-	}
-	
-	public String getRawStackPtr(InstRef ref, AsmProcedure proc) {
-		return "[RBP - 0x%x]".formatted(
-			proc.getStackOffset(ref)
-		);
-	}
-	
-	public String getStackPtr(InstRef ref, AsmProcedure proc) {
-		return "%s [RBP - 0x%x]".formatted(
-			getPtrName(ref),
-			proc.getStackOffset(ref)
-		);
-	}
-	
-	public String getStackPtrPointer(InstRef ref, AsmProcedure proc) {
-		return "%s [RBP - 0x%x]".formatted(
-			getPtrName(ref),
-			proc.getStackOffset(ref)
-		);
-	}
-	
-	public String getPtrName(InstRef ref) {
-		return getPtrName(getTypeSize(ref.getValueType()));
-	}
-	
-	public String getPtrName(int size) {
-		return switch (size) {
-			case 8 -> "byte";
-			case 16 -> "word";
-			case 32 -> "dword";
-			case 64 -> "qword";
-			default -> throw new RuntimeException();
-		};
-	}
-	
-	private static String getRegSize(String name, InstRef ref) {
-		return getRegSize(name, getTypeSize(ref.getValueType()));
-	}
-	
-	private static String getRegSize(String name, int size) {
-		return switch (size) {
-			case 8 -> name.charAt(0) + "L";
-			case 16 -> name;
-			case 32 -> "E" + name;
-			case 64 -> "R" + name;
-			default -> throw new RuntimeException();
-		};
-	}
-	
-	public static int getLowerTypeSize(ValueType type) {
-		return ((type.getDepth() > 1) ? getPointerSize() : (type.getSize() >> 3)) << 3;
 	}
 	
 	public static int getTypeSize(ValueType type) {

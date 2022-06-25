@@ -11,7 +11,6 @@ import me.hardcoded.utils.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.zip.ZipEntry;
 
 public class ExprParser {
 	private final AmpleParser parser;
@@ -133,13 +132,27 @@ public class ExprParser {
 	private Expr atomExpression() {
 		switch (reader.type()) {
 			case INT -> {
-				long value;
+				int value;
 				if (reader.value().startsWith("0x")) {
-					value = Long.parseLong(reader.value().substring(2), 16);
+					value = Integer.parseUnsignedInt(reader.value().substring(2), 16);
 				} else {
-					value = Long.parseLong(reader.value());
+					value = Integer.parseUnsignedInt(reader.value());
 				}
-				NumExpr expr = new NumExpr(reader.syntaxPosition(), (int) value);
+				NumExpr expr = new NumExpr(reader.syntaxPosition(), Primitives.I32, value);
+				reader.advance();
+				return expr;
+			}
+			case LONG -> {
+				String text = reader.value();
+				text = text.substring(0, text.length() - 1);
+				
+				long value;
+				if (text.startsWith("0x")) {
+					value = Long.parseUnsignedLong(text.substring(2), 16);
+				} else {
+					value = Long.parseUnsignedLong(text);
+				}
+				NumExpr expr = new NumExpr(reader.syntaxPosition(), Primitives.I64, value);
 				reader.advance();
 				return expr;
 			}
@@ -201,9 +214,14 @@ public class ExprParser {
 		// TODO: Get function with the specified parameters
 		//       and the specified types.
 		Reference reference = context.getFunctionScope().getFunction(name);
+		if (reference == null) {
+			throw parser.createParseException(startPos, "Invalid call name");
+		}
 		
 		parser.tryMatchOrError(Token.Type.R_PAREN);
 		reader.advance();
+		
+		// TODO: Print invalid caller
 		
 		return new CallExpr(ISyntaxPosition.of(startPos, reader.lastPositionEnd()), reference, parameters);
 	}
@@ -255,12 +273,11 @@ public class ExprParser {
 				
 				return new StackDataExpr(ISyntaxPosition.of(startPos, reader.lastPositionEnd()), type, size, expr);
 			}
-			case "compiler" -> {
+			case "cast" -> {
 				parser.tryMatchOrError(Token.Type.LESS_THAN);
 				reader.advance();
 				
-				String type = reader.value();
-				reader.advance();
+				ValueType type = parser.readType();
 				
 				parser.tryMatchOrError(Token.Type.MORE_THAN);
 				reader.advance();
@@ -268,19 +285,12 @@ public class ExprParser {
 				parser.tryMatchOrError(Token.Type.L_PAREN);
 				reader.advance();
 				
-				// TODO: Read strings until R_PAREN
-				while (reader.type() != Token.Type.R_PAREN) {
-					reader.advance();
-					
-					// "mov RAX, {}" : local_value
-					// "lea RBX, [{}]" : other_value
-					// TODO: Parse values
-				}
+				Expr expr = parse(false);
 				
 				parser.tryMatchOrError(Token.Type.R_PAREN);
 				reader.advance();
 				
-				return new NoneExpr(reader.syntaxPosition());
+				return new CastExpr(ISyntaxPosition.of(startPos, reader.lastPositionEnd()), type, expr);
 			}
 		}
 		
@@ -289,7 +299,6 @@ public class ExprParser {
 	
 	private boolean isSpecialFunction(String name) {
 		return name.equals("stack_alloc")
-			|| name.equals("compiler")
 			|| name.equals("cast");
 	}
 }

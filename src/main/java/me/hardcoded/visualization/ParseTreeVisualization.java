@@ -384,16 +384,14 @@ public final class ParseTreeVisualization extends Visualization<ProgStat> {
 			return switch (stat.getTreeType()) {
 				// Statements
 				case PROGRAM -> {
-					ProgStat s = (ProgStat)stat;
+					ProgStat s = (ProgStat) stat;
 					yield List.of(s.getElements());
 				}
 				case FUNC -> {
-					FuncStat s = (FuncStat)stat;
+					FuncStat s = (FuncStat) stat;
 					yield List.of(s.getReference(), s.getParameters(), s.getBody());
 				}
-				case BREAK -> List.of();
-				case CONTINUE -> List.of();
-				case EMPTY -> List.of();
+				case BREAK, CONTINUE, EMPTY -> List.of();
 				case FOR -> {
 					ForStat s = (ForStat) stat;
 					yield List.of(s.getInitializer(), s.getCondition(), s.getAction(), s.getBody());
@@ -443,10 +441,10 @@ public final class ParseTreeVisualization extends Visualization<ProgStat> {
 					CallExpr e = (CallExpr) stat;
 					yield List.of(e.getReference(), e.getParameters());
 				}
-//				case CAST -> {
-//					CastExpr e = (CastExpr)stat;
-//					yield List.of(e.getCastType(), e.getValue());
-//				}
+				case CAST -> {
+					CastExpr e = (CastExpr) stat;
+					yield List.of(e.getType(), e.getValue());
+				}
 //				case COMMA -> List.<Object>copyOf(((CommaExpr)stat).getValues());
 				case NAME -> List.of(((NameExpr) stat).getReference());
 //				case NULL -> List.of();
