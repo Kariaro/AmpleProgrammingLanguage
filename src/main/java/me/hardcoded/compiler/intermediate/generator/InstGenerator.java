@@ -74,6 +74,18 @@ public class InstGenerator {
 			default -> throw new RuntimeException("Invalid expr %s".formatted(stat.getTreeType()));
 		};
 	}
+	
+	@Deprecated
+	private InstParam generateParam(Stat stat, Procedure procedure) {
+		return switch (stat.getTreeType()) {
+			case NUM -> {
+				NumExpr expr = (NumExpr) stat;
+				yield new InstParam.Num(expr.getType(), expr.getValue());
+			}
+			
+			default -> new InstParam.Ref(generateStat(stat, procedure));
+		};
+	}
 
 	private InstRef generateProgStat(ProgStat stat) {
 		for (Stat s : stat.getElements()) {
@@ -229,8 +241,8 @@ public class InstGenerator {
 	}
 
 	private InstRef generateVarStat(VarStat stat, Procedure procedure) {
-		InstRef value = generateStat(stat.getValue(), procedure);
 		InstRef holder = wrapReference(stat.getReference());
+		InstRef value = generateStat(stat.getValue(), procedure);
 
 		procedure.addInst(new Inst(Opcode.MOV, stat.getSyntaxPosition())
 			.addParam(new InstParam.Ref(holder))
@@ -240,7 +252,6 @@ public class InstGenerator {
 	}
 	
 	private InstRef generateCompilerStat(CompilerStat stat, Procedure procedure) {
-		String targetType = stat.getTargetType();
 		for (CompilerStat.Part part : stat.getParts()) {
 			Inst inst = new Inst(Opcode.INLINE_ASM, stat.getSyntaxPosition())
 				.addParam(new InstParam.Str(stat.getTargetType()))
@@ -340,24 +351,13 @@ public class InstGenerator {
 		}
 		
 		Opcode opcode = getBinaryOpcode(expr.getOperation());
-		InstRef holder;
-		
 		InstRef left = generateStat(expr.getLeft(), procedure);
 		InstRef right = generateStat(expr.getRight(), procedure);
-		if (opcode == Opcode.MOV) {
-			// TODO: If left is an array operation we should use STORE
-			
-			holder = left;
-			procedure.addInst(new Inst(opcode, expr.getSyntaxPosition())
-				.addParam(new InstParam.Ref(left))
-				.addParam(new InstParam.Ref(right)));
-		} else {
-			holder = createDataReference(".binary", expr.getType());
-			procedure.addInst(new Inst(opcode, expr.getSyntaxPosition())
-				.addParam(new InstParam.Ref(holder))
-				.addParam(new InstParam.Ref(left))
-				.addParam(new InstParam.Ref(right)));
-		}
+		InstRef holder = createDataReference(".binary", expr.getType());
+		procedure.addInst(new Inst(opcode, expr.getSyntaxPosition())
+			.addParam(new InstParam.Ref(holder))
+			.addParam(new InstParam.Ref(left))
+			.addParam(new InstParam.Ref(right)));
 
 		return holder;
 	}
@@ -425,7 +425,8 @@ public class InstGenerator {
 
 		return holder;
 	}
-
+	
+// TODO: Put this in a special place
 //	private InstRef generateStrExpr(StrExpr expr, Procedure procedure) {
 //		InstRef holder = createDataReference(".string");
 //		procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())

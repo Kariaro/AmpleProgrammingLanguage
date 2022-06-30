@@ -35,7 +35,6 @@ public enum Opcode {
 	
 	// Memory instructions
 	STORE,				// (*r0) = r1
-	REF,				// r0 = (&r1)
 	LOAD,				// r0 = (*r1)
 	
 	// Branching instructions
