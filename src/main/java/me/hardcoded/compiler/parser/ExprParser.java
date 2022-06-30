@@ -215,7 +215,7 @@ public class ExprParser {
 		//       and the specified types.
 		Reference reference = context.getFunctionScope().getFunction(name);
 		if (reference == null) {
-			throw parser.createParseException(startPos, "Invalid call name");
+			throw parser.createParseException(startPos, "There is no function called '%s'", name);
 		}
 		
 		parser.tryMatchOrError(Token.Type.R_PAREN);

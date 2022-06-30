@@ -411,19 +411,20 @@ printhex:
 				sb.add("mov %s, 1".formatted(regCName));
 				sb.add("mov %s, %s".formatted(
 					regBName,
-					AsmUtils.getStackPtr(b, proc)
+					AsmUtils.getParamValue(b, proc)
 				));
 				sb.add("cmp %s, %s".formatted(
 					AsmUtils.getStackPtr(a, proc),
 					regBName
 				));
 				
+				// TODO: above or below is for unsigned types
 				String type = switch (inst.getOpcode()) {
-					case GT -> "a";
-					case LT -> "b";
+					case GT -> "g";
+					case LT -> "l";
 					case EQ -> "e";
-					case GTE -> "ae";
-					case LTE -> "be";
+					case GTE -> "ge";
+					case LTE -> "le";
 					case NEQ -> "ne";
 					default -> throw new RuntimeException();
 				};

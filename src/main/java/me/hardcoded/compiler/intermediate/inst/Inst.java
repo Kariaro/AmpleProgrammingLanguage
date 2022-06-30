@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Inst {
-	// Store if this instruction explicitly volatile
-	
 	private final ISyntaxPosition syntaxPosition;
 	private final List<InstParam> parameters;
 	private Opcode opcode;
