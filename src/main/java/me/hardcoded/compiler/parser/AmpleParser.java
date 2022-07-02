@@ -1,5 +1,6 @@
 package me.hardcoded.compiler.parser;
 
+import me.hardcoded.compiler.context.AmpleConfig;
 import me.hardcoded.compiler.context.LangReader;
 import me.hardcoded.compiler.errors.ParseException;
 import me.hardcoded.compiler.impl.ISyntaxPosition;
@@ -9,7 +10,6 @@ import me.hardcoded.compiler.parser.expr.NumExpr;
 import me.hardcoded.compiler.parser.scope.ProgramScope;
 import me.hardcoded.compiler.parser.stat.*;
 import me.hardcoded.compiler.parser.type.*;
-import me.hardcoded.configuration.CompilerConfiguration;
 import me.hardcoded.lexer.LexerTokenizer;
 import me.hardcoded.lexer.Token;
 import me.hardcoded.utils.MutableSyntaxImpl;
@@ -38,15 +38,16 @@ import java.util.function.Supplier;
 public class AmpleParser {
 	private final ProgramScope context;
 	private final List<String> importedFiles;
+	private final AmpleConfig ampleConfig;
 	
 	// Configurable fields
-	private CompilerConfiguration config;
 	private LangReader reader;
 	private File currentFile;
 	
-	public AmpleParser() {
+	public AmpleParser(AmpleConfig ampleConfig) {
 		this.context = new ProgramScope();
 		this.importedFiles = new ArrayList<>();
+		this.ampleConfig = ampleConfig;
 		
 		// Add type block
 		context.getTypeScope().pushBlock();

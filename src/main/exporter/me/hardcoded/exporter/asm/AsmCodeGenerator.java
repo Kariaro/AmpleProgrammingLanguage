@@ -4,14 +4,19 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.hardcoded.compiler.context.AmpleConfig;
 import me.hardcoded.compiler.impl.ICodeGenerator;
 import me.hardcoded.compiler.intermediate.inst.*;
-import me.hardcoded.compiler.parser.type.Primitives;
-import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ValueType;
 import me.hardcoded.utils.error.CodeGenException;
 
 public class AsmCodeGenerator implements ICodeGenerator {
+	private final AmpleConfig ampleConfig;
+	
+	public AsmCodeGenerator(AmpleConfig ampleConfig) {
+		this.ampleConfig = ampleConfig;
+	}
+	
 	@Override
 	public byte[] getBytecode(InstFile program) throws CodeGenException {
 		throw new UnsupportedOperationException();

@@ -271,7 +271,7 @@ public class ExprParser {
 				parser.tryMatchOrError(Token.Type.R_PAREN);
 				reader.advance();
 				
-				return new StackDataExpr(ISyntaxPosition.of(startPos, reader.lastPositionEnd()), type, size, expr);
+				return new StackAllocExpr(ISyntaxPosition.of(startPos, reader.lastPositionEnd()), type, size, expr);
 			}
 			case "cast" -> {
 				parser.tryMatchOrError(Token.Type.LESS_THAN);

@@ -10,34 +10,22 @@ import javax.swing.*;
  *
  * @author HardCoded
  */
-public abstract class Visualization<T> {
-	public static final Visualization<Object> DUMMY = new Visualization<>("null") {
-		@Override
-		protected void setup() {}
-		
-		@Override
-		protected void setupMenu(JMenuBar menuBar) {}
-		
-		@Override
-		protected void showObject(Object value) {}
-		
-		@Override
-		public void hide() {}
-	};
-	
-	protected BufferStrategy bs;
+public abstract class Visualization {
+	protected final VisualizationHandler handler;
+	private BufferStrategy bs;
 	protected JFrame frame;
 	protected JMenuBar menuBar;
 	
 	private boolean hasSetup;
 	// Used to store early objects that was displayed before the frame had fully loaded
-	private T earlyObject;
+	private Object earlyObject;
 	
-	protected Visualization(String name) {
-		this(name, 2);
+	protected Visualization(String name, VisualizationHandler handler) {
+		this(name, handler, 2);
 	}
 	
-	protected Visualization(String defaultTitle, int buffers) {
+	protected Visualization(String defaultTitle, VisualizationHandler handler, int buffers) {
+		this.handler = handler;
 		SwingUtilities.invokeLater(() -> {
 			try {
 				UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -63,6 +51,7 @@ public abstract class Visualization<T> {
 			menuBar.setBorderPainted(false);
 			setupMenu(menuBar);
 			frame.setJMenuBar(menuBar);
+			frame.setIconImage(getIcon());
 			
 			synchronized (this) {
 				hasSetup = true;
@@ -78,6 +67,11 @@ public abstract class Visualization<T> {
 	}
 	
 	/**
+	 * Returns the icon of the visualization
+	 */
+	protected abstract Image getIcon();
+	
+	/**
 	 * This method is called after the window objects has been created
 	 */
 	protected abstract void setup();
@@ -90,7 +84,7 @@ public abstract class Visualization<T> {
 	/**
 	 * Display the object with this visualization
 	 */
-	public synchronized final void show(T value) {
+	public synchronized final void show(Object value) {
 		if (hasSetup) {
 			showObject(value);
 		} else {
@@ -99,9 +93,14 @@ public abstract class Visualization<T> {
 	}
 	
 	/**
+	 * Hide this visualization
+	 */
+	public final void hide() {
+		frame.setVisible(false);
+	}
+	
+	/**
 	 * This is called when the visualization shows an object
 	 */
-	protected abstract void showObject(T value);
-	
-	public abstract void hide();
+	protected abstract void showObject(Object value);
 }

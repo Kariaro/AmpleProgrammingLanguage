@@ -28,7 +28,7 @@ public enum TreeType {
 	NUM,
 	NONE,
 	STRING,
-	STACK_DATA,
+	STACK_ALLOC,
 	COMPILER,
 	;
 	

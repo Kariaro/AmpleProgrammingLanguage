@@ -2,6 +2,7 @@ package me.hardcoded.compiler.intermediate;
 
 import me.hardcoded.compiler.errors.ParseException;
 //import me.hardcoded.compiler.intermediate.generator.InstGenerator;
+import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.intermediate.generator.InstGenerator;
 import me.hardcoded.compiler.intermediate.inst.Inst;
 import me.hardcoded.compiler.intermediate.inst.InstFile;
@@ -47,8 +48,7 @@ public class AmpleLinker {
 		}
 
 		System.out.println("=".repeat(100));
-		new ParseTreeVisualization().show(main.getProgram());
-
+		
 //		AmpleValidator validator = new AmpleValidator(exportMap);
 //		validator.validate(allObjects);
 //
@@ -71,10 +71,13 @@ public class AmpleLinker {
 		for (Procedure proc : file.getProcedures()) {
 			System.out.println("# proc " + proc);
 			for (Inst inst : proc.getInstructions()) {
+				ISyntaxPosition pos = inst.getSyntaxPosition();
+				String test = "(line: %3d, colum: %3d) ".formatted(pos.getStartPosition().line, pos.getStartPosition().column);
+				
 				if (inst.getOpcode() == Opcode.LABEL) {
-					System.out.println("    " + inst);
+					System.out.println("    %s".formatted(test) + inst);
 				} else {
-					System.out.println("        " + inst);
+					System.out.println("        %s".formatted(test) + inst);
 				}
 			}
 		}

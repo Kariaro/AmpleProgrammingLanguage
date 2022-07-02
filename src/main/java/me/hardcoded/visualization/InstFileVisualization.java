@@ -1,6 +1,5 @@
 package me.hardcoded.visualization;
 
-import me.hardcoded.compiler.intermediate.inst.Inst;
 import me.hardcoded.compiler.intermediate.inst.InstFile;
 import me.hardcoded.compiler.intermediate.inst.Procedure;
 import me.hardcoded.compiler.parser.expr.*;
@@ -25,28 +24,32 @@ import java.util.List;
  *
  * @author HardCoded
  */
-public final class InstFileVisualization extends Visualization<InstFile> {
-	private PTPanel panel;
+public final class InstFileVisualization extends Visualization {
+	private LocalPanel panel;
 	private boolean showReferenceType;
 	private boolean showReferenceId;
 	private InstFile currentProgram;
 	
-	public InstFileVisualization() {
-		super("InstFile - Visualization", 2);
+	public InstFileVisualization(VisualizationHandler handler) {
+		super("InstFile - Visualization", handler, 2);
 	}
-
+	
 	@Override
-	protected void setup() {
-		try {
-			InputStream stream = InstFileVisualization.class.getResourceAsStream("/icons/parse_tree.png");
+	protected Image getIcon() {
+		try (InputStream stream = ParseTreeVisualization.class.getResourceAsStream("/icons/parse_tree.png")) {
 			if (stream != null) {
-				frame.setIconImage(ImageIO.read(stream));
+				return ImageIO.read(stream);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
+		return null;
+	}
 
-		panel = new PTPanel();
+	@Override
+	protected void setup() {
+		panel = new LocalPanel();
 		panel.setOpaque(true);
 
 		frame.setSize(640, 460);
@@ -96,11 +99,11 @@ public final class InstFileVisualization extends Visualization<InstFile> {
 			public void mouseMoved(MouseEvent event) {
 				double mx = event.getX() * scroll - panel.xpos;
 				double my = event.getY() * scroll - panel.ypos;
-				updateSelection(mx, my, panel.elements, false, 0);
+				updateSelection(mx, my, panel.elements, 0);
 				panel.repaint();
 			}
 
-			private void updateSelection(double mx, double my, List<Element> list, boolean parent, int depth) {
+			private void updateSelection(double mx, double my, List<Element> list, int depth) {
 				for (Element e : list) {
 					boolean fullBox = mx > (e.x) && mx < (e.x + e.x_offset);
 
@@ -114,7 +117,7 @@ public final class InstFileVisualization extends Visualization<InstFile> {
 						if (smallBox) {
 							updateAll(e.elements, true);
 						} else {
-							updateSelection(mx, my, e.elements, false, depth + 1);
+							updateSelection(mx, my, e.elements, depth + 1);
 						}
 					} else {
 						e.hover = false;
@@ -172,20 +175,18 @@ public final class InstFileVisualization extends Visualization<InstFile> {
 	}
 
 	@Override
-	protected void showObject(InstFile program) {
-		currentProgram = program;
+	protected void showObject(Object value) {
+		if (!(value instanceof InstFile program)) {
+			throw new IllegalArgumentException();
+		}
 		
+		currentProgram = program;
 		panel.display(program);
 		panel.repaint();
 		frame.setVisible(true);
 	}
 
-	@Override
-	public void hide() {
-		frame.setVisible(false);
-	}
-
-	private class PTPanel extends JPanel {
+	private class LocalPanel extends JPanel {
 		private final List<Element> elements = new ArrayList<>();
 		private final Font font = new Font("Consolas", Font.PLAIN, 18);
 
@@ -216,7 +217,7 @@ public final class InstFileVisualization extends Visualization<InstFile> {
 			synchronized (elements) {
 				elements.clear();
 
-				Element entry = new Element(null, program);
+				Element entry = new Element(program);
 				elements.add(entry);
 				entry.move(-(entry.x + (entry.x_offset - entry.width) / 2), -entry.y);
 			}
@@ -244,7 +245,7 @@ public final class InstFileVisualization extends Visualization<InstFile> {
 		private String content;
 		private Color body = Color.lightGray;
 
-		private Element(Element parent, Object object) {
+		private Element(Object object) {
 			this.elements = new ArrayList<>();
 
 			if (object instanceof Expr) {
@@ -284,7 +285,7 @@ public final class InstFileVisualization extends Visualization<InstFile> {
 				double y_off = 0;
 
 				for (Object obj : children) {
-					Element e = new Element(this, obj);
+					Element e = new Element(obj);
 					e.move(width + 10, y_off);
 					y_off += e.height + 15;
 					elements.add(e);
@@ -357,26 +358,7 @@ public final class InstFileVisualization extends Visualization<InstFile> {
 		}
 
 		public void paintLines(Graphics2D g) {
-//			int x0 = (int) (x + x_offset / 2D);
-//			int y0 = (int) y;
-//
-//			int xxp = (int) this.x;
-//
-//			if (!elements.isEmpty()) {
-//				xxp += (x_offset - width) / 2;
-//			}
-//
-//			double xx = xxp + (width - x_offset) / 2.0 + panel.xpos;
-//			if ((xx + x_offset > 0) && (xx < panel.getWidth() / panel.zoom)) {
-//				g.setColor(Color.black);
-//				for (Element elm : elements) {
-//					int x1 = (int) (elm.x + elm.x_offset / 2D);
-//					int y1 = (int) elm.y;
-//
-//					g.drawLine(x0, y0, x1, y1);
-//					elm.paintLines(g);
-//				}
-//			}
+		
 		}
 	}
 

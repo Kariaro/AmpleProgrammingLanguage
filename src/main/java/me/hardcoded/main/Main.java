@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.util.Locale;
 
 import me.hardcoded.compiler.AmpleCompiler;
+import me.hardcoded.compiler.context.AmpleConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -71,7 +72,7 @@ public class Main {
 		CompilerConfiguration config = CompilerConfiguration.parseArgs(args);
 		
 		try {
-			AmpleCompiler compiler = new AmpleCompiler(config);
+			AmpleCompiler compiler = new AmpleCompiler(new AmpleConfig(config));
 			
 			compiler.compile();
 //			AmpleParser parser = new AmpleParser();

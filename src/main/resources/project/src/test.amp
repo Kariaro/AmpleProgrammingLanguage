@@ -1,3 +1,7 @@
+func test() {
+    ret;
+}
+
 // link "test.amp"
 
 /*
@@ -59,6 +63,8 @@ func dump_regs () {
 func printhex (i64: number) {
     i8[]: hex_data = stack_alloc<i8, 16>("0123456789abcdef");
     i8[]: hex_strs = stack_alloc<i8, 17>("................\n");
+
+    i64: a = 3 * 4;
 
     for (i32: i = 15; i >= 0; i = i - 1) {
         hex_strs[i] = hex_data[number & cast<i64>(15)];

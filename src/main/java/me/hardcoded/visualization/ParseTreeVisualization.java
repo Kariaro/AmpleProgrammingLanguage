@@ -9,16 +9,17 @@ import java.awt.geom.AffineTransform;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 
+import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.expr.*;
 import me.hardcoded.compiler.parser.stat.*;
 import me.hardcoded.compiler.parser.type.Associativity;
 import me.hardcoded.compiler.parser.type.Reference;
+import me.hardcoded.utils.Position;
 import me.hardcoded.utils.StringUtils;
 
 /**
@@ -26,28 +27,32 @@ import me.hardcoded.utils.StringUtils;
  *
  * @author HardCoded
  */
-public final class ParseTreeVisualization extends Visualization<ProgStat> {
-	private PTPanel panel;
+public final class ParseTreeVisualization extends Visualization implements VisualizationListener {
+	private LocalPanel panel;
 	private boolean showReferenceType;
 	private boolean showReferenceId;
 	private ProgStat currentProgram;
 	
-	public ParseTreeVisualization() {
-		super("ParseTree - Visualization", 2);
+	public ParseTreeVisualization(VisualizationHandler handler) {
+		super("ParseTree - Visualization", handler, 2);
 	}
-
+	
 	@Override
-	protected void setup() {
-		try {
-			InputStream stream = ParseTreeVisualization.class.getResourceAsStream("/icons/parse_tree.png");
+	protected Image getIcon() {
+		try (InputStream stream = ParseTreeVisualization.class.getResourceAsStream("/icons/parse_tree.png")) {
 			if (stream != null) {
-				frame.setIconImage(ImageIO.read(stream));
+				return ImageIO.read(stream);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
-		panel = new PTPanel();
+		
+		return null;
+	}
+	
+	@Override
+	protected void setup() {
+		panel = new LocalPanel();
 		panel.setOpaque(true);
 
 		frame.setSize(640, 460);
@@ -83,6 +88,14 @@ public final class ParseTreeVisualization extends Visualization<ProgStat> {
 				if (event.getButton() == MouseEvent.BUTTON1) {
 					selectedX = event.getX() * scroll - panel.xpos;
 					selectedY = event.getY() * scroll - panel.ypos;
+					
+					Element selection = getSelection(selectedX, selectedY, panel.elements, 0);
+					if (selection != null && selection.syntaxPosition != null) {
+						handler.fireEvent(new VisualizationEvent.SelectionEvent(
+							ParseTreeVisualization.this,
+							selection.syntaxPosition.getStartPosition()
+						));
+					}
 				}
 			}
 
@@ -97,38 +110,8 @@ public final class ParseTreeVisualization extends Visualization<ProgStat> {
 			public void mouseMoved(MouseEvent event) {
 				double mx = event.getX() * scroll - panel.xpos;
 				double my = event.getY() * scroll - panel.ypos;
-				updateSelection(mx, my, panel.elements, false, 0);
+				updateSelection(mx, my, panel.elements, 0);
 				panel.repaint();
-			}
-
-			private void updateSelection(double mx, double my, List<Element> list, boolean parent, int depth) {
-				for (Element e : list) {
-					boolean fullBox = mx > (e.x) && mx < (e.x + e.offset);
-
-					if (fullBox) {
-						boolean smallBox = mx > (e.x + (e.offset - e.width) / 2.0)
-							&& mx < (e.x + (e.offset + e.width) / 2.0)
-							&& my > (e.y - 20)
-							&& my < (e.y + e.height + 20);
-
-						e.hover = smallBox;
-						if (smallBox) {
-							updateAll(e.elements, true);
-						} else {
-							updateSelection(mx, my, e.elements, false, depth + 1);
-						}
-					} else {
-						e.hover = false;
-						updateAll(e.elements, false);
-					}
-				}
-			}
-
-			private void updateAll(List<Element> list, boolean hover) {
-				for (Element e : list) {
-					e.hover = hover;
-					updateAll(e.elements, hover);
-				}
 			}
 		};
 
@@ -173,20 +156,118 @@ public final class ParseTreeVisualization extends Visualization<ProgStat> {
 	}
 
 	@Override
-	protected void showObject(ProgStat program) {
-		currentProgram = program;
+	protected void showObject(Object value) {
+		if (!(value instanceof ProgStat program)) {
+			throw new IllegalArgumentException();
+		}
 		
+		currentProgram = program;
 		panel.display(program);
 		panel.repaint();
 		frame.setVisible(true);
 	}
-
-	@Override
-	public void hide() {
-		frame.setVisible(false);
+	
+	private Element getSelection(double mx, double my, List<Element> list, int depth) {
+		Element result = null;
+		
+		for (Element e : list) {
+			boolean fullBox = mx > (e.x) && mx < (e.x + e.offset);
+			
+			if (fullBox) {
+				boolean smallBox = mx > (e.x + (e.offset - e.width) / 2.0)
+					&& mx < (e.x + (e.offset + e.width) / 2.0)
+					&& my > (e.y - 20)
+					&& my < (e.y + e.height + 20);
+				
+				if (smallBox) {
+					result = e;
+				} else {
+					Element value = updateSelection(mx, my, e.elements, depth + 1);
+					if (value != null) {
+						result = value;
+					}
+				}
+			}
+		}
+		
+		return result;
 	}
-
-	private class PTPanel extends JPanel {
+	
+	private Element updateSelection(double mx, double my, List<Element> list, int depth) {
+		Element result = null;
+		
+		for (Element e : list) {
+			boolean fullBox = mx > (e.x) && mx < (e.x + e.offset);
+			
+			if (fullBox) {
+				boolean smallBox = mx > (e.x + (e.offset - e.width) / 2.0)
+					&& mx < (e.x + (e.offset + e.width) / 2.0)
+					&& my > (e.y - 20)
+					&& my < (e.y + e.height + 20);
+				
+				e.hover = smallBox;
+				if (smallBox) {
+					updateAll(e.elements, true);
+					result = e;
+				} else {
+					Element value = updateSelection(mx, my, e.elements, depth + 1);
+					if (value != null) {
+						result = value;
+					}
+				}
+			} else {
+				e.hover = false;
+				updateAll(e.elements, false);
+			}
+		}
+		
+		return result;
+	}
+	
+	private void updateAll(List<Element> list, boolean hover) {
+		for (Element e : list) {
+			e.hover = hover;
+			updateAll(e.elements, hover);
+		}
+	}
+	
+	private Element getSelect(List<Element> elements, Position pos) {
+		for (Element element : elements) {
+			Element value = getSelect(element.elements, pos);
+			
+			if (value != null) {
+				return value;
+			}
+			
+			ISyntaxPosition syntaxPosition = element.syntaxPosition;
+			if (syntaxPosition != null) {
+				Position s = syntaxPosition.getStartPosition();
+				Position e = syntaxPosition.getEndPosition();
+				
+				if ((pos.line >= s.line && pos.line <= e.line)
+				&& (pos.line != s.line || pos.column >= s.column)
+				&& (pos.line != e.line || pos.column < e.column)) {
+					return element;
+				}
+			}
+		}
+		
+		return null;
+	}
+	
+	@Override
+	public void handleSelection(VisualizationEvent.SelectionEvent event) {
+		Element element = getSelect(panel.elements, event.getPosition());
+		
+		if (element != null) {
+			updateAll(panel.elements, false);
+			updateAll(element.elements, true);
+			element.hover = true;
+			panel.repaint();
+		}
+	}
+	
+	private class LocalPanel extends JPanel {
 		private final List<Element> elements = new ArrayList<>();
 		private final Font font = new Font("Consolas", Font.PLAIN, 18);
 
@@ -217,7 +298,7 @@ public final class ParseTreeVisualization extends Visualization<ProgStat> {
 			synchronized (elements) {
 				elements.clear();
 
-				Element entry = new Element(null, program);
+				Element entry = new Element(program);
 				elements.add(entry);
 				entry.move(-(entry.x + (entry.offset - entry.width) / 2), -entry.y);
 			}
@@ -242,9 +323,10 @@ public final class ParseTreeVisualization extends Visualization<ProgStat> {
 
 		private final List<Element> elements;
 		private String content;
+		private ISyntaxPosition syntaxPosition;
 		private Color body = Color.lightGray;
 
-		private Element(Element parent, Object object) {
+		private Element(Object object) {
 			this.elements = new ArrayList<>();
 
 			if (object instanceof Expr) {
@@ -255,6 +337,7 @@ public final class ParseTreeVisualization extends Visualization<ProgStat> {
 
 			if (object instanceof Stat stat) {
 				setContent(stat.getTreeType().name());
+				syntaxPosition = stat.getSyntaxPosition();
 			} else if (object instanceof List list) {
 				int size = list.size();
 				setContent("<list " + size + (size == 1 ? " element>" : " elements>"));
@@ -282,7 +365,7 @@ public final class ParseTreeVisualization extends Visualization<ProgStat> {
 				offset = 0;
 
 				for (Object obj : children) {
-					Element e = new Element(this, obj);
+					Element e = new Element(obj);
 					e.move(offset, 100);
 					offset += e.offset;
 					elements.add(e);
@@ -302,7 +385,7 @@ public final class ParseTreeVisualization extends Visualization<ProgStat> {
 		public void setContent(String value) {
 			content = value;
 			width = content.length() * 12 + 10;
-			width = (int)getStringWidth(content) + 10;
+			width = (int) getStringWidth(content) + 10;
 			height = 20;
 			offset = width + 1;
 		}
@@ -316,8 +399,8 @@ public final class ParseTreeVisualization extends Visualization<ProgStat> {
 		}
 
 		public void paint(Graphics2D g) {
-			int x = (int)this.x;
-			int y = (int)this.y;
+			int x = (int) this.x;
+			int y = (int) this.y;
 
 			int xp = x;
 
@@ -369,8 +452,8 @@ public final class ParseTreeVisualization extends Visualization<ProgStat> {
 			if ((xx + offset > 0) && (xx < panel.getWidth() / panel.zoom)) {
 				g.setColor(Color.black);
 				for (Element elm : elements) {
-					int x1 = (int)(elm.x + elm.offset / 2D);
-					int y1 = (int)elm.y;
+					int x1 = (int) (elm.x + elm.offset / 2D);
+					int y1 = (int) elm.y;
 
 					g.drawLine(x0, y0, x1, y1);
 					elm.paintLines(g);
@@ -412,8 +495,8 @@ public final class ParseTreeVisualization extends Visualization<ProgStat> {
 					VarStat s = (VarStat) stat;
 					yield List.of(s.getReference(), s.getValue());
 				}
-				case STACK_DATA -> {
-					StackDataExpr s = (StackDataExpr) stat;
+				case STACK_ALLOC -> {
+					StackAllocExpr s = (StackAllocExpr) stat;
 					yield List.of(s.getSize(), s.getValue());
 				}
 //				case WHILE -> {

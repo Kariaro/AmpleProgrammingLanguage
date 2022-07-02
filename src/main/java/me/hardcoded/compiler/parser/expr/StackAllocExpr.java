@@ -5,12 +5,12 @@ import me.hardcoded.compiler.parser.serial.TreeType;
 import me.hardcoded.compiler.parser.type.Operation;
 import me.hardcoded.compiler.parser.type.ValueType;
 
-public class StackDataExpr extends Expr {
+public class StackAllocExpr extends Expr {
 	private ValueType type;
 	private int size;
 	private Expr value;
 	
-	public StackDataExpr(ISyntaxPosition syntaxPosition, ValueType type, int size, Expr value) {
+	public StackAllocExpr(ISyntaxPosition syntaxPosition, ValueType type, int size, Expr value) {
 		super(syntaxPosition);
 		this.size = size;
 		this.type = type;
@@ -42,7 +42,7 @@ public class StackDataExpr extends Expr {
 	
 	@Override
 	public TreeType getTreeType() {
-		return TreeType.STACK_DATA;
+		return TreeType.STACK_ALLOC;
 	}
 	
 	@Override
