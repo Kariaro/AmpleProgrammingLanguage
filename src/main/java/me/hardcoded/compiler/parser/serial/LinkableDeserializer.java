@@ -83,7 +83,7 @@ public class LinkableDeserializer {
 //			case NAMESPACE -> deserializeNamespaceStat(in);
 
 			/* Expressions */
-			case STACK_DATA -> deserializeStackDataExpr(in);
+			case STACK_ALLOC -> deserializeStackAllocExpr(in);
 			case BINARY -> deserializeBinaryExpr(in);
 			case CALL -> deserializeCallExpr(in);
 			case CAST -> deserializeCastExpr(in);
@@ -241,12 +241,12 @@ public class LinkableDeserializer {
 //	}
 
 	// Expressions
-	private StackDataExpr deserializeStackDataExpr(DataInputStream in) throws IOException {
+	private StackAllocExpr deserializeStackAllocExpr(DataInputStream in) throws IOException {
 		ISyntaxPosition syntaxPosition = header.deserializeISyntaxPosition(in);
 		Expr value = deserializeExpr(in);
 		int size = header.readVarInt(in);
 		ValueType type = header.deserializeValueType(in);
-		return new StackDataExpr(syntaxPosition, type, size, value);
+		return new StackAllocExpr(syntaxPosition, type, size, value);
 	}
 	
 	private BinaryExpr deserializeBinaryExpr(DataInputStream in) throws IOException {

@@ -7,6 +7,7 @@ import java.util.List;
 
 import me.hardcoded.compiler.context.AmpleLexer;
 import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.parser.stat.ReturnStat;
 import me.hardcoded.lexer.Token.Type;
 import me.hardcoded.utils.Position;
 
@@ -16,6 +17,12 @@ public class LexerTokenizer {
 	}
 	
 	public static List<Token> parse(File file, byte[] bytes) {
+		List<Token> tokenList = parseKeepWhitespace(file, bytes);
+		tokenList.removeIf(token -> token.type == Type.WHITESPACE);
+		return tokenList;
+	}
+	
+	public static List<Token> parseKeepWhitespace(File file, byte[] bytes) {
 		String text = new String(bytes, StandardCharsets.UTF_8);
 		List<Token> tokenList = new ArrayList<>();
 		int offset = 0;
@@ -46,15 +53,11 @@ public class LexerTokenizer {
 			}
 			
 			Position endPosition = new Position(file, column, line, offset + lexerToken.length);
-			
-			if (lexerToken.type != Type.WHITESPACE) {
-				tokenList.add(new Token(
-					lexerToken.type,
-					lexerToken.content,
-					ISyntaxPosition.of(startPosition, endPosition)
-				));
-			}
-			
+			tokenList.add(new Token(
+				lexerToken.type,
+				lexerToken.content,
+				ISyntaxPosition.of(startPosition, endPosition)
+			));
 			
 			input = input.substring(lexerToken.length);
 			offset += lexerToken.length;

@@ -60,7 +60,7 @@ public class InstGenerator {
 //			case NAMESPACE -> generateNamespaceStat((NamespaceStat) stat, procedure);
 
 			// Expressions
-			case STACK_DATA -> generateStackDataExpr((StackDataExpr) stat, procedure);
+			case STACK_ALLOC -> generateStackAllocExpr((StackAllocExpr) stat, procedure);
 			case BINARY -> generateBinaryExpr((BinaryExpr) stat, procedure);
 			case CALL -> generateCallExpr((CallExpr) stat, procedure);
 			case CAST -> generateCastExpr((CastExpr) stat, procedure);
@@ -310,7 +310,7 @@ public class InstGenerator {
 //	}
 
 	// Expressions
-	private InstRef generateStackDataExpr(StackDataExpr expr, Procedure procedure) {
+	private InstRef generateStackAllocExpr(StackAllocExpr expr, Procedure procedure) {
 		ValueType stackType = expr.getType().createArray(1);
 		InstRef stack = createDataReference(".stack", stackType);
 		

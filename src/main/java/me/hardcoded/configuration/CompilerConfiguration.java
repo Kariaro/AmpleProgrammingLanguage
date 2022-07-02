@@ -137,7 +137,6 @@ public class CompilerConfiguration {
 	
 	private static void printHelpMessage() {
 		try (InputStream stream = Main.class.getResourceAsStream("/command/help.txt")) {
-			// TODO: Use logger?
 			System.out.println(new String(stream.readAllBytes()));
 		} catch (IOException e) {
 			e.printStackTrace();

@@ -106,7 +106,7 @@ public class LinkableSerializer {
 //			case NAMESPACE -> serializeNamespaceStat((NamespaceStat) stat, out);
 
 			/* Expressions */
-			case STACK_DATA -> serializeStackDataExpr((StackDataExpr) stat, out);
+			case STACK_ALLOC -> serializeStackAllocExpr((StackAllocExpr) stat, out);
 			case BINARY -> serializeBinaryExpr((BinaryExpr) stat, out);
 			case CALL -> serializeCallExpr((CallExpr) stat, out);
 			case CAST -> serializeCastExpr((CastExpr) stat, out);
@@ -213,7 +213,7 @@ public class LinkableSerializer {
 //	}
 
 	// Expressions
-	private void serializeStackDataExpr(StackDataExpr expr, DataOutputStream out) throws IOException {
+	private void serializeStackAllocExpr(StackAllocExpr expr, DataOutputStream out) throws IOException {
 		serializeStat(expr.getValue(), out);
 		header.writeVarInt(expr.getSize(), out);
 		header.serializeValueType(expr.getType(), out);

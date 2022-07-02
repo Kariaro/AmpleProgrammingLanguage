@@ -13,7 +13,7 @@ public class AmpleLexer {
 			.addRule(Type.WHITESPACE, i -> i
 				.addMultiline("/*", "*/")
 				.addRegex("//[^\\r\\n]*")
-				.addRegex("[ \t\r\n]")
+				.addRegex("[ \t\r\n]+")
 			)
 			
 			// Comparisons
