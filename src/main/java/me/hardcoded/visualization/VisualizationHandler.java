@@ -72,9 +72,10 @@ public class VisualizationHandler {
 				list.forEach(vis -> {
 					if (vis instanceof VisualizationListener listener) {
 						switch (event.getType()) {
-							case SELECTION_EVENT -> {
+							case SELECTION_EVENT ->
 								listener.handleSelection((VisualizationEvent.SelectionEvent) event);
-							}
+							case SYNTAX_SELECTION_EVENT ->
+								listener.handleSyntaxSelection((VisualizationEvent.SyntaxSelectionEvent) event);
 						}
 					}
 				});

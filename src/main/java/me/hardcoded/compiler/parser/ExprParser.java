@@ -113,7 +113,7 @@ public class ExprParser {
 						parser.tryMatchOrError(Token.Type.R_SQUARE);
 						reader.advance();
 						
-						left = new BinaryExpr(ISyntaxPosition.of(left.getSyntaxPosition(), right.getSyntaxPosition()), operation, left, right);
+						left = new BinaryExpr(ISyntaxPosition.of(left.getSyntaxPosition().getStartPosition(), reader.lastPositionEnd()), operation, left, right);
 					}
 					default -> found = false;
 				}
