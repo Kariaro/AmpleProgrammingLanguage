@@ -9,7 +9,9 @@ import java.awt.geom.AffineTransform;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Function;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -21,6 +23,7 @@ import me.hardcoded.compiler.parser.type.Associativity;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.utils.Position;
 import me.hardcoded.utils.StringUtils;
+import me.hardcoded.utils.SyntaxUtils;
 
 /**
  * A visualization of a parse tree
@@ -85,17 +88,21 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 
 			@Override
 			public void mousePressed(MouseEvent event) {
+				selectedX = event.getX() * scroll - panel.xpos;
+				selectedY = event.getY() * scroll - panel.ypos;
+				
 				if (event.getButton() == MouseEvent.BUTTON1) {
-					selectedX = event.getX() * scroll - panel.xpos;
-					selectedY = event.getY() * scroll - panel.ypos;
+					unselectAll();
 					
-					Element selection = getSelection(selectedX, selectedY, panel.elements, 0);
+					Element selection = getElementAt(selectedX, selectedY);
 					if (selection != null && selection.syntaxPosition != null) {
-						handler.fireEvent(new VisualizationEvent.SelectionEvent(
+						handler.fireEvent(new VisualizationEvent.SyntaxSelectionEvent(
 							ParseTreeVisualization.this,
-							selection.syntaxPosition.getStartPosition()
+							selection.syntaxPosition
 						));
 					}
+					
+					panel.repaint();
 				}
 			}
 
@@ -110,7 +117,13 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 			public void mouseMoved(MouseEvent event) {
 				double mx = event.getX() * scroll - panel.xpos;
 				double my = event.getY() * scroll - panel.ypos;
-				updateSelection(mx, my, panel.elements, 0);
+				updateSelection(mx, my);
+				panel.repaint();
+			}
+			
+			@Override
+			public void mouseExited(MouseEvent e) {
+				updateAll(panel.elements, false);
 				panel.repaint();
 			}
 		};
@@ -167,88 +180,102 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 		frame.setVisible(true);
 	}
 	
-	private Element getSelection(double mx, double my, List<Element> list, int depth) {
-		Element result = null;
+	private Element forEachElement(List<Element> start, Function<Element, Element> callback) {
+		LinkedList<Element> elements = new LinkedList<>(start);
+		Element result;
 		
-		for (Element e : list) {
-			boolean fullBox = mx > (e.x) && mx < (e.x + e.offset);
-			
-			if (fullBox) {
-				boolean smallBox = mx > (e.x + (e.offset - e.width) / 2.0)
-					&& mx < (e.x + (e.offset + e.width) / 2.0)
-					&& my > (e.y - 20)
-					&& my < (e.y + e.height + 20);
-				
-				if (smallBox) {
-					result = e;
-				} else {
-					Element value = updateSelection(mx, my, e.elements, depth + 1);
-					if (value != null) {
-						result = value;
-					}
-				}
+		while (!elements.isEmpty()) {
+			Element first = elements.pollFirst();
+			elements.addAll(0, first.elements);
+			if ((result = callback.apply(first)) != null) {
+				return result;
 			}
 		}
 		
-		return result;
+		return null;
 	}
 	
-	private Element updateSelection(double mx, double my, List<Element> list, int depth) {
-		Element result = null;
-		
-		for (Element e : list) {
-			boolean fullBox = mx > (e.x) && mx < (e.x + e.offset);
-			
-			if (fullBox) {
-				boolean smallBox = mx > (e.x + (e.offset - e.width) / 2.0)
-					&& mx < (e.x + (e.offset + e.width) / 2.0)
-					&& my > (e.y - 20)
-					&& my < (e.y + e.height + 20);
-				
-				e.hover = smallBox;
-				if (smallBox) {
-					updateAll(e.elements, true);
-					result = e;
-				} else {
-					Element value = updateSelection(mx, my, e.elements, depth + 1);
-					if (value != null) {
-						result = value;
-					}
-				}
-			} else {
-				e.hover = false;
-				updateAll(e.elements, false);
-			}
-		}
-		
-		return result;
+	private void unselectAll() {
+		forEachElement(panel.elements, e -> {
+			e.hover = false;
+			e.selected = false;
+			return null;
+		});
 	}
 	
 	private void updateAll(List<Element> list, boolean hover) {
-		for (Element e : list) {
+		forEachElement(list, e -> {
 			e.hover = hover;
-			updateAll(e.elements, hover);
+			return null;
+		});
+	}
+	
+	/**
+	 * Returns the element at the specified coordinates
+	 * @param mx the x coordinate
+	 * @param my the y coordinate
+	 * @return the element at the specified coordinates
+	 */
+	private Element getElementAt(double mx, double my) {
+		return forEachElement(panel.elements, e -> {
+			boolean fullBox = mx > (e.x) && mx < (e.x + e.offset);
+			
+			if (fullBox) {
+				boolean smallBox = mx > (e.x + (e.offset - e.width) / 2.0)
+					&& mx < (e.x + (e.offset + e.width) / 2.0)
+					&& my > (e.y - 20)
+					&& my < (e.y + e.height + 20);
+				
+				if (smallBox) {
+					return e;
+				}
+			}
+			
+			return null;
+		});
+	}
+	
+	private void updateSelection(double mx, double my) {
+		Element selected = getElementAt(mx, my);
+		
+		updateAll(panel.elements, false);
+		if (selected != null) {
+			updateAll(selected.elements, true);
+			selected.hover = true;
+		}
+	}
+	
+	private void setElementSelected(List<Element> list) {
+		for (Element e : list) {
+			e.selected = true;
+			setElementSelected(e.elements);
+		}
+	}
+	
+	private void setElementSelected(List<Element> list, ISyntaxPosition position) {
+		for (Element e : list) {
+			ISyntaxPosition syntaxPosition = e.syntaxPosition;
+			if (syntaxPosition != null && SyntaxUtils.syntaxIntersect(position, syntaxPosition)) {
+				e.selected = true;
+				for (Element children : e.elements) {
+					children.selected = true;
+				}
+			}
+			
+			setElementSelected(e.elements, position);
 		}
 	}
 	
 	private Element getSelect(List<Element> elements, Position pos) {
 		for (Element element : elements) {
 			Element value = getSelect(element.elements, pos);
-			
 			if (value != null) {
 				return value;
 			}
 			
 			ISyntaxPosition syntaxPosition = element.syntaxPosition;
-			if (syntaxPosition != null) {
-				Position s = syntaxPosition.getStartPosition();
-				Position e = syntaxPosition.getEndPosition();
-				
-				if ((pos.line >= s.line && pos.line <= e.line)
-				&& (pos.line != s.line || pos.column >= s.column)
-				&& (pos.line != e.line || pos.column < e.column)) {
-					return element;
-				}
+			if (syntaxPosition != null && SyntaxUtils.syntaxIntersect(syntaxPosition, pos)) {
+				return element;
 			}
 		}
 		
@@ -259,12 +286,19 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 	public void handleSelection(VisualizationEvent.SelectionEvent event) {
 		Element element = getSelect(panel.elements, event.getPosition());
 		
+		unselectAll();
 		if (element != null) {
-			updateAll(panel.elements, false);
-			updateAll(element.elements, true);
-			element.hover = true;
-			panel.repaint();
+			setElementSelected(element.elements);
+			element.selected = true;
 		}
+		panel.repaint();
+	}
+	
+	@Override
+	public void handleSyntaxSelection(VisualizationEvent.SyntaxSelectionEvent event) {
+		unselectAll();
+		setElementSelected(panel.elements, event.getSyntaxPosition());
+		panel.repaint();
 	}
 	
 	private class LocalPanel extends JPanel {
@@ -320,6 +354,7 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 		public int width;
 		public double offset;
 		public boolean hover;
+		public boolean selected;
 
 		private final List<Element> elements;
 		private String content;
@@ -360,6 +395,10 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 					setContent(object.toString());
 				}
 			}
+			
+//			if (parent != null && syntaxPosition == null) {
+//				syntaxPosition = parent.syntaxPosition;
+//			}
 
 			if (!children.isEmpty()) {
 				offset = 0;
@@ -412,7 +451,8 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 			&& (xp - width + panel.xpos <= panel.getWidth() / panel.zoom)
 			&& (y - 5 + (height + 10) + panel.ypos >= 0)
 			&& (y - 5 - (height + 10) + panel.ypos <= panel.getHeight() / panel.zoom)) {
-				g.setColor(hover ? body.darker():body);
+				g.setColor(selected ? body.darker().darker() : (hover ? body.darker() : body));
+				
 				g.fillRoundRect(xp, y - 5, width, height + 10, 10, 10);
 
 				g.setColor(Color.black);
@@ -424,7 +464,7 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 				g.setColor(Color.black);
 				FontMetrics fm = g.getFontMetrics();
 				Rectangle rect = fm.getStringBounds(content, g).getBounds();
-				g.drawString(content, x - rect.x + ((int)offset - rect.width) / 2, y - rect.y + (height - rect.height) / 2 + 3);
+				g.drawString(content, x - rect.x + ((int) offset - rect.width) / 2, y - rect.y + (height - rect.height) / 2 + 3);
 			}
 
 //			g.setColor(hover ? Color.red : Color.gray);

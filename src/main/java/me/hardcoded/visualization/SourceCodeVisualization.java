@@ -1,9 +1,9 @@
 package me.hardcoded.visualization;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
-import me.hardcoded.compiler.intermediate.inst.InstFile;
 import me.hardcoded.lexer.Token;
 import me.hardcoded.utils.Position;
+import me.hardcoded.utils.SyntaxUtils;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -53,51 +53,106 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 		frame.setContentPane(panel);
 		MouseAdapter adapter = new MouseAdapter() {
 			private Point dragStart;
-			private double yposStart;
+			private int yposStart;
+			private int xposStart;
+			private Position startPosition;
+			private boolean mouseSelection;
 			
 			@Override
 			public void mouseWheelMoved(MouseWheelEvent event) {
-				panel.setScroll(panel.getScroll() + event.getPreciseWheelRotation());
+				if ((event.getModifiersEx() & MouseEvent.CTRL_DOWN_MASK) != 0) {
+					int newSize = panel.fontSize - (int) event.getPreciseWheelRotation();
+					if (newSize <  4) newSize = 4;
+					if (newSize > 32) newSize = 32;
+					panel.setFontSize(newSize);
+				} else {
+					panel.setScroll(panel.getScroll() + (int) event.getPreciseWheelRotation());
+				}
+				
 				panel.repaint();
 			}
 			
 			@Override
 			public void mousePressed(MouseEvent event) {
-				yposStart = panel.getScroll();
-				
+				yposStart = panel.ypos;
+				xposStart = panel.xpos;
+				dragStart = null;
+				mouseSelection = false;
 				if (event.getButton() == MouseEvent.BUTTON1) {
+					startPosition = null;
+				}
+				
+				if ((event.getModifiersEx() & MouseEvent.SHIFT_DOWN_MASK) != 0) {
+					// Selection
+					if (event.getButton() == MouseEvent.BUTTON1) {
+						mouseSelection = true;
+						startPosition = getMouse(event.getPoint());
+					}
+				} else {
 					dragStart = event.getPoint();
 					
-					Position mousePos = getMouse(event.getPoint());
-					handler.fireEvent(new VisualizationEvent.SelectionEvent(
-						SourceCodeVisualization.this,
-						mousePos
-					));
-				} else {
-					dragStart = null;
+					if (event.getButton() == MouseEvent.BUTTON1) {
+						Position mousePos = getMouse(event.getPoint());
+						handler.fireEvent(new VisualizationEvent.SelectionEvent(
+							SourceCodeVisualization.this,
+							mousePos
+						));
+					}
 				}
 			}
 			
 			@Override
 			public void mouseDragged(MouseEvent event) {
-				Point offset = event.getPoint();
-				offset.translate(-dragStart.x, -dragStart.y);
+				if (dragStart != null) {
+					Point offset = event.getPoint();
+					offset.translate(-dragStart.x, -dragStart.y);
+					panel.setScroll(yposStart - (int) (offset.y / panel.bounds.getHeight()));
+					panel.setScrollX(xposStart - (int) (offset.x / panel.bounds.getWidth()));
+				}
 				
-				panel.setScroll(yposStart - (int) (offset.y / panel.bounds.getHeight()));
+				if (startPosition != null && mouseSelection) {
+					Position mousePos = getMouse(event.getPoint());
+					ISyntaxPosition syntaxPosition;
+					
+					if (mousePos.line < startPosition.line
+					|| (mousePos.line == startPosition.line && mousePos.column < startPosition.column)) {
+						Position test = new Position(startPosition.column + 1, startPosition.line, 0);
+						syntaxPosition = ISyntaxPosition.of(mousePos, test);
+					} else {
+						Position test = new Position(mousePos.column + 1, mousePos.line, 0);
+						syntaxPosition = ISyntaxPosition.of(startPosition, test);
+					}
+					
+					handler.fireEvent(new VisualizationEvent.SyntaxSelectionEvent(
+						SourceCodeVisualization.this,
+						syntaxPosition
+					));
+				}
+				
 				panel.repaint();
 			}
 			
 			public Position getMouse(Point point) {
-				int x = (int) ((point.x - 5) / panel.bounds.getWidth());
-				int y = (int) (((point.y - 5) / panel.bounds.getHeight()) + panel.getScroll());
+				int x = (int) ((point.x - 5) / panel.bounds.getWidth()) + panel.getScrollX();
+				int y = (int) ((point.y - 5) / panel.bounds.getHeight()) + panel.getScroll();
 				
-				return new Position(x - 5, y, 0);
+				if (x < panel.columnWidth) {
+					x = panel.columnWidth;
+				}
+				
+				return new Position(x - panel.columnWidth, y, 0);
 			}
 			
 			@Override
 			public void mouseMoved(MouseEvent event) {
 				Position mousePos = getMouse(event.getPoint());
 				panel.setHoveredToken(getToken(mousePos));
+				panel.repaint();
+			}
+			
+			@Override
+			public void mouseExited(MouseEvent e) {
+				panel.setHoveredToken(null);
 				panel.repaint();
 			}
 		};
@@ -130,13 +185,7 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 		if (tokens != null) {
 			// TODO: This could use binary search
 			for (Token token : tokens) {
-				ISyntaxPosition syntaxPosition = token.syntaxPosition;
-				Position s = syntaxPosition.getStartPosition();
-				Position e = syntaxPosition.getEndPosition();
-				
-				if ((pos.line >= s.line && pos.line <= e.line)
-				&& (pos.line != s.line || pos.column >= s.column)
-				&& (pos.line != e.line || pos.column < e.column)) {
+				if (SyntaxUtils.syntaxIntersect(token.syntaxPosition, pos)) {
 					return token;
 				}
 			}
@@ -149,21 +198,37 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 	public void handleSelection(VisualizationEvent.SelectionEvent event) {
 		Token token = getToken(event.getPosition());
 		panel.setHoveredToken(token);
+		panel.setSyntaxSelection(null);
+		panel.repaint();
+	}
+	
+	@Override
+	public void handleSyntaxSelection(VisualizationEvent.SyntaxSelectionEvent event) {
+		panel.setSyntaxSelection(event.getSyntaxPosition());
+		panel.setHoveredToken(null);
 		panel.repaint();
 	}
 	
 	private class LocalPanel extends JPanel {
-		private double ypos = 0;
+		private int columnWidth = 5;
+		private int xpos = 0;
+		private int ypos = 0;
+		private int fontSize = 0;
 		private Font font;
 		private Rectangle2D bounds;
 		
+		private ISyntaxPosition syntaxSelection;
 		private Token hover;
 		
-		public double getScroll() {
+		public int getScroll() {
 			return ypos;
 		}
 		
-		public void setScroll(double scroll) {
+		public int getScrollX() {
+			return xpos;
+		}
+		
+		public void setScroll(int scroll) {
 			if (scroll < 0) {
 				scroll = 0;
 			}
@@ -179,8 +244,22 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 			this.ypos = scroll;
 		}
 		
+		public void setScrollX(int scroll) {
+			if (scroll < 0) {
+				scroll = 0;
+			}
+			
+			// TODO: Find max x scroll
+			
+			this.xpos = scroll;
+		}
+		
 		public void setHoveredToken(Token token) {
 			this.hover = token;
+		}
+		
+		public void setSyntaxSelection(ISyntaxPosition syntaxPosition) {
+			this.syntaxSelection = syntaxPosition;
 		}
 		
 		public void setFontSize(int size) {
@@ -196,6 +275,7 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 			);
 			
 			this.font = font;
+			this.fontSize = size;
 			this.bounds = bounds;
 		}
 		
@@ -203,18 +283,50 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 		public void paint(Graphics gr) {
 			// TODO: Calculate from line index to token index
 			if (bounds == null) {
-				setFontSize(12);
+				setFontSize(16);
 			}
 			
 			Graphics2D g = (Graphics2D) gr;
 			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 			g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+			g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
 			g.setFont(font);
 			
 			g.setColor(new Color(0x2b2b2b));
 			g.fillRect(0, 0, getWidth(), getHeight());
 			
-			g.translate(5, 5 - (int) (ypos * bounds.getHeight()));
+			g.translate(
+				5 - (int) (xpos * bounds.getWidth()),
+				5 - (int) (ypos * bounds.getHeight())
+			);
+			
+			{
+				ISyntaxPosition pos = syntaxSelection;
+				if (pos != null) {
+					Position s = pos.getStartPosition();
+					Position e = pos.getEndPosition();
+					
+					int intWidth = (int) (getWidth() / bounds.getWidth()) + 1;
+					int of = xpos;
+					
+					int sp = columnWidth + s.column;
+					int se = 0;
+					if (s.column - xpos < 0) {
+						se = s.column - xpos;
+						sp -= se;
+					}
+					
+					g.setColor(new Color(0x214283));
+					if (s.line != e.line) {
+						drawBox(g, s.line, sp, intWidth, 1);
+						drawBox(g, e.line, columnWidth + of, e.column - of, 1);
+						drawBox(g, s.line + 1, columnWidth + of, intWidth, e.line - s.line - 1);
+					} else {
+						drawBox(g, s.line, sp, e.column - s.column + se, 1);
+					}
+				}
+			}
+			
 			List<Token> tokens = sourceCode;
 			if (tokens != null) {
 				Pointer pointer = new Pointer();
@@ -268,36 +380,43 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 					}
 				}
 				
-				int cx = pointer.column + 5;
+				int cx = pointer.column + columnWidth;
 				int cy = pointer.line;
+				pointer.column++;
+				
+				if (pointer.column <= xpos) {
+					continue;
+				}
 				
 				double x = cx * bounds.getWidth();
 				double y = cy * bounds.getHeight() - bounds.getY();
 				
 				if (hover) {
 					g.setColor(new Color(0x354945));
-					g.fillRect(
-						(int) (cx * bounds.getWidth()),
-						(int) (cy * bounds.getHeight()),
-						(int) bounds.getWidth(),
-						(int) bounds.getHeight()
-					);
+					drawBox(g, cy, cx, 1, 1);
 				}
 				
 				g.setColor(color);
 				g.drawString(Character.toString(c), (float) x, (float) y);
-				
-				pointer.column++;
 			}
 		}
 		
 		public void drawLine(Graphics2D g, int line) {
 			g.setColor(Color.LIGHT_GRAY);
 			
-			double x = 0;
+			double x = xpos * bounds.getWidth();
 			double y = line * bounds.getHeight() - bounds.getY();
 			
-			g.drawString("%-4d|".formatted(line), (float) x, (float) y);
+			g.drawString(("%-" + (columnWidth - 1) + "d|").formatted(line), (float) x, (float) y);
+		}
+		
+		public void drawBox(Graphics2D g, int line, int colum, int width, int height) {
+			g.fillRect(
+				(int) (colum * bounds.getWidth()),
+				(int) (line * bounds.getHeight()),
+				(int) (width * bounds.getWidth()),
+				(int) (height * bounds.getHeight())
+			);
 		}
 
 		public void display(List<Token> tokens) {

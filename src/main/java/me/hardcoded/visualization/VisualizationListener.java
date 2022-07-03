@@ -12,5 +12,11 @@ public interface VisualizationListener {
 	 * Called when a visualization selects a position
 	 * @param event the event
 	 */
-	void handleSelection(SelectionEvent event);
+	default void handleSelection(SelectionEvent event) {
+	
+	}
+	
+	default void handleSyntaxSelection(SyntaxSelectionEvent event) {
+	
+	}
 }
