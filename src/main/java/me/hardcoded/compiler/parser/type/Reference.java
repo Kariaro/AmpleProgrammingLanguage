@@ -1,7 +1,5 @@
 package me.hardcoded.compiler.parser.type;
 
-import me.hardcoded.utils.DebugUtils;
-
 import java.util.Objects;
 
 public class Reference {

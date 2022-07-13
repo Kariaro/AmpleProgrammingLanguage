@@ -19,7 +19,9 @@ public class AsmCodeGenerator implements ICodeGenerator {
 	
 	@Override
 	public byte[] getBytecode(InstFile program) throws CodeGenException {
-		throw new UnsupportedOperationException();
+		byte[] assembler = getAssembler(program);
+		byte[] result = NasmUtils.compile(ampleConfig, assembler);
+		return result;
 	}
 
 	@Override
@@ -50,62 +52,11 @@ public class AsmCodeGenerator implements ICodeGenerator {
 			StringBuilder header = new StringBuilder();
 			header.append("BITS 64\n\n");
 			header.append("section .data\n");
-			header.append("    hex_data db \"0123456789abcdef\"\n");
-			header.append("    hex_strs db \"................\", 0ah\n");
-			header.append("    new_line db 0ah\n\n");
+			// TODO: Global variables
 			header.append("section .text\n");
 			header.append("    global _start:\n\n");
-			header.append("""
-printnewline:
-	push rsi
-	push rdi
-	push rax
-	push rbx
-	push rcx
-	push rdx
-	mov rax, 1
-	lea rsi, [new_line]
-	mov rdi, 1
-	mov rdx, 1
-	syscall
-	pop rdx
-	pop rcx
-	pop rbx
-	pop rax
-	pop rdi
-	pop rsi
-	ret
-printhex:
-	push rsi
-	push rdi
-	push rax
-	push rbx
-	push rcx
-	push rdx
-	mov rcx, 16
-	.loop:
-		mov rbx, rax
-		and rbx, 15
-		mov bl, byte [rbx + hex_data]
-		mov byte [rcx + hex_strs - 1], bl
-		shr rax, 4
-		loop .loop
-	mov rax, 1
-	lea rsi, [hex_strs]
-	mov rdi, 1
-	mov rdx, 17
-	syscall
-	pop rdx
-	pop rcx
-	pop rbx
-	pop rax
-	pop rdi
-	pop rsi
-	ret
-""");
 			header.append("_start:\n");
 			header.append("    call %s\n".formatted(main.toSimpleString()));
-			header.append("    call printhex\n");
 			header.append("    ret\n");
 			header.append("\n");
 			sb.insert(0, header);

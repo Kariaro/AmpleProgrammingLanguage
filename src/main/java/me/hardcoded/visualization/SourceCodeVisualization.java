@@ -11,8 +11,6 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
-import java.awt.font.FontRenderContext;
-import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.io.InputStream;
@@ -263,10 +261,9 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 		}
 		
 		public void setFontSize(int size) {
-			FontRenderContext frc = new FontRenderContext(new AffineTransform(), true, true);
 			Font font = new Font("Consolas", Font.PLAIN, size);
 			
-			Rectangle2D bounds = font.getStringBounds(" ", frc);
+			Rectangle2D bounds = getStringBounds(font, " ");
 			bounds.setFrame(
 				bounds.getX(),
 				bounds.getY(),
@@ -292,7 +289,7 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 			g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
 			g.setFont(font);
 			
-			g.setColor(new Color(0x2b2b2b));
+			g.setColor(colorCache.getColor(0x2b2b2b));
 			g.fillRect(0, 0, getWidth(), getHeight());
 			
 			g.translate(
@@ -316,7 +313,7 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 						sp -= se;
 					}
 					
-					g.setColor(new Color(0x214283));
+					g.setColor(colorCache.getColor(0x214283));
 					if (s.line != e.line) {
 						drawBox(g, s.line, sp, intWidth, 1);
 						drawBox(g, e.line, columnWidth + of, e.column - of, 1);
@@ -352,10 +349,10 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 			}
 			
 			Color color = switch (token.type) {
-				case FUNC, RETURN, FOR, IF -> new Color(0xCC7832);
+				case FUNC, RETURN, FOR, IF, ELSE, CONTINUE, BREAK -> colorCache.getColor(0xCC7832);
 				case WHITESPACE -> Color.LIGHT_GRAY;
-				case STRING, CHARACTER -> new Color(0x6a8759);
-				case INT, LONG -> new Color(0x6897bb);
+				case STRING, CHARACTER -> colorCache.getColor(0x6a8759);
+				case INT, LONG -> colorCache.getColor(0x6897bb);
 				default -> Color.WHITE;
 			};
 			
@@ -392,7 +389,7 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 				double y = cy * bounds.getHeight() - bounds.getY();
 				
 				if (hover) {
-					g.setColor(new Color(0x354945));
+					g.setColor(colorCache.getColor(0x354945));
 					drawBox(g, cy, cx, 1, 1);
 				}
 				
@@ -410,9 +407,9 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 			g.drawString(("%-" + (columnWidth - 1) + "d|").formatted(line), (float) x, (float) y);
 		}
 		
-		public void drawBox(Graphics2D g, int line, int colum, int width, int height) {
+		public void drawBox(Graphics2D g, int line, int column, int width, int height) {
 			g.fillRect(
-				(int) (colum * bounds.getWidth()),
+				(int) (column * bounds.getWidth()),
 				(int) (line * bounds.getHeight()),
 				(int) (width * bounds.getWidth()),
 				(int) (height * bounds.getHeight())

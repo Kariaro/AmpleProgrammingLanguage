@@ -90,8 +90,8 @@ public class LinkableSerializer {
 		switch (type) {
 			/* Statements */
 			case PROGRAM -> serializeProgStat((ProgStat) stat, out);
-//			case BREAK -> serializeBreakStat((BreakStat) stat, out);
-//			case CONTINUE -> serializeContinueStat((ContinueStat) stat, out);
+			case BREAK -> serializeBreakStat((BreakStat) stat, out);
+			case CONTINUE -> serializeContinueStat((ContinueStat) stat, out);
 			case EMPTY -> serializeEmptyStat((EmptyStat) stat, out);
 			case FOR -> serializeForStat((ForStat) stat, out);
 			case FUNC -> serializeFuncStat((FuncStat) stat, out);
@@ -122,13 +122,13 @@ public class LinkableSerializer {
 		}
 	}
 
-//	private void serializeBreakStat(BreakStat stat, DataOutputStream out) throws IOException {
-//
-//	}
-//
-//	private void serializeContinueStat(ContinueStat stat, DataOutputStream out) throws IOException {
-//
-//	}
+	private void serializeBreakStat(BreakStat stat, DataOutputStream out) throws IOException {
+
+	}
+
+	private void serializeContinueStat(ContinueStat stat, DataOutputStream out) throws IOException {
+
+	}
 
 	private void serializeEmptyStat(EmptyStat stat, DataOutputStream out) throws IOException {
 

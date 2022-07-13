@@ -24,8 +24,8 @@ public class InstGenerator {
 	private final Map<Reference, InstRef> wrappedReferences;
 	private int count;
 	private int funcCount;
-	// private InstRef breakBranch;
-	// private InstRef continueBranch;
+	private InstRef breakBranch;
+	private InstRef continueBranch;
 
 	public InstGenerator(InstFile file, ExportMap exportMap) {
 		this.file = file;
@@ -44,8 +44,8 @@ public class InstGenerator {
 			case PROGRAM -> generateProgStat((ProgStat) stat);
 
 			// Statements
-//			case BREAK -> generateBreakStat((BreakStat) stat, procedure);
-//			case CONTINUE -> generateContinueStat((ContinueStat) stat, procedure);
+			case BREAK -> generateBreakStat((BreakStat) stat, procedure);
+			case CONTINUE -> generateContinueStat((ContinueStat) stat, procedure);
 			case EMPTY -> generateEmptyStat((EmptyStat) stat, procedure);
 			case FOR -> generateForStat((ForStat) stat, procedure);
 			case FUNC -> generateFuncStat((FuncStat) stat, procedure);
@@ -99,17 +99,17 @@ public class InstGenerator {
 		return NONE;
 	}
 
-//	private InstRef generateBreakStat(BreakStat stat, Procedure procedure) {
-//		procedure.addInst(new Inst(Opcode.JMP, stat.getSyntaxPosition())
-//			.addParam(new InstParam.Ref(breakBranch)));
-//		return NONE;
-//	}
-//
-//	private InstRef generateContinueStat(ContinueStat stat, Procedure procedure) {
-//		procedure.addInst(new Inst(Opcode.JMP, stat.getSyntaxPosition())
-//			.addParam(new InstParam.Ref(continueBranch)));
-//		return NONE;
-//	}
+	private InstRef generateBreakStat(BreakStat stat, Procedure procedure) {
+		procedure.addInst(new Inst(Opcode.JMP, stat.getSyntaxPosition())
+			.addParam(new InstParam.Ref(breakBranch)));
+		return NONE;
+	}
+
+	private InstRef generateContinueStat(ContinueStat stat, Procedure procedure) {
+		procedure.addInst(new Inst(Opcode.JMP, stat.getSyntaxPosition())
+			.addParam(new InstParam.Ref(continueBranch)));
+		return NONE;
+	}
 
 	private InstRef generateEmptyStat(EmptyStat stat, Procedure procedure) {
 		return NONE;
@@ -120,10 +120,10 @@ public class InstGenerator {
 		InstRef loopBranch = createLocalLabel(".for.loop");
 		InstRef endBranch = createLocalLabel(".for.end");
 
-//		InstRef oldBreakBranch = breakBranch;
-//		InstRef oldContinueBranch = continueBranch;
-//		breakBranch = endBranch;
-//		continueBranch = nextBranch;
+		InstRef oldBreakBranch = breakBranch;
+		InstRef oldContinueBranch = continueBranch;
+		breakBranch = endBranch;
+		continueBranch = nextBranch;
 
 		generateStat(stat.getInitializer(), procedure);
 
@@ -157,8 +157,8 @@ public class InstGenerator {
 		procedure.addInst(new Inst(Opcode.LABEL, stat.getSyntaxPosition())
 			.addParam(new InstParam.Ref(endBranch)));
 
-//		breakBranch = oldBreakBranch;
-//		continueBranch = oldContinueBranch;
+		breakBranch = oldBreakBranch;
+		continueBranch = oldContinueBranch;
 
 		return NONE;
 	}

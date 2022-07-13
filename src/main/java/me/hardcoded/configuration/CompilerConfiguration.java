@@ -8,43 +8,72 @@ import java.util.*;
 import me.hardcoded.main.Main;
 import me.hardcoded.utils.FileUtils;
 
+// TODO: Make this into an XML format
 public class CompilerConfiguration {
+//	public enum Type {
+//		/**
+//		 * The output format of the compiler.
+//		 */
+//		OUTPUT_FORMAT,
+//
+//		/**
+//		 * The output target format. <i>Default bytecode</i>
+//		 */
+//		TARGET_FORMAT,
+//
+//		/**
+//		 * The file that is going to be compiled.
+//		 */
+//		SOURCE_FILE,
+//
+//		/**
+//		 * The output destination of the compiled file.
+//		 */
+//		OUTPUT_FILE,
+//
+//		/**
+//		 * The directory used for non-absolute paths.
+//		 */
+//		WORKING_DIRECTORY,
+//
+//		/**
+//		 * The operation that should be performed by the compiler.
+//		 */
+//		OPERATION,
+//	}
+
 	public enum Type {
 		/**
-		 * The output format of the compiler.
+		 * The output format of the compiler. <i>Default ir</i>
 		 */
-		OUTPUT_FORMAT,
+		OUTPUT_FORMAT("format"),
 		
 		/**
 		 * The output target format. <i>Default bytecode</i>
 		 */
-		TARGET_FORMAT,
+		TARGET_FORMAT("target"),
 		
 		/**
 		 * The file that is going to be compiled.
 		 */
-		SOURCE_FILE,
-		
-		/**
-		 * The output destination of the compiled file.
-		 */
-		OUTPUT_FILE,
-		
+		SOURCE_FILE("source"),
+
 		/**
 		 * The directory used for non-absolute paths.
 		 */
-		WORKING_DIRECTORY,
+		WORKING_DIRECTORY("working_directory"),
 		
 		/**
-		 * The operation that should be performed by the compiler.
+		 * The output folder. <i>Default same folder as source file</i>
 		 */
-		OPERATION,
-	}
-	
-	public enum Operation {
-		COMPILE,
-		RUN,
-		NONE
+		OUTPUT_FOLDER("output"),
+		;
+		
+		public final String key;
+		
+		Type(String key) {
+			this.key = key;
+		}
 	}
 	
 	private final Map<Type, Object> map;
@@ -53,11 +82,12 @@ public class CompilerConfiguration {
 		this.map = new HashMap<>();
 		
 		setSourceFile("");
-		setOutputFile("");
+		setOutputFolder("");
+//		setOutputFile("");
 		setWorkingDirectory("");
 		setOutputFormat(OutputFormat.IR);
 		setTargetFormat(TargetFormat.BYTECODE);
-		setOperation(Operation.COMPILE);
+//		setOperation(Operation.COMPILE);
 	}
 	
 	public OutputFormat getOutputFormat() {
@@ -72,16 +102,12 @@ public class CompilerConfiguration {
 		return get(Type.SOURCE_FILE);
 	}
 	
-	public File getOutputFile() {
-		return get(Type.OUTPUT_FILE);
+	public File getOutputFolder() {
+		return get(Type.OUTPUT_FOLDER);
 	}
 	
 	public File getWorkingDirectory() {
 		return get(Type.WORKING_DIRECTORY);
-	}
-	
-	public Operation getOperation() {
-		return get(Type.OPERATION);
 	}
 	
 	public void setOutputFormat(OutputFormat format) {
@@ -96,24 +122,20 @@ public class CompilerConfiguration {
 		set(Type.SOURCE_FILE, resolveFile(new File(pathname)));
 	}
 	
-	public void setOutputFile(String pathname) {
-		set(Type.OUTPUT_FILE, resolveFile(new File(pathname)));
+	public void setOutputFolder(String pathname) {
+		set(Type.OUTPUT_FOLDER, resolveFile(new File(pathname)));
 	}
 	
 	public void setWorkingDirectory(String pathname) {
 		set(Type.WORKING_DIRECTORY, FileUtils.makeAbsolute(new File(pathname)));
 	}
 	
-	public void setOperation(Operation operation) {
-		set(Type.OPERATION, operation);
-	}
-	
 	@SuppressWarnings("unchecked")
-	protected <T> T get(Type type) {
+	private <T> T get(Type type) {
 		return (T)map.get(type);
 	}
 	
-	protected void set(Type type, Object object) {
+	private void set(Type type, Object object) {
 		map.put(type, object);
 	}
 	
@@ -153,6 +175,22 @@ public class CompilerConfiguration {
 	public static CompilerConfiguration parseArgs(String[] args) {
 		CompilerConfiguration config = new CompilerConfiguration();
 		
+		/*
+		./ample
+		
+			--format-list				displays a list of available output formats
+			
+			--project, -p <xml>			compile the project from an xml file
+			
+			--target, -t <value>		set the target output of the compiler
+			
+			--format, -f <value>		set the format of the compiler
+			
+			-i <source>					specify the input file to compile
+			
+			-o <outputFolder>			specify the output folder
+		*/
+		
 		try {
 			for(int i = 0; i < args.length; i++) {
 				String str = args[i];
@@ -163,8 +201,14 @@ public class CompilerConfiguration {
 						return config;
 					}
 					
+					// Project
+					
+					case "-t", "--target" -> {
+						config.setTargetFormat(TargetFormat.valueOf(args[++i].toUpperCase()));
+					}
+					
 					case "-f", "--format" -> {
-						config.setOutputFormat(OutputFormat.get(args[++i].toUpperCase()));
+						config.setOutputFormat(OutputFormat.valueOf(args[++i].toUpperCase()));
 					}
 					
 					case "-w", "--working-directory" -> {
@@ -175,8 +219,8 @@ public class CompilerConfiguration {
 						config.setSourceFile(args[++i]);
 					}
 					
-					case "-o", "--output-file" -> {
-						config.setOutputFile(args[++i]);
+					case "-o", "--output-folder" -> {
+						config.setOutputFolder(args[++i]);
 					}
 					
 					case "-b", "--bytecode" -> {
@@ -187,13 +231,13 @@ public class CompilerConfiguration {
 						config.setTargetFormat(TargetFormat.ASSEMBLER);
 					}
 					
-					case "-c", "--compile" -> {
-						config.setOperation(Operation.COMPILE);
-					}
-					
-					case "-r", "--run" -> {
-						config.setOperation(Operation.RUN);
-					}
+//					case "-c", "--compile" -> {
+//						config.setOperation(Operation.COMPILE);
+//					}
+//
+//					case "-r", "--run" -> {
+//						config.setOperation(Operation.RUN);
+//					}
 					
 					default -> {
 						System.out.printf("Invalid argument '%s'\n\n", str);
