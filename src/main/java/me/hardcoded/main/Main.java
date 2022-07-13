@@ -61,16 +61,11 @@ public class Main {
 			
 			args = new String[] {
 				"--working-directory", workingDirectory.getAbsolutePath(),
-				"--format", OutputFormat.IR.toString(),
+				"--format", OutputFormat.ASM.toString(),
 				"--target", TargetFormat.BYTECODE.toString(),
 				"--input-file", inputFile.getAbsolutePath(),
 				"--output-folder", outputFolder.getAbsolutePath()
 			};
-			
-			File[] files = outputFolder.listFiles((dir, name) -> !name.startsWith("."));
-			if (files != null) {
-				Arrays.stream(files).forEach(File::delete);
-			}
 		}
 		
 		CompilerConfiguration config = CompilerConfiguration.parseArgs(args);
