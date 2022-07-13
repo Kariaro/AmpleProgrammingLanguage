@@ -47,10 +47,20 @@ public class AmpleLexer {
 			.addRule(Type.STRING, i -> i.addMultiline("\"", "\\", "\""))
 			.addRule(Type.DOUBLE, i -> i.addRegex("[0-9]+(\\.[0-9]+)?[dD]?"))
 			.addRule(Type.FLOAT, i -> i.addRegex("[0-9]+(\\.[0-9]+)?[fF]"))
+			.addRule(Type.ULONG, i -> i.addRegexes(
+				"0x[0-9a-fA-F]+[Uu][Ll]",
+				"0b[0-1]+[Uu][Ll]",
+				"[0-9]+[Uu][Ll]"
+			))
+			.addRule(Type.UINT, i -> i.addRegexes(
+				"0x[0-9a-fA-F]+[Uu]",
+				"0b[0-1]+[Uu]",
+				"[0-9]+[Uu]"
+			))
 			.addRule(Type.LONG, i -> i.addRegexes(
-				"0x[0-9a-fA-F]+L",
-				"0b[0-1]+L",
-				"[0-9]+L"
+				"0x[0-9a-fA-F]+[Ll]",
+				"0b[0-1]+[Ll]",
+				"[0-9]+[Ll]"
 			))
 			.addRule(Type.INT, i -> i.addRegexes(
 				"0x[0-9a-fA-F]+",

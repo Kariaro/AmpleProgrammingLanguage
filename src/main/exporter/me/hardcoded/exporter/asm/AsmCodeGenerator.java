@@ -4,7 +4,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import me.hardcoded.compiler.AmpleMangler;
 import me.hardcoded.compiler.context.AmpleConfig;
 import me.hardcoded.compiler.impl.ICodeGenerator;
 import me.hardcoded.compiler.intermediate.inst.*;
@@ -175,9 +174,14 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				
 				String offsetValue;
 				if (offset instanceof InstParam.Num value) {
-					offsetValue = "0x%x".formatted(Integer.parseInt(value.toString()));
+					offsetValue = "0x%x".formatted(value.getValue() * AsmUtils.getLowerTypeByteSize(src.getValueType()));
 				} else if (offset instanceof InstParam.Ref value) {
-					offsetValue = "RCX";
+					int offsetSize = AsmUtils.getLowerTypeByteSize(src.getValueType());
+					if (offsetSize > 8) {
+						throw new RuntimeException();
+					}
+					
+					offsetValue = "RCX * 0x%x".formatted(offsetSize);
 					sb.add("xor RCX, RCX");
 					sb.add("mov %s, %s".formatted(
 						AsmUtils.getRegSize("CX", value.getReference()),
@@ -213,9 +217,15 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				
 				String offsetValue;
 				if (offset instanceof InstParam.Num value) {
-					offsetValue = "0x%x".formatted(Integer.parseInt(value.toString()));
+					offsetValue = "0x%x".formatted(value.getValue() * AsmUtils.getLowerTypeByteSize(dst.getValueType()));
 				} else if (offset instanceof InstParam.Ref value) {
-					offsetValue = "RCX";
+					int offsetSize = AsmUtils.getLowerTypeByteSize(dst.getValueType());
+					if (offsetSize > 8) {
+						System.out.println(offsetSize);
+						throw new RuntimeException();
+					}
+					
+					offsetValue = "RCX * 0x%x".formatted(offsetSize);
 					sb.add("xor RCX, RCX");
 					sb.add("mov %s, %s".formatted(
 						AsmUtils.getRegSize("CX", value.getReference()),

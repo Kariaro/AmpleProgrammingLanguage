@@ -133,11 +133,13 @@ public class ExprParser {
 	private Expr atomExpression() {
 		switch (reader.type()) {
 			case INT -> {
+				String text = reader.value();
+				
 				int value;
-				if (reader.value().startsWith("0x")) {
-					value = Integer.parseUnsignedInt(reader.value().substring(2), 16);
+				if (text.startsWith("0x")) {
+					value = Integer.parseUnsignedInt(text.substring(2), 16);
 				} else {
-					value = Integer.parseUnsignedInt(reader.value());
+					value = Integer.parseUnsignedInt(text);
 				}
 				NumExpr expr = new NumExpr(reader.syntaxPosition(), Primitives.I32, value);
 				reader.advance();
@@ -154,6 +156,34 @@ public class ExprParser {
 					value = Long.parseUnsignedLong(text);
 				}
 				NumExpr expr = new NumExpr(reader.syntaxPosition(), Primitives.I64, value);
+				reader.advance();
+				return expr;
+			}
+			case UINT -> {
+				String text = reader.value();
+				text = text.substring(0, text.length() - 1);
+				
+				int value;
+				if (text.startsWith("0x")) {
+					value = Integer.parseUnsignedInt(text.substring(2), 16);
+				} else {
+					value = Integer.parseUnsignedInt(text);
+				}
+				NumExpr expr = new NumExpr(reader.syntaxPosition(), Primitives.U32, value);
+				reader.advance();
+				return expr;
+			}
+			case ULONG -> {
+				String text = reader.value();
+				text = text.substring(0, text.length() - 2);
+				
+				long value;
+				if (text.startsWith("0x")) {
+					value = Long.parseUnsignedLong(text.substring(2), 16);
+				} else {
+					value = Long.parseUnsignedLong(text);
+				}
+				NumExpr expr = new NumExpr(reader.syntaxPosition(), Primitives.U64, value);
 				reader.advance();
 				return expr;
 			}

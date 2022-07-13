@@ -34,8 +34,8 @@ public enum Opcode {
 	INLINE_ASM,         // asm('type', 'command', references...)
 	
 	// Memory instructions
-	STORE,				// (*r0) = r1
-	LOAD,				// r0 = (*r1)
+	STORE,				// (r0 [r1]) = r2
+	LOAD,				// r0 = (r1 [r2])
 	
 	// Branching instructions
 	LABEL,				// A label

@@ -67,6 +67,14 @@ public class ValueType {
 		return result;
 	}
 	
+	@Override
+	public boolean equals(Object obj) {
+		if (!(obj instanceof ValueType that)) return false;
+		return this.getDepth() == that.getDepth()
+			&& this.getFlags() == that.getFlags()
+			&& this.getSize() == that.getSize();
+	}
+	
 	public String toShortName() {
 		StringBuilder sb = new StringBuilder();
 		
