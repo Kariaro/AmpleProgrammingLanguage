@@ -2,6 +2,7 @@ package me.hardcoded.compiler;
 
 import me.hardcoded.compiler.context.AmpleConfig;
 import me.hardcoded.compiler.errors.ParseException;
+import me.hardcoded.compiler.impl.ICodeGenerator;
 import me.hardcoded.compiler.intermediate.AmpleLinker;
 import me.hardcoded.compiler.intermediate.inst.InstFile;
 import me.hardcoded.compiler.parser.AmpleParser;
@@ -9,7 +10,7 @@ import me.hardcoded.compiler.parser.LinkableObject;
 import me.hardcoded.compiler.parser.serial.LinkableDeserializer;
 import me.hardcoded.compiler.parser.serial.LinkableSerializer;
 import me.hardcoded.configuration.CompilerConfiguration;
-import me.hardcoded.exporter.asm.AsmCodeGenerator;
+import me.hardcoded.configuration.OutputFormat;
 import me.hardcoded.lexer.LexerTokenizer;
 import me.hardcoded.utils.DebugUtils;
 import me.hardcoded.visualization.InstFileVisualization;
@@ -34,7 +35,17 @@ public class AmpleCompiler {
 	public void compile() throws IOException {
 		CompilerConfiguration config = ampleConfig.getConfiguration();
 		File inputFile = config.getSourceFile();
+		File outputFolder = config.getOutputFolder();
 		File workingDir = config.getWorkingDirectory();
+		
+		// Clean the output folder
+		{
+			// TODO: Make sure the output folder is not the same as the source folder
+			File[] files = outputFolder.listFiles((dir, name) -> !name.startsWith("."));
+			if (files != null) {
+				Arrays.stream(files).forEach(File::delete);
+			}
+		}
 		
 		Set<String> importedPaths = new HashSet<>();
 		importedPaths.add(inputFile.getAbsolutePath());
@@ -84,17 +95,21 @@ public class AmpleCompiler {
 			}
 		}
 		
+		// Combine all linkable objects into one instruction file
 		AmpleLinker linker = new AmpleLinker();
 		InstFile file = linker.link(main, list);
 		
-		AsmCodeGenerator asmCodeGenerator = new AsmCodeGenerator(ampleConfig);
-		byte[] bytes = asmCodeGenerator.getAssembler(file);
+		OutputFormat format = ampleConfig.getConfiguration().getOutputFormat();
+		ICodeGenerator codeGenerator = format.createNew(ampleConfig);
 		
-		String path = DebugUtils.getNextFileId(config.getOutputFolder(), "out_%d.asm");
+		byte[] bytes = switch (ampleConfig.getConfiguration().getTargetFormat()) {
+			case BYTECODE -> codeGenerator.getBytecode(file);
+			case ASSEMBLER -> codeGenerator.getAssembler(file);
+		};
+		
+		String path = DebugUtils.getNextFileId(config.getOutputFolder(), "compile_%d");
 		Files.write(Path.of(path), bytes);
-		
 		System.out.println("=".repeat(100));
-		System.out.println(new String(bytes));
 		System.out.println(path);
 		
 		ampleConfig.getVisualizationHandler()

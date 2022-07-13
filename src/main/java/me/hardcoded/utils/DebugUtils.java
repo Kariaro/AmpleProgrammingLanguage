@@ -44,26 +44,26 @@ public class DebugUtils {
 	 * @return the absolute path of the next file name
 	 */
 	public static String getNextFileId(File directory, String fileNamePattern) {
-		// First we need to make sure that all characters are escaped properly.
-		String[] parts = fileNamePattern.split("%d");
-		if(parts.length != 2) {
+		// First we need to make sure that all characters are escaped properly
+		String[] parts = fileNamePattern.split("%d", -1);
+		if (parts.length != 2) {
 			throw new IllegalArgumentException("File pattern did not contain '%d'");
 		}
 		
-		// Why we quote each part is because characters such as '.' should be properly escaped.
+		// Why we quote each part is because characters such as '.' should be properly escaped
 		String regexPattern = Pattern.quote(parts[0]) + "([0-9]+)" + Pattern.quote(parts[1]);
 		Pattern pattern = Pattern.compile(regexPattern);
 		String[] fileNames = directory.list();
 		
 		long highestId = 0;
-		if(fileNames != null) {
-			for(String fileName : fileNames) {
+		if (fileNames != null) {
+			for (String fileName : fileNames) {
 				Matcher matcher = pattern.matcher(fileName);
 				
-				if(matcher.find()) {
+				if (matcher.find()) {
 					try {
 						highestId = Math.max(highestId, Long.parseLong(matcher.group(1)));
-					} catch(NumberFormatException ignore) {
+					} catch (NumberFormatException ignore) {
 						// We didn't match a number ignore.
 					}
 				}

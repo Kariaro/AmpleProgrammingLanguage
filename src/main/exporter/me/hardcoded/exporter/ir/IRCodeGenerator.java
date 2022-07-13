@@ -1,16 +1,18 @@
-//package me.hardcoded.exporter.ir;
-//
-//import java.io.ByteArrayOutputStream;
-//import java.io.IOException;
-//
-//import me.hardcoded.compiler.impl.ICodeGenerator;
-//import me.hardcoded.compiler.instruction.IRProgram;
-//import me.hardcoded.utils.IRPrintUtils;
-//import me.hardcoded.utils.error.CodeGenException;
-//
-//public class IRCodeGenerator implements ICodeGenerator {
-//	@Override
-//	public byte[] getBytecode(Object program) throws CodeGenException {
+package me.hardcoded.exporter.ir;
+
+import me.hardcoded.compiler.context.AmpleConfig;
+import me.hardcoded.compiler.impl.ICodeGenerator;
+import me.hardcoded.compiler.intermediate.inst.InstFile;
+import me.hardcoded.utils.error.CodeGenException;
+
+public class IRCodeGenerator extends ICodeGenerator {
+	
+	public IRCodeGenerator(AmpleConfig ampleConfig) {
+		super(ampleConfig);
+	}
+	
+	@Override
+	public byte[] getBytecode(InstFile program) throws CodeGenException {
 //		ByteArrayOutputStream bs = new ByteArrayOutputStream();
 //
 //		try {
@@ -20,15 +22,17 @@
 //		}
 //
 //		return bs.toByteArray();
-//	}
-//
-//	@Override
-//	public byte[] getAssembler(Object program) throws CodeGenException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public byte[] getAssembler(InstFile program) throws CodeGenException {
 //		return IRPrintUtils.printPretty(program).getBytes();
-//	}
-//
-//	@Override
-//	public void reset() {
-//
-//	}
-//}
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void reset() {
+
+	}
+}

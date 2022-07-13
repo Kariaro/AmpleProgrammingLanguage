@@ -10,18 +10,15 @@ import me.hardcoded.compiler.intermediate.inst.*;
 import me.hardcoded.compiler.parser.type.ValueType;
 import me.hardcoded.utils.error.CodeGenException;
 
-public class AsmCodeGenerator implements ICodeGenerator {
-	private final AmpleConfig ampleConfig;
-	
+public class AsmCodeGenerator extends ICodeGenerator {
 	public AsmCodeGenerator(AmpleConfig ampleConfig) {
-		this.ampleConfig = ampleConfig;
+		super(ampleConfig);
 	}
 	
 	@Override
 	public byte[] getBytecode(InstFile program) throws CodeGenException {
 		byte[] assembler = getAssembler(program);
-		byte[] result = NasmUtils.compile(ampleConfig, assembler);
-		return result;
+		return NasmUtils.compile(ampleConfig, assembler);
 	}
 
 	@Override

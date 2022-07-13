@@ -1,18 +1,23 @@
 package me.hardcoded.compiler.impl;
 
+import me.hardcoded.compiler.context.AmpleConfig;
 import me.hardcoded.compiler.intermediate.inst.InstFile;
 import me.hardcoded.utils.error.CodeGenException;
 
-public interface ICodeGenerator {
+public abstract class ICodeGenerator {
+	protected final AmpleConfig ampleConfig;
+	
+	protected ICodeGenerator(AmpleConfig ampleConfig) {
+		this.ampleConfig = ampleConfig;
+	}
+	
 	/**
 	 * Returns an output byte array from an input {@code IRProgram}
 	 * 
 	 * @param program the {@code Object} to export
 	 * @return a byte array
 	 */
-	default byte[] getBytecode(InstFile program) throws CodeGenException {
-		return null;
-	}
+	public abstract byte[] getBytecode(InstFile program) throws CodeGenException;
 	
 	/**
 	 * Returns the current program as this instruction sets assembly language
@@ -20,13 +25,11 @@ public interface ICodeGenerator {
 	 * @param program the {@code Object} to export
 	 * @return a string
 	 */
-	default byte[] getAssembler(InstFile program) throws CodeGenException {
-		return null;
-	}
+	public abstract byte[] getAssembler(InstFile program) throws CodeGenException;
 	
 	/**
 	 * Called upon resetting the code generator.
 	 */
 	@Deprecated
-	void reset();
+	public abstract void reset();
 }
