@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.hardcoded.compiler.AmpleMangler;
 import me.hardcoded.compiler.context.AmpleConfig;
 import me.hardcoded.compiler.impl.ICodeGenerator;
 import me.hardcoded.compiler.intermediate.inst.*;

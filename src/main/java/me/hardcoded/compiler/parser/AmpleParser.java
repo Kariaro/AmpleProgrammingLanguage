@@ -108,11 +108,11 @@ public class AmpleParser {
 		reader = oldContext;
 		currentFile = oldFile;
 		
-		try {
-			// System.out.println(ObjectUtils.deepPrint("Program", program, 16));
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+//		try {
+//			System.out.println(ObjectUtils.deepPrint("Program", program, 16));
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
 		
 		return linkableObject;
 	}
@@ -131,8 +131,6 @@ public class AmpleParser {
 			if (!stat.isEmpty()) {
 				list.addElement(stat);
 			}
-			
-			System.out.println(stat);
 		}
 		
 		mutableSyntax.end = reader.lastPositionEnd();
@@ -222,6 +220,13 @@ public class AmpleParser {
 		}
 		
 		Reference reference = context.getFunctionScope().addFunction(returnType, functionName, parameters);
+		if (reference == null) {
+			throw createParseException(
+				mutableSyntax.getStartPosition(),
+				"A function with the name '%s' already exists",
+				functionName
+			);
+		}
 		FuncStat stat = new FuncStat(mutableSyntax, parameters, reference);
 		
 		tryMatchOrError(Token.Type.L_CURLY, () -> "Missing function body");
@@ -230,8 +235,6 @@ public class AmpleParser {
 		mutableSyntax.end = reader.lastPositionEnd();
 		
 		context.getLocalScope().popLocals();
-		
-		parameters.forEach(System.out::println);
 		
 		return stat;
 	}
@@ -392,7 +395,6 @@ public class AmpleParser {
 		reader.advance();
 		
 		ScopeStat body = statements();
-		System.out.println(body.getElements());
 		
 		return new ForStat(ISyntaxPosition.of(startPos, body.getSyntaxPosition().getEndPosition()), initializer, condition, action, body);
 	}
@@ -459,11 +461,7 @@ public class AmpleParser {
 	}
 	
 	private Expr expression(boolean allowComma) {
-		Expr expr = new ExprParser(this, context, reader).parse(allowComma);
-		
-		System.out.println(expr);
-		
-		return expr;
+		return new ExprParser(this, context, reader).parse(allowComma);
 	}
 	
 	boolean isType() {

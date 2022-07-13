@@ -1,4 +1,4 @@
-func printstr (i64[]: pointer, i64: length) {
+func printstr (i8[]: pointer, i64: length) {
     compiler<asm>(
         "mov rsi, {}" : pointer
         "mov rdx, {}" : length
@@ -24,6 +24,11 @@ func printhex (i64: number) {
     ret;
 }
 
+func printhex (i32: number) {
+    printhex(cast<i64>(number));
+    ret;
+}
+
 func params (i64: a, i32: b, i16: c, i8: d) {
     printhex(a);
     printhex(cast<i64>(b));
@@ -33,7 +38,7 @@ func params (i64: a, i32: b, i16: c, i8: d) {
 }
 
 func main () : i32 {
-    params(0xfedcba9876543210L, 0xfedcba98, cast<i16>(0xfedc), cast<i8>(0xfe));
-    printstr(stack_alloc<i8, 13>("Hello World!\n"), 12);
+    params(0xfedcba9876543210L, 0xfdb97531, cast<i16>(0xfb73), cast<i8>(0xf7));
+    printstr(stack_alloc<i8, 13>("Hello World!\n"), 13L);
     ret 0;
 }

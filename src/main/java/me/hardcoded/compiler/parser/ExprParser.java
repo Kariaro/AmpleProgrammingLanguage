@@ -1,5 +1,6 @@
 package me.hardcoded.compiler.parser;
 
+import me.hardcoded.compiler.AmpleMangler;
 import me.hardcoded.compiler.context.LangReader;
 import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.expr.*;
@@ -211,11 +212,36 @@ public class ExprParser {
 			}
 		}
 		
-		// TODO: Get function with the specified parameters
-		//       and the specified types.
-		Reference reference = context.getFunctionScope().getFunction(name);
+		// TODO: Get function with the specified parameters and the specified types.
+		List<Reference> simpleParameters = parameters.stream().map(i -> new Reference("", i.getType(), 0, 0)).toList();
+		
+		System.out.println(AmpleMangler.mangleFunction(name, simpleParameters));
+		Reference reference = context.getFunctionScope().getFunction(name, simpleParameters);
 		if (reference == null) {
-			throw parser.createParseException(startPos, "There is no function called '%s'", name);
+			StringBuilder extra = new StringBuilder();
+			int count = simpleParameters.size();
+			if (count > 0) {
+				extra.append(" with ").append(count)
+					 .append(" parameter").append(count == 1 ? "" : "s")
+					 .append(" of type (");
+				for (int i = 0; i < count; i++) {
+					Reference ref = simpleParameters.get(i);
+					extra.append(ref.getValueType().toShortName());
+					
+					if (i < count - 1) {
+						extra.append(", ");
+					}
+				}
+				
+				extra.append(")");
+			}
+			
+			throw parser.createParseException(
+				startPos,
+				"There is no function called '%s'%s",
+				name,
+				extra.toString()
+			);
 		}
 		
 		parser.tryMatchOrError(Token.Type.R_PAREN);
