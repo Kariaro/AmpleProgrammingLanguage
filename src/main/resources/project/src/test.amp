@@ -1,129 +1,39 @@
-func test() {
-    ret;
-}
-
-// link "test.amp"
-
-/*
-func dump_regs () {
-    i64: AX = 0L;
-    i64: CX = 0L;
-    i64: DX = 0L;
-    i64: BX = 0L;
-    i64: SP = 0L;
-    i64: BP = 0L;
-    i64: SI = 0L;
-    i64: DI = 0L;
-
+func printstr (i64[]: pointer, i64: length) {
     compiler<asm>(
-        "mov {}, rax" : AX
-        "mov {}, rcx" : CX
-        "mov {}, rdx" : DX
-        "mov {}, rbx" : BX
-        "mov {}, rsp" : SP
-        "mov {}, rbp" : BP
-        "mov {}, rsi" : SI
-        "mov {}, rdi" : DI
-    );
-
-    i8[]: message = stack_alloc<i8, 176>("RAX: ................\nRCX: ................\nRDX: ................\nRBX: ................\nRSP: ................\nRBP: ................\nRSI: ................\nRDI: ................\n");
-    i8[]: digits = stack_alloc<i8, 16>("0123456789abcdef");
-
-    for (i32: i = 15; i >= 0; i = i - 1) {
-        message[i +   5] = digits[AX & 15L];
-        message[i +  27] = digits[CX & 15L];
-        message[i +  49] = digits[DX & 15L];
-        message[i +  71] = digits[BX & 15L];
-        message[i +  93] = digits[SP & 15L];
-        message[i + 115] = digits[BP & 15L];
-        message[i + 137] = digits[SI & 15L];
-        message[i + 159] = digits[DI & 15L];
-        AX = AX >> 4L;
-        CX = CX >> 4L;
-        DX = DX >> 4L;
-        BX = BX >> 4L;
-        SP = SP >> 4L;
-        BP = BP >> 4L;
-        SI = SI >> 4L;
-        DI = DI >> 4L;
-    }
-
-    compiler<asm>(
-        "mov rsi, {}" : message
+        "mov rsi, {}" : pointer
+        "mov rdx, {}" : length
         "mov rdi, 1"
         "mov rax, 1"
-        "mov rdx, 174"
         "syscall"
     );
 
     ret;
 }
-*/
 
 func printhex (i64: number) {
     i8[]: hex_data = stack_alloc<i8, 16>("0123456789abcdef");
     i8[]: hex_strs = stack_alloc<i8, 17>("................\n");
 
-    i64: a = 3 * 4;
-
     for (i32: i = 15; i >= 0; i = i - 1) {
         hex_strs[i] = hex_data[number & cast<i64>(15)];
         number = number >> cast<i64>(4);
+        continue;
     }
 
-    compiler<asm>(
-        "mov rsi, {}" : hex_strs
-        "mov rdi, 1"
-        "mov rax, 1"
-        "mov rdx, 17"
-        "syscall"
-    );
-
+    printstr(hex_strs, 17L);
     ret;
 }
 
-/*
-func params(i64: a, i32: b, i16: c, i8: d) {
-    compiler<asm>(
-        "xor rax, rax"
-        "mov rax, {}" : a
-        "call printhex"
-    );
-    compiler<asm>(
-        "xor rax, rax"
-        "mov eax, {}" : b
-        "call printhex"
-    );
-    compiler<asm>(
-        "xor rax, rax"
-        "mov ax, {}" : c
-        "call printhex"
-    );
-    compiler<asm>(
-        "xor rax, rax"
-        "mov al, {}" : d
-        "call printhex"
-    );
-
+func params (i64: a, i32: b, i16: c, i8: d) {
+    printhex(a);
+    printhex(cast<i64>(b));
+    printhex(cast<i64>(c));
+    printhex(cast<i64>(d));
     ret;
 }
-
-func test() : i32 {
-    ret 32;
-}
-*/
 
 func main () : i32 {
-    // params(0xfedcba9876543210L, 0xfdb97531, cast<i16>(0xfb73), cast<i8>(0xf7));
-    // params(0xfedcba9876543210L, 0xfedcba98, cast<i16>(0xfedc), cast<i8>(0xfe));
-    printhex(0xfedcba9876543210L);
-
-    /*
-    i32: a = test();
-    if (a > 0 && (a < 5 && a != test())) {
-        ret 2;
-    }
-    */
-
+    params(0xfedcba9876543210L, 0xfedcba98, cast<i16>(0xfedc), cast<i8>(0xfe));
+    printstr(stack_alloc<i8, 13>("Hello World!\n"), 12);
     ret 0;
 }

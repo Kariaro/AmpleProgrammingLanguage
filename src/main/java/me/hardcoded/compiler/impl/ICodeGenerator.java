@@ -5,7 +5,7 @@ import me.hardcoded.utils.error.CodeGenException;
 
 public interface ICodeGenerator {
 	/**
-	 * Returns an output byte array from an input {@code IRProgram}.
+	 * Returns an output byte array from an input {@code IRProgram}
 	 * 
 	 * @param program the {@code Object} to export
 	 * @return a byte array
@@ -15,7 +15,8 @@ public interface ICodeGenerator {
 	}
 	
 	/**
-	 * Returns the current program as this instruction sets assembly language.
+	 * Returns the current program as this instruction sets assembly language
+	 *
 	 * @param program the {@code Object} to export
 	 * @return a string
 	 */
@@ -24,7 +25,7 @@ public interface ICodeGenerator {
 	}
 	
 	/**
-	 * Called uppon reseting the code generator.
+	 * Called upon resetting the code generator.
 	 */
 	@Deprecated
 	void reset();

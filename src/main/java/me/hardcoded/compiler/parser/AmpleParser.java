@@ -289,6 +289,16 @@ public class AmpleParser {
 				
 				yield new ReturnStat(ISyntaxPosition.of(startPos, reader.nextPositionEnd()), expr);
 			}
+			case CONTINUE -> {
+				Position startPos = reader.position();
+				reader.advance();
+				yield new ContinueStat(ISyntaxPosition.of(startPos, reader.nextPositionEnd()));
+			}
+			case BREAK -> {
+				Position startPos = reader.position();
+				reader.advance();
+				yield new BreakStat(ISyntaxPosition.of(startPos, reader.nextPositionEnd()));
+			}
 			case COMPILER -> compilerStatement();
 			default -> expression();
 		};

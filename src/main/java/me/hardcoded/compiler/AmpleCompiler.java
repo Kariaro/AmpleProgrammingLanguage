@@ -1,7 +1,6 @@
 package me.hardcoded.compiler;
 
 import me.hardcoded.compiler.context.AmpleConfig;
-import me.hardcoded.compiler.context.LangReader;
 import me.hardcoded.compiler.errors.ParseException;
 import me.hardcoded.compiler.intermediate.AmpleLinker;
 import me.hardcoded.compiler.intermediate.inst.InstFile;
@@ -24,7 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
-// TODO: Implement REPL
+// TODO: Implement REPL (Read Eval Print Loop)
 public class AmpleCompiler {
 	private final AmpleConfig ampleConfig;
 	
@@ -61,7 +60,7 @@ public class AmpleCompiler {
 				for (LinkableObject obj : allObjects) {
 					byte[] bytes = LinkableSerializer.serializeLinkable(obj);
 					
-					File debugFolder = new File("debug/out_" + obj.getFile().getName() + ".serial");
+					File debugFolder = new File(config.getOutputFolder(), "out_" + obj.getFile().getName() + ".serial");
 					if (debugFolder.exists() || debugFolder.createNewFile()) {
 						try (FileOutputStream out = new FileOutputStream(debugFolder)) {
 							out.write(bytes == null ? new byte[0] : bytes);
@@ -91,7 +90,7 @@ public class AmpleCompiler {
 		AsmCodeGenerator asmCodeGenerator = new AsmCodeGenerator(ampleConfig);
 		byte[] bytes = asmCodeGenerator.getAssembler(file);
 		
-		String path = DebugUtils.getNextFileId(new File("debug"), "out_%d.asm");
+		String path = DebugUtils.getNextFileId(config.getOutputFolder(), "out_%d.asm");
 		Files.write(Path.of(path), bytes);
 		
 		System.out.println("=".repeat(100));

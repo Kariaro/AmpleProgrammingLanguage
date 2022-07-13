@@ -12,12 +12,14 @@ import javax.swing.*;
  */
 public class VisualizationHandler {
 	private final List<Visualization> list;
+	private final ColorCache colorCache;
 	private Map<VisSupplier, Object> suppliers;
 	private boolean hasSetup;
 	
 	public VisualizationHandler() {
 		this.suppliers = new LinkedHashMap<>();
 		this.list = new ArrayList<>();
+		this.colorCache = new ColorCache();
 		
 		SwingUtilities.invokeLater(this::setup);
 	}
@@ -31,6 +33,10 @@ public class VisualizationHandler {
 		}
 		
 		return this;
+	}
+	
+	public ColorCache getColorCache() {
+		return colorCache;
 	}
 	
 	/**

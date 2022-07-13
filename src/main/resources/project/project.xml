@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<compiler>
+    <setting name="target" value="BYTECODE"/>
+    <setting name="format" value="IR"/>
+    <setting name="source" value="src/test.amp"/>
+</compiler>

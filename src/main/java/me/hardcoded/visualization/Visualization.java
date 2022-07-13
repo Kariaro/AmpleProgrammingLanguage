@@ -1,7 +1,11 @@
 package me.hardcoded.visualization;
 
 import java.awt.*;
+import java.awt.font.FontRenderContext;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferStrategy;
+import java.util.Objects;
 
 import javax.swing.*;
 
@@ -12,6 +16,8 @@ import javax.swing.*;
  */
 public abstract class Visualization {
 	protected final VisualizationHandler handler;
+	protected final ColorCache colorCache;
+	private FontRenderContext frc;
 	private BufferStrategy bs;
 	protected JFrame frame;
 	protected JMenuBar menuBar;
@@ -25,7 +31,9 @@ public abstract class Visualization {
 	}
 	
 	protected Visualization(String defaultTitle, VisualizationHandler handler, int buffers) {
-		this.handler = handler;
+		this.handler = Objects.requireNonNull(handler);
+		this.colorCache = Objects.requireNonNull(handler.getColorCache());
+		
 		SwingUtilities.invokeLater(() -> {
 			try {
 				UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -64,6 +72,14 @@ public abstract class Visualization {
 				}
 			}
 		});
+	}
+	
+	protected final Rectangle2D getStringBounds(Font font, String text) {
+		if (frc == null) {
+			frc = new FontRenderContext(new AffineTransform(), true,true);
+		}
+		
+		return font.getStringBounds(text, frc);
 	}
 	
 	/**

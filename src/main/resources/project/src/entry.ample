@@ -1,8 +1,0 @@
-uint32_t: main(
-    uint32_t: alpha,
-    uint32_t: beta,
-) {
-
-
-    leave 0;
-}

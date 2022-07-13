@@ -3,15 +3,16 @@ package me.hardcoded.main;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Locale;
 
 import me.hardcoded.compiler.AmpleCompiler;
 import me.hardcoded.compiler.context.AmpleConfig;
+import me.hardcoded.configuration.TargetFormat;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import me.hardcoded.configuration.CompilerConfiguration;
-import me.hardcoded.configuration.CompilerConfiguration.Operation;
 import me.hardcoded.configuration.OutputFormat;
 import me.hardcoded.utils.DebugUtils;
 
@@ -52,21 +53,24 @@ public class Main {
 		
 		if (DebugUtils.isDeveloper()) {
 			String file = "test.amp";
-			File dir = new File("src/main/resources/test/ample/");
+			File project = new File("src/main/resources/project");
 			
-			String workingDirectory = new File("src/main/resources/project").getAbsolutePath();
-			String inputFile = "src/" + file;
-			String outputFile = DebugUtils.getNextFileId(dir, "compiled_%d.txt");
+			File workingDirectory = new File(project, "src");
+			File outputFolder = new File(project, "bin");
+			File inputFile = new File(workingDirectory, file);
 			
-			System.out.println(dir);
 			args = new String[] {
-				"--working-directory", workingDirectory,
+				"--working-directory", workingDirectory.getAbsolutePath(),
 				"--format", OutputFormat.IR.toString(),
-				"--input-file", inputFile,
-				"--output-file", outputFile,
-				"--compile",
-				"--assembler"
+				"--target", TargetFormat.BYTECODE.toString(),
+				"--input-file", inputFile.getAbsolutePath(),
+				"--output-folder", outputFolder.getAbsolutePath()
 			};
+			
+			File[] files = outputFolder.listFiles((dir, name) -> !name.startsWith("."));
+			if (files != null) {
+				Arrays.stream(files).forEach(File::delete);
+			}
 		}
 		
 		CompilerConfiguration config = CompilerConfiguration.parseArgs(args);
@@ -100,14 +104,14 @@ public class Main {
 			e.printStackTrace();
 		}
 		
-		if (true) return;
-		
-		Operation mode = config.getOperation();
-		if (mode == Operation.NONE) {
-			printHelpMessage();
-			return;
-		}
-
+//		if (true) return;
+//
+//		Operation mode = config.getOperation();
+//		if (mode == Operation.NONE) {
+//			printHelpMessage();
+//			return;
+//		}
+//
 //		AmpleCompiler compiler = new AmpleCompiler();
 //		compiler.setConfiguration(config);
 //

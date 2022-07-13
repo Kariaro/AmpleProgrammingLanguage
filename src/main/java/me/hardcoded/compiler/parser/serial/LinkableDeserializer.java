@@ -69,8 +69,8 @@ public class LinkableDeserializer {
 		return switch (type) {
 			/* Statements */
 			case PROGRAM -> deserializeProgStat(in);
-//			case BREAK -> deserializeBreakStat(in);
-//			case CONTINUE -> deserializeContinueStat(in);
+			case BREAK -> deserializeBreakStat(in);
+			case CONTINUE -> deserializeContinueStat(in);
 			case EMPTY -> deserializeEmptyStat(in);
 			case FOR -> deserializeForStat(in);
 			case FUNC -> deserializeFuncStat(in);
@@ -103,15 +103,15 @@ public class LinkableDeserializer {
 		return (Expr) deserializeStat(in);
 	}
 
-//	private BreakStat deserializeBreakStat(DataInputStream in) throws IOException {
-//		ISyntaxPosition syntaxPosition = header.deserializeISyntaxPosition(in);
-//		return new BreakStat(syntaxPosition);
-//	}
-//
-//	private ContinueStat deserializeContinueStat(DataInputStream in) throws IOException {
-//		ISyntaxPosition syntaxPosition = header.deserializeISyntaxPosition(in);
-//		return new ContinueStat(syntaxPosition);
-//	}
+	private BreakStat deserializeBreakStat(DataInputStream in) throws IOException {
+		ISyntaxPosition syntaxPosition = header.deserializeISyntaxPosition(in);
+		return new BreakStat(syntaxPosition);
+	}
+
+	private ContinueStat deserializeContinueStat(DataInputStream in) throws IOException {
+		ISyntaxPosition syntaxPosition = header.deserializeISyntaxPosition(in);
+		return new ContinueStat(syntaxPosition);
+	}
 
 	private EmptyStat deserializeEmptyStat(DataInputStream in) throws IOException {
 		ISyntaxPosition syntaxPosition = header.deserializeISyntaxPosition(in);

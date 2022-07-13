@@ -32,25 +32,25 @@ public class LangReader {
 		}
 	}
 	
-	public int readerIndex() {
-		return index;
-	}
-	
-	public void readerIndex(int index) {
-		this.index = index;
-	}
+//	public int readerIndex() {
+//		return index;
+//	}
+//
+//	public void readerIndex(int index) {
+//		this.index = index;
+//	}
 	
 	public void advance() {
 		index++;
 	}
 	
-	public void recede() {
-		index--;
-	}
-	
-	public int indexOf(Token token) {
-		return list.indexOf(token);
-	}
+//	public void recede() {
+//		index--;
+//	}
+//
+//	public int indexOf(Token token) {
+//		return list.indexOf(token);
+//	}
 	
 	public int remaining() {
 		return list.size() - index;

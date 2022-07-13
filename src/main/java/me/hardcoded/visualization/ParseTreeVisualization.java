@@ -4,8 +4,6 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
-import java.awt.font.FontRenderContext;
-import java.awt.geom.AffineTransform;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -57,6 +55,7 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 	protected void setup() {
 		panel = new LocalPanel();
 		panel.setOpaque(true);
+		panel.setBackground(colorCache.getColor(0x2b2b2b));
 
 		frame.setSize(640, 460);
 		frame.setContentPane(panel);
@@ -73,7 +72,7 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 
 				scrollam += amount;
 				if (scrollam < -2) scrollam = -2;
-				if (scrollam > 20) scrollam = 20;
+				if (scrollam > 10) scrollam = 10;
 
 				double last = scroll;
 				scroll = Math.pow(1.3, scrollam - 1);
@@ -311,13 +310,13 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 
 		@Override
 		public void paint(Graphics gr) {
-			Graphics2D g = (Graphics2D)gr;
+			super.paint(gr);
+			
+			Graphics2D g = (Graphics2D) gr;
 			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 			g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+			g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
 			g.setFont(font);
-
-			g.setColor(Color.WHITE);
-			g.fillRect(0, 0, panel.getWidth(), panel.getHeight());
 
 			g.scale(zoom, zoom);
 			g.translate(xpos, ypos);
@@ -339,15 +338,10 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 		}
 	}
 
-	private FontRenderContext _frc;
-	private double getStringWidth(String string) {
-		if (_frc == null) {
-			_frc = new FontRenderContext(new AffineTransform(), true, true);
-		}
-		return panel.font.getStringBounds(string, _frc).getWidth();
-	}
-
 	private class Element {
+		private final List<Element> elements;
+		private final Color body;
+		
 		public double x;
 		public double y;
 		public int height;
@@ -356,16 +350,18 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 		public boolean hover;
 		public boolean selected;
 
-		private final List<Element> elements;
 		private String content;
 		private ISyntaxPosition syntaxPosition;
-		private Color body = Color.lightGray;
 
 		private Element(Object object) {
 			this.elements = new ArrayList<>();
-
+			
 			if (object instanceof Expr) {
-				body = Color.white;
+				body = colorCache.getColor(0x3d3d3d); // Color.darkGray;
+			} else if (object instanceof Stat) {
+				body = colorCache.getColor(0x1d1d1d); // Color.gray;
+			} else {
+				body = colorCache.getColor(0x5d5d5d); // Color.darkGray;
 			}
 
 			List<Object> children = getElements(object);
@@ -423,10 +419,9 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 
 		public void setContent(String value) {
 			content = value;
-			width = content.length() * 12 + 10;
-			width = (int) getStringWidth(content) + 10;
+			width = (int) getStringBounds(panel.font, content).getWidth() + 12;
 			height = 20;
-			offset = width + 1;
+			offset = width;
 		}
 
 		public void move(double x, double y) {
@@ -451,24 +446,22 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 			&& (xp - width + panel.xpos <= panel.getWidth() / panel.zoom)
 			&& (y - 5 + (height + 10) + panel.ypos >= 0)
 			&& (y - 5 - (height + 10) + panel.ypos <= panel.getHeight() / panel.zoom)) {
-				g.setColor(selected ? body.darker().darker() : (hover ? body.darker() : body));
-				
-				g.fillRoundRect(xp, y - 5, width, height + 10, 10, 10);
+				g.setColor(selected ? body.brighter().brighter() : (hover ? body.brighter() : body));
+				g.fillRect(xp, y - 5, width, height + 10);
 
-				g.setColor(Color.black);
-				Stroke stroke = g.getStroke();
-				g.setStroke(new BasicStroke(2));
-				g.drawRoundRect(xp, y - 5, width, height + 10, 10, 10);
-				g.setStroke(stroke);
+				if (selected) {
+					g.setColor(Color.white);
+					Stroke stroke = g.getStroke();
+					g.setStroke(new BasicStroke(2));
+					g.drawRect(xp + 1, y - 5 + 1, width - 2, height + 10 - 2);
+					g.setStroke(stroke);
+				}
 
-				g.setColor(Color.black);
+				g.setColor(Color.white);
 				FontMetrics fm = g.getFontMetrics();
 				Rectangle rect = fm.getStringBounds(content, g).getBounds();
 				g.drawString(content, x - rect.x + ((int) offset - rect.width) / 2, y - rect.y + (height - rect.height) / 2 + 3);
 			}
-
-//			g.setColor(hover ? Color.red : Color.gray);
-//			g.fillRect(xp - (int)((offset - width) / 2.0), y - 10, (int)offset, 10);
 
 			double xx = xp + (width - offset) / 2.0 + panel.xpos;
 			if ((xx + offset > 0) && (xx < panel.getWidth() / panel.zoom)) {
@@ -479,22 +472,23 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 		}
 
 		public void paintLines(Graphics2D g) {
-			int x0 = (int)(x + offset / 2D);
-			int y0 = (int)y;
-
-			int xxp = (int)this.x;
+			int x0 = (int) (x + offset / 2D);
+			int y0 = (int) y;
+			int xxp = (int) this.x;
 
 			if (!elements.isEmpty()) {
 				xxp += (offset - width) / 2;
 			}
-
+			
+			g.setColor(Color.white);
 			double xx = xxp + (width - offset) / 2.0 + panel.xpos;
 			if ((xx + offset > 0) && (xx < panel.getWidth() / panel.zoom)) {
-				g.setColor(Color.black);
 				for (Element elm : elements) {
 					int x1 = (int) (elm.x + elm.offset / 2D);
 					int y1 = (int) elm.y;
-
+					
+					// g.drawLine(x0, y0, x1, y0);
+					// g.drawLine(x1, y0, x1, y1);
 					g.drawLine(x0, y0, x1, y1);
 					elm.paintLines(g);
 				}
