@@ -1,5 +1,6 @@
 package me.hardcoded.compiler.parser.scope;
 
+import me.hardcoded.compiler.AmpleMangler;
 import me.hardcoded.compiler.errors.ParseException;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ValueType;
@@ -45,34 +46,34 @@ public class FunctionScope {
 		return functionScope.getScope().addFunction(type, name, parameters);
 	}
 	
-	public Reference getGlobalFunction(String name) {
-		return functionScope.getAllScopes().getFirst().getFunction(name);
+	public Reference getGlobalFunction(String name, List<Reference> parameters) {
+		return functionScope.getAllScopes().getFirst().getFunction(name, parameters);
 	}
 	
-	public Reference getLocalFunction(String name) {
-		return functionScope.getScope().getFunction(name);
+	public Reference getLocalFunction(String name, List<Reference> parameters) {
+		return functionScope.getScope().getFunction(name, parameters);
 	}
 	
-	public Reference getFunction(String name) {
+	public Reference getFunction(String name, List<Reference> parameters) {
 		String namespace = getNamespaceName();
 		
 		Reference reference;
-		if ((reference = getLocalFunction(name)) != null) {
+		if ((reference = getLocalFunction(name, parameters)) != null) {
 			return reference;
 		}
 		
 		if (namespace != null) {
-			if ((reference = getLocalFunction(namespace + name)) != null) {
+			if ((reference = getLocalFunction(namespace + name, parameters)) != null) {
 				return reference;
 			}
 			
-			if ((reference = getGlobalFunction(namespace + name)) != null) {
+			if ((reference = getGlobalFunction(namespace + name, parameters)) != null) {
 				return reference;
 			}
 		}
 		
 		// We didn't find it so we check the global scope
-		return getGlobalFunction(name);
+		return getGlobalFunction(name, parameters);
 	}
 	
 	public String getNamespaceName() {
@@ -93,32 +94,27 @@ public class FunctionScope {
 		}
 		
 		public Reference addFunction(ValueType returnType, String name, List<Reference> parameters) {
-			if (definedFunctions.containsKey(name)) {
+			String mangledName = AmpleMangler.mangleFunction(name, parameters);
+			if (definedFunctions.containsKey(mangledName)) {
 				return null;
 			}
 			
-			String constructedName;
-			if (namespace != null) {
-				constructedName = namespace + name;
-			} else {
-				constructedName = name;
-			}
-			
+			String constructedName = (namespace == null ? name : (namespace + name));
+			String constructedEntryName = (namespace == null ? mangledName : (namespace + mangledName));
 			Reference reference = new Reference(constructedName, returnType, programScope.count++, Reference.FUNCTION);
 			Functions global = functionScope.getAllScopes().getFirst();
-			if (global != this) {
-				if (global.definedFunctions.put(constructedName, reference) != null) {
-					throw new ParseException("Function override");
-				}
+			if (global != this && global.definedFunctions.put(constructedEntryName, reference) != null) {
+				throw new ParseException("Function override");
 			}
 			
-			definedFunctions.put(constructedName, reference);
+			definedFunctions.put(mangledName, reference);
 			programScope.allReferences.add(reference);
 			return reference;
 		}
 		
-		public Reference getFunction(String name) {
-			return definedFunctions.get(name);
+		public Reference getFunction(String name, List<Reference> parameters) {
+			String mangledName = AmpleMangler.mangleFunction(name, parameters);
+			return definedFunctions.get(mangledName);
 		}
 	}
 }

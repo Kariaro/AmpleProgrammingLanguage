@@ -13,8 +13,10 @@ public class StackAllocExpr extends Expr {
 	public StackAllocExpr(ISyntaxPosition syntaxPosition, ValueType type, int size, Expr value) {
 		super(syntaxPosition);
 		this.size = size;
-		this.type = type;
 		this.value = value;
+		
+		// Update this fix later
+		this.type = type.createArray(1);
 	}
 	
 	public Expr getValue() {
