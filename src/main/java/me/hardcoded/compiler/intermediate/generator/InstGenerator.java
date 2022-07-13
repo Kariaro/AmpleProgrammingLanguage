@@ -1,6 +1,8 @@
 package me.hardcoded.compiler.intermediate.generator;
 
+import me.hardcoded.compiler.errors.InstException;
 import me.hardcoded.compiler.errors.ParseException;
+import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.intermediate.AmpleLinker.ExportMap;
 import me.hardcoded.compiler.intermediate.inst.*;
 import me.hardcoded.compiler.parser.LinkableObject;
@@ -10,6 +12,7 @@ import me.hardcoded.compiler.parser.type.Operation;
 import me.hardcoded.compiler.parser.type.Primitives;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ValueType;
+import me.hardcoded.utils.Position;
 
 import java.util.HashMap;
 import java.util.List;
@@ -247,7 +250,18 @@ public class InstGenerator {
 		procedure.addInst(new Inst(Opcode.MOV, stat.getSyntaxPosition())
 			.addParam(new InstParam.Ref(holder))
 			.addParam(new InstParam.Ref(value)));
-
+		
+		if (!holder.getValueType().equals(value.getValueType())) {
+			Position pos = stat.getSyntaxPosition().getStartPosition();
+			throw new InstException(
+				"(line: %d, column: %d) Left and Right side does not match (%s != %s)",
+				pos.line + 1,
+				pos.column + 1,
+				holder.getValueType().toShortName(),
+				value.getValueType().toShortName()
+			);
+		}
+		
 		return NONE;
 	}
 	
@@ -332,7 +346,8 @@ public class InstGenerator {
 			
 			return stack;
 		} else {
-			throw new RuntimeException();
+			// Uninitialized
+			return stack;
 		}
 	}
 	
@@ -358,6 +373,17 @@ public class InstGenerator {
 			.addParam(new InstParam.Ref(holder))
 			.addParam(new InstParam.Ref(left))
 			.addParam(new InstParam.Ref(right)));
+		
+		if (!left.getValueType().equals(right.getValueType())) {
+			Position pos = expr.getSyntaxPosition().getStartPosition();
+			throw new InstException(
+				"(line: %d, column: %d) Left and Right side does not match (%s != %s)",
+				pos.line + 1,
+				pos.column + 1,
+				left.getValueType().toShortName(),
+				right.getValueType().toShortName()
+			);
+		}
 
 		return holder;
 	}
@@ -417,8 +443,6 @@ public class InstGenerator {
 
 	private InstRef generateNumExpr(NumExpr expr, Procedure procedure) {
 		InstRef holder = createDataReference(".number", expr.getType());
-		// TODO: Assign number value to ref
-		// TODO: Add type size value to ref
 		procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
 			.addParam(new InstParam.Ref(holder))
 			.addParam(new InstParam.Num(expr.getType(), expr.getValue())));
@@ -471,6 +495,20 @@ public class InstGenerator {
 				.addParam(new InstParam.Ref(arrayObject))
 				.addParam(new InstParam.Ref(arrayOffset))
 				.addParam(new InstParam.Ref(right)));
+			
+			ValueType childType = arrayObject.getValueType()
+				.createArray(arrayObject.getValueType().getDepth() - 1);
+			
+			if (!childType.equals(right.getValueType())) {
+				Position pos = expr.getSyntaxPosition().getStartPosition();
+				throw new InstException(
+					"(line: %d, column: %d) Left and Right side does not match (%s != %s)",
+					pos.line + 1,
+					pos.column + 1,
+					childType.toShortName(),
+					right.getValueType().toShortName()
+				);
+			}
 		} else {
 			InstRef left = generateStat(expr.getLeft(), procedure);
 			InstRef right = generateStat(expr.getRight(), procedure);
@@ -478,6 +516,17 @@ public class InstGenerator {
 			procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
 				.addParam(new InstParam.Ref(left))
 				.addParam(new InstParam.Ref(right)));
+			
+			if (!left.getValueType().equals(right.getValueType())) {
+				Position pos = expr.getSyntaxPosition().getStartPosition();
+				throw new InstException(
+					"(line: %d, column: %d) Left and Right side does not match (%s != %s)",
+					pos.line + 1,
+					pos.column + 1,
+					left.getValueType().toShortName(),
+					right.getValueType().toShortName()
+				);
+			}
 		}
 		
 		return holder;
@@ -535,28 +584,6 @@ public class InstGenerator {
 				.addParam(new InstParam.Ref(corEndBranch)));
 		}
 
-		// a && b && c && d && e
-		// MOV [tmp], [0]
-		// JZ [a], [:end0]
-		// JZ [b], [:end0]
-		// JZ [c], [:end0]
-		// JZ [d], [:end0]
-		// JZ [e], [:end0]
-		// MOV [tmp], [1]
-		// :end0
-
-		// a || b || c || d || e
-		// MOV [tmp], [0]
-		// JNZ [a], [:val0]
-		// JNZ [b], [:val0]
-		// JNZ [c], [:val0]
-		// JNZ [d], [:val0]
-		// JNZ [e], [:val0]
-		// JMP [:end0]
-		// :val0
-		// MOV [tmp], [1]
-		// :end0
-
 		return holder;
 	}
 
@@ -589,28 +616,6 @@ public class InstGenerator {
 		return result;
 	}
 
-	// Type checks
-//	private Expr getDereferenceLeaf(Expr expr) {
-//		while (true) {
-//			if (expr instanceof CommaExpr e) {
-//				if (!e.getValues().isEmpty()) {
-//					expr = e.getLast();
-//					continue;
-//				} else {
-//					return null;
-//				}
-//			}
-//
-//			if (expr instanceof UnaryExpr e) {
-//				if (e.getOperation() == Operation.DEREFERENCE) {
-//					return e.getValue();
-//				}
-//			}
-//
-//			return null;
-//		}
-//	}
-
 	// Type conversions
 	public Opcode getBinaryOpcode(Operation operation) {
 		return switch (operation) {
@@ -619,7 +624,6 @@ public class InstGenerator {
 			case MINUS -> Opcode.SUB;
 			case MULTIPLY -> Opcode.MUL;
 			case DIVIDE -> Opcode.DIV;
-//			case MODULO -> Opcode.MOD;
 			case AND -> Opcode.AND;
 //			case XOR -> Opcode.XOR;
 			case OR -> Opcode.OR;
@@ -642,7 +646,6 @@ public class InstGenerator {
 //			case DEREFERENCE -> Opcode.LOAD;
 
 			case NEGATIVE -> Opcode.NEG;
-//			case UNARY_PLUS -> Opcode.POS;
 			case NOT -> Opcode.NOT;
 //			case NOR -> Opcode.NOR;
 			

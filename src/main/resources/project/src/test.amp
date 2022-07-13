@@ -1,4 +1,4 @@
-func printstr (i8[]: pointer, i64: length) {
+func printstr (u8[]: pointer, i64: length) {
     compiler<asm>(
         "mov rsi, {}" : pointer
         "mov rdx, {}" : length
@@ -11,8 +11,8 @@ func printstr (i8[]: pointer, i64: length) {
 }
 
 func printhex (i64: number) {
-    i8[]: hex_data = stack_alloc<i8, 16>("0123456789abcdef");
-    i8[]: hex_strs = stack_alloc<i8, 17>("................\n");
+    u8[]: hex_data = stack_alloc<u8, 16>("0123456789abcdef");
+    u8[]: hex_strs = stack_alloc<u8, 17>("................\n");
 
     for (i32: i = 15; i >= 0; i = i - 1) {
         hex_strs[i] = hex_data[number & cast<i64>(15)];
@@ -38,7 +38,15 @@ func params (i64: a, i32: b, i16: c, i8: d) {
 }
 
 func main () : i32 {
+    u32[]: test = stack_alloc<u32, 16>();
+    i32: q = 0;
+    test[q] = 32u;
+    q = 1;
+    test[q] = 32u;
+
+    i32: a = 64;
     params(0xfedcba9876543210L, 0xfdb97531, cast<i16>(0xfb73), cast<i8>(0xf7));
-    printstr(stack_alloc<i8, 13>("Hello World!\n"), 13L);
+    printhex(32);
+    printstr(stack_alloc<u8, 13>("Hello World!\n"), 13L);
     ret 0;
 }

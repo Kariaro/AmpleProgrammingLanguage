@@ -10,38 +10,6 @@ import me.hardcoded.utils.FileUtils;
 
 // TODO: Make this into an XML format
 public class CompilerConfiguration {
-//	public enum Type {
-//		/**
-//		 * The output format of the compiler.
-//		 */
-//		OUTPUT_FORMAT,
-//
-//		/**
-//		 * The output target format. <i>Default bytecode</i>
-//		 */
-//		TARGET_FORMAT,
-//
-//		/**
-//		 * The file that is going to be compiled.
-//		 */
-//		SOURCE_FILE,
-//
-//		/**
-//		 * The output destination of the compiled file.
-//		 */
-//		OUTPUT_FILE,
-//
-//		/**
-//		 * The directory used for non-absolute paths.
-//		 */
-//		WORKING_DIRECTORY,
-//
-//		/**
-//		 * The operation that should be performed by the compiler.
-//		 */
-//		OPERATION,
-//	}
-
 	public enum Type {
 		/**
 		 * The output format of the compiler. <i>Default ir</i>
@@ -83,11 +51,9 @@ public class CompilerConfiguration {
 		
 		setSourceFile("");
 		setOutputFolder("");
-//		setOutputFile("");
 		setWorkingDirectory("");
 		setOutputFormat(OutputFormat.IR);
 		setTargetFormat(TargetFormat.BYTECODE);
-//		setOperation(Operation.COMPILE);
 	}
 	
 	public OutputFormat getOutputFormat() {
@@ -132,7 +98,7 @@ public class CompilerConfiguration {
 	
 	@SuppressWarnings("unchecked")
 	private <T> T get(Type type) {
-		return (T)map.get(type);
+		return (T) map.get(type);
 	}
 	
 	private void set(Type type, Object object) {

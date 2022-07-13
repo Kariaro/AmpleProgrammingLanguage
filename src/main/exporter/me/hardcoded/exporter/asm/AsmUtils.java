@@ -80,6 +80,10 @@ class AsmUtils {
 		return (type.getDepth() > 0) ? getPointerSize() : (type.getSize() >> 3);
 	}
 	
+	public static int getLowerTypeByteSize(ValueType type) {
+		return ((type.getDepth() > 1) ? getPointerSize() : (type.getSize() >> 3));
+	}
+	
 	// TODO: Read this from some config
 	public static int getPointerSize() {
 		return 8;
