@@ -3,17 +3,18 @@ package me.hardcoded.interpreter;
 import me.hardcoded.compiler.intermediate.inst.*;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Converts from an InstFile to a runnable interpreted file
  */
-class AmpleFile {
+class AmpleContext {
 	private final Map<InstRef, AmpleFunc> functions;
 	private final AmpleFunc mainFunction;
 	
-	public AmpleFile(InstFile file) {
+	public AmpleContext(InstFile file) {
 		this.functions = new HashMap<>();
 		
 		InstRef mainRef = null;

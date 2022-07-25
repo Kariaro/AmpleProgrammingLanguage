@@ -26,14 +26,54 @@ public class Value {
 		checkEqualType("add", value);
 		fillBits(switch (type) {
 			case UNSIGNED, SIGNED -> ValueUtil.add(data, data, value.data);
-			case FLOATING -> ValueUtil.floatAdd(data, data, value.data, getExponentBits(), getMantissaBits());
+			case FLOATING -> ValueUtil.Temp.add(data, data, value.data, getExponentBits(), getMantissaBits());
 		}, bits);
 		return this;
 	}
 	
 	public Value sub(Value value) {
 		checkEqualType("sub", value);
-		fillBits(ValueUtil.sub(data, data, value.data), bits);
+		fillBits(switch (type) {
+			case UNSIGNED, SIGNED -> ValueUtil.sub(data, data, value.data);
+			case FLOATING -> ValueUtil.Temp.sub(data, data, value.data, getExponentBits(), getMantissaBits());
+		}, bits);
+		return this;
+	}
+	
+	public Value mul(Value value) {
+		checkEqualType("mul", value);
+		fillBits(switch (type) {
+			case UNSIGNED, SIGNED -> ValueUtil.mul(new int[data.length], data, value.data);
+			case FLOATING -> ValueUtil.Temp.mul(data, data, value.data, getExponentBits(), getMantissaBits());
+		}, bits);
+		return this;
+	}
+	
+	public Value div(Value value) {
+		checkEqualType("div", value);
+		fillBits(switch (type) {
+			case UNSIGNED -> ValueUtil.unsignedDiv(new int[data.length], data, value.data);
+			case SIGNED -> ValueUtil.signedDiv(new int[data.length], data, value.data);
+			case FLOATING -> ValueUtil.Temp.div(data, data, value.data, getExponentBits(), getMantissaBits());
+		}, bits);
+		return this;
+	}
+	
+	public Value remainder(Value value) {
+		checkEqualType("remainder", value);
+		fillBits(switch (type) {
+			case UNSIGNED -> ValueUtil.unsignedRemainder(new int[data.length], data, value.data);
+			case SIGNED -> ValueUtil.signedRemainder(new int[data.length], data, value.data);
+			case FLOATING -> ValueUtil.Temp.remainder(data, data, value.data, getExponentBits(), getMantissaBits());
+		}, bits);
+		return this;
+	}
+	
+	public Value neg() {
+		fillBits(switch (type) {
+			case UNSIGNED, SIGNED -> ValueUtil.neg(data, data);
+			case FLOATING -> ValueUtil.Temp.neg(data, data, getExponentBits(), getMantissaBits());
+		}, bits);
 		return this;
 	}
 	
@@ -55,32 +95,6 @@ public class Value {
 		return this;
 	}
 	
-	public Value mul(Value value) {
-		checkEqualType("mul", value);
-		fillBits(ValueUtil.mul(new int[data.length], data, value.data), bits);
-		return this;
-	}
-	
-	public Value div(Value value) {
-		checkEqualType("div", value);
-		fillBits(switch (type) {
-			case UNSIGNED -> ValueUtil.unsignedDiv(new int[data.length], data, value.data);
-			case SIGNED -> ValueUtil.signedDiv(new int[data.length], data, value.data);
-			case FLOATING -> throw new UnsupportedOperationException();
-		}, bits);
-		return this;
-	}
-	
-	public Value remainder(Value value) {
-		checkEqualType("remainder", value);
-		fillBits(switch (type) {
-			case UNSIGNED -> ValueUtil.unsignedRemainder(new int[data.length], data, value.data);
-			case SIGNED -> ValueUtil.signedRemainder(new int[data.length], data, value.data);
-			case FLOATING -> throw new UnsupportedOperationException();
-		}, bits);
-		return this;
-	}
-	
 	public Value shiftLeft(int steps) {
 		fillBits(ValueUtil.shiftLeft(data, data, steps), bits);
 		return this;
@@ -91,8 +105,8 @@ public class Value {
 		return this;
 	}
 	
-	public Value neg() {
-		fillBits(ValueUtil.neg(data, data), bits);
+	public Value set(long value) {
+		ValueUtil.set(data, value);
 		return this;
 	}
 	
@@ -101,7 +115,7 @@ public class Value {
 		int result = switch (type) {
 			case UNSIGNED -> ValueUtil.compareUnsigned(data, value.data);
 			case SIGNED   -> ValueUtil.compareSigned(data, value.data);
-			case FLOATING -> throw new UnsupportedOperationException();
+			case FLOATING -> ValueUtil.Temp.compare(data, value.data, getExponentBits(), getMantissaBits());
 		};
 		
 		int[] array = new int[data.length];
@@ -117,22 +131,99 @@ public class Value {
 	/**
 	 * Cast this value to another size and type and return the new value
 	 * @param newBits the new size
-	 * @param type the new type
+	 * @param newType the new type
 	 */
-	public Value cast(int newBits, Type type) {
-		Value value = new Value(EMPTY, newBits, type);
+	public Value rawCast(int newBits, Type newType) {
+		Value value = new Value(EMPTY, newBits, newType);
+		value.fillBits(data, newBits);
+		return value;
+	}
+	
+	/**
+	 * Cast this value to another size and type and return the new value
+	 * @param newBits the new size
+	 * @param newType the new type
+	 */
+	public Value cast(int newBits, Type newType) {
+		Value value = new Value(EMPTY, newBits, newType);
 		
-		if (type == Type.FLOATING) {
-			// TODO: Only certain bits can be converted to floating
-		} else {
-			// Check if the last bit is set (if negative)
-			if (type == Type.SIGNED && hasBit(bits - 1)) {
-				Arrays.fill(value.data, -1);
+		if (type == Type.FLOATING && newType != Type.FLOATING) {
+			int mantissaBits = getMantissaBits();
+			int exponentBits = getExponentBits();
+			value.fillBits(data, mantissaBits);
+			ValueUtil.setBit(value.data, value.data, mantissaBits, true);
+			int[] exponent = ValueUtil.copyBits(new int[(exponentBits + 31) >> 5], data, (data.length << 5) - exponentBits - 1, exponentBits);
+			
+			{
+				ValueUtil.add(exponent, exponent, -mantissaBits);
+				int[] arr = ValueUtil.createArray(-1, exponent.length << 5);
+				ValueUtil.shiftLeft(arr, arr, exponentBits - 1);
+				ValueUtil.flipBits(arr, arr);
+				ValueUtil.sub(exponent, exponent, arr);
 			}
 			
-			// Fill bit data
-			value.fillBits(data, bits);
+			int cmp = ValueUtil.signum(exponent, false);
+			if (cmp < 0) {
+				while (!ValueUtil.isZero(exponent)) {
+					ValueUtil.add(exponent, exponent, 1);
+					ValueUtil.shiftRight(value.data, value.data, 1);
+				}
+			} else if (cmp > 0) {
+				while (!ValueUtil.isZero(exponent)) {
+					ValueUtil.add(exponent, exponent, -1);
+					ValueUtil.shiftLeft(value.data, value.data, 1);
+				}
+			}
+			
+			if (ValueUtil.isNegative(data)) {
+				ValueUtil.flipBits(value.data, value.data);
+				ValueUtil.add(value.data, value.data, 1);
+			}
+			
+			return value;
+		} else if (type != Type.FLOATING && newType == Type.FLOATING) {
+			int mantissaBits = value.getMantissaBits();
+			int exponentBits = value.getExponentBits();
+			
+			int[] newExponent = new int[(exponentBits + 31) >> 5];
+			int[] newData = data.clone();
+			int highestBit = ValueUtil.highestSetBit(newData);
+			
+			System.out.printf("bit: %d\n", highestBit);
+			if (highestBit > 0) {
+				// Set exponent to zero
+				ValueUtil.set(newExponent, -1);
+				ValueUtil.shiftLeft(newExponent, newExponent, exponentBits - 1);
+				ValueUtil.flipBits(newExponent, newExponent);
+				ValueUtil.add(newExponent, newExponent, mantissaBits);
+			}
+			
+			if (highestBit < mantissaBits) {
+				while (highestBit != mantissaBits + 1) {
+					ValueUtil.shiftLeft(newData, newData, 1);
+					ValueUtil.add(newExponent, newExponent, -1);
+					highestBit++;
+				}
+			} else {
+				while (highestBit != mantissaBits + 1) {
+					ValueUtil.shiftRight(newData, newData, 1);
+					ValueUtil.add(newExponent, newExponent, 1);
+					highestBit--;
+				}
+			}
+			
+			ValueUtil.bitcopy(newExponent, 0, value.data, mantissaBits, exponentBits);
+			ValueUtil.bitcopy(newData, 0, value.data, 0, mantissaBits);
+			return value;
 		}
+		
+		// Check if the last bit is set (if negative)
+		if (newType == Type.SIGNED && hasBit(bits - 1)) {
+			Arrays.fill(value.data, -1);
+		}
+		
+		// Fill bit data
+		value.fillBits(data, bits);
 		
 		return value;
 	}
@@ -144,11 +235,8 @@ public class Value {
 	private int getMantissaBits() {
 		// Used when calculating IEEE 754 floating point arithmetics
 		return switch (bits) {
-			case 16 -> 10;
 			case 32 -> 23;
 			case 64 -> 52;
-			case 128 -> 113;
-			case 256 -> 237;
 			default -> throw new IllegalStateException("Cannot get mantissa of invalid bit size");
 		};
 	}
@@ -156,11 +244,8 @@ public class Value {
 	private int getExponentBits() {
 		// Used when calculating IEEE 754 floating point arithmetics
 		return switch (bits) {
-			case 16 -> 5;
 			case 32 -> 8;
 			case 64 -> 11;
-			case 128 -> 15;
-			case 256 -> 19;
 			default -> throw new IllegalStateException("Cannot get exponent of invalid bit size");
 		};
 	}
@@ -311,16 +396,6 @@ public class Value {
 		return sb.reverse().toString();
 	}
 	
-	public String toBinaryString() {
-		StringBuilder sb = new StringBuilder();
-		
-		for (int i = 0; i < bits; i++) {
-			sb.append((data[i >> 5] >>> (i & 31)) & 1);
-		}
-		
-		return sb.reverse().toString();
-	}
-	
 	private boolean hasBit(int index) {
 		if (index < 0 || index > bits) {
 			throw new RuntimeException("(%d) bit out of bounds".formatted(index));
@@ -354,12 +429,10 @@ public class Value {
 		}
 	}
 	
-	private boolean checkEqualType(String name, Value value) {
+	private void checkEqualType(String name, Value value) {
 		if (!equalType(value)) {
 			throw new RuntimeException("Value types does not match. (%s)".formatted(name));
 		}
-		
-		return true;
 	}
 	
 	/**
