@@ -9,7 +9,7 @@ import java.util.Arrays;
  *
  * @author HardCoded
  */
-class ValueUtil {
+class ValueUtilBck {
 	static int[] add(int[] dst, int[] x, int[] y) {
 		long carry = 0L;
 		
@@ -38,6 +38,22 @@ class ValueUtil {
 			
 			// Calculate overflow
 			carry = (-(c >>> 32)) & 0xffffffffL;
+			
+			// Update array
+			dst[i] = (int) c;
+		}
+		
+		return dst;
+	}
+	
+	static int[] add(int[] dst, int[] x, long value) {
+		long carry = 0L;
+		
+		for (int i = 0, len = dst.length; i < len; i++) {
+			long a = x[i] & 0xffffffffL;
+			long b = (i == 0 ? (value) : (i == 1 ? (value >>> 32) : 0)) & 0xffffffffL;
+			long c = a + b + carry;
+			carry = c >>> 32;
 			
 			// Update array
 			dst[i] = (int) c;
@@ -320,22 +336,6 @@ class ValueUtil {
 		return dst;
 	}
 	
-	static int[] add(int[] dst, int[] x, long value) {
-		long carry = 0L;
-		
-		for (int i = 0, len = dst.length; i < len; i++) {
-			long a = x[i] & 0xffffffffL;
-			long b = (i == 0 ? (value) : (i == 1 ? (value >>> 32) : 0)) & 0xffffffffL;
-			long c = a + b + carry;
-			carry = c >>> 32;
-			
-			// Update array
-			dst[i] = (int) c;
-		}
-		
-		return dst;
-	}
-	
 	static boolean getBit(int[] x, int index) {
 		final int idx = index >> 5;
 		final int ibt = index & 31;
@@ -566,12 +566,15 @@ class ValueUtil {
 		int[] yExp = copyBits(new int[(exponentBits + 31) >> 5], y, (x.length << 5) - exponentBits - 1, exponentBits);
 		int[] xMan = copyBits(new int[(mantissaBits + 32) >> 5], x, 0, mantissaBits);
 		int[] yMan = copyBits(new int[(mantissaBits + 32) >> 5], y, 0, mantissaBits);
+		
 		int cmp = compareUnsigned(xExp, yExp);
+//		System.out.printf("exp (x=%s, y=%s)\n", toPlainString(xExp), toPlainString(yExp));
 		
 		// Remove x from y
 		sub(xExp, yExp, xExp);
 		
 		int shift = toInt(xExp);
+//		System.out.printf("shift (%s) (%d)\n", cmp < 0 ? "X" : "Y", shift);
 		if (cmp < 0) {
 			// xExp is smallest
 			setBit(xMan, xMan, mantissaBits, true);
@@ -588,15 +591,22 @@ class ValueUtil {
 			sub(yExp, yExp, xExp);
 		}
 		
+//		System.out.println(toBitsString(xMan));
 		if (getBit(xMan, mantissaBits)) {
 			// Overflow exponent needs to be modified upwards
 			add(yExp, yExp, 1);
 			shiftRight(xMan, xMan, 1);
 		}
+//		System.out.println(toBitsString(xMan));
 		
 		setBit(dst, dst, mantissaBits + exponentBits, xSgn != 0);
 		bitcopy(yExp, 0, dst, mantissaBits, exponentBits);
 		bitcopy(xMan, 0, dst, 0, mantissaBits);
+		
+//		System.out.printf("exp: %s\n", toPlainString(yExp));
+//		System.out.printf("man: %s\n", toPlainString(xMan));
+		
+//		throw new UnsupportedOperationException();
 		return dst;
 	}
 	

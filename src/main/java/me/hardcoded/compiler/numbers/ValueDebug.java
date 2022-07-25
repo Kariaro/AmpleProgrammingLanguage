@@ -86,13 +86,19 @@ public class ValueDebug {
 		// ts = 0.0000000000000000000000000000000000000123;
 		
 		Value a = Value.valueOf(10F);
-		Value b = Value.valueOf(20F);
+		Value b = Value.valueOf(1234567890F);
 		
 		try {
 			System.out.printf("hex: %s, (%s)\n", a, a.toString(10));
 			System.out.printf("hex: %s, (%s)\n", b, b.toString(10));
 			Value c = a.add(b);
 			System.out.printf("hex: %s, (%s)\n", c, c.toString(10));
+			Value d = c.cast(64, Value.Type.SIGNED);
+			System.out.printf("hex: %s, (%s)\n", d, d.toString(10));
+			Value e = Value.valueOf(1234567890, 64, Value.Type.SIGNED).cast(64, Value.Type.FLOATING);
+			System.out.printf("hex: %s, (%s)\n", e, e.toString(10));
+			Value f = Value.valueOf(1234567890.0).rawCast(64, Value.Type.UNSIGNED);
+			System.out.printf("hex: %s, (%s)\n", f, f.toString(10));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

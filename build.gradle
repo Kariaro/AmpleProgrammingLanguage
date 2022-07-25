@@ -19,7 +19,7 @@ sourceSets {
     main {
         java.srcDirs 'src/main/compiler'
         java.srcDirs 'src/main/exporter'
-        java.srcDirs 'src/main/vm'
+        java.srcDirs 'src/main/interpreter'
     }
 }
 

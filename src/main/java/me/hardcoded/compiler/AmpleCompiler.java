@@ -11,6 +11,7 @@ import me.hardcoded.compiler.parser.serial.LinkableDeserializer;
 import me.hardcoded.compiler.parser.serial.LinkableSerializer;
 import me.hardcoded.configuration.CompilerConfiguration;
 import me.hardcoded.configuration.OutputFormat;
+import me.hardcoded.interpreter.AmpleInterpreter;
 import me.hardcoded.lexer.LexerTokenizer;
 import me.hardcoded.utils.DebugUtils;
 import me.hardcoded.visualization.InstFileVisualization;
@@ -98,6 +99,14 @@ public class AmpleCompiler {
 		// Combine all linkable objects into one instruction file
 		AmpleLinker linker = new AmpleLinker();
 		InstFile file = linker.link(main, list);
+		
+		AmpleInterpreter interpreter = new AmpleInterpreter();
+		try {
+			interpreter.runBlocking(file);
+			System.exit(0);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 		
 		OutputFormat format = ampleConfig.getConfiguration().getOutputFormat();
 		ICodeGenerator codeGenerator = format.createNew(ampleConfig);
