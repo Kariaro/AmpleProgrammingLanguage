@@ -1,7 +1,7 @@
 package me.hardcoded.compiler.parser;
 
-import me.hardcoded.compiler.AmpleMangler;
 import me.hardcoded.compiler.context.LangReader;
+import me.hardcoded.compiler.errors.ParseException;
 import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.expr.*;
 import me.hardcoded.compiler.parser.scope.ProgramScope;
@@ -27,12 +27,12 @@ public class ExprParser {
 		this.reader = reader;
 	}
 	
-	public Expr parse(boolean allowComma) {
+	public Expr parse(boolean allowComma) throws ParseException {
 		return parse(allowComma, Operation.MAX_PRECEDENCE);
 	}
 	
 	// At some point in the future. Unroll this and make it not recursive
-	public Expr parse(boolean allowComma, int precedence) {
+	public Expr parse(boolean allowComma, int precedence) throws ParseException {
 		if (precedence == 0) {
 			return atomExpression();
 		}
@@ -44,7 +44,8 @@ public class ExprParser {
 		for (Operation operation : operators) {
 			if (operation.getOperationType() != OperationType.Unary
 				|| operation.getAssociativity() != Associativity.Right
-				|| operation.getTokenType() != reader.type()) continue;
+				|| operation.getTokenType() != reader.type())
+				continue;
 			Position start = reader.position();
 			reader.advance();
 			
@@ -67,7 +68,8 @@ public class ExprParser {
 			for (Operation operation : operators) {
 				if (operation.getOperationType() != OperationType.Unary
 					|| operation.getAssociativity() != Associativity.Left
-					|| operation.getTokenType() != reader.type()) continue;
+					|| operation.getTokenType() != reader.type())
+					continue;
 				reader.advance();
 				shouldContinue = true;
 				
@@ -85,7 +87,8 @@ public class ExprParser {
 			
 			for (Operation operation : operators) {
 				if (operation.getOperationType() != OperationType.Binary
-					|| operation.getTokenType() != reader.type()) continue;
+					|| operation.getTokenType() != reader.type())
+					continue;
 				
 				reader.advance();
 				shouldContinue = true;
@@ -106,7 +109,8 @@ public class ExprParser {
 			
 			for (Operation operation : operators) {
 				if (operation.getOperationType() != OperationType.SpecialBinary
-					|| operation.getTokenType() != reader.type()) continue;
+					|| operation.getTokenType() != reader.type())
+					continue;
 				
 				reader.advance();
 				boolean found = true;
@@ -133,7 +137,7 @@ public class ExprParser {
 	//
 	// This is the lowest part of an expression.
 	// The leaf branches of the expression tree.
-	private Expr atomExpression() {
+	private Expr atomExpression() throws ParseException {
 		switch (reader.type()) {
 			case INT -> {
 				String text = reader.value();
@@ -222,7 +226,7 @@ public class ExprParser {
 		}
 	}
 	
-	private Expr callExpression() {
+	private Expr callExpression() throws ParseException {
 		Position startPos = reader.position();
 		
 		String name = reader.value();
@@ -255,8 +259,8 @@ public class ExprParser {
 			int count = simpleParameters.size();
 			if (count > 0) {
 				extra.append(" with ").append(count)
-					 .append(" parameter").append(count == 1 ? "" : "s")
-					 .append(" of type (");
+					.append(" parameter").append(count == 1 ? "" : "s")
+					.append(" of type (");
 				for (int i = 0; i < count; i++) {
 					Reference ref = simpleParameters.get(i);
 					extra.append(ref.getValueType().toShortName());
@@ -285,7 +289,7 @@ public class ExprParser {
 		return new CallExpr(ISyntaxPosition.of(startPos, reader.lastPositionEnd()), reference, parameters);
 	}
 	
-	private Expr specialCallExpression() {
+	private Expr specialCallExpression() throws ParseException {
 		Position startPos = reader.position();
 		String name = reader.value();
 		reader.advance();

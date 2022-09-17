@@ -1,11 +1,15 @@
 package me.hardcoded.interpreter;
 
 import me.hardcoded.compiler.intermediate.inst.IntermediateFile;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 
 /**
  * This class can interpret ample scripts
  */
 public class AmpleInterpreter {
+	private static final Logger LOGGER = LogManager.getLogger(AmpleInterpreter.class);
 	private final AmpleRunner runner;
 	private Thread thread;
 	
@@ -46,9 +50,8 @@ public class AmpleInterpreter {
 			try {
 				// Run the code
 				runner.run(code);
-			} catch (AmpleInterpreterException e) {
-				e.printStackTrace();
-				// TODO: Use logger
+			} catch (Throwable t) {
+				LOGGER.error("", t);
 			} finally {
 				callback.run();
 			}

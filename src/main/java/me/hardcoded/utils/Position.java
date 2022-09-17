@@ -9,7 +9,7 @@ public class Position {
 	public final int line;
 	
 	public Position(File file, int column, int line, int offset) {
-		this.file = file == null ? null:file.getAbsoluteFile();
+		this.file = file == null ? null : file.getAbsoluteFile();
 		this.offset = offset;
 		this.column = column;
 		this.line = line;

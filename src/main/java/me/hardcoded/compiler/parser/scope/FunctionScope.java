@@ -1,11 +1,12 @@
 package me.hardcoded.compiler.parser.scope;
 
 import me.hardcoded.compiler.AmpleMangler;
-import me.hardcoded.compiler.errors.ParseException;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ValueType;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class FunctionScope {
 	private final ProgramScope programScope;
@@ -104,7 +105,7 @@ public class FunctionScope {
 			Reference reference = new Reference(constructedName, returnType, programScope.count++, Reference.FUNCTION);
 			Functions global = functionScope.getAllScopes().getFirst();
 			if (global != this && global.definedFunctions.put(constructedEntryName, reference) != null) {
-				throw new ParseException("Function override");
+				throw new RuntimeException("Function override");
 			}
 			
 			definedFunctions.put(mangledName, reference);

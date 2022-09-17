@@ -1,12 +1,15 @@
 package me.hardcoded.configuration;
 
+import me.hardcoded.main.Main;
+import me.hardcoded.utils.FileUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
-
-import me.hardcoded.main.Main;
-import me.hardcoded.utils.FileUtils;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 // TODO: Make this into an XML format
 public class CompilerConfiguration {
@@ -25,7 +28,7 @@ public class CompilerConfiguration {
 		 * The file that is going to be compiled.
 		 */
 		SOURCE_FILE("source"),
-
+		
 		/**
 		 * The directory used for non-absolute paths.
 		 */
@@ -35,7 +38,11 @@ public class CompilerConfiguration {
 		 * The output folder. <i>Default same folder as source file</i>
 		 */
 		OUTPUT_FOLDER("output"),
-		;
+		
+		/**
+		 * Cache option. <i>Default is True</i>
+		 */
+		USE_CACHE("use_cache");
 		
 		public final String key;
 		
@@ -49,11 +56,12 @@ public class CompilerConfiguration {
 	public CompilerConfiguration() {
 		this.map = new HashMap<>();
 		
+		set(Type.USE_CACHE, true);
+		set(Type.OUTPUT_FORMAT, OutputFormat.IR);
+		set(Type.TARGET_FORMAT, TargetFormat.BYTECODE);
 		setSourceFile("");
 		setOutputFolder("");
 		setWorkingDirectory("");
-		setOutputFormat(OutputFormat.IR);
-		setTargetFormat(TargetFormat.BYTECODE);
 	}
 	
 	public OutputFormat getOutputFormat() {
@@ -76,23 +84,27 @@ public class CompilerConfiguration {
 		return get(Type.WORKING_DIRECTORY);
 	}
 	
-	public void setOutputFormat(OutputFormat format) {
+	public boolean useCache() {
+		return get(Type.USE_CACHE);
+	}
+	
+	void setOutputFormat(OutputFormat format) {
 		set(Type.OUTPUT_FORMAT, format);
 	}
 	
-	public void setTargetFormat(TargetFormat format) {
+	void setTargetFormat(TargetFormat format) {
 		set(Type.TARGET_FORMAT, format);
 	}
 	
-	public void setSourceFile(String pathname) {
+	void setSourceFile(String pathname) {
 		set(Type.SOURCE_FILE, resolveFile(new File(pathname)));
 	}
 	
-	public void setOutputFolder(String pathname) {
+	void setOutputFolder(String pathname) {
 		set(Type.OUTPUT_FOLDER, resolveFile(new File(pathname)));
 	}
 	
-	public void setWorkingDirectory(String pathname) {
+	void setWorkingDirectory(String pathname) {
 		set(Type.WORKING_DIRECTORY, FileUtils.makeAbsolute(new File(pathname)));
 	}
 	
@@ -152,16 +164,18 @@ public class CompilerConfiguration {
 			
 			--format, -f <value>		set the format of the compiler
 			
+			--use-cache <boolean>       change how the compiler deals with cache files
+			
 			-i <source>					specify the input file to compile
 			
 			-o <outputFolder>			specify the output folder
 		*/
 		
 		try {
-			for(int i = 0; i < args.length; i++) {
+			for (int i = 0; i < args.length; i++) {
 				String str = args[i];
 				
-				switch(str) {
+				switch (str) {
 					case "--format-list" -> {
 						printFormatListMessage();
 						return config;
@@ -195,6 +209,10 @@ public class CompilerConfiguration {
 					
 					case "-a", "--assembler" -> {
 						config.setTargetFormat(TargetFormat.ASSEMBLER);
+					}
+					
+					case "--use-cache" -> {
+						config.set(Type.USE_CACHE, Boolean.parseBoolean(args[++i]));
 					}
 					
 					default -> {

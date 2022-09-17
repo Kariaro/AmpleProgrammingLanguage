@@ -1,4 +1,4 @@
-@link "link_test.amp";
+@link "../link_test.amp";
 
 func printstr (u8[]: pointer, i64: length) {
     compiler<asm>(

@@ -1,15 +1,14 @@
 package me.hardcoded.lexer;
 
+import me.hardcoded.compiler.context.AmpleLexer;
+import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.lexer.Token.Type;
+import me.hardcoded.utils.Position;
+
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-
-import me.hardcoded.compiler.context.AmpleLexer;
-import me.hardcoded.compiler.impl.ISyntaxPosition;
-import me.hardcoded.compiler.parser.stat.ReturnStat;
-import me.hardcoded.lexer.Token.Type;
-import me.hardcoded.utils.Position;
 
 public class LexerTokenizer {
 	public static List<Token> parse(byte[] bytes) {
@@ -36,19 +35,21 @@ public class LexerTokenizer {
 			
 			GenericLexerContext<Type>.LexerToken lexerToken = AmpleLexer.LEXER.nextToken(input);
 			if (lexerToken == null) {
-				// Throw error
+				throw new RuntimeException("(%s) (line: %d, column: %d): Could not parse token".formatted(file, line + 1, column + 1));
+			}
+			
+			if (lexerToken.length + offset > length) {
 				break;
 			}
 			
-			if (lexerToken.length + offset > length) break;
 			for (int i = offset; i < offset + lexerToken.length; i++) {
 				char c = text.charAt(i);
 				
 				if (c == '\n') {
-					line ++;
+					line++;
 					column = 0;
 				} else {
-					column += (c == '\t') ? 4:1;
+					column += (c == '\t') ? 4 : 1;
 				}
 			}
 			

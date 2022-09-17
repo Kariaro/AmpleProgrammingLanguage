@@ -14,15 +14,21 @@ public class LinkableObject {
 	private final List<Reference> importedReferences;
 	private final List<Reference> exportedReferences;
 	private final List<String> imports;
+	private final String checksum;
 	private final File file;
 	private final ProgStat program;
 	
-	public LinkableObject(File file, ProgStat program, List<String> imports, List<Reference> exportedReferences, List<Reference> importedReferences) {
+	public LinkableObject(File file, String checksum, ProgStat program, List<String> imports, List<Reference> exportedReferences, List<Reference> importedReferences) {
 		this.file = file;
+		this.checksum = checksum;
 		this.program = program;
 		this.importedReferences = importedReferences;
 		this.exportedReferences = exportedReferences;
 		this.imports = imports;
+	}
+	
+	public String getChecksum() {
+		return checksum;
 	}
 	
 	public List<String> getImports() {
@@ -44,4 +50,5 @@ public class LinkableObject {
 	public List<Reference> getExportedReferences() {
 		return exportedReferences;
 	}
+	
 }

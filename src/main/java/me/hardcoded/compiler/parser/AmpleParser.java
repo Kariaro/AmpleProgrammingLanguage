@@ -1,5 +1,6 @@
 package me.hardcoded.compiler.parser;
 
+import me.hardcoded.compiler.AmpleCompiler;
 import me.hardcoded.compiler.context.AmpleConfig;
 import me.hardcoded.compiler.context.LangReader;
 import me.hardcoded.compiler.errors.ParseException;
@@ -14,6 +15,7 @@ import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ValueType;
 import me.hardcoded.lexer.LexerTokenizer;
 import me.hardcoded.lexer.Token;
+import me.hardcoded.utils.FileUtils;
 import me.hardcoded.utils.MutableSyntaxImpl;
 import me.hardcoded.utils.Position;
 import org.apache.logging.log4j.LogManager;
@@ -64,19 +66,13 @@ public class AmpleParser {
 		}
 	}
 	
-	public LinkableObject fromFile(File file) throws IOException {
-		byte[] bytes;
-		try {
-			bytes = Files.readAllBytes(file.toPath());
-		} catch (IOException e) {
-			LOGGER.error("Could not find the file '{}'", file.getAbsolutePath());
-			throw e;
-		}
-		
-		return fromBytes(file, bytes);
+	public LinkableObject fromFile(File file) throws ParseException, IOException {
+		//			LOGGER.error("Could not find the file '{}'", file.getAbsolutePath());
+		//			throw new ParseException("Failed to read file '%s'", file.getAbsolutePath());
+		return fromBytes(file, Files.readAllBytes(file.toPath()));
 	}
 	
-	private LinkableObject fromBytes(File file, byte[] bytes) {
+	private LinkableObject fromBytes(File file, byte[] bytes) throws ParseException {
 		if (bytes == null) {
 			throw createParseException("Tried to parse an array 'null'");
 		}
@@ -108,7 +104,12 @@ public class AmpleParser {
 			}
 		}
 		
-		LinkableObject linkableObject = new LinkableObject(file, program, importedFiles, exportedReferences, missingReferences);
+		String fileChecksum = FileUtils.getFileChecksum(AmpleCompiler.SHA_1_DIGEST, bytes);
+		LinkableObject linkableObject = new LinkableObject(file, fileChecksum, program, importedFiles, exportedReferences, missingReferences);
+		
+		if (reader.remaining() != 0) {
+			throw createParseException(reader.position(), "Failed to parse file fully");
+		}
 		
 		reader = oldContext;
 		currentFile = oldFile;
@@ -125,7 +126,7 @@ public class AmpleParser {
 	/**
 	 * This is the start of the parsing
 	 */
-	private ProgStat parse() {
+	private ProgStat parse() throws ParseException {
 		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(reader.position(), null);
 		ProgStat list = new ProgStat(mutableSyntax);
 		
@@ -152,7 +153,7 @@ public class AmpleParser {
 	 *   | Statement
 	 * </pre>
 	 */
-	private Stat parseStatement() {
+	private Stat parseStatement() throws ParseException {
 		if (reader.type() == Token.Type.LINK) {
 			Position startPos = reader.position();
 			reader.advance();
@@ -162,6 +163,10 @@ public class AmpleParser {
 			
 			importedFiles.add(importedFile.substring(1, importedFile.length() - 1));
 			reader.advance();
+			
+			tryMatchOrError(Token.Type.SEMICOLON);
+			reader.advance();
+			
 			return new EmptyStat(ISyntaxPosition.of(startPos, reader.lastPositionEnd()));
 		}
 		
@@ -176,7 +181,7 @@ public class AmpleParser {
 		throw createParseException(reader.position(), "Invalid statement");
 	}
 	
-	private Stat funcStatement() {
+	private Stat funcStatement() throws ParseException {
 		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(reader.position(), null);
 		reader.advance();
 		
@@ -244,7 +249,7 @@ public class AmpleParser {
 		return stat;
 	}
 	
-	private ScopeStat statements() {
+	private ScopeStat statements() throws ParseException {
 		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(reader.position(), null);
 		ScopeStat stat = new ScopeStat(mutableSyntax);
 		reader.advance();
@@ -268,7 +273,7 @@ public class AmpleParser {
 		return stat;
 	}
 	
-	private Stat statement() {
+	private Stat statement() throws ParseException {
 		if (reader.type() == Token.Type.L_CURLY) {
 			return statements();
 		}
@@ -322,7 +327,7 @@ public class AmpleParser {
 		return stat;
 	}
 	
-	private CompilerStat compilerStatement() {
+	private CompilerStat compilerStatement() throws ParseException {
 		Position startPos = reader.position();
 		reader.advance();
 		
@@ -372,7 +377,7 @@ public class AmpleParser {
 		return new CompilerStat(ISyntaxPosition.of(startPos, reader.lastPositionEnd()), targetType, parts);
 	}
 	
-	private ForStat forStatement() {
+	private ForStat forStatement() throws ParseException {
 		Position startPos = reader.position();
 		reader.advance();
 		
@@ -409,7 +414,7 @@ public class AmpleParser {
 		return new ForStat(ISyntaxPosition.of(startPos, body.getSyntaxPosition().getEndPosition()), initializer, condition, action, body);
 	}
 	
-	private IfStat ifStatement() {
+	private IfStat ifStatement() throws ParseException {
 		Position startPos = reader.position();
 		reader.advance();
 		
@@ -433,7 +438,7 @@ public class AmpleParser {
 		return new IfStat(ISyntaxPosition.of(startPos, elseBody.getSyntaxPosition().getEndPosition()), value, body, elseBody);
 	}
 	
-	private VarStat varStatement() {
+	private VarStat varStatement() throws ParseException {
 		Position startPos = reader.position();
 		
 		ValueType type = readType();
@@ -466,11 +471,11 @@ public class AmpleParser {
 	}
 	
 	// Shunting yard algorithm
-	private Expr expression() {
+	private Expr expression() throws ParseException {
 		return expression(false);
 	}
 	
-	private Expr expression(boolean allowComma) {
+	private Expr expression(boolean allowComma) throws ParseException {
 		return new ExprParser(this, context, reader).parse(allowComma);
 	}
 	
@@ -478,7 +483,7 @@ public class AmpleParser {
 		return context.getTypeScope().getType(reader.value(), 0) != null;
 	}
 	
-	ValueType readType() {
+	ValueType readType() throws ParseException {
 		String name = reader.value();
 		reader.advance();
 		int depth = 0;
@@ -506,11 +511,11 @@ public class AmpleParser {
 		return new ParseException("(%s) (line: %d, column: %d): %s", position.file, position.line + 1, position.column + 1, msg);
 	}
 	
-	boolean tryMatchOrError(Token.Type type) {
+	boolean tryMatchOrError(Token.Type type) throws ParseException {
 		return tryMatchOrError(type, () -> "Expected %s but got %s".formatted(type, reader.type()));
 	}
 	
-	boolean tryMatchOrError(Token.Type type, Supplier<String> message) {
+	boolean tryMatchOrError(Token.Type type, Supplier<String> message) throws ParseException {
 		if (reader.type() != type) {
 			throw createParseException(reader.lastPositionEnd(), message.get());
 		}

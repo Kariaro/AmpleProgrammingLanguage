@@ -1,7 +1,6 @@
 package me.hardcoded.compiler.intermediate.generator;
 
 import me.hardcoded.compiler.errors.InstException;
-import me.hardcoded.compiler.errors.ParseException;
 import me.hardcoded.compiler.intermediate.AmpleLinker.ExportMap;
 import me.hardcoded.compiler.intermediate.inst.*;
 import me.hardcoded.compiler.parser.LinkableObject;
@@ -12,15 +11,12 @@ import me.hardcoded.compiler.parser.type.Primitives;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ValueType;
 import me.hardcoded.utils.Position;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class IntermediateGenerator {
-	private static final Logger LOGGER = LogManager.getLogger(IntermediateGenerator.class);
 	private static final InstRef NONE = new InstRef("<invalid>", Primitives.NONE, -1, 0);
 	
 	private final IntermediateFile file;
@@ -40,7 +36,6 @@ public class IntermediateGenerator {
 	}
 	
 	public void generate(LinkableObject obj) {
-		LOGGER.info("> Generating '{}'", obj.getFile().getAbsolutePath());
 		generateProgStat(obj.getProgram());
 	}
 	
@@ -639,7 +634,7 @@ public class IntermediateGenerator {
 			case EQUAL -> Opcode.EQ;
 			case NOT_EQUAL -> Opcode.NEQ;
 			
-			default -> throw new ParseException("Unknown binary operation '%s'", operation);
+			default -> throw new RuntimeException("Unknown binary operation '%s'".formatted(operation));
 		};
 	}
 	
@@ -652,7 +647,7 @@ public class IntermediateGenerator {
 			case NOT -> Opcode.NOT;
 			//			case NOR -> Opcode.NOR;
 			
-			default -> throw new ParseException("Unknown unary operation '%s'", operation);
+			default -> throw new RuntimeException("Unknown unary operation '%s'".formatted(operation));
 		};
 	}
 }
