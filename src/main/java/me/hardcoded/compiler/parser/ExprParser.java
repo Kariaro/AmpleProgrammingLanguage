@@ -9,11 +9,14 @@ import me.hardcoded.compiler.parser.type.*;
 import me.hardcoded.lexer.Token;
 import me.hardcoded.utils.Position;
 import me.hardcoded.utils.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ExprParser {
+	private static final Logger LOGGER = LogManager.getLogger(ExprParser.class);
 	private final AmpleParser parser;
 	private final ProgramScope context;
 	private final LangReader reader;
@@ -245,7 +248,7 @@ public class ExprParser {
 		// TODO: Get function with the specified parameters and the specified types.
 		List<Reference> simpleParameters = parameters.stream().map(i -> new Reference("", i.getType(), 0, 0)).toList();
 		
-		System.out.println(AmpleMangler.mangleFunction(name, simpleParameters));
+		// LOGGER.info(AmpleMangler.mangleFunction(name, simpleParameters));
 		Reference reference = context.getFunctionScope().getFunction(name, simpleParameters);
 		if (reference == null) {
 			StringBuilder extra = new StringBuilder();

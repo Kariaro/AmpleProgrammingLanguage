@@ -16,13 +16,13 @@ public class AsmCodeGenerator extends ICodeGenerator {
 	}
 	
 	@Override
-	public byte[] getBytecode(InstFile program) throws CodeGenException {
+	public byte[] getBytecode(IntermediateFile program) throws CodeGenException {
 		byte[] assembler = getAssembler(program);
 		return NasmUtils.compile(ampleConfig, assembler);
 	}
 
 	@Override
-	public byte[] getAssembler(InstFile program) throws CodeGenException {
+	public byte[] getAssembler(IntermediateFile program) throws CodeGenException {
 		StringBuilder sb = new StringBuilder();
 		
 		InstRef main = null;
@@ -140,7 +140,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				if (src instanceof InstParam.Num value) {
 					long number = value.getValue();
 					
-					System.out.printf("0x%016x : %s\n", number, value.getSize());
+					// System.out.printf("0x%016x : %s\n", number, value.getSize());
 					
 					String regName;
 					if ((number >>> 32) != 0) {

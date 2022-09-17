@@ -1,9 +1,8 @@
 package me.hardcoded.interpreter;
 
 import me.hardcoded.compiler.intermediate.inst.Inst;
-import me.hardcoded.compiler.intermediate.inst.InstFile;
+import me.hardcoded.compiler.intermediate.inst.IntermediateFile;
 import me.hardcoded.compiler.intermediate.inst.InstParam;
-import me.hardcoded.compiler.intermediate.inst.InstRef;
 import me.hardcoded.interpreter.AmpleContext.AmpleFunc;
 
 /**
@@ -11,7 +10,7 @@ import me.hardcoded.interpreter.AmpleContext.AmpleFunc;
  */
 class AmpleRunner {
 	
-	public void run(InstFile instFile) throws AmpleInterpreterException {
+	public void run(IntermediateFile instFile) throws AmpleInterpreterException {
 		AmpleContext context = new AmpleContext(instFile);
 		AmpleFunc main = context.getMainFunction();
 		

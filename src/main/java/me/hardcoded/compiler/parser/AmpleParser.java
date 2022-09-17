@@ -9,11 +9,15 @@ import me.hardcoded.compiler.parser.expr.NoneExpr;
 import me.hardcoded.compiler.parser.expr.NumExpr;
 import me.hardcoded.compiler.parser.scope.ProgramScope;
 import me.hardcoded.compiler.parser.stat.*;
-import me.hardcoded.compiler.parser.type.*;
+import me.hardcoded.compiler.parser.type.Primitives;
+import me.hardcoded.compiler.parser.type.Reference;
+import me.hardcoded.compiler.parser.type.ValueType;
 import me.hardcoded.lexer.LexerTokenizer;
 import me.hardcoded.lexer.Token;
 import me.hardcoded.utils.MutableSyntaxImpl;
 import me.hardcoded.utils.Position;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,7 +29,7 @@ import java.util.function.Supplier;
 /**
  * This class is responsible for creating the abstract syntax tree of the arucas programming language.
  * No optimizations should be applied in this parser and no type checking should be done.
- *
+ * <p>
  * This parser will create a {@link LinkableObject} that contains:
  * <ul>
  *   <li>Imports</li>
@@ -36,6 +40,7 @@ import java.util.function.Supplier;
  * @author HardCoded
  */
 public class AmpleParser {
+	private static final Logger LOGGER = LogManager.getLogger(AmpleParser.class);
 	private final ProgramScope context;
 	private final List<String> importedFiles;
 	private final AmpleConfig ampleConfig;
@@ -64,7 +69,7 @@ public class AmpleParser {
 		try {
 			bytes = Files.readAllBytes(file.toPath());
 		} catch (IOException e) {
-			System.out.printf("Could not find the file '%s'\n", file.getAbsolutePath());
+			LOGGER.error("Could not find the file '{}'", file.getAbsolutePath());
 			throw e;
 		}
 		
@@ -108,11 +113,11 @@ public class AmpleParser {
 		reader = oldContext;
 		currentFile = oldFile;
 		
-//		try {
-//			System.out.println(ObjectUtils.deepPrint("Program", program, 16));
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
+		//		try {
+		//			System.out.println(ObjectUtils.deepPrint("Program", program, 16));
+		//		} catch (Exception e) {
+		//			e.printStackTrace();
+		//		}
 		
 		return linkableObject;
 	}
@@ -273,9 +278,14 @@ public class AmpleParser {
 		}
 		
 		switch (reader.type()) {
-			case IF -> { return ifStatement(); }
-			case FOR -> { return forStatement(); }
-			case WHILE -> {}
+			case IF -> {
+				return ifStatement();
+			}
+			case FOR -> {
+				return forStatement();
+			}
+			case WHILE -> {
+			}
 		}
 		
 		Stat stat = switch (reader.type()) {
@@ -371,8 +381,8 @@ public class AmpleParser {
 		
 		Stat initializer = varStatement();
 		
-//		tryMatchOrError(Token.Type.SEMICOLON);
-//		reader.advance();
+		//		tryMatchOrError(Token.Type.SEMICOLON);
+		//		reader.advance();
 		
 		Expr condition;
 		if (reader.type() != Token.Type.SEMICOLON) {
@@ -476,7 +486,7 @@ public class AmpleParser {
 			reader.advance();
 			tryMatchOrError(Token.Type.R_SQUARE);
 			reader.advance();
-			depth ++;
+			depth++;
 		}
 		
 		return context.getTypeScope().getType(name, depth);

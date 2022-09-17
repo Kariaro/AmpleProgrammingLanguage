@@ -2,7 +2,7 @@ package me.hardcoded.exporter.ir;
 
 import me.hardcoded.compiler.context.AmpleConfig;
 import me.hardcoded.compiler.impl.ICodeGenerator;
-import me.hardcoded.compiler.intermediate.inst.InstFile;
+import me.hardcoded.compiler.intermediate.inst.IntermediateFile;
 import me.hardcoded.utils.error.CodeGenException;
 
 public class IRCodeGenerator extends ICodeGenerator {
@@ -12,7 +12,7 @@ public class IRCodeGenerator extends ICodeGenerator {
 	}
 	
 	@Override
-	public byte[] getBytecode(InstFile program) throws CodeGenException {
+	public byte[] getBytecode(IntermediateFile program) throws CodeGenException {
 //		ByteArrayOutputStream bs = new ByteArrayOutputStream();
 //
 //		try {
@@ -26,7 +26,7 @@ public class IRCodeGenerator extends ICodeGenerator {
 	}
 
 	@Override
-	public byte[] getAssembler(InstFile program) throws CodeGenException {
+	public byte[] getAssembler(IntermediateFile program) throws CodeGenException {
 //		return IRPrintUtils.printPretty(program).getBytes();
 		throw new UnsupportedOperationException();
 	}

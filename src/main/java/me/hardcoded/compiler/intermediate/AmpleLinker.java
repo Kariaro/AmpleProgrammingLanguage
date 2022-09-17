@@ -1,17 +1,19 @@
 package me.hardcoded.compiler.intermediate;
 
 import me.hardcoded.compiler.errors.ParseException;
-import me.hardcoded.compiler.intermediate.generator.InstGenerator;
-import me.hardcoded.compiler.intermediate.inst.InstFile;
+import me.hardcoded.compiler.intermediate.generator.IntermediateGenerator;
+import me.hardcoded.compiler.intermediate.inst.IntermediateFile;
 import me.hardcoded.compiler.parser.LinkableObject;
 import me.hardcoded.compiler.parser.type.Reference;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 
 /**
  * This class is responsible for linking {@link LinkableObject}.
  *
- * This linker will create a {@link InstFile} that contains:
+ * This linker will create a {@link IntermediateFile} that contains:
  * <ul>
  *   <li>Instructions</li>
  * </ul>
@@ -19,45 +21,43 @@ import java.util.*;
  * @author HardCoded
  */
 public class AmpleLinker {
+	private static final Logger LOGGER = LogManager.getLogger(AmpleLinker.class);
 
 	public AmpleLinker() {
 
 	}
 
-	public InstFile link(LinkableObject main, List<LinkableObject> list) {
-		InstFile file = new InstFile();
+	public IntermediateFile link(List<LinkableObject> list) {
+		IntermediateFile file = new IntermediateFile();
 
-		List<LinkableObject> allObjects = new ArrayList<>();
-		allObjects.add(main);
-		allObjects.addAll(list);
-
-		for (LinkableObject link : allObjects) {
-			System.out.println(link + ", " + link.getFile());
+		LOGGER.info("Intermediate Files:");
+		for (LinkableObject link : list) {
+			LOGGER.info("  - {}", link.getFile());
 		}
 
 		ExportMap exportMap = new ExportMap();
-		if (!checkImports(exportMap, allObjects)) {
+		if (!checkImports(exportMap, list)) {
 			throw new ParseException("Project is not linkable");
 		}
 
-		System.out.println("=".repeat(100));
+		LOGGER.info("=".repeat(100));
 		
 //		AmpleValidator validator = new AmpleValidator(exportMap);
 //		validator.validate(allObjects);
 //
 //		for (LinkableObject link : allObjects) {
-//			System.out.println(ParseUtil.stat(link.getProgram()));
+//			LOGGER.info("{}", ParseUtil.stat(link.getProgram()));
 //		}
 //
-//		System.out.println("=".repeat(100));
+//		LOGGER.info("=".repeat(100));
 //
 //		// Type checking would be easier to do but the file might consume a lot of memory when combining it
 //		// That's why we should separate them
 //
 //		// TODO: Before we generate the instructions we need to validate types
 //
-		InstGenerator generator = new InstGenerator(file, exportMap);
-		for (LinkableObject link : allObjects) {
+		IntermediateGenerator generator = new IntermediateGenerator(file, exportMap);
+		for (LinkableObject link : list) {
 			generator.generate(link);
 		}
 		

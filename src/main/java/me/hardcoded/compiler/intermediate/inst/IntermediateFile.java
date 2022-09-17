@@ -3,10 +3,10 @@ package me.hardcoded.compiler.intermediate.inst;
 import java.util.ArrayList;
 import java.util.List;
 
-public class InstFile {
+public class IntermediateFile {
 	private final List<Procedure> procedures;
 	
-	public InstFile() {
+	public IntermediateFile() {
 		this.procedures = new ArrayList<>();
 	}
 	

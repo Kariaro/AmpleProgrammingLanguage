@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.Objects;
 
 import me.hardcoded.compiler.AmpleCompiler;
 import me.hardcoded.compiler.context.AmpleConfig;
@@ -31,6 +32,13 @@ import me.hardcoded.utils.DebugUtils;
  */
 public class Main {
 	private static final Logger LOGGER = LogManager.getLogger(Main.class);
+	
+	public static String getVersion() {
+		int MAJOR = 0;
+		int MINOR = 1;
+		int BUILD = 0;
+		return "%d.%d.%d".formatted(MAJOR, MINOR, BUILD);
+	}
 	
 	static {
 		Locale.setDefault(Locale.US);
@@ -69,6 +77,18 @@ public class Main {
 		}
 		
 		CompilerConfiguration config = CompilerConfiguration.parseArgs(args);
+		
+		// Print compiler statistics
+		LOGGER.info("---------------------------------------------------------");
+		LOGGER.info("HardCoded AmpleProgrammingLanguage compiler {} (2021-10-15)", getVersion());
+		LOGGER.info("");
+		LOGGER.info("WorkingDir   : '{}'", config.getWorkingDirectory());
+		LOGGER.info("SourceFile   : '{}'", config.getSourceFile());
+		LOGGER.info("OutputFolder : '{}'", config.getOutputFolder());
+		LOGGER.info("Format       : {}",   Objects.toString(config.getOutputFormat(), "<NONE>"));
+		LOGGER.info("Target       : {}",   Objects.toString(config.getTargetFormat(), "<NONE>"));
+		LOGGER.info("---------------------------------------------------------");
+		LOGGER.info("");
 		
 		try {
 			AmpleCompiler compiler = new AmpleCompiler(new AmpleConfig(config));
@@ -112,16 +132,7 @@ public class Main {
 //
 //		switch (mode) {
 //			case COMPILE -> {
-//				LOGGER.info("---------------------------------------------------------");
-//				LOGGER.info("HardCoded AmpleProgrammingLanguage compiler (2021-10-15)");
-//				LOGGER.info("");
-//				LOGGER.info("WorkingDir  : '{}'", config.getWorkingDirectory());
-//				LOGGER.info("SourceFile  : '{}'", config.getSourceFile());
-//				LOGGER.info("OutputFile  : '{}'", config.getOutputFile());
-//				LOGGER.info("Paths       : {}",   config.getSourceFolders());
-//				LOGGER.info("Format      : {}",   Objects.toString(config.getOutputFormat(), "<NONE>"));
-//				LOGGER.info("Target      : {}",   Objects.toString(config.getTargetFormat(), "<NONE>"));
-//				LOGGER.info("---------------------------------------------------------");
+//
 //
 //				if(Objects.equals(config.getSourceFile(), config.getOutputFile())) {
 //					throw new CompilerException("source and output file cannot be the same file");
