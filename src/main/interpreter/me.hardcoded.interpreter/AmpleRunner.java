@@ -1,14 +1,17 @@
 package me.hardcoded.interpreter;
 
 import me.hardcoded.compiler.intermediate.inst.Inst;
-import me.hardcoded.compiler.intermediate.inst.IntermediateFile;
 import me.hardcoded.compiler.intermediate.inst.InstParam;
+import me.hardcoded.compiler.intermediate.inst.IntermediateFile;
 import me.hardcoded.interpreter.AmpleContext.AmpleFunc;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Ample code context class for running the language
  */
 class AmpleRunner {
+	private static final Logger LOGGER = LogManager.getLogger(AmpleRunner.class);
 	
 	public void run(IntermediateFile instFile) throws AmpleInterpreterException {
 		AmpleContext context = new AmpleContext(instFile);
@@ -24,7 +27,7 @@ class AmpleRunner {
 	
 	public void runFunction(AmpleFunc func, AmpleContext context) {
 		// TODO: Implement proper stack
-		System.out.printf("runFunction: %s\n", func);
+		LOGGER.debug("runFunction: {}", func);
 		
 		int index = 0;
 		while (index < 100) {
@@ -35,7 +38,7 @@ class AmpleRunner {
 	public int executeInstruction(int index, AmpleFunc func, AmpleContext context) {
 		Inst inst = func.getInstructions().get(index);
 		
-		System.out.printf("  exec: (%s)\n", inst);
+		LOGGER.debug("  exec: ({})", inst);
 		switch (inst.getOpcode()) {
 			case LABEL -> {
 				return index + 1;

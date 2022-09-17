@@ -6,7 +6,10 @@ import me.hardcoded.compiler.parser.type.ValueType;
 import me.hardcoded.utils.Position;
 
 import java.io.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 class LinkableHeader {
 	static final int MAGIC = 0x414d4C46; // 'AMLF' A Linkable File
@@ -16,12 +19,13 @@ class LinkableHeader {
 	protected final RefPos<Reference> referenceMap;
 	protected final RefPos<ISyntaxPosition> syntaxPositionMap;
 	protected File file;
+	protected String checksum;
 	
 	public LinkableHeader() {
-		stringMap = new RefPos<>();
-		valueTypeMap = new RefPos<>();
-		referenceMap = new RefPos<>();
-		syntaxPositionMap = new RefPos<>();
+		this.stringMap = new RefPos<>();
+		this.valueTypeMap = new RefPos<>();
+		this.referenceMap = new RefPos<>();
+		this.syntaxPositionMap = new RefPos<>();
 	}
 	
 	public void clear() {
@@ -35,8 +39,16 @@ class LinkableHeader {
 		this.file = file;
 	}
 	
+	public void setChecksum(String checksum) {
+		this.checksum = checksum;
+	}
+	
 	public File getFile() {
 		return file;
+	}
+	
+	public String getChecksum() {
+		return checksum;
 	}
 	
 	public void readHeader(DataInputStream in) throws IOException {
@@ -46,6 +58,8 @@ class LinkableHeader {
 		}
 		
 		file = new File(readString(in));
+		checksum = readString(in);
+		
 		clear();
 		
 		for (int i = 0, size = readVarInt(in); i < size; i++) {
@@ -72,6 +86,7 @@ class LinkableHeader {
 	public void writeHeader(DataOutputStream out) throws IOException {
 		out.writeInt(MAGIC);
 		out.writeUTF(file.getAbsolutePath());
+		out.writeUTF(checksum);
 		
 		byte[] refsBytes = writeRefs();
 		byte[] strsBytes = writeStrings();
@@ -191,7 +206,7 @@ class LinkableHeader {
 		int column = readVarInt(in);
 		int line = readVarInt(in);
 		int offset = readVarInt(in);
-		return new Position(new File(name), column, line, offset);
+		return new Position(name == null ? null : new File(name), column, line, offset);
 	}
 	
 	
@@ -217,7 +232,7 @@ class LinkableHeader {
 	}
 	
 	private void writePosition(Position position, DataOutputStream out) throws IOException {
-		serializeString(position.file == null ? "" : position.file.getAbsolutePath(), out);
+		serializeString(position.file == null ? null : position.file.getAbsolutePath(), out);
 		writeVarInt(position.column, out);
 		writeVarInt(position.line, out);
 		writeVarInt(position.offset, out);
@@ -227,7 +242,11 @@ class LinkableHeader {
 	// Type deserializers
 	public String deserializeString(DataInputStream in) throws IOException {
 		int idx = readVarInt(in);
-		return stringMap.get(idx);
+		if (idx == 0) {
+			return null;
+		} else {
+			return stringMap.get(idx - 1);
+		}
 	}
 	
 	public ValueType deserializeValueType(DataInputStream in) throws IOException {
@@ -248,8 +267,12 @@ class LinkableHeader {
 	
 	// Type serializers
 	public void serializeString(String string, DataOutputStream out) throws IOException {
-		int idx = stringMap.put(string);
-		writeVarInt(idx, out);
+		if (string == null) {
+			writeVarInt(0, out);
+		} else {
+			int idx = stringMap.put(string);
+			writeVarInt(idx + 1, out);
+		}
 	}
 	
 	public void serializeValueType(ValueType valueType, DataOutputStream out) throws IOException {
