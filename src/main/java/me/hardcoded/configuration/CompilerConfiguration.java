@@ -197,14 +197,6 @@ public class CompilerConfiguration {
 						config.setTargetFormat(TargetFormat.ASSEMBLER);
 					}
 					
-//					case "-c", "--compile" -> {
-//						config.setOperation(Operation.COMPILE);
-//					}
-//
-//					case "-r", "--run" -> {
-//						config.setOperation(Operation.RUN);
-//					}
-					
 					default -> {
 						System.out.printf("Invalid argument '%s'\n\n", str);
 						printHelpMessage();

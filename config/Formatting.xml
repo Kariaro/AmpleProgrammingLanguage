@@ -1,0 +1,17 @@
+<code_scheme name="Ample Code Style" version="173">
+  <option name="AUTODETECT_INDENTS" value="false" />
+  <JavaCodeStyleSettings>
+    <option name="JD_DO_NOT_WRAP_ONE_LINE_COMMENTS" value="true" />
+  </JavaCodeStyleSettings>
+  <codeStyleSettings language="JAVA">
+    <option name="KEEP_FIRST_COLUMN_COMMENT" value="false" />
+    <option name="KEEP_CONTROL_STATEMENT_IN_ONE_LINE" value="false" />
+    <option name="SPACE_WITHIN_ARRAY_INITIALIZER_BRACES" value="true" />
+    <option name="SPACE_BEFORE_ARRAY_INITIALIZER_LBRACE" value="true" />
+    <indentOptions>
+      <option name="CONTINUATION_INDENT_SIZE" value="4" />
+      <option name="USE_TAB_CHARACTER" value="true" />
+      <option name="KEEP_INDENTS_ON_EMPTY_LINES" value="true" />
+    </indentOptions>
+  </codeStyleSettings>
+</code_scheme>

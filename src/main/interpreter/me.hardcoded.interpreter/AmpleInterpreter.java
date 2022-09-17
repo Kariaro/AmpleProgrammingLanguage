@@ -1,6 +1,6 @@
 package me.hardcoded.interpreter;
 
-import me.hardcoded.compiler.intermediate.inst.InstFile;
+import me.hardcoded.compiler.intermediate.inst.IntermediateFile;
 
 /**
  * This class can interpret ample scripts
@@ -17,7 +17,7 @@ public class AmpleInterpreter {
 		return thread != null;
 	}
 	
-	public synchronized void runBlocking(InstFile code) throws InterruptedException {
+	public synchronized void runBlocking(IntermediateFile code) throws InterruptedException {
 		if (this.thread != null) {
 			throw new IllegalStateException("The interpreter is already running");
 		}
@@ -28,7 +28,7 @@ public class AmpleInterpreter {
 		thread.join();
 	}
 	
-	public synchronized void runAsync(InstFile code) {
+	public synchronized void runAsync(IntermediateFile code) {
 		if (this.thread != null) {
 			throw new IllegalStateException("The interpreter is already running");
 		}
@@ -41,7 +41,7 @@ public class AmpleInterpreter {
 	/**
 	 * Create an interpreter thread
 	 */
-	private Thread createThread(InstFile code, Runnable callback) {
+	private Thread createThread(IntermediateFile code, Runnable callback) {
 		Thread thread = new Thread(() -> {
 			try {
 				// Run the code

@@ -3,7 +3,6 @@ package me.hardcoded.interpreter;
 import me.hardcoded.compiler.intermediate.inst.*;
 
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -14,7 +13,7 @@ class AmpleContext {
 	private final Map<InstRef, AmpleFunc> functions;
 	private final AmpleFunc mainFunction;
 	
-	public AmpleContext(InstFile file) {
+	public AmpleContext(IntermediateFile file) {
 		this.functions = new HashMap<>();
 		
 		InstRef mainRef = null;

@@ -14,9 +14,15 @@ public class Procedure {
 	private final List<Inst> list;
 	private InstRef reference;
 	private List<InstRef> parameters;
+	private ProcedureType type;
 	
 	public Procedure() {
 		this.list = new ArrayList<>();
+		this.type = ProcedureType.INVALID;
+	}
+	
+	public ProcedureType getType() {
+		return type;
 	}
 	
 	public InstRef getReference() {
@@ -41,8 +47,38 @@ public class Procedure {
 		list.add(inst);
 	}
 	
+	/**
+	 * Procedure types
+	 */
+	public enum ProcedureType {
+		/**
+		 * Invalid procedure
+		 * Used instead of null
+		 */
+		INVALID,
+		
+		/**
+		 * A function procedure
+		 * Will contain a function reference
+		 */
+		FUNCTION,
+		
+		/**
+		 * A code procedure
+		 * Will not be callable but always run
+		 */
+		CODE,
+		
+		/**
+		 * A variable procedure
+		 * Will contain a variable name handle
+		 */
+		VARIABLE
+	}
+	
 	@Override
 	public String toString() {
 		return reference.getName();
 	}
+	
 }

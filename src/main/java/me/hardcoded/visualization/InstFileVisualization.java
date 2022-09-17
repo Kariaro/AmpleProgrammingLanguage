@@ -2,7 +2,7 @@ package me.hardcoded.visualization;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.intermediate.inst.Inst;
-import me.hardcoded.compiler.intermediate.inst.InstFile;
+import me.hardcoded.compiler.intermediate.inst.IntermediateFile;
 import me.hardcoded.compiler.intermediate.inst.Procedure;
 import me.hardcoded.compiler.parser.expr.*;
 import me.hardcoded.compiler.parser.type.Reference;
@@ -33,7 +33,7 @@ public final class InstFileVisualization extends Visualization implements Visual
 	private LocalPanel panel;
 	private boolean showReferenceType;
 	private boolean showReferenceId;
-	private InstFile currentProgram;
+	private IntermediateFile currentProgram;
 	
 	public InstFileVisualization(VisualizationHandler handler) {
 		super("InstFile - Visualization", handler, 2);
@@ -169,7 +169,7 @@ public final class InstFileVisualization extends Visualization implements Visual
 
 	@Override
 	protected void showObject(Object value) {
-		if (!(value instanceof InstFile program)) {
+		if (!(value instanceof IntermediateFile program)) {
 			throw new IllegalArgumentException();
 		}
 		
@@ -331,7 +331,7 @@ public final class InstFileVisualization extends Visualization implements Visual
 			}
 		}
 
-		public void display(InstFile program) {
+		public void display(IntermediateFile program) {
 			synchronized (elements) {
 				elements.clear();
 
@@ -475,7 +475,7 @@ public final class InstFileVisualization extends Visualization implements Visual
 	}
 
 	private static List<Object> getElements(Object obj) {
-		if (obj instanceof InstFile file) {
+		if (obj instanceof IntermediateFile file) {
 			return List.copyOf(file.getProcedures());
 		}
 		
