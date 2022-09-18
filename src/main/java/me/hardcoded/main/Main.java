@@ -54,7 +54,7 @@ public class Main {
 			assert stream != null;
 			LOGGER.info("\n{}", new String(stream.readAllBytes()));
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOGGER.error("", e);
 		}
 	}
 	
@@ -78,7 +78,7 @@ public class Main {
 				"--target", TargetFormat.BYTECODE.toString(),
 				"--input-file", inputFile.getAbsolutePath(),
 				"--output-folder", outputFolder.getAbsolutePath(),
-				"--use-cache", "false"
+				"--use-cache", "true"
 			};
 		}
 		
@@ -99,7 +99,6 @@ public class Main {
 		long start = System.nanoTime();
 		try {
 			AmpleCompiler compiler = new AmpleCompiler(new AmpleConfig(config));
-			
 			compiler.compile();
 		} catch (Exception e) {
 			LOGGER.error("", e);
@@ -113,36 +112,5 @@ public class Main {
 		LOGGER.info("");
 		LOGGER.info("Took: {} milliseconds", "%.4f".formatted(elapsed / 1000000.0D));
 		LOGGER.info("---------------------------------------------------------");
-		
-		//		switch (mode) {
-		//			case COMPILE -> {
-		//				if(Objects.equals(config.getSourceFile(), config.getOutputFile())) {
-		//					throw new CompilerException("source and output file cannot be the same file");
-		//				}
-		//
-		//				long start = System.nanoTime();
-		//				{
-		//					compiler.build();
-		//					byte[] bytes = compiler.getBytes();
-		//					FileOutputStream stream = new FileOutputStream(config.getOutputFile());
-		//					stream.write(bytes, 0, bytes.length);
-		//					stream.close();
-		//				}
-		//
-		//				long time = System.nanoTime() - start;
-		//
-		//				LOGGER.info("");
-		//				LOGGER.info("---------------------------------------------------------");
-		//				LOGGER.info("COMPILE FINISHED");
-		//				LOGGER.info("");
-		//				LOGGER.info("Took: {} milliseconds", "%.4f".formatted(time / 1000000.0D));
-		//				LOGGER.info("---------------------------------------------------------");
-		//			}
-		//
-		//			case RUN -> {
-		//				compiler.build();
-		//				AmpleVm.run(compiler.getProgram());
-		//			}
-		//		}
 	}
 }

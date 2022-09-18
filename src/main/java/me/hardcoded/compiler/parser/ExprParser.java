@@ -250,36 +250,11 @@ public class ExprParser {
 			}
 		}
 		
-		// TODO: Get function with the specified parameters and the specified types.
 		List<Reference> simpleParameters = parameters.stream().map(i -> new Reference("", context.getNamespaceScope().getNamespaceRoot(), i.getType(), 0, 0)).toList();
 		
-		// LOGGER.info(AmpleMangler.mangleFunction(name, simpleParameters));
 		Reference reference = context.getFunctionScope().getFunction(namespace, name, simpleParameters);
 		if (reference == null) {
-			StringBuilder extra = new StringBuilder();
-			int count = simpleParameters.size();
-			if (count > 0) {
-				extra.append(" with ").append(count)
-					.append(" parameter").append(count == 1 ? "" : "s")
-					.append(" of type (");
-				for (int i = 0; i < count; i++) {
-					Reference ref = simpleParameters.get(i);
-					extra.append(ref.getValueType().toShortName());
-					
-					if (i < count - 1) {
-						extra.append(", ");
-					}
-				}
-				
-				extra.append(")");
-			}
-			
-			throw parser.createParseException(
-				startPos,
-				"There is no function called '%s'%s",
-				name,
-				extra.toString()
-			);
+			reference = context.getFunctionScope().importFunction(namespace, name, simpleParameters);
 		}
 		
 		parser.tryMatchOrError(Token.Type.R_PAREN);

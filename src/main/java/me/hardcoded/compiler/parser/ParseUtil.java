@@ -16,7 +16,6 @@ public class ParseUtil {
 			case EMPTY -> emptyStat((EmptyStat) stat);
 			case FOR -> forStat((ForStat) stat);
 			case FUNC -> funcStat((FuncStat) stat);
-			//			case GOTO -> gotoStat((GotoStat) stat);
 			case IF -> ifStat((IfStat) stat);
 			//			case LABEL -> labelStat((LabelStat) stat);
 			case PROGRAM -> programStat((ProgStat) stat);
@@ -57,7 +56,13 @@ public class ParseUtil {
 	
 	public static String funcStat(FuncStat stat) {
 		StringBuilder sb = new StringBuilder();
-		sb.append("func ").append(getReferenceName(stat.getReference())).append(" (");
+		sb.append("func ");
+		
+		if (stat.getReference().isExported()) {
+			sb.append("(export) ");
+		}
+		
+		sb.append(getReferenceName(stat.getReference())).append(" (");
 		
 		Iterator<Reference> iter = stat.getParameters().iterator();
 		while (iter.hasNext()) {
@@ -69,7 +74,7 @@ public class ParseUtil {
 			}
 		}
 		
-		sb.append(") :: ").append(stat.getReference().getValueType());
+		sb.append(") : ").append(stat.getReference().getValueType());
 		
 		if (stat.getBody().isEmpty()) {
 			return sb.append(";").toString();
@@ -78,10 +83,6 @@ public class ParseUtil {
 		sb.append(" ").append(stat(stat.getBody()));
 		return sb.toString();
 	}
-	
-	//	private static String gotoStat(GotoStat s) {
-	//		return "goto " + s.getReference() + ";";
-	//	}
 	
 	public static String ifStat(IfStat s) {
 		StringBuilder sb = new StringBuilder();
@@ -236,10 +237,6 @@ public class ParseUtil {
 	
 	// References
 	private static String getReferenceName(Reference reference) {
-		if (reference.getNamespace().isRoot()) {
-			return reference.getName();
-		}
-		
-		return reference.getNamespace().getPath() + "::" + reference.getName();
+		return reference.getPath();
 	}
 }

@@ -1,13 +1,11 @@
 package me.hardcoded.compiler.intermediate.inst;
 
-import me.hardcoded.compiler.parser.stat.FuncStat;
-import me.hardcoded.compiler.parser.type.Reference;
-
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Procedure class containing instruction code
+ *
  * @author HardCoded
  */
 public class Procedure {

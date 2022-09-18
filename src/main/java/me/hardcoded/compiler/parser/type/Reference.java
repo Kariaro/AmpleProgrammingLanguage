@@ -11,12 +11,15 @@ public class Reference {
 		FUNCTION = 2,
 		NAMESPACE = 3;
 	
+	public static final int MODIFIERS = IMPORT | EXPORT;
+	
 	private final int id;
 	private final String name;
 	private final Namespace namespace;
 	private ValueType valueType;
 	private int flags;
 	private int usages;
+	private String mangledName;
 	
 	public Reference(String name, Namespace namespace, ValueType valueType, int id, int flags) {
 		this(name, namespace, valueType, id, flags, 0);
@@ -35,6 +38,10 @@ public class Reference {
 		return name;
 	}
 	
+	public String getMangledName() {
+		return mangledName;
+	}
+	
 	public Namespace getNamespace() {
 		return namespace;
 	}
@@ -43,28 +50,12 @@ public class Reference {
 		return valueType;
 	}
 	
-	public void setValueType(ValueType valueType) {
-		this.valueType = valueType;
-	}
-	
 	public int getUsages() {
 		return usages;
 	}
 	
-	public void incUsages() {
-		usages++;
-	}
-	
-	public void decUsages() {
-		usages--;
-	}
-	
 	public int getId() {
 		return id;
-	}
-	
-	public void setType(int type) {
-		flags = (flags & (~0x1f)) | type;
 	}
 	
 	public int getType() {
@@ -99,8 +90,36 @@ public class Reference {
 		flags = (flags & ~EXPORT) | (enable ? EXPORT : 0);
 	}
 	
+	public void setImported(boolean enable) {
+		flags = (flags & ~IMPORT) | (enable ? IMPORT : 0);
+	}
+	
 	public void setFlags(int flags) {
 		this.flags = flags;
+	}
+	
+	public void setModifiers(int modifiers) {
+		this.flags = (flags & ~MODIFIERS) | (modifiers & MODIFIERS);
+	}
+	
+	public void setType(int type) {
+		flags = (flags & (~0x1f)) | type;
+	}
+	
+	public void setMangledName(String mangledName) {
+		this.mangledName = mangledName;
+	}
+	
+	public void setValueType(ValueType valueType) {
+		this.valueType = valueType;
+	}
+	
+	public void incUsages() {
+		usages++;
+	}
+	
+	public void decUsages() {
+		usages--;
 	}
 	
 	public String toSimpleString() {
@@ -115,16 +134,24 @@ public class Reference {
 		return type + "_" + id + (isExported() ? "_export" : "") + (isImported() ? "_import" : "");
 	}
 	
+	/**
+	 * @return the namespace and name combined
+	 */
+	public String getPath() {
+		if (namespace.isRoot()) {
+			return name;
+		}
+		
+		return namespace.getPath() + "::" + name;
+	}
+	
 	@Override
 	public String toString() {
 		if (id < 0) {
 			return name;
 		}
 		
-		if (namespace.isRoot()) {
-			return valueType + " " + name + ":" + toSimpleString();
-		}
-		
-		return valueType + " (" + namespace.getPath() + ")" + name + ":" + toSimpleString();
+		String mangledPart = (mangledName != null ? " " + mangledName : "");
+		return valueType + " " + getPath() + ":" + toSimpleString() + mangledPart;
 	}
 }

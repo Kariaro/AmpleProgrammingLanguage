@@ -39,12 +39,10 @@ public class LocalScope {
 	}
 	
 	public void pushLocals() {
-		System.out.println("push >>> " + localScope.getLast());
 		localScope.getLast().pushScope();
 	}
 	
 	public void popLocals() {
-		System.out.println("pop >>> " + localScope.getLast());
 		localScope.getLast().popScope();
 	}
 	

@@ -1,6 +1,7 @@
 package me.hardcoded.compiler;
 
 import me.hardcoded.compiler.context.AmpleConfig;
+import me.hardcoded.compiler.impl.ICodeGenerator;
 import me.hardcoded.compiler.intermediate.AmpleLinker;
 import me.hardcoded.compiler.intermediate.inst.IntermediateFile;
 import me.hardcoded.compiler.parser.AmpleParser;
@@ -8,7 +9,7 @@ import me.hardcoded.compiler.parser.LinkableObject;
 import me.hardcoded.compiler.parser.serial.LinkableDeserializer;
 import me.hardcoded.compiler.parser.serial.LinkableSerializer;
 import me.hardcoded.configuration.CompilerConfiguration;
-import me.hardcoded.interpreter.AmpleInterpreter;
+import me.hardcoded.configuration.OutputFormat;
 import me.hardcoded.utils.FileUtils;
 import me.hardcoded.utils.ObjectUtils;
 import org.apache.logging.log4j.LogManager;
@@ -131,10 +132,9 @@ public class AmpleCompiler {
 					byte[] bytes = LinkableSerializer.serializeLinkable(obj);
 					
 					File outputFile = new File(outputFolder, getCacheFileName(obj.getFile()));
-					Files.write(outputFile.toPath(), bytes == null ? new byte[0] : bytes);
+					Files.write(outputFile.toPath(), bytes);
 					
-					LOGGER.info(" - [{}] {}", bytes == null
-						? "0 bytes" : (bytes.length == 1 ? "1 byte" : (bytes.length + " bytes")), outputFile);
+					LOGGER.info(" - [{}] {}", bytes.length == 1 ? "1 byte" : (bytes.length + " bytes"), outputFile);
 					
 					// Only run this code if serialization validation is enabled
 					LinkableObject loaded = LinkableDeserializer.deserializeLinkable(bytes);
@@ -151,13 +151,13 @@ public class AmpleCompiler {
 							LOGGER.info("{}", a);
 							LOGGER.info("{}", b);
 						} catch (Exception e) {
-							e.printStackTrace();
+							LOGGER.error("", e);
 						}
 						
 						throw new RuntimeException("Linkable serializer did not match");
 					}
 				} catch (IOException e) {
-					e.printStackTrace();
+					LOGGER.error("", e);
 				}
 			}
 		}
@@ -165,33 +165,32 @@ public class AmpleCompiler {
 		// Combine all linkable objects into one instruction file
 		AmpleLinker linker = new AmpleLinker(ampleConfig);
 		IntermediateFile file = linker.link(list);
+		//		AmpleInterpreter interpreter = new AmpleInterpreter();
+		//		try {
+		//			interpreter.runBlocking(file);
+		//		} catch (InterruptedException e) {
+		//			LOGGER.error("", e);
+		//		}
 		
-		AmpleInterpreter interpreter = new AmpleInterpreter();
-		try {
-			interpreter.runBlocking(file);
-		} catch (InterruptedException e) {
-			LOGGER.error("", e);
-		}
+		OutputFormat format = ampleConfig.getConfiguration().getOutputFormat();
+		ICodeGenerator codeGenerator = format.createNew(ampleConfig);
 		
-		//		OutputFormat format = ampleConfig.getConfiguration().getOutputFormat();
-		//		ICodeGenerator codeGenerator = format.createNew(ampleConfig);
-		//
-		//		byte[] bytes = switch (ampleConfig.getConfiguration().getTargetFormat()) {
-		//			case BYTECODE -> codeGenerator.getBytecode(file);
-		//			case ASSEMBLER -> codeGenerator.getAssembler(file);
-		//		};
-		//
-		//		String path = DebugUtils.getNextFileId(config.getOutputFolder(), "compile_%d");
-		//		Files.write(Path.of(path), bytes);
-		//		LOGGER.info("=".repeat(100));
-		//		LOGGER.info("{}", path);
-		//
+		byte[] bytes = switch (ampleConfig.getConfiguration().getTargetFormat()) {
+			case BYTECODE -> codeGenerator.getBytecode(file);
+			case ASSEMBLER -> codeGenerator.getAssembler(file);
+		};
+		
+		String path = new File(config.getOutputFolder(), "compile").getAbsolutePath(); //DebugUtils.getNextFileId(config.getOutputFolder(), "compile_%d");
+		Files.write(Path.of(path), bytes);
+		LOGGER.info("");
+		LOGGER.info("{}", path);
+		
 		//		ampleConfig.getVisualizationHandler()
 		//			.addVisualization(SourceCodeVisualization::new, LexerTokenizer.parseKeepWhitespace(
 		//				inputFile.getAbsoluteFile(),
 		//				Files.readAllBytes(inputFile.toPath())
 		//			))
-		//			.addVisualization(ParseTreeVisualization::new, list.getLast().getProgram())
+		//			.addVisualization(ParseTreeVisualization::new, list.getFirst().getProgram())
 		//			.addVisualization(InstFileVisualization::new, file)
 		;
 	}

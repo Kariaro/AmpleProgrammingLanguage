@@ -1,23 +1,25 @@
 package me.hardcoded.compiler.intermediate.generator;
 
 import me.hardcoded.compiler.errors.InstException;
-import me.hardcoded.compiler.intermediate.AmpleLinker.ExportMap;
+import me.hardcoded.compiler.intermediate.ExportMap;
 import me.hardcoded.compiler.intermediate.inst.*;
 import me.hardcoded.compiler.parser.LinkableObject;
 import me.hardcoded.compiler.parser.expr.*;
 import me.hardcoded.compiler.parser.stat.*;
-import me.hardcoded.compiler.parser.type.Operation;
-import me.hardcoded.compiler.parser.type.Primitives;
-import me.hardcoded.compiler.parser.type.Reference;
-import me.hardcoded.compiler.parser.type.ValueType;
+import me.hardcoded.compiler.parser.type.*;
 import me.hardcoded.utils.Position;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class IntermediateGenerator {
-	private static final InstRef NONE = new InstRef("<invalid>", Primitives.NONE, -1, 0);
+	private static final Logger LOGGER = LogManager.getLogger(IntermediateGenerator.class);
+	
+	private static final Namespace NONE_NAMESPACE = new Namespace();
+	private static final InstRef NONE = new InstRef("<invalid>", NONE_NAMESPACE, Primitives.NONE, -1, 0);
 	
 	private final IntermediateFile file;
 	private final ExportMap exportMap;
@@ -50,7 +52,6 @@ public class IntermediateGenerator {
 			case EMPTY -> generateEmptyStat((EmptyStat) stat, procedure);
 			case FOR -> generateForStat((ForStat) stat, procedure);
 			case FUNC -> generateFuncStat((FuncStat) stat, procedure);
-			//			case GOTO -> generateGotoStat((GotoStat) stat, procedure);
 			case IF -> generateIfStat((IfStat) stat, procedure);
 			//			case LABEL -> generateLabelStat((LabelStat) stat, procedure);
 			case RETURN -> generateReturnStat((ReturnStat) stat, procedure);
@@ -185,12 +186,6 @@ public class IntermediateGenerator {
 		return NONE;
 	}
 	
-	//	private InstRef generateGotoStat(GotoStat stat, Procedure procedure) {
-	//		procedure.addInst(new Inst(Opcode.JMP, stat.getSyntaxPosition())
-	//			.addParam(new InstParam.Ref(wrapReference(stat.getReference()))));
-	//		return NONE;
-	//	}
-	
 	private InstRef generateIfStat(IfStat stat, Procedure procedure) {
 		InstRef elseBranch = createLocalLabel(".if.else");
 		InstRef endBranch = createLocalLabel(".if.end");
@@ -251,6 +246,7 @@ public class IntermediateGenerator {
 		
 		if (!holder.getValueType().equals(value.getValueType())) {
 			Position pos = stat.getSyntaxPosition().getStartPosition();
+			
 			throw new InstException(
 				"(line: %d, column: %d) Left and Right side does not match (%s != %s)",
 				pos.line + 1,
@@ -388,7 +384,7 @@ public class IntermediateGenerator {
 	
 	private InstRef generateCallExpr(CallExpr expr, Procedure procedure) {
 		InstRef caller = wrapReference(expr.getReference());
-		InstRef holder = createDataReference(".call", expr.getType());
+		InstRef holder = createDataReference(".call", caller.getValueType());
 		
 		Inst callInst = new Inst(Opcode.CALL, expr.getSyntaxPosition())
 			.addParam(new InstParam.Ref(holder))
@@ -587,11 +583,11 @@ public class IntermediateGenerator {
 	
 	// Reference
 	private InstRef createLocalLabel(String name) {
-		return new InstRef(name, Primitives.NONE, ++count, Reference.LABEL);
+		return new InstRef(name, NONE_NAMESPACE, Primitives.NONE, ++count, Reference.LABEL);
 	}
 	
 	private InstRef createDataReference(String name, ValueType type) {
-		return new InstRef(name, type, ++count, Reference.VARIABLE);
+		return new InstRef(name, NONE_NAMESPACE, type, ++count, Reference.VARIABLE);
 	}
 	
 	private InstRef wrapReference(Reference reference) {
@@ -608,7 +604,7 @@ public class IntermediateGenerator {
 			return result;
 		}
 		
-		result = new InstRef(reference.getName(), reference.getValueType(), id, 0);
+		result = new InstRef(reference.getName(), reference.getNamespace(), reference.getValueType(), id, 0);
 		result.setType(reference.getType());
 		wrappedReferences.put(reference, result);
 		return result;

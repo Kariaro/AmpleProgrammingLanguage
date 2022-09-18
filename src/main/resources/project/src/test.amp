@@ -1,17 +1,5 @@
 @link "../link_test.amp";
 
-func printstr (u8[]: pointer, i64: length) {
-    compiler<asm>(
-        "mov rsi, {}" : pointer
-        "mov rdx, {}" : length
-        "mov rdi, 1"
-        "mov rax, 1"
-        "syscall"
-    );
-
-    ret;
-}
-
 func printhex (i64: number) {
     u8[]: hex_data = stack_alloc<u8, 16>("0123456789abcdef");
     u8[]: hex_strs = stack_alloc<u8, 17>("................\n");

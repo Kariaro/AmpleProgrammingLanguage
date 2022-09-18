@@ -1,7 +1,6 @@
 package me.hardcoded.exporter.asm;
 
 import me.hardcoded.compiler.context.AmpleConfig;
-import me.hardcoded.utils.DebugUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,8 +23,8 @@ public class NasmUtils {
 	
 	public static byte[] compile(AmpleConfig config, byte[] bytes) {
 		File outputFolder = config.getConfiguration().getOutputFolder();
-		String inputFile = DebugUtils.getNextFileId(outputFolder, "out_%d.asm");
-		String outputFile = DebugUtils.getNextFileId(outputFolder, "out_%d.elf");
+		String inputFile = new File(outputFolder, "out.asm").getAbsolutePath(); //DebugUtils.getNextFileId(outputFolder, "out_%d.asm");
+		String outputFile = new File(outputFolder, "out.elf").getAbsolutePath(); // DebugUtils.getNextFileId(outputFolder, "out_%d.elf");
 		
 		// Create a temporary output asm file with the assembler bytes
 		try {
@@ -41,6 +40,7 @@ public class NasmUtils {
 				getNasm().getAbsolutePath(),
 				inputFile,
 				"-f", "elf64",
+				"-F", "dwarf",
 				"-o", outputFile)
 				.directory(outputFolder)
 				.inheritIO()

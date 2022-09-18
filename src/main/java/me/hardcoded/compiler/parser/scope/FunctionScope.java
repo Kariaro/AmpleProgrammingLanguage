@@ -2,6 +2,7 @@ package me.hardcoded.compiler.parser.scope;
 
 import me.hardcoded.compiler.AmpleMangler;
 import me.hardcoded.compiler.parser.type.Namespace;
+import me.hardcoded.compiler.parser.type.Primitives;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ValueType;
 
@@ -34,6 +35,13 @@ public class FunctionScope {
 		return functionScope.getScope().addFunction(type, namespace, name, parameters);
 	}
 	
+	public Reference importFunction(Namespace namespace, String name, List<Reference> parameters) {
+		Reference reference = addFunction(Primitives.NONE, namespace, name, parameters);
+		reference.setImported(true);
+		reference.setMangledName(AmpleMangler.mangleFunction(namespace, name, parameters));
+		return reference;
+	}
+	
 	public Reference getGlobalFunction(Namespace namespace, String name, List<Reference> parameters) {
 		return functionScope.getAllScopes().getFirst().getFunction(namespace, name, parameters);
 	}
@@ -59,16 +67,6 @@ public class FunctionScope {
 			}
 		}
 		
-		//		if (namespace != null) {
-		//			if ((reference = getLocalFunction(name, parameters)) != null) {
-		//				return reference;
-		//			}
-		//
-		//			if ((reference = getGlobalFunction(namespace + name, parameters)) != null) {
-		//				return reference;
-		//			}
-		//		}
-		
 		// We didn't find it so we check the global scope
 		return getGlobalFunction(namespace, name, parameters);
 	}
@@ -87,12 +85,10 @@ public class FunctionScope {
 				return null;
 			}
 			
-			// TODO: Integrate the namespace in the map. Use a Reference to compare functions ???
-			String constructedName = namespace.getPath() + name;
-			String constructedEntryName = namespace.getPath() + mangledName;
 			Reference reference = new Reference(name, namespace, returnType, programScope.count++, Reference.FUNCTION);
+			reference.setMangledName(mangledName);
 			Functions global = functionScope.getAllScopes().getFirst();
-			if (global != this && global.definedFunctions.put(constructedEntryName, reference) != null) {
+			if (global != this && global.definedFunctions.put(mangledName, reference) != null) {
 				throw new RuntimeException("Function override");
 			}
 			
