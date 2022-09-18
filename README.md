@@ -89,4 +89,8 @@ The visualization classes are located inside the directory `src/main/java/me/har
 Visualizations are used to debug how the compiler works and can help a developer identify errors made by the compiler
 and make it easier to fix them.
 
-Currently, there is only one visualization that shows a tree structure of the current program loaded.
+Currently, there exists three visualization
+
+* Source Code Viewer
+* Parse Tree Viewer
+* Instruction Viewer

@@ -4,24 +4,27 @@ import java.util.Objects;
 
 public class Reference {
 	public static final int IMPORT = 1 << 5,
-							EXPORT = 1 << 6;
+		EXPORT = 1 << 6;
 	
 	public static final int VARIABLE = 0,
-							LABEL = 1,
-							FUNCTION = 2;
+		LABEL = 1,
+		FUNCTION = 2,
+		NAMESPACE = 3;
 	
 	private final int id;
 	private final String name;
+	private final Namespace namespace;
 	private ValueType valueType;
 	private int flags;
 	private int usages;
 	
-	public Reference(String name, ValueType valueType, int id, int flags) {
-		this(name, valueType, id, flags, 0);
+	public Reference(String name, Namespace namespace, ValueType valueType, int id, int flags) {
+		this(name, namespace, valueType, id, flags, 0);
 	}
 	
-	public Reference(String name, ValueType valueType, int id, int flags, int usages) {
+	public Reference(String name, Namespace namespace, ValueType valueType, int id, int flags, int usages) {
 		this.name = name;
+		this.namespace = Objects.requireNonNull(namespace);
 		this.id = id;
 		this.valueType = Objects.requireNonNull(valueType);
 		this.flags = flags;
@@ -30,6 +33,10 @@ public class Reference {
 	
 	public String getName() {
 		return name;
+	}
+	
+	public Namespace getNamespace() {
+		return namespace;
 	}
 	
 	public ValueType getValueType() {
@@ -101,6 +108,7 @@ public class Reference {
 			case VARIABLE -> "var";
 			case LABEL -> "lab";
 			case FUNCTION -> "fun";
+			case NAMESPACE -> "ns";
 			default -> "unk";
 		};
 		
@@ -113,16 +121,10 @@ public class Reference {
 			return name;
 		}
 		
-		return valueType + " " + name + ":" + toSimpleString();
-//
-//		if (DebugUtils.DEBUG_REFERENCE_INFORMATION) {
-//			if (valueType != null) {
-//				return valueType + " " + name + ":" + toSimpleString();
-//			}
-//
-//			return name + ":" + toSimpleString();
-//		}
-//
-//		return name;
+		if (namespace.isRoot()) {
+			return valueType + " " + name + ":" + toSimpleString();
+		}
+		
+		return valueType + " (" + namespace.getPath() + ")" + name + ":" + toSimpleString();
 	}
 }

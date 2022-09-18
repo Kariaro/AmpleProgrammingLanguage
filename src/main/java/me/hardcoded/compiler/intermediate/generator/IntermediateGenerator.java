@@ -58,7 +58,7 @@ public class IntermediateGenerator {
 			case VAR -> generateVarStat((VarStat) stat, procedure);
 			case COMPILER -> generateCompilerStat((CompilerStat) stat, procedure);
 			//			case WHILE -> generateWhileStat((WhileStat) stat, procedure);
-			//			case NAMESPACE -> generateNamespaceStat((NamespaceStat) stat, procedure);
+			case NAMESPACE -> generateNamespaceStat((NamespaceStat) stat, procedure);
 			
 			// Expressions
 			case STACK_ALLOC -> generateStackAllocExpr((StackAllocExpr) stat, procedure);
@@ -311,15 +311,15 @@ public class IntermediateGenerator {
 	//		return NONE;
 	//	}
 	
-	//	private InstRef generateNamespaceStat(NamespaceStat stat, Procedure prodedure) {
-	//		// A namespace is only a container of functions
-	//
-	//		for (Stat s : stat.getElements()) {
-	//			generateStat(s, prodedure);
-	//		}
-	//
-	//		return NONE;
-	//	}
+	private InstRef generateNamespaceStat(NamespaceStat stat, Procedure procedure) {
+		// A namespace is only a container of functions
+		
+		for (Stat s : stat.getElements()) {
+			generateStat(s, procedure);
+		}
+		
+		return NONE;
+	}
 	
 	// Expressions
 	private InstRef generateStackAllocExpr(StackAllocExpr expr, Procedure procedure) {

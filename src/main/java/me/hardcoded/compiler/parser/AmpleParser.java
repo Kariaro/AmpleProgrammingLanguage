@@ -10,6 +10,7 @@ import me.hardcoded.compiler.parser.expr.NoneExpr;
 import me.hardcoded.compiler.parser.expr.NumExpr;
 import me.hardcoded.compiler.parser.scope.ProgramScope;
 import me.hardcoded.compiler.parser.stat.*;
+import me.hardcoded.compiler.parser.type.Namespace;
 import me.hardcoded.compiler.parser.type.Primitives;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ValueType;
@@ -131,7 +132,7 @@ public class AmpleParser {
 		ProgStat list = new ProgStat(mutableSyntax);
 		
 		while (reader.remaining() > 0) {
-			Stat stat = parseStatement();
+			Stat stat = parseStatement(true);
 			
 			// Remove empty statements
 			if (!stat.isEmpty()) {
@@ -153,8 +154,8 @@ public class AmpleParser {
 	 *   | Statement
 	 * </pre>
 	 */
-	private Stat parseStatement() throws ParseException {
-		if (reader.type() == Token.Type.LINK) {
+	private Stat parseStatement(boolean allowLink) throws ParseException {
+		if (allowLink && reader.type() == Token.Type.LINK) {
 			Position startPos = reader.position();
 			reader.advance();
 			
@@ -164,21 +165,75 @@ public class AmpleParser {
 			importedFiles.add(importedFile.substring(1, importedFile.length() - 1));
 			reader.advance();
 			
+			// TODO: Import types and structs of file loaded
+			
 			tryMatchOrError(Token.Type.SEMICOLON);
 			reader.advance();
 			
 			return new EmptyStat(ISyntaxPosition.of(startPos, reader.lastPositionEnd()));
 		}
 		
-		if (reader.type() == Token.Type.FUNC) {
+		if (isNamespace()) {
+			return namespaceStatement();
+		}
+		
+		if (isFunc()) {
 			return funcStatement();
 		}
 		
 		if (isType()) {
-			return varStatement();
+			return varStatement(false);
 		}
 		
 		throw createParseException(reader.position(), "Invalid statement");
+	}
+	
+	private Stat namespaceStatement() throws ParseException {
+		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(reader.position(), null);
+		reader.advance();
+		
+		int namespaceCount = 0;
+		do {
+			tryMatchOrError(Token.Type.IDENTIFIER);
+			String namespaceName = reader.value();
+			reader.advance();
+			
+			context.getNamespaceScope().pushNamespace(namespaceName);
+			namespaceCount++;
+			
+			if (reader.type() == Token.Type.L_CURLY) {
+				break;
+			}
+			
+			tryMatchOrError(Token.Type.NAMESPACE_OPERATOR);
+			reader.advance();
+		} while (true);
+		
+		tryMatchOrError(Token.Type.L_CURLY);
+		reader.advance();
+		
+		Reference namespace = context.getNamespaceScope().getNamespaceReference();
+		NamespaceStat stat = new NamespaceStat(mutableSyntax, namespace);
+		
+		while (reader.type() != Token.Type.R_CURLY) {
+			Stat element = parseStatement(false);
+			
+			// Remove empty statements
+			if (!element.isEmpty()) {
+				stat.addElement(element);
+			}
+		}
+		
+		tryMatchOrError(Token.Type.R_CURLY);
+		reader.advance();
+		
+		mutableSyntax.end = reader.lastPositionEnd();
+		
+		for (int i = 0; i < namespaceCount; i++) {
+			context.getNamespaceScope().popNamespace();
+		}
+		
+		return stat;
 	}
 	
 	private Stat funcStatement() throws ParseException {
@@ -193,6 +248,7 @@ public class AmpleParser {
 		reader.advance();
 		
 		context.getLocalScope().pushBlock();
+		context.getLocalScope().pushLocals();
 		
 		List<Reference> parameters = new ArrayList<>();
 		while (reader.type() != Token.Type.R_PAREN) {
@@ -204,7 +260,7 @@ public class AmpleParser {
 			tryMatchOrError(Token.Type.COLON);
 			reader.advance();
 			
-			Reference reference = context.getLocalScope().addLocalVariable(type, reader.value());
+			Reference reference = context.getLocalScope().addLocalVariable(context.getNamespaceScope().getNamespaceRoot(), type, reader.value());
 			parameters.add(reference);
 			reader.advance();
 			
@@ -229,7 +285,7 @@ public class AmpleParser {
 			returnType = Primitives.NONE;
 		}
 		
-		Reference reference = context.getFunctionScope().addFunction(returnType, functionName, parameters);
+		Reference reference = context.getFunctionScope().addFunction(returnType, context.getNamespaceScope().getNamespace(), functionName, parameters);
 		if (reference == null) {
 			throw createParseException(
 				mutableSyntax.getStartPosition(),
@@ -279,7 +335,7 @@ public class AmpleParser {
 		}
 		
 		if (isType()) {
-			return varStatement();
+			return varStatement(true);
 		}
 		
 		switch (reader.type()) {
@@ -360,7 +416,8 @@ public class AmpleParser {
 			while (reader.type() == Token.Type.COLON) {
 				reader.advance();
 				
-				Reference reference = context.getLocalScope().getVariable(reader.value());
+				Namespace namespace = readNamespace();
+				Reference reference = context.getLocalScope().getVariable(namespace, reader.value());
 				if (reference == null) {
 					throw createParseException("Could not find the variable '%s'", reader.value());
 				}
@@ -384,7 +441,7 @@ public class AmpleParser {
 		tryMatchOrError(Token.Type.L_PAREN);
 		reader.advance();
 		
-		Stat initializer = varStatement();
+		Stat initializer = varStatement(true);
 		
 		//		tryMatchOrError(Token.Type.SEMICOLON);
 		//		reader.advance();
@@ -438,7 +495,7 @@ public class AmpleParser {
 		return new IfStat(ISyntaxPosition.of(startPos, elseBody.getSyntaxPosition().getEndPosition()), value, body, elseBody);
 	}
 	
-	private VarStat varStatement() throws ParseException {
+	private VarStat varStatement(boolean localVariable) throws ParseException {
 		Position startPos = reader.position();
 		
 		ValueType type = readType();
@@ -459,14 +516,18 @@ public class AmpleParser {
 		tryMatchOrError(Token.Type.SEMICOLON);
 		reader.advance();
 		
-		// This is only allowed if the variable is global
-		// But for now we will prohibit any overwriting
-		
-		if (context.getLocalScope().getVariable(name) != null) {
-			throw createParseException(namePos, "A variable '%s' has already been defined", name);
+		Namespace namespace;
+		if (localVariable) {
+			namespace = context.getNamespaceScope().getNamespaceRoot();
+		} else {
+			namespace = context.getNamespaceScope().getNamespace();
 		}
 		
-		Reference reference = context.getLocalScope().addLocalVariable(type, name);
+		if (context.getLocalScope().getVariable(namespace, name) != null) {
+			throw createParseException(namePos, "A %s variable '%s' has already been defined", localVariable ? "local" : "global", name);
+		}
+		
+		Reference reference = context.getLocalScope().addLocalVariable(namespace, type, name);
 		return new VarStat(ISyntaxPosition.of(startPos, reader.lastPositionEnd()), reference, value);
 	}
 	
@@ -483,6 +544,14 @@ public class AmpleParser {
 		return context.getTypeScope().getType(reader.value(), 0) != null;
 	}
 	
+	boolean isFunc() {
+		return reader.type() == Token.Type.FUNC;
+	}
+	
+	boolean isNamespace() {
+		return reader.type() == Token.Type.NAMESPACE;
+	}
+	
 	ValueType readType() throws ParseException {
 		String name = reader.value();
 		reader.advance();
@@ -495,6 +564,23 @@ public class AmpleParser {
 		}
 		
 		return context.getTypeScope().getType(name, depth);
+	}
+	
+	public Namespace readNamespace() throws ParseException {
+		List<String> namespaceParts = new ArrayList<>();
+		while (reader.peak(1).type == Token.Type.NAMESPACE_OPERATOR) {
+			tryMatchOrError(Token.Type.IDENTIFIER);
+			namespaceParts.add(reader.value());
+			reader.advance();
+			reader.advance();
+		}
+		
+		Namespace namespace = context.getNamespaceScope().resolveNamespace(namespaceParts);
+		if (namespace == null) {
+			throw createParseException(reader.position(), "Could not find the namespace %s", String.join("::", namespaceParts));
+		}
+		
+		return namespace;
 	}
 	
 	ParseException createParseException(String format, Object... args) {

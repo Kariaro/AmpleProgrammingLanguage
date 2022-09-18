@@ -89,7 +89,7 @@ public class LinkableDeserializer {
 			case VAR -> deserializeVarStat(in);
 			case COMPILER -> deserializeCompilerStat(in);
 			//			case WHILE -> deserializeWhileStat(in);
-			//			case NAMESPACE -> deserializeNamespaceStat(in);
+			case NAMESPACE -> deserializeNamespaceStat(in);
 			
 			/* Expressions */
 			case STACK_ALLOC -> deserializeStackAllocExpr(in);
@@ -236,18 +236,18 @@ public class LinkableDeserializer {
 	//		return new WhileStat(condition, body, syntaxPosition);
 	//	}
 	
-	//	private NamespaceStat deserializeNamespaceStat(DataInputStream in) throws IOException {
-	//		ISyntaxPosition syntaxPosition = deserializeISyntaxPosition(in);
-	//		Reference reference = deserializeReference(in);
-	//
-	//		NamespaceStat result = new NamespaceStat(reference, syntaxPosition);
-	//		int size = readVarInt(in);
-	//		for (int i = 0; i < size; i++) {
-	//			result.addElement(deserializeStat(in));
-	//		}
-	//
-	//		return result;
-	//	}
+	private NamespaceStat deserializeNamespaceStat(DataInputStream in) throws IOException {
+		ISyntaxPosition syntaxPosition = header.deserializeISyntaxPosition(in);
+		Reference reference = header.deserializeReference(in);
+		
+		NamespaceStat result = new NamespaceStat(syntaxPosition, reference);
+		int size = header.readVarInt(in);
+		for (int i = 0; i < size; i++) {
+			result.addElement(deserializeStat(in));
+		}
+		
+		return result;
+	}
 	
 	// Expressions
 	private StackAllocExpr deserializeStackAllocExpr(DataInputStream in) throws IOException {

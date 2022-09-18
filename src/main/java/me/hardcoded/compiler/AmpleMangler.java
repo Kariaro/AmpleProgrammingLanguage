@@ -1,5 +1,6 @@
 package me.hardcoded.compiler;
 
+import me.hardcoded.compiler.parser.type.Namespace;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ValueType;
 
@@ -9,24 +10,38 @@ public class AmpleMangler {
 	private static final String BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 	private static final String HEX = "0123456789abcdef";
 	
-	public static String mangleFunction(String name, List<Reference> parameters) {
+	public static String mangleFunction(Namespace namespace, String name, List<Reference> parameters) {
 		StringBuilder sb = new StringBuilder();
-		sb.append(name);
+		sb.append(namespace.getPath())
+			.append('@')
+			.append(name);
 		for (Reference param : parameters) {
 			sb.append('@').append(mangleType(param.getValueType()));
 		}
 		return sb.toString();
 	}
 	
+	public static String mangleVariable(Namespace namespace, String name) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(namespace.getPath())
+			.append('@')
+			.append(name);
+		return sb.toString();
+	}
+	
 	public static String mangleType(ValueType type) {
 		StringBuilder sb = new StringBuilder();
-		if (type.isSigned())        sb.append('s');
-		else if (type.isUnsigned()) sb.append('u');
-		else if (type.isFloating()) sb.append('f');
-		else                        sb.append('x');
+		if (type.isSigned())
+			sb.append('s');
+		else if (type.isUnsigned())
+			sb.append('u');
+		else if (type.isFloating())
+			sb.append('f');
+		else
+			sb.append('x');
 		sb.append(HEX.charAt(type.getDepth()))
-		  .append(BASE64.charAt(type.getSize() % 64))
-		  .append(BASE64.charAt(type.getSize() / 64));
+			.append(BASE64.charAt(type.getSize() % 64))
+			.append(BASE64.charAt(type.getSize() / 64));
 		return sb.toString();
 	}
 	
@@ -38,13 +53,13 @@ public class AmpleMangler {
 			case 's' -> ValueType.SIGNED;
 			case 'u' -> ValueType.UNSIGNED;
 			case 'f' -> ValueType.FLOATING;
-			default  -> ValueType.GENERIC;
+			default -> ValueType.GENERIC;
 		};
 		return new ValueType("", size, depth, flags);
 	}
 	
 	public static String demangleFunctionName(String name) {
 		String[] parts = name.split("@", -1);
-		return parts[0];
+		return parts[1];
 	}
 }

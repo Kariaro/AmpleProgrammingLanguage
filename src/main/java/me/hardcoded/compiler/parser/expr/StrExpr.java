@@ -4,6 +4,7 @@ import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.serial.TreeType;
 import me.hardcoded.compiler.parser.type.Primitives;
 import me.hardcoded.compiler.parser.type.ValueType;
+import me.hardcoded.utils.StringUtils;
 
 public class StrExpr extends Expr {
 	private String value;
@@ -40,6 +41,6 @@ public class StrExpr extends Expr {
 	
 	@Override
 	public String toString() {
-		return value;
+		return '"' + StringUtils.escapeString(value) + '"';
 	}
 }

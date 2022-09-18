@@ -200,11 +200,12 @@ public class ExprParser {
 					return specialCallExpression();
 				}
 				
+				Namespace namespace = parser.readNamespace();
 				if (reader.peak(1).type == Token.Type.L_PAREN) {
-					return callExpression();
+					return callExpression(namespace);
 				}
 				
-				Reference reference = context.getLocalScope().getVariable(reader.value());
+				Reference reference = context.getLocalScope().getVariable(namespace, reader.value());
 				if (reference == null) {
 					throw parser.createParseException("Could not find the variable '%s'", reader.value());
 				}
@@ -226,7 +227,7 @@ public class ExprParser {
 		}
 	}
 	
-	private Expr callExpression() throws ParseException {
+	private Expr callExpression(Namespace namespace) throws ParseException {
 		Position startPos = reader.position();
 		
 		String name = reader.value();
@@ -250,10 +251,10 @@ public class ExprParser {
 		}
 		
 		// TODO: Get function with the specified parameters and the specified types.
-		List<Reference> simpleParameters = parameters.stream().map(i -> new Reference("", i.getType(), 0, 0)).toList();
+		List<Reference> simpleParameters = parameters.stream().map(i -> new Reference("", context.getNamespaceScope().getNamespaceRoot(), i.getType(), 0, 0)).toList();
 		
 		// LOGGER.info(AmpleMangler.mangleFunction(name, simpleParameters));
-		Reference reference = context.getFunctionScope().getFunction(name, simpleParameters);
+		Reference reference = context.getFunctionScope().getFunction(namespace, name, simpleParameters);
 		if (reference == null) {
 			StringBuilder extra = new StringBuilder();
 			int count = simpleParameters.size();
@@ -319,12 +320,16 @@ public class ExprParser {
 				switch (reader.type()) {
 					case STRING -> {
 						// TODO: Catch exceptions
-						String val = reader.value();
-						val = val.substring(1, val.length() - 1);
-						val = StringUtils.unescapeString(val);
-						
-						expr = new StrExpr(reader.syntaxPosition(), val);
-						reader.advance();
+						try {
+							String val = reader.value();
+							val = val.substring(1, val.length() - 1);
+							val = StringUtils.unescapeString(val);
+							
+							expr = new StrExpr(reader.syntaxPosition(), val);
+							reader.advance();
+						} catch (Exception e) {
+							throw parser.createParseException(reader.position(), "Failed to unescape string");
+						}
 					}
 					default -> {
 						expr = new NoneExpr(reader.syntaxPosition());

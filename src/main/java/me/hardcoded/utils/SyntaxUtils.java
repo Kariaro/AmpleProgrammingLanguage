@@ -21,6 +21,7 @@ public class SyntaxUtils {
 	
 	/**
 	 * Returns if {@code a} contains {@code b}
+	 *
 	 * @param a
 	 * @param b
 	 * @return {@code true} if {@code a} contains {@code b}

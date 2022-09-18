@@ -1,7 +1,6 @@
 package me.hardcoded.compiler;
 
 import me.hardcoded.compiler.context.AmpleConfig;
-import me.hardcoded.compiler.errors.ParseException;
 import me.hardcoded.compiler.intermediate.AmpleLinker;
 import me.hardcoded.compiler.intermediate.inst.IntermediateFile;
 import me.hardcoded.compiler.parser.AmpleParser;
@@ -57,23 +56,38 @@ public class AmpleCompiler {
 	}
 	
 	private LinkableObject parseLinkableObject(File file) {
+		Exception cacheFailure = null;
+		
 		try {
 			if (ampleConfig.getConfiguration().useCache()) {
-				File cacheFile = new File(ampleConfig.getConfiguration().getOutputFolder(), getCacheFileName(file));
-				if (cacheFile.exists()) {
-					LinkableObject obj = LinkableDeserializer.deserializeLinkable(Files.readAllBytes(cacheFile.toPath()));
-					if (obj != null && obj.getChecksum().equals(FileUtils.getFileChecksum(SHA_1_DIGEST, file))) {
-						LOGGER.info(" - [CACHE] {}", file);
-						return obj;
+				try {
+					File cacheFile = new File(ampleConfig.getConfiguration().getOutputFolder(), getCacheFileName(file));
+					if (cacheFile.exists()) {
+						LinkableObject obj = LinkableDeserializer.deserializeLinkable(Files.readAllBytes(cacheFile.toPath()));
+						if (obj != null && obj.getChecksum().equals(FileUtils.getFileChecksum(SHA_1_DIGEST, file))) {
+							LOGGER.info(" - [CACHE] {}", file);
+							return obj;
+						}
 					}
+				} catch (Exception e) {
+					// If the next step does not fail we continue
+					cacheFailure = e;
 				}
 			}
 			
 			LinkableObject obj = new AmpleParser(ampleConfig).fromFile(file);
-			LOGGER.info(" - [SUCCESS] {}", file);
+			if (cacheFailure != null) {
+				LOGGER.warn(" - [SUCCESS - CACHE FAILED] {}", file, cacheFailure);
+			} else {
+				LOGGER.info(" - [SUCCESS] {}", file);
+			}
 			
 			return obj;
-		} catch (IOException | ParseException e) {
+		} catch (Exception e) {
+			if (cacheFailure != null) {
+				LOGGER.error(" - [FAILURE] {}", file, cacheFailure);
+			}
+			
 			LOGGER.error(" - [FAILURE] {}", file, e);
 		}
 		
@@ -177,7 +191,8 @@ public class AmpleCompiler {
 		//				inputFile.getAbsoluteFile(),
 		//				Files.readAllBytes(inputFile.toPath())
 		//			))
-		//			.addVisualization(ParseTreeVisualization::new, list.getFirst().getProgram())
-		//			.addVisualization(InstFileVisualization::new, file);
+		//			.addVisualization(ParseTreeVisualization::new, list.getLast().getProgram())
+		//			.addVisualization(InstFileVisualization::new, file)
+		;
 	}
 }

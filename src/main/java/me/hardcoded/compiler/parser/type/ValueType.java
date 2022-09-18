@@ -2,12 +2,12 @@ package me.hardcoded.compiler.parser.type;
 
 public class ValueType {
 	public static final int SIGNED = 0,
-							UNSIGNED = 1,
-							FLOATING = 2,
-							GENERIC = 3;
+		UNSIGNED = 1,
+		FLOATING = 2,
+		GENERIC = 3;
 	
 	public static final int STORAGE_TYPE = 7,
-							CONST = 8;
+		CONST = 8;
 	
 	// The name of the type
 	private final String name;
@@ -69,7 +69,8 @@ public class ValueType {
 	
 	@Override
 	public boolean equals(Object obj) {
-		if (!(obj instanceof ValueType that)) return false;
+		if (!(obj instanceof ValueType that))
+			return false;
 		return this.getDepth() == that.getDepth()
 			&& this.getFlags() == that.getFlags()
 			&& this.getSize() == that.getSize();
@@ -83,13 +84,13 @@ public class ValueType {
 		}
 		
 		switch (flags & STORAGE_TYPE) {
-			case SIGNED   -> sb.append("int");
+			case SIGNED -> sb.append("int");
 			case UNSIGNED -> sb.append("uint");
 			case FLOATING -> sb.append("float");
-			default       -> sb.append("unk");
+			default -> sb.append("unk");
 		}
 		
-		return sb.append("_").append(size).append("*".repeat(depth)).toString();
+		return sb.append("_").append(size).append("[]".repeat(depth)).toString();
 	}
 	
 	@Override
