@@ -24,10 +24,8 @@ public class LinkableSerializer {
 		try {
 			return serializer.serialize(obj);
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new RuntimeException(e);
 		}
-		
-		return null;
 	}
 	
 	private byte[] serialize(LinkableObject obj) throws IOException {

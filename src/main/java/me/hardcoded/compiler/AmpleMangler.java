@@ -4,6 +4,8 @@ import me.hardcoded.compiler.parser.type.Namespace;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ValueType;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class AmpleMangler {
@@ -45,10 +47,10 @@ public class AmpleMangler {
 		return sb.toString();
 	}
 	
-	public ValueType demangleType(String value) {
+	public static ValueType demangleType(String value) {
 		char type = value.charAt(0);
 		int depth = Character.digit(value.charAt(1), 16);
-		int size = BASE64.indexOf(value.charAt(2)) + (BASE64.indexOf(value.charAt(3) * 64));
+		int size = BASE64.indexOf(value.charAt(2)) + (BASE64.indexOf(value.charAt(3)) * 64);
 		int flags = switch (type) {
 			case 's' -> ValueType.SIGNED;
 			case 'u' -> ValueType.UNSIGNED;
@@ -58,8 +60,50 @@ public class AmpleMangler {
 		return new ValueType("", size, depth, flags);
 	}
 	
-	public static String demangleFunctionName(String name) {
-		String[] parts = name.split("@", -1);
-		return parts[1];
+	public static MangledFunction demangleFunction(String name) {
+		return new MangledFunction(name);
+	}
+	
+	public static class MangledFunction {
+		public final String namespacePath;
+		public final String functionName;
+		public final List<Reference> parameters;
+		
+		private MangledFunction(String mangledName) {
+			String[] parts = mangledName.split("@", -1);
+			this.namespacePath = parts[0];
+			this.functionName = parts[1];
+			this.parameters = new ArrayList<>();
+			
+			Namespace empty = new Namespace();
+			for (int i = 2; i < parts.length; i++) {
+				ValueType type = AmpleMangler.demangleType(parts[i]);
+				parameters.add(new Reference("", empty, type, i - 2, Reference.VARIABLE));
+			}
+		}
+		
+		@Override
+		public String toString() {
+			StringBuilder sb = new StringBuilder();
+			sb.append("func ");
+			if (namespacePath.isEmpty()) {
+				sb.append(functionName);
+			} else {
+				sb.append(namespacePath).append("::").append(functionName);
+			}
+			sb.append(" (");
+			
+			Iterator<Reference> iter = parameters.iterator();
+			while (iter.hasNext()) {
+				Reference reference = iter.next();
+				sb.append(reference.getValueType());
+				
+				if (iter.hasNext()) {
+					sb.append(", ");
+				}
+			}
+			
+			return sb.append(")").toString();
+		}
 	}
 }

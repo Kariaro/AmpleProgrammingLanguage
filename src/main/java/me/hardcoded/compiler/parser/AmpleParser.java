@@ -88,16 +88,16 @@ public class AmpleParser {
 		// Parse the current code
 		ProgStat program = parse();
 		
-		List<Reference> missingReferences = new ArrayList<>();
+		List<Reference> importedReferences = new ArrayList<>();
 		List<Reference> exportedReferences = new ArrayList<>();
 		for (Reference reference : context.getAllReferences()) {
 			// If the reference is not used inside the linkable object we ignore it
-			if (reference.getUsages() < 1) {
-				continue;
-			}
+			//			if (reference.getUsages() < 1) {
+			//				continue;
+			//			}
 			
 			if (reference.isImported()) {
-				missingReferences.add(reference);
+				importedReferences.add(reference);
 			}
 			
 			if (reference.isExported()) {
@@ -105,8 +105,13 @@ public class AmpleParser {
 			}
 		}
 		
+		LOGGER.debug("");
+		LOGGER.debug("References:");
+		LOGGER.debug("  imported = {}", importedReferences);
+		LOGGER.debug("  exported = {}", exportedReferences);
+		
 		String fileChecksum = FileUtils.getFileChecksum(AmpleCompiler.SHA_1_DIGEST, bytes);
-		LinkableObject linkableObject = new LinkableObject(file, fileChecksum, program, importedFiles, exportedReferences, missingReferences);
+		LinkableObject linkableObject = new LinkableObject(file, fileChecksum, program, importedFiles, exportedReferences, importedReferences);
 		
 		if (reader.remaining() != 0) {
 			throw createParseException(reader.position(), "Failed to parse file fully");
@@ -118,7 +123,7 @@ public class AmpleParser {
 		//		try {
 		//			System.out.println(ObjectUtils.deepPrint("Program", program, 16));
 		//		} catch (Exception e) {
-		//			e.printStackTrace();
+		//			LOGGER.error("", e);
 		//		}
 		
 		return linkableObject;
@@ -240,6 +245,26 @@ public class AmpleParser {
 		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(reader.position(), null);
 		reader.advance();
 		
+		int modifiers = 0;
+		if (reader.type() == Token.Type.L_PAREN) {
+			reader.advance();
+			
+			while (isModifier()) {
+				switch (reader.type()) {
+					case EXPORT -> {
+						modifiers |= Reference.EXPORT;
+					}
+					default -> {
+						throw createParseException(reader.position(), "Invalid function modifier '%s'", reader.value());
+					}
+				}
+				reader.advance();
+			}
+			
+			tryMatchOrError(Token.Type.R_PAREN);
+			reader.advance();
+		}
+		
 		tryMatchOrError(Token.Type.IDENTIFIER);
 		String functionName = reader.value();
 		reader.advance();
@@ -293,6 +318,8 @@ public class AmpleParser {
 				functionName
 			);
 		}
+		reference.setModifiers(modifiers);
+		
 		FuncStat stat = new FuncStat(mutableSyntax, parameters, reference);
 		
 		tryMatchOrError(Token.Type.L_CURLY, () -> "Missing function body");
@@ -552,6 +579,13 @@ public class AmpleParser {
 		return reader.type() == Token.Type.NAMESPACE;
 	}
 	
+	boolean isModifier() {
+		return switch (reader.type()) {
+			case EXPORT -> true;
+			default -> false;
+		};
+	}
+	
 	ValueType readType() throws ParseException {
 		String name = reader.value();
 		reader.advance();
@@ -577,7 +611,7 @@ public class AmpleParser {
 		
 		Namespace namespace = context.getNamespaceScope().resolveNamespace(namespaceParts);
 		if (namespace == null) {
-			throw createParseException(reader.position(), "Could not find the namespace %s", String.join("::", namespaceParts));
+			namespace = context.getNamespaceScope().importNamespace(namespaceParts);
 		}
 		
 		return namespace;

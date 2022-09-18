@@ -103,6 +103,7 @@ public class AmpleLexer {
 			.addRule(Type.CONTINUE, i -> i.addString("continue"))
 			.addRule(Type.BREAK, i -> i.addString("break"))
 			.addRule(Type.NAMESPACE, i -> i.addString("namespace"))
+			.addRule(Type.EXPORT, i -> i.addString("export"))
 			
 			.toImmutable();
 	}

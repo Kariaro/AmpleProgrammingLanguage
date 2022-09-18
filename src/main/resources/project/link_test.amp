@@ -11,8 +11,8 @@ namespace std {
     namespace path {
         u32: var1 = 0u;
 
-        func test() {
-            ret;
+        func (export) test(i32: param1) : u8 {
+            ret cast<u8>(1);
         }
     }
 }
@@ -30,7 +30,22 @@ func testing() {
     std::test();
 
     // Should call inner namespace function
-    std::path::test();
+    std::path::test(1);
+
+    ret;
+}
+
+func (export) printstr (u8[]: pointer, i64: length) {
+    compiler<asm>(
+        "mov rsi, {}" : pointer
+        "mov rdx, {}" : length
+        "mov rdi, 1"
+        "mov rax, 1"
+        "syscall"
+    );
+
+    // call test in the linked file
+    // u8: val = std::path::test();
 
     ret;
 }

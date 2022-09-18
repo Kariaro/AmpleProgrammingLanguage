@@ -211,12 +211,16 @@ class LinkableHeader {
 	
 	private Reference readReference(DataInputStream in) throws IOException {
 		String name = deserializeString(in);
+		String mangledName = deserializeString(in);
 		Namespace namespace = deserializeNamespace(in);
 		ValueType valueType = deserializeValueType(in);
 		int usages = readVarInt(in);
 		int id = readVarInt(in);
 		int flags = readVarInt(in);
-		return new Reference(name, namespace, valueType, id, flags, usages);
+		
+		Reference reference = new Reference(name, namespace, valueType, id, flags, usages);
+		reference.setMangledName(mangledName);
+		return reference;
 	}
 	
 	private ISyntaxPosition readISyntaxPosition(DataInputStream in) throws IOException {
@@ -248,6 +252,7 @@ class LinkableHeader {
 	
 	private void writeReference(Reference reference, DataOutputStream out) throws IOException {
 		serializeString(reference.getName(), out);
+		serializeString(reference.getMangledName(), out);
 		serializeNamespace(reference.getNamespace(), out);
 		serializeValueType(reference.getValueType(), out);
 		writeVarInt(reference.getUsages(), out);

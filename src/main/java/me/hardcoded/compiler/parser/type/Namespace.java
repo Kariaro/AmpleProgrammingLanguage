@@ -9,7 +9,11 @@ public class Namespace {
 	}
 	
 	public Namespace(String pathname) {
-		this.parts = pathname.split("::");
+		if (pathname.isEmpty()) {
+			this.parts = new String[0];
+		} else {
+			this.parts = pathname.split("::");
+		}
 	}
 	
 	public Namespace(Namespace parent, String name) {

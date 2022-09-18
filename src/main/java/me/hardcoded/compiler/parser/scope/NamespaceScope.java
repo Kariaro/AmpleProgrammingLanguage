@@ -20,7 +20,6 @@ public class NamespaceScope {
 		this.namespaceMap = new HashMap<>();
 		this.namespaceRoot = new Namespace();
 		
-		// TODO: Handle root namespace better
 		Reference rootReference = programScope.createNamespaceReference(namespaceRoot);
 		this.namespaceMap.put("", rootReference);
 		this.scopes.add(rootReference);
@@ -64,7 +63,7 @@ public class NamespaceScope {
 	}
 	
 	public Namespace getRelativeNamespace(Namespace base, Namespace path) {
-		Reference reference = null;
+		Reference reference;
 		if (path.isRoot()) {
 			reference = namespaceMap.get(base.getPath());
 		} else {
@@ -81,6 +80,13 @@ public class NamespaceScope {
 		}
 		
 		return null;
+	}
+	
+	public Namespace importNamespace(List<String> parts) {
+		Namespace namespace = new Namespace(String.join("::", parts));
+		Reference reference = programScope.createNamespaceReference(namespace);
+		namespaceMap.put(namespace.getPath(), reference);
+		return namespace;
 	}
 	
 	public Namespace resolveNamespace(List<String> parts) {
