@@ -4,6 +4,7 @@ import me.hardcoded.compiler.context.AmpleConfig;
 import me.hardcoded.compiler.intermediate.generator.IntermediateGenerator;
 import me.hardcoded.compiler.intermediate.inst.IntermediateFile;
 import me.hardcoded.compiler.parser.LinkableObject;
+import me.hardcoded.compiler.parser.ParseUtil;
 import me.hardcoded.compiler.parser.type.Reference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -45,15 +46,17 @@ public class AmpleLinker {
 			// Include each linkable object in the intermediate generator
 			LinkableObject link = list.get(i);
 			LOGGER.info(" - {} : {}", link.getChecksum(), ampleConfig.getConfiguration().getWorkingDirectory().toPath().relativize(link.getFile().toPath()));
+			LOGGER.debug("\n{}", ParseUtil.stat(link.getProgram()));
 			
 			generator.generate(link);
 		}
 		
+		//		LOGGER.debug("");
 		//		for (Procedure proc : file.getProcedures()) {
 		//			LOGGER.debug("# proc " + proc);
 		//			for (Inst inst : proc.getInstructions()) {
 		//				ISyntaxPosition pos = inst.getSyntaxPosition();
-		//				String details = "(line: %3d, column: %3d) ".formatted(pos.getStartPosition().line, pos.getStartPosition().column);
+		//				String details = "(line: %3d, column: %3d)".formatted(pos.getStartPosition().line, pos.getStartPosition().column);
 		//
 		//				if (inst.getOpcode() == Opcode.LABEL) {
 		//					LOGGER.debug("    {} {}", details, inst);

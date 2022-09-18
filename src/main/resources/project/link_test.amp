@@ -1,1 +1,36 @@
 // Empty file
+
+namespace std {
+    u32: var1 = 0u;
+
+    func test() {
+        u32: value_should_be_in_root_namespace = 0u;
+        ret;
+    }
+
+    namespace path {
+        u32: var1 = 0u;
+
+        func test() {
+            ret;
+        }
+    }
+}
+
+// Function is in another scope
+func test() {
+    ret;
+}
+
+func testing() {
+    // Should call the local function
+    test();
+
+    // Should call the namespace function
+    std::test();
+
+    // Should call inner namespace function
+    std::path::test();
+
+    ret;
+}

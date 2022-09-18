@@ -1,14 +1,17 @@
 package me.hardcoded.compiler.parser.scope;
 
+import me.hardcoded.compiler.parser.type.Namespace;
 import me.hardcoded.compiler.parser.type.Primitives;
 import me.hardcoded.compiler.parser.type.Reference;
-import me.hardcoded.compiler.parser.type.ValueType;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ProgramScope {
+	private final NamespaceScope namespaceScope;
 	private final FunctionScope functionScope;
-	//private final LabelScope labelScope;
 	private final LocalScope localScope;
 	private final TypeScope typeScope;
 	final Map<String, Reference> importedReference;
@@ -20,17 +23,21 @@ public class ProgramScope {
 		this.importedReference = new HashMap<>();
 		this.allReferences = new ArrayList<>();
 		
+		this.namespaceScope = new NamespaceScope(this);
 		this.functionScope = new FunctionScope(this);
 		this.localScope = new LocalScope(this);
-		//this.labelScope = new LabelScope(this);
 		this.typeScope = new TypeScope(this);
 	}
 	
 	public void clear() {
+		namespaceScope.clear();
 		functionScope.clear();
 		localScope.clear();
-		//labelScope.clear();
 		typeScope.clear();
+	}
+	
+	public NamespaceScope getNamespaceScope() {
+		return namespaceScope;
 	}
 	
 	public FunctionScope getFunctionScope() {
@@ -40,10 +47,6 @@ public class ProgramScope {
 	public LocalScope getLocalScope() {
 		return localScope;
 	}
-	
-	//public LabelScope getLabelScope() {
-	//	return labelScope;
-	//}
 	
 	public TypeScope getTypeScope() {
 		return typeScope;
@@ -63,14 +66,20 @@ public class ProgramScope {
 			return reference;
 		}
 		
-		reference = new Reference(name, Primitives.NONE, count++, Reference.IMPORT);
+		reference = new Reference(name, namespaceScope.getNamespace(), Primitives.NONE, count++, Reference.IMPORT);
 		importedReference.put(name, reference);
 		allReferences.add(reference);
 		return reference;
 	}
 	
 	public Reference createEmptyReference(String name) {
-		Reference reference = new Reference(name, Primitives.NONE, -1 - (tempCount++), 0);
+		Reference reference = new Reference(name, namespaceScope.getNamespace(), Primitives.NONE, -1 - (tempCount++), 0);
+		allReferences.add(reference);
+		return reference;
+	}
+	
+	protected Reference createNamespaceReference(Namespace namespace) {
+		Reference reference = new Reference(namespace.getPath(), namespace, Primitives.NONE, -1 - (tempCount++), Reference.NAMESPACE);
 		allReferences.add(reference);
 		return reference;
 	}

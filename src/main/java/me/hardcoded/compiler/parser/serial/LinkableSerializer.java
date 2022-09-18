@@ -104,7 +104,7 @@ public class LinkableSerializer {
 			case VAR -> serializeVarStat((VarStat) stat, out);
 			case COMPILER -> serializeCompilerStat((CompilerStat) stat, out);
 			//			case WHILE -> serializeWhileStat((WhileStat) stat, out);
-			//			case NAMESPACE -> serializeNamespaceStat((NamespaceStat) stat, out);
+			case NAMESPACE -> serializeNamespaceStat((NamespaceStat) stat, out);
 			
 			/* Expressions */
 			case STACK_ALLOC -> serializeStackAllocExpr((StackAllocExpr) stat, out);
@@ -203,15 +203,15 @@ public class LinkableSerializer {
 	//		serializeStat(stat.getBody(), out);
 	//	}
 	
-	//	private void serializeNamespaceStat(NamespaceStat stat, DataOutputStream out) throws IOException {
-	//		serializeReference(stat.getReference(), out);
-	//
-	//		List<Stat> elements = stat.getElements();
-	//		writeVarInt(elements.size(), out);
-	//		for (Stat s : elements) {
-	//			serializeStat(s, out);
-	//		}
-	//	}
+	private void serializeNamespaceStat(NamespaceStat stat, DataOutputStream out) throws IOException {
+		header.serializeReference(stat.getReference(), out);
+		
+		List<Stat> elements = stat.getElements();
+		header.writeVarInt(elements.size(), out);
+		for (Stat s : elements) {
+			serializeStat(s, out);
+		}
+	}
 	
 	// Expressions
 	private void serializeStackAllocExpr(StackAllocExpr expr, DataOutputStream out) throws IOException {

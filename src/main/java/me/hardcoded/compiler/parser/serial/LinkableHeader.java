@@ -1,6 +1,7 @@
 package me.hardcoded.compiler.parser.serial;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.parser.type.Namespace;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ValueType;
 import me.hardcoded.utils.Position;
@@ -16,6 +17,7 @@ class LinkableHeader {
 	
 	protected final RefPos<String> stringMap;
 	protected final RefPos<ValueType> valueTypeMap;
+	protected final RefPos<Namespace> namespaceMap;
 	protected final RefPos<Reference> referenceMap;
 	protected final RefPos<ISyntaxPosition> syntaxPositionMap;
 	protected File file;
@@ -24,6 +26,7 @@ class LinkableHeader {
 	public LinkableHeader() {
 		this.stringMap = new RefPos<>();
 		this.valueTypeMap = new RefPos<>();
+		this.namespaceMap = new RefPos<>();
 		this.referenceMap = new RefPos<>();
 		this.syntaxPositionMap = new RefPos<>();
 	}
@@ -31,6 +34,7 @@ class LinkableHeader {
 	public void clear() {
 		stringMap.clear();
 		valueTypeMap.clear();
+		namespaceMap.clear();
 		referenceMap.clear();
 		syntaxPositionMap.clear();
 	}
@@ -73,6 +77,11 @@ class LinkableHeader {
 		}
 		
 		for (int i = 0, size = readVarInt(in); i < size; i++) {
+			Namespace valueType = readNamespace(in);
+			namespaceMap.put(valueType);
+		}
+		
+		for (int i = 0, size = readVarInt(in); i < size; i++) {
 			Reference reference = readReference(in);
 			referenceMap.put(reference);
 		}
@@ -98,6 +107,10 @@ class LinkableHeader {
 	private void processRefs() throws IOException {
 		DataOutputStream dummy = new DataOutputStream(OutputStream.nullOutputStream());
 		
+		for (Namespace namespace : namespaceMap.list) {
+			writeNamespace(namespace, dummy);
+		}
+		
 		for (Reference reference : referenceMap.list) {
 			writeReference(reference, dummy);
 		}
@@ -113,6 +126,11 @@ class LinkableHeader {
 		writeVarInt(valueTypeMap.list.size(), out);
 		for (ValueType valueType : valueTypeMap.list) {
 			writeValueType(valueType, out);
+		}
+		
+		writeVarInt(namespaceMap.list.size(), out);
+		for (Namespace namespace : namespaceMap.list) {
+			writeNamespace(namespace, out);
 		}
 		
 		writeVarInt(referenceMap.list.size(), out);
@@ -186,13 +204,19 @@ class LinkableHeader {
 		return new ValueType(name, size, depth, flags);
 	}
 	
+	private Namespace readNamespace(DataInputStream in) throws IOException {
+		String name = deserializeString(in);
+		return new Namespace(name);
+	}
+	
 	private Reference readReference(DataInputStream in) throws IOException {
 		String name = deserializeString(in);
+		Namespace namespace = deserializeNamespace(in);
 		ValueType valueType = deserializeValueType(in);
 		int usages = readVarInt(in);
 		int id = readVarInt(in);
 		int flags = readVarInt(in);
-		return new Reference(name, valueType, id, flags, usages);
+		return new Reference(name, namespace, valueType, id, flags, usages);
 	}
 	
 	private ISyntaxPosition readISyntaxPosition(DataInputStream in) throws IOException {
@@ -218,8 +242,13 @@ class LinkableHeader {
 		writeVarInt(valueType.getSize(), out);
 	}
 	
+	private void writeNamespace(Namespace namespace, DataOutputStream out) throws IOException {
+		serializeString(namespace.getPath(), out);
+	}
+	
 	private void writeReference(Reference reference, DataOutputStream out) throws IOException {
 		serializeString(reference.getName(), out);
+		serializeNamespace(reference.getNamespace(), out);
 		serializeValueType(reference.getValueType(), out);
 		writeVarInt(reference.getUsages(), out);
 		writeVarInt(reference.getId(), out);
@@ -254,6 +283,11 @@ class LinkableHeader {
 		return valueTypeMap.get(idx);
 	}
 	
+	public Namespace deserializeNamespace(DataInputStream in) throws IOException {
+		int idx = readVarInt(in);
+		return namespaceMap.get(idx);
+	}
+	
 	public Reference deserializeReference(DataInputStream in) throws IOException {
 		int idx = readVarInt(in);
 		return referenceMap.get(idx);
@@ -277,6 +311,11 @@ class LinkableHeader {
 	
 	public void serializeValueType(ValueType valueType, DataOutputStream out) throws IOException {
 		int idx = valueTypeMap.put(valueType);
+		writeVarInt(idx, out);
+	}
+	
+	public void serializeNamespace(Namespace namespace, DataOutputStream out) throws IOException {
+		int idx = namespaceMap.put(namespace);
 		writeVarInt(idx, out);
 	}
 	

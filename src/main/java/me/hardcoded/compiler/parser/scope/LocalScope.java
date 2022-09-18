@@ -1,5 +1,7 @@
 package me.hardcoded.compiler.parser.scope;
 
+import me.hardcoded.compiler.AmpleMangler;
+import me.hardcoded.compiler.parser.type.Namespace;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ValueType;
 
@@ -23,7 +25,7 @@ public class LocalScope {
 	
 	/**
 	 * This will create a new block of variables. This represents different orders of visibility.
-	 *
+	 * <p>
 	 * The first time this is called will be the block containing GLOBAL variables.
 	 * The second time it will contain LOCAL variables.
 	 * The third time it will contain LAMBDA variables.
@@ -37,24 +39,26 @@ public class LocalScope {
 	}
 	
 	public void pushLocals() {
+		System.out.println("push >>> " + localScope.getLast());
 		localScope.getLast().pushScope();
 	}
 	
 	public void popLocals() {
+		System.out.println("pop >>> " + localScope.getLast());
 		localScope.getLast().popScope();
 	}
 	
-	public Reference addLocalVariable(ValueType valueType, String name) {
-		return localScope.getLast().getScope().addLocal(valueType, name);
+	public Reference addLocalVariable(Namespace namespace, ValueType valueType, String name) {
+		return localScope.getLast().getScope().addLocal(valueType, namespace, name);
 	}
 	
-	public Reference getVariable(String name) {
+	public Reference getVariable(Namespace namespace, String name) {
 		Iterator<DataScope<Locals>> iter = localScope.descendingIterator();
 		
 		while (iter.hasNext()) {
 			Iterator<Locals> iter2 = iter.next().getAllScopes().descendingIterator();
 			while (iter2.hasNext()) {
-				Reference reference = iter2.next().getLocal(name);
+				Reference reference = iter2.next().getLocal(namespace, name);
 				if (reference != null) {
 					return reference;
 				}
@@ -64,10 +68,10 @@ public class LocalScope {
 		return null;
 	}
 	
-	public Reference getLocal(String name) {
+	public Reference getLocal(Namespace namespace, String name) {
 		Iterator<Locals> iter = localScope.getLast().getAllScopes().descendingIterator();
 		while (iter.hasNext()) {
-			Reference reference = iter.next().getLocal(name);
+			Reference reference = iter.next().getLocal(namespace, name);
 			if (reference != null) {
 				return reference;
 			}
@@ -83,19 +87,25 @@ public class LocalScope {
 			this.locals = new HashMap<>();
 		}
 		
-		public Reference addLocal(ValueType valueType, String name) {
-			if (locals.containsKey(name)) {
+		public Reference addLocal(ValueType valueType, Namespace namespace, String name) {
+			String mangledName = AmpleMangler.mangleVariable(namespace, name);
+			if (locals.containsKey(mangledName)) {
 				return null;
 			}
 			
-			Reference reference = new Reference(name, valueType, programScope.count++, 0);
-			locals.put(name, reference);
+			Reference reference = new Reference(name, namespace, valueType, programScope.count++, 0);
+			locals.put(mangledName, reference);
 			programScope.allReferences.add(reference);
 			return reference;
 		}
 		
-		public Reference getLocal(String name) {
-			return locals.get(name);
+		public Reference getLocal(Namespace namespace, String name) {
+			String mangledName = AmpleMangler.mangleVariable(namespace, name);
+			Reference reference = locals.get(mangledName);
+			if (reference != null && reference.getNamespace() != namespace) {
+				throw new RuntimeException("Local did not have the correct namespace: (%s) (%s)".formatted(reference, namespace));
+			}
+			return reference;
 		}
 		
 		@Override

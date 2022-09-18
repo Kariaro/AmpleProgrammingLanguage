@@ -38,6 +38,13 @@ public class Main {
 		return "%d.%d.%d".formatted(MAJOR, MINOR, BUILD);
 	}
 	
+	/**
+	 * Only used for debug logging
+	 */
+	public static Logger getLogger() {
+		return LOGGER;
+	}
+	
 	static {
 		Locale.setDefault(Locale.US);
 	}
@@ -71,7 +78,7 @@ public class Main {
 				"--target", TargetFormat.BYTECODE.toString(),
 				"--input-file", inputFile.getAbsolutePath(),
 				"--output-folder", outputFolder.getAbsolutePath(),
-				"--use-cache", "true"
+				"--use-cache", "false"
 			};
 		}
 		
@@ -95,8 +102,9 @@ public class Main {
 			
 			compiler.compile();
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOGGER.error("", e);
 		}
+		
 		long elapsed = System.nanoTime() - start;
 		
 		LOGGER.info("");
