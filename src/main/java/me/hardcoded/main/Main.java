@@ -78,7 +78,7 @@ public class Main {
 				"--target", TargetFormat.BYTECODE.toString(),
 				"--input-file", inputFile.getAbsolutePath(),
 				"--output-folder", outputFolder.getAbsolutePath(),
-				"--use-cache", "true"
+				"--use-cache", "false"
 			};
 		}
 		

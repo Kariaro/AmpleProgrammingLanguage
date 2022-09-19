@@ -1,7 +1,6 @@
 package me.hardcoded.exporter.asm;
 
 import me.hardcoded.compiler.intermediate.inst.*;
-import me.hardcoded.compiler.parser.type.ValueType;
 
 import java.util.*;
 

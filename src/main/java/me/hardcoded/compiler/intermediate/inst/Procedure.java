@@ -10,13 +10,13 @@ import java.util.List;
  */
 public class Procedure {
 	private final List<Inst> list;
+	private final ProcedureType type;
 	private InstRef reference;
 	private List<InstRef> parameters;
-	private ProcedureType type;
 	
-	public Procedure() {
+	public Procedure(ProcedureType type) {
 		this.list = new ArrayList<>();
-		this.type = ProcedureType.INVALID;
+		this.type = type;
 	}
 	
 	public ProcedureType getType() {
@@ -76,7 +76,7 @@ public class Procedure {
 	
 	@Override
 	public String toString() {
-		return reference.getName();
+		return reference.getPath();
 	}
 	
 }
