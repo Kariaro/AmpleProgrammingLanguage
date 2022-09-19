@@ -10,7 +10,7 @@ import me.hardcoded.compiler.parser.serial.LinkableDeserializer;
 import me.hardcoded.compiler.parser.serial.LinkableSerializer;
 import me.hardcoded.configuration.CompilerConfiguration;
 import me.hardcoded.configuration.OutputFormat;
-import me.hardcoded.utils.FileUtils;
+import me.hardcoded.utils.AmpleCache;
 import me.hardcoded.utils.ObjectUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,8 +19,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -29,31 +27,12 @@ import java.util.Set;
 // TODO: Implement REPL (Read Eval Print Loop)
 public class AmpleCompiler {
 	private static final Logger LOGGER = LogManager.getLogger(AmpleCompiler.class);
-	public static final MessageDigest SHA_1_DIGEST;
 	
-	static {
-		MessageDigest shaDigest = null;
-		try {
-			shaDigest = MessageDigest.getInstance("SHA-1");
-		} catch (NoSuchAlgorithmException e) {
-			LOGGER.error("Failed to load SHA-1 digest");
-			System.exit(0);
-		}
-		
-		SHA_1_DIGEST = shaDigest;
-	}
 	
 	private final AmpleConfig ampleConfig;
 	
 	public AmpleCompiler(AmpleConfig ampleConfig) {
 		this.ampleConfig = ampleConfig;
-	}
-	
-	private String getCacheFileName(File file) {
-		Path relativePath = ampleConfig.getConfiguration()
-			.getWorkingDirectory().toPath().relativize(file.toPath());
-		
-		return "serial_" + relativePath.toString().replaceAll("[\\\\/]", "_") + ".serial";
 	}
 	
 	private LinkableObject parseLinkableObject(File file) {
@@ -62,10 +41,10 @@ public class AmpleCompiler {
 		try {
 			if (ampleConfig.getConfiguration().useCache()) {
 				try {
-					File cacheFile = new File(ampleConfig.getConfiguration().getOutputFolder(), getCacheFileName(file));
+					File cacheFile = new File(ampleConfig.getConfiguration().getOutputFolder(), AmpleCache.getCacheFileName(ampleConfig, file));
 					if (cacheFile.exists()) {
 						LinkableObject obj = LinkableDeserializer.deserializeLinkable(Files.readAllBytes(cacheFile.toPath()));
-						if (obj != null && obj.getChecksum().equals(FileUtils.getFileChecksum(SHA_1_DIGEST, file))) {
+						if (obj != null && obj.getChecksum().equals(AmpleCache.getFileChecksum(file))) {
 							LOGGER.info(" - [CACHE] {}", file);
 							return obj;
 						}
@@ -123,7 +102,9 @@ public class AmpleCompiler {
 			}
 		}
 		
-		if (ampleConfig.getConfiguration().useCache()) {
+		// To make sure that each run tests the cache system we should always run this
+		// if (ampleConfig.getConfiguration().useCache())
+		{
 			LOGGER.info("");
 			LOGGER.info("Cache Files:");
 			
@@ -131,7 +112,7 @@ public class AmpleCompiler {
 				try {
 					byte[] bytes = LinkableSerializer.serializeLinkable(obj);
 					
-					File outputFile = new File(outputFolder, getCacheFileName(obj.getFile()));
+					File outputFile = new File(outputFolder, AmpleCache.getCacheFileName(ampleConfig, obj.getFile()));
 					Files.write(outputFile.toPath(), bytes);
 					
 					LOGGER.info(" - [{}] {}", bytes.length == 1 ? "1 byte" : (bytes.length + " bytes"), outputFile);
@@ -180,7 +161,7 @@ public class AmpleCompiler {
 			case ASSEMBLER -> codeGenerator.getAssembler(file);
 		};
 		
-		String path = new File(config.getOutputFolder(), "compile").getAbsolutePath(); //DebugUtils.getNextFileId(config.getOutputFolder(), "compile_%d");
+		String path = new File(config.getOutputFolder(), "compile").getAbsolutePath();
 		Files.write(Path.of(path), bytes);
 		LOGGER.info("");
 		LOGGER.info("{}", path);
@@ -191,7 +172,6 @@ public class AmpleCompiler {
 		//				Files.readAllBytes(inputFile.toPath())
 		//			))
 		//			.addVisualization(ParseTreeVisualization::new, list.getFirst().getProgram())
-		//			.addVisualization(InstFileVisualization::new, file)
-		;
+		//			.addVisualization(InstFileVisualization::new, file);
 	}
 }

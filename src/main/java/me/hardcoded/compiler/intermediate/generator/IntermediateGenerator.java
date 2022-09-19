@@ -12,6 +12,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -59,7 +60,6 @@ public class IntermediateGenerator {
 			case VAR -> generateVarStat((VarStat) stat, procedure);
 			case COMPILER -> generateCompilerStat((CompilerStat) stat, procedure);
 			//			case WHILE -> generateWhileStat((WhileStat) stat, procedure);
-			case NAMESPACE -> generateNamespaceStat((NamespaceStat) stat, procedure);
 			
 			// Expressions
 			case STACK_ALLOC -> generateStackAllocExpr((StackAllocExpr) stat, procedure);
@@ -90,10 +90,27 @@ public class IntermediateGenerator {
 	}
 	
 	private InstRef generateProgStat(ProgStat stat) {
-		for (Stat s : stat.getElements()) {
-			count = 0;
+		LinkedList<Stat> stats = new LinkedList<>(stat.getElements());
+		
+		while (!stats.isEmpty()) {
+			Stat s = stats.poll();
 			
-			Procedure procedure = new Procedure();
+			if (s instanceof NamespaceStat) {
+				stats.addAll(0, ((NamespaceStat) s).getElements());
+				continue;
+			}
+			
+			// Each statement inside of this program gets its own procedure
+			// some procedures are variable procedures and some a function
+			// procedures.
+			
+			Procedure procedure = new Procedure(switch (s.getTreeType()) {
+				case FUNC -> Procedure.ProcedureType.FUNCTION;
+				case VAR -> Procedure.ProcedureType.VARIABLE;
+				default -> throw new RuntimeException("Invalid statement inside procedure");
+			});
+			
+			count = 0;
 			generateStat(s, procedure);
 			file.addProcedure(procedure);
 		}
@@ -172,9 +189,11 @@ public class IntermediateGenerator {
 			.addParam(new InstParam.Ref(reference));
 		procedure.addInst(functionLabel);
 		
-		// Fill procedure with function data
-		List<InstRef> parameters = stat.getParameters().stream().map(this::wrapReference).toList();
-		procedure.fillData(reference, parameters);
+		// Fill data for function procedure type
+		if (procedure.getType() == Procedure.ProcedureType.FUNCTION) {
+			List<InstRef> parameters = stat.getParameters().stream().map(this::wrapReference).toList();
+			procedure.fillData(reference, parameters);
+		}
 		
 		generateStat(stat.getBody(), procedure);
 		
@@ -244,6 +263,11 @@ public class IntermediateGenerator {
 			.addParam(new InstParam.Ref(holder))
 			.addParam(new InstParam.Ref(value)));
 		
+		// Fill data for variable procedure type
+		if (procedure.getType() == Procedure.ProcedureType.VARIABLE) {
+			procedure.fillData(holder, List.of());
+		}
+		
 		if (!holder.getValueType().equals(value.getValueType())) {
 			Position pos = stat.getSyntaxPosition().getStartPosition();
 			
@@ -306,16 +330,6 @@ public class IntermediateGenerator {
 	//
 	//		return NONE;
 	//	}
-	
-	private InstRef generateNamespaceStat(NamespaceStat stat, Procedure procedure) {
-		// A namespace is only a container of functions
-		
-		for (Stat s : stat.getElements()) {
-			generateStat(s, procedure);
-		}
-		
-		return NONE;
-	}
 	
 	// Expressions
 	private InstRef generateStackAllocExpr(StackAllocExpr expr, Procedure procedure) {

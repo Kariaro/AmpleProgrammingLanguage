@@ -49,7 +49,12 @@ public class AmpleLinker {
 		
 		//		LOGGER.debug("");
 		//		for (Procedure proc : file.getProcedures()) {
-		//			LOGGER.debug("# proc " + proc);
+		//			switch (proc.getType()) {
+		//				case FUNCTION -> LOGGER.debug("# func {}", proc);
+		//				case VARIABLE -> LOGGER.debug("# variable {}", proc);
+		//				default -> LOGGER.debug("# proc = {}", proc.getType());
+		//			}
+		//
 		//			for (Inst inst : proc.getInstructions()) {
 		//				ISyntaxPosition pos = inst.getSyntaxPosition();
 		//				String details = "(line: %3d, column: %3d)".formatted(pos.getStartPosition().line, pos.getStartPosition().column);

@@ -1,16 +1,20 @@
 package me.hardcoded.exporter.asm;
 
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-
 import me.hardcoded.compiler.context.AmpleConfig;
 import me.hardcoded.compiler.impl.ICodeGenerator;
 import me.hardcoded.compiler.intermediate.inst.*;
 import me.hardcoded.compiler.parser.type.ValueType;
 import me.hardcoded.utils.error.CodeGenException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AsmCodeGenerator extends ICodeGenerator {
+	private static final Logger LOGGER = LogManager.getLogger(AsmCodeGenerator.class);
+	
 	public AsmCodeGenerator(AmpleConfig ampleConfig) {
 		super(ampleConfig);
 	}
@@ -20,24 +24,44 @@ public class AsmCodeGenerator extends ICodeGenerator {
 		byte[] assembler = getAssembler(program);
 		return NasmUtils.compile(ampleConfig, assembler);
 	}
-
+	
 	@Override
 	public byte[] getAssembler(IntermediateFile program) throws CodeGenException {
 		StringBuilder sb = new StringBuilder();
 		
 		InstRef main = null;
 		for (Procedure proc : program.getProcedures()) {
-			AsmProcedure asmProc = new AsmProcedure(proc);
-			
-			InstRef test = proc.getReference();
-			sb.append("; %s %s (%s)\n".formatted(test.getValueType(), test, proc.getParameters()));
-			
-			if (test.getName().equals("main")) {
-				main = test;
-			}
-			
-			for (Inst inst : proc.getInstructions()) {
-				sb.append(buildInstruction(asmProc, inst)).append('\n');
+			switch (proc.getType()) {
+				case FUNCTION -> {
+					AsmProcedure asmProc = new AsmProcedure(proc);
+					
+					InstRef test = proc.getReference();
+					sb.append("; %s %s (%s)\n".formatted(test.getValueType(), test, proc.getParameters()));
+					
+					if (test.getName().equals("main")) {
+						main = test;
+					}
+					
+					for (Inst inst : proc.getInstructions()) {
+						sb.append(buildInstruction(asmProc, inst)).append('\n');
+					}
+				}
+				
+				case VARIABLE -> {
+					// TODO: Global variables should be saved differently from instructions
+					AsmProcedure asmProc = new AsmProcedure(proc);
+					
+					InstRef test = proc.getReference();
+					sb.append("; %s %s\n".formatted(test.getValueType(), test));
+					
+					for (Inst inst : proc.getInstructions()) {
+						sb.append(buildInstruction(asmProc, inst)).append('\n');
+					}
+				}
+				
+				default -> {
+					LOGGER.error("{} procedures has not been implemented", proc.getType());
+				}
 			}
 		}
 		
@@ -483,10 +507,10 @@ public class AsmCodeGenerator extends ICodeGenerator {
 		
 		return sb.stream().reduce("", (a, b) -> a + '\n' + b).indent(4).stripTrailing();
 	}
-
+	
 	@Override
 	public void reset() {
-
+	
 	}
 	
 	public static int getTypeSize(ValueType type) {

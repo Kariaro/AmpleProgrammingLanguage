@@ -60,26 +60,28 @@ func printhex (i64: number) {
 
 ## Lexer
 
-The compiler lexer is a large part of how this compiler functions. The lexer is located inside the
-directory `src/main/java/me/hardcoded/lexer`
+The lexer is located in the directory `src/main/java/me/hardcoded/lexer`
 
-The lexer is first construction with a set of rules for how to group characters. All groups are written with regex
-currently. An example of a number matching group would be `[0-9]+`
+The compiler lexer is used to take combine a list of characters into bigger groups. One example of a group is numbers
+which could be combined using the simple regex `[1-9][0-9]+`
 
-All tokens returned by the lexer has information about where the token started and ended, file location, content and
-group information.
+All tokens returned by the lexer contains information about where the token started and ended, file location, content
+and group information.
 
 Here is an example of what the lexer does.
 
 ```
 Input: "char hello ='a'"
 
-[Identifier]  : char
-[Whitespace]  :
-[Literal]     : hello
-[Whitespace]  :
-[Assignment]  : =
-[String]      : 'a'
+Output:
+List<Token> = [
+    { type: TYPE,   value: "char" , index: 0  },
+    { type: SPACE,  value: " ",     index: 4  },
+    { type: NAME,   value: "hello", index: 5  },
+    { type: SPACE,  value: " ",     index: 10 },
+    { type: EQUALS, value: "=",     index: 11 },
+    { type: STRING, value: "'a'",   index: 12 }
+];
 ```
 
 ## Visualization
@@ -89,7 +91,7 @@ The visualization classes are located inside the directory `src/main/java/me/har
 Visualizations are used to debug how the compiler works and can help a developer identify errors made by the compiler
 and make it easier to fix them.
 
-Currently, there exists three visualization
+Currently, there exists three visualization.
 
 * Source Code Viewer
 * Parse Tree Viewer

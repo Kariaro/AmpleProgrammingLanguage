@@ -1,6 +1,5 @@
 package me.hardcoded.compiler.parser;
 
-import me.hardcoded.compiler.AmpleCompiler;
 import me.hardcoded.compiler.context.AmpleConfig;
 import me.hardcoded.compiler.context.LangReader;
 import me.hardcoded.compiler.errors.ParseException;
@@ -16,7 +15,7 @@ import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ValueType;
 import me.hardcoded.lexer.LexerTokenizer;
 import me.hardcoded.lexer.Token;
-import me.hardcoded.utils.FileUtils;
+import me.hardcoded.utils.AmpleCache;
 import me.hardcoded.utils.MutableSyntaxImpl;
 import me.hardcoded.utils.Position;
 import org.apache.logging.log4j.LogManager;
@@ -110,7 +109,7 @@ public class AmpleParser {
 		LOGGER.debug("  imported = {}", importedReferences);
 		LOGGER.debug("  exported = {}", exportedReferences);
 		
-		String fileChecksum = FileUtils.getFileChecksum(AmpleCompiler.SHA_1_DIGEST, bytes);
+		String fileChecksum = AmpleCache.getDataChecksum(bytes);
 		LinkableObject linkableObject = new LinkableObject(file, fileChecksum, program, importedFiles, exportedReferences, importedReferences);
 		
 		if (reader.remaining() != 0) {
@@ -119,12 +118,6 @@ public class AmpleParser {
 		
 		reader = oldContext;
 		currentFile = oldFile;
-		
-		//		try {
-		//			System.out.println(ObjectUtils.deepPrint("Program", program, 16));
-		//		} catch (Exception e) {
-		//			LOGGER.error("", e);
-		//		}
 		
 		return linkableObject;
 	}
