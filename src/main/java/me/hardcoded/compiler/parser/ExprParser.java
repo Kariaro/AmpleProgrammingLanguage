@@ -275,7 +275,11 @@ public class ExprParser {
 				parser.tryMatchOrError(Token.Type.LESS_THAN);
 				reader.advance();
 				
+				ISyntaxPosition typeSyntaxPosition = reader.syntaxPosition();
 				ValueType type = parser.readType();
+				if (type == null) {
+					throw parser.createParseException(typeSyntaxPosition, "Unknown type");
+				}
 				
 				parser.tryMatchOrError(Token.Type.COMMA);
 				reader.advance();
@@ -303,7 +307,7 @@ public class ExprParser {
 							expr = new StrExpr(reader.syntaxPosition(), val);
 							reader.advance();
 						} catch (Exception e) {
-							throw parser.createParseException(reader.position(), "Failed to unescape string");
+							throw parser.createParseException(reader.syntaxPosition(), "Failed to unescape string");
 						}
 					}
 					default -> {

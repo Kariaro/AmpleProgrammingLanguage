@@ -45,7 +45,7 @@ func (export) printstr (u8[]: pointer, i64: length) {
     );
 
     // call test in the linked file
-    // u8: val = std::path::test();
+    // u8: val = std::path::test(1);
 
     ret;
 }

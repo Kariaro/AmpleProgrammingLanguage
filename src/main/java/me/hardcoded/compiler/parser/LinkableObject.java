@@ -11,9 +11,12 @@ import java.util.List;
  * When combining linkable objects all unresolved references will need to be resolved to compile.
  */
 public class LinkableObject {
+	// Used by the linker
 	private final List<Reference> importedReferences;
 	private final List<Reference> exportedReferences;
 	private final List<String> imports;
+	
+	// Internal fields
 	private final String checksum;
 	private final File file;
 	private final ProgStat program;
@@ -27,12 +30,20 @@ public class LinkableObject {
 		this.imports = imports;
 	}
 	
-	public String getChecksum() {
-		return checksum;
+	public List<Reference> getImportedReferences() {
+		return importedReferences;
+	}
+	
+	public List<Reference> getExportedReferences() {
+		return exportedReferences;
 	}
 	
 	public List<String> getImports() {
 		return imports;
+	}
+	
+	public String getChecksum() {
+		return checksum;
 	}
 	
 	public File getFile() {
@@ -41,14 +52,6 @@ public class LinkableObject {
 	
 	public ProgStat getProgram() {
 		return program;
-	}
-	
-	public List<Reference> getImportedReferences() {
-		return importedReferences;
-	}
-	
-	public List<Reference> getExportedReferences() {
-		return exportedReferences;
 	}
 	
 }
