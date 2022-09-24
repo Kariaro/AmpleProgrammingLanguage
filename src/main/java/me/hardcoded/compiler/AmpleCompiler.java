@@ -28,7 +28,6 @@ import java.util.Set;
 public class AmpleCompiler {
 	private static final Logger LOGGER = LogManager.getLogger(AmpleCompiler.class);
 	
-	
 	private final AmpleConfig ampleConfig;
 	
 	public AmpleCompiler(AmpleConfig ampleConfig) {
@@ -72,7 +71,7 @@ public class AmpleCompiler {
 		}
 		
 		// Close the application
-		throw new RuntimeException();
+		throw new RuntimeException("Failed to load file");
 	}
 	
 	public void compile() throws IOException {

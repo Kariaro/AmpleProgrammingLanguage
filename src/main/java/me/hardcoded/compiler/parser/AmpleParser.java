@@ -2,6 +2,7 @@ package me.hardcoded.compiler.parser;
 
 import me.hardcoded.compiler.context.AmpleConfig;
 import me.hardcoded.compiler.context.LangReader;
+import me.hardcoded.compiler.errors.ErrorUtil;
 import me.hardcoded.compiler.errors.ParseException;
 import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.expr.Expr;
@@ -113,7 +114,7 @@ public class AmpleParser {
 		LinkableObject linkableObject = new LinkableObject(file, fileChecksum, program, importedFiles, exportedReferences, importedReferences);
 		
 		if (reader.remaining() != 0) {
-			throw createParseException(reader.position(), "Failed to parse file fully");
+			throw createParseException(reader.syntaxPosition(), "Failed to parse file fully");
 		}
 		
 		reader = oldContext;
@@ -183,7 +184,7 @@ public class AmpleParser {
 			return varStatement(false);
 		}
 		
-		throw createParseException(reader.position(), "Invalid statement");
+		throw createParseException(reader.syntaxPosition(), "Invalid statement");
 	}
 	
 	private Stat namespaceStatement() throws ParseException {
@@ -242,13 +243,13 @@ public class AmpleParser {
 		if (reader.type() == Token.Type.L_PAREN) {
 			reader.advance();
 			
-			while (isModifier()) {
+			while (reader.type() != Token.Type.R_PAREN) {
 				switch (reader.type()) {
 					case EXPORT -> {
 						modifiers |= Reference.EXPORT;
 					}
 					default -> {
-						throw createParseException(reader.position(), "Invalid function modifier '%s'", reader.value());
+						throw createParseException(reader.syntaxPosition(), "Invalid function modifier '%s'", reader.value());
 					}
 				}
 				reader.advance();
@@ -259,6 +260,7 @@ public class AmpleParser {
 		}
 		
 		tryMatchOrError(Token.Type.IDENTIFIER);
+		ISyntaxPosition functionNameSyntax = reader.syntaxPosition();
 		String functionName = reader.value();
 		reader.advance();
 		
@@ -306,7 +308,7 @@ public class AmpleParser {
 		Reference reference = context.getFunctionScope().addFunction(returnType, context.getNamespaceScope().getNamespace(), functionName, parameters);
 		if (reference == null) {
 			throw createParseException(
-				mutableSyntax.getStartPosition(),
+				functionNameSyntax,
 				"A function with the name '%s' already exists",
 				functionName
 			);
@@ -463,9 +465,6 @@ public class AmpleParser {
 		
 		Stat initializer = varStatement(true);
 		
-		//		tryMatchOrError(Token.Type.SEMICOLON);
-		//		reader.advance();
-		
 		Expr condition;
 		if (reader.type() != Token.Type.SEMICOLON) {
 			condition = expression();
@@ -518,13 +517,17 @@ public class AmpleParser {
 	private VarStat varStatement(boolean localVariable) throws ParseException {
 		Position startPos = reader.position();
 		
+		ISyntaxPosition typeSyntaxPosition = reader.syntaxPosition();
 		ValueType type = readType();
+		if (type == null) {
+			throw createParseException(typeSyntaxPosition, "Unknown type");
+		}
 		
 		tryMatchOrError(Token.Type.COLON);
 		reader.advance();
 		
 		tryMatchOrError(Token.Type.IDENTIFIER);
-		Position namePos = reader.position();
+		ISyntaxPosition namePos = reader.syntaxPosition();
 		String name = reader.value();
 		reader.advance();
 		
@@ -553,11 +556,7 @@ public class AmpleParser {
 	
 	// Shunting yard algorithm
 	private Expr expression() throws ParseException {
-		return expression(false);
-	}
-	
-	private Expr expression(boolean allowComma) throws ParseException {
-		return new ExprParser(this, context, reader).parse(allowComma);
+		return new ExprParser(this, context, reader).parse(false);
 	}
 	
 	boolean isType() {
@@ -611,17 +610,32 @@ public class AmpleParser {
 	}
 	
 	ParseException createParseException(String format, Object... args) {
-		return createParseException(reader == null ? null : reader.position(), format, args);
+		return createParseException(reader == null ? null : reader.syntaxPosition(), format, args);
 	}
 	
-	ParseException createParseException(Position position, String format, Object... args) {
+	ParseException createParseException(ISyntaxPosition syntaxPosition, String format, Object... args) {
+		return createParseException(syntaxPosition.getStartPosition().file, syntaxPosition, format, args);
+	}
+	
+	ParseException createParseException(File file, ISyntaxPosition syntaxPosition, String format, Object... args) {
 		String msg = String.format(format, args);
 		
-		if (position == null) {
-			return new ParseException("(?) (line: ?, column: ?): %s", msg);
+		StringBuilder sb = new StringBuilder();
+		if (file == null) {
+			sb.append("(?) ");
+		} else {
+			sb.append("(").append(file).append(") ");
 		}
 		
-		return new ParseException("(%s) (line: %d, column: %d): %s", position.file, position.line + 1, position.column + 1, msg);
+		if (syntaxPosition == null) {
+			sb.append("(line: ?, column: ?): ").append(msg);
+		} else {
+			Position position = syntaxPosition.getStartPosition();
+			sb.append("(line: ").append(position.line + 1).append(", column: ").append(position.column + 1).append("): ")
+				.append(ErrorUtil.createError(syntaxPosition, msg));
+		}
+		
+		return new ParseException(sb.toString());
 	}
 	
 	boolean tryMatchOrError(Token.Type type) throws ParseException {
@@ -630,7 +644,7 @@ public class AmpleParser {
 	
 	boolean tryMatchOrError(Token.Type type, Supplier<String> message) throws ParseException {
 		if (reader.type() != type) {
-			throw createParseException(reader.lastPositionEnd(), message.get());
+			throw createParseException(reader.syntaxPosition(), message.get());
 		}
 		
 		return true;

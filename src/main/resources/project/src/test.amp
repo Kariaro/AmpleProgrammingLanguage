@@ -1,6 +1,6 @@
 @link "../link_test.amp";
 
-func printhex (i64: number) {
+func pr inthex (i64: number) {
     u8[]: hex_data = stack_alloc<u8, 16>("0123456789abcdef");
     u8[]: hex_strs = stack_alloc<u8, 17>("................\n");
 

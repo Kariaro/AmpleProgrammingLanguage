@@ -35,6 +35,7 @@ public class LexerTokenizer {
 			
 			GenericLexerContext<Type>.LexerToken lexerToken = AmpleLexer.LEXER.nextToken(input);
 			if (lexerToken == null) {
+				// TODO: Use parse exception
 				throw new RuntimeException("(%s) (line: %d, column: %d): Could not parse token".formatted(file, line + 1, column + 1));
 			}
 			
