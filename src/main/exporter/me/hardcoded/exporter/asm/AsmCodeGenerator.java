@@ -10,13 +10,30 @@ import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class AsmCodeGenerator extends ICodeGenerator {
 	private static final Logger LOGGER = LogManager.getLogger(AsmCodeGenerator.class);
 	
 	public AsmCodeGenerator(AmpleConfig ampleConfig) {
 		super(ampleConfig);
+	}
+	
+	private static class AsmContext {
+		private final Map<String, byte[]> globalStrings;
+		
+		AsmContext() {
+			globalStrings = new LinkedHashMap<>();
+		}
+		
+		public String addGlobalString(byte[] content) {
+			int index = globalStrings.size();
+			String name = "global_string_" + index;
+			globalStrings.put(name, content);
+			return name;
+		}
 	}
 	
 	@Override
@@ -29,6 +46,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 	public byte[] getAssembler(IntermediateFile program) throws CodeGenException {
 		StringBuilder sb = new StringBuilder();
 		
+		AsmContext context = new AsmContext();
 		InstRef main = null;
 		for (Procedure proc : program.getProcedures()) {
 			switch (proc.getType()) {
@@ -43,7 +61,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					}
 					
 					for (Inst inst : proc.getInstructions()) {
-						sb.append(buildInstruction(asmProc, inst)).append('\n');
+						sb.append(buildInstruction(context, asmProc, inst)).append('\n');
 					}
 				}
 				
@@ -55,7 +73,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					sb.append("; %s %s\n".formatted(test.getValueType(), test));
 					
 					for (Inst inst : proc.getInstructions()) {
-						sb.append(buildInstruction(asmProc, inst)).append('\n');
+						sb.append(buildInstruction(context, asmProc, inst)).append('\n');
 					}
 				}
 				
@@ -73,7 +91,29 @@ public class AsmCodeGenerator extends ICodeGenerator {
 			StringBuilder header = new StringBuilder();
 			header.append("BITS 64\n\n");
 			header.append("section .data\n");
-			// TODO: Global variables
+			for (Map.Entry<String, byte[]> entry : context.globalStrings.entrySet()) {
+				header.append("    ").append(entry.getKey()).append(" db ");
+				byte[] array = entry.getValue();
+				
+				for (int i = 0; i < array.length; i++) {
+					if (i > 0) {
+						header.append(", ");
+					}
+					
+					int c = Byte.toUnsignedInt(array[i]);
+					if (Character.isLetterOrDigit(c)) {
+						header.append("'").append((char) c).append("'");
+					} else {
+						header.append("0x%02x".formatted(c));
+					}
+				}
+				
+				if (array.length > 0) {
+					header.append(", ");
+				}
+				
+				header.append("0\n");
+			}
 			header.append("section .text\n");
 			header.append("    global _start:\n\n");
 			header.append("_start:\n");
@@ -86,7 +126,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 		return sb.toString().trim().getBytes(StandardCharsets.UTF_8);
 	}
 	
-	private String buildInstruction(AsmProcedure proc, Inst inst) throws CodeGenException {
+	private String buildInstruction(AsmContext context, AsmProcedure proc, Inst inst) throws CodeGenException {
 		if (inst.getOpcode() == Opcode.LABEL) {
 			InstRef reference = inst.getRefParam(0).getReference();
 			if (reference.isFunction()) {
@@ -164,8 +204,6 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				if (src instanceof InstParam.Num value) {
 					long number = value.getValue();
 					
-					// System.out.printf("0x%016x : %s\n", number, value.getSize());
-					
 					String regName;
 					if ((number >>> 32) != 0) {
 						sb.add("mov RAX, %s".formatted(value));
@@ -188,6 +226,12 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					sb.add("mov %s, %s".formatted(
 						AsmUtils.getStackPtr(dst, proc),
 						regName
+					));
+				} else if (src instanceof InstParam.Str value) {
+					String name = context.addGlobalString(value.getValue().getBytes());
+					sb.add("mov %s, %s".formatted(
+						AsmUtils.getStackPtr(dst, proc),
+						name
 					));
 				}
 			}
@@ -394,9 +438,17 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				
 				String regAName = AsmUtils.getRegSize("AX", a);
 				String regBName = AsmUtils.getRegSize("BX", b);
-				String regCName = AsmUtils.getRegSize("CX", a);
-				sb.add("mov %s, 0".formatted(regAName));
-				sb.add("mov %s, 1".formatted(regCName));
+				String regACmov = AsmUtils.getRegSize("AX", a);
+				String regCCmov = AsmUtils.getRegSize("CX", a);
+				
+				boolean isUnsigned = a.getValueType().isUnsigned();
+				if (AsmUtils.getTypeByteSize(a.getValueType()) == 1) {
+					regACmov = AsmUtils.getRegSize("AX", 16);
+					regCCmov = AsmUtils.getRegSize("CX", 16);
+				}
+				
+				sb.add("mov RCX, 1");
+				sb.add("mov RAX, 0");
 				sb.add("mov %s, %s".formatted(
 					regBName,
 					AsmUtils.getParamValue(b, proc)
@@ -406,17 +458,16 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					regBName
 				));
 				
-				// TODO: above or below is for unsigned types
 				String type = switch (inst.getOpcode()) {
-					case GT -> "g";
-					case LT -> "l";
+					case GT -> isUnsigned ? "a" : "g";
+					case LT -> isUnsigned ? "b" : "l";
 					case EQ -> "e";
-					case GTE -> "ge";
-					case LTE -> "le";
+					case GTE -> isUnsigned ? "ae" : "ge";
+					case LTE -> isUnsigned ? "be" : "le";
 					case NEQ -> "ne";
 					default -> throw new RuntimeException();
 				};
-				sb.add("cmov%s %s, %s".formatted(type, regAName, regCName));
+				sb.add("cmov%s %s, %s".formatted(type, regACmov, regCCmov));
 				sb.add("mov %s, %s".formatted(
 					AsmUtils.getStackPtr(dst, proc),
 					regAName

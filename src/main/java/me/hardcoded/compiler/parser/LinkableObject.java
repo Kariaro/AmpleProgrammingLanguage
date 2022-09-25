@@ -1,7 +1,7 @@
 package me.hardcoded.compiler.parser;
 
 import me.hardcoded.compiler.parser.stat.ProgStat;
-import me.hardcoded.compiler.parser.type.Reference;
+import me.hardcoded.compiler.parser.type.ReferenceSyntax;
 
 import java.io.File;
 import java.util.List;
@@ -12,8 +12,8 @@ import java.util.List;
  */
 public class LinkableObject {
 	// Used by the linker
-	private final List<Reference> importedReferences;
-	private final List<Reference> exportedReferences;
+	private final List<ReferenceSyntax> importedReferences;
+	private final List<ReferenceSyntax> exportedReferences;
 	private final List<String> imports;
 	
 	// Internal fields
@@ -21,7 +21,7 @@ public class LinkableObject {
 	private final File file;
 	private final ProgStat program;
 	
-	public LinkableObject(File file, String checksum, ProgStat program, List<String> imports, List<Reference> exportedReferences, List<Reference> importedReferences) {
+	public LinkableObject(File file, String checksum, ProgStat program, List<String> imports, List<ReferenceSyntax> exportedReferences, List<ReferenceSyntax> importedReferences) {
 		this.file = file;
 		this.checksum = checksum;
 		this.program = program;
@@ -30,11 +30,11 @@ public class LinkableObject {
 		this.imports = imports;
 	}
 	
-	public List<Reference> getImportedReferences() {
+	public List<ReferenceSyntax> getImportedReferences() {
 		return importedReferences;
 	}
 	
-	public List<Reference> getExportedReferences() {
+	public List<ReferenceSyntax> getExportedReferences() {
 		return exportedReferences;
 	}
 	

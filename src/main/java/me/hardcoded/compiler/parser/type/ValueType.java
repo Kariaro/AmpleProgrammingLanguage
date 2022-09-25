@@ -4,10 +4,12 @@ public class ValueType {
 	public static final int SIGNED = 0,
 		UNSIGNED = 1,
 		FLOATING = 2,
-		GENERIC = 3;
+		GENERIC = 3,
+		LINKED = 4,
+		VARARGS = 5;
 	
-	public static final int STORAGE_TYPE = 7,
-		CONST = 8;
+	public static final int STORAGE_TYPE = 15,
+		CONST = 16;
 	
 	// The name of the type
 	private final String name;
@@ -58,6 +60,14 @@ public class ValueType {
 		return (flags & STORAGE_TYPE) == UNSIGNED;
 	}
 	
+	public boolean isLinked() {
+		return (flags & STORAGE_TYPE) == LINKED;
+	}
+	
+	public boolean isVarargs() {
+		return (flags & STORAGE_TYPE) == VARARGS;
+	}
+	
 	@Override
 	public int hashCode() {
 		int result = name != null ? name.hashCode() : 0;
@@ -87,6 +97,8 @@ public class ValueType {
 			case SIGNED -> sb.append("int");
 			case UNSIGNED -> sb.append("uint");
 			case FLOATING -> sb.append("float");
+			case LINKED -> sb.append("?");
+			case VARARGS -> sb.append("...");
 			default -> sb.append("unk");
 		}
 		

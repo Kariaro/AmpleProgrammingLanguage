@@ -6,6 +6,7 @@ import me.hardcoded.compiler.parser.expr.*;
 import me.hardcoded.compiler.parser.stat.*;
 import me.hardcoded.compiler.parser.type.Operation;
 import me.hardcoded.compiler.parser.type.Reference;
+import me.hardcoded.compiler.parser.type.ReferenceSyntax;
 import me.hardcoded.compiler.parser.type.ValueType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -45,8 +46,8 @@ public class LinkableDeserializer {
 		String checksum = header.getChecksum();
 		
 		List<String> imports = new ArrayList<>();
-		List<Reference> exportedReferences = new ArrayList<>();
-		List<Reference> importedReferences = new ArrayList<>();
+		List<ReferenceSyntax> exportedReferences = new ArrayList<>();
+		List<ReferenceSyntax> importedReferences = new ArrayList<>();
 		readContext(imports, exportedReferences, importedReferences, in);
 		
 		ProgStat program = (ProgStat) readTree(in);
@@ -57,17 +58,21 @@ public class LinkableDeserializer {
 		return deserializeStat(in);
 	}
 	
-	private void readContext(List<String> imports, List<Reference> exportedReferences, List<Reference> importedReferences, DataInputStream in) throws IOException {
+	private void readContext(List<String> imports, List<ReferenceSyntax> exportedReferences, List<ReferenceSyntax> importedReferences, DataInputStream in) throws IOException {
 		for (int i = 0, size = header.readVarInt(in); i < size; i++) {
 			imports.add(header.deserializeString(in));
 		}
 		
 		for (int i = 0, size = header.readVarInt(in); i < size; i++) {
-			exportedReferences.add(header.deserializeReference(in));
+			Reference reference = header.deserializeReference(in);
+			ISyntaxPosition syntaxPosition = header.deserializeISyntaxPosition(in);
+			exportedReferences.add(new ReferenceSyntax(reference, syntaxPosition));
 		}
 		
 		for (int i = 0, size = header.readVarInt(in); i < size; i++) {
-			importedReferences.add(header.deserializeReference(in));
+			Reference reference = header.deserializeReference(in);
+			ISyntaxPosition syntaxPosition = header.deserializeISyntaxPosition(in);
+			importedReferences.add(new ReferenceSyntax(reference, syntaxPosition));
 		}
 	}
 	
@@ -88,7 +93,7 @@ public class LinkableDeserializer {
 			case SCOPE -> deserializeScopeStat(in);
 			case VAR -> deserializeVarStat(in);
 			case COMPILER -> deserializeCompilerStat(in);
-			//			case WHILE -> deserializeWhileStat(in);
+			case WHILE -> deserializeWhileStat(in);
 			case NAMESPACE -> deserializeNamespaceStat(in);
 			
 			/* Expressions */
@@ -96,12 +101,10 @@ public class LinkableDeserializer {
 			case BINARY -> deserializeBinaryExpr(in);
 			case CALL -> deserializeCallExpr(in);
 			case CAST -> deserializeCastExpr(in);
-			//			case COMMA -> deserializeCommaExpr(in);
 			case NAME -> deserializeNameExpr(in);
 			case NONE -> deserializeNoneExpr(in);
-			//			case NONE -> deserializeNoneExpr(in);
 			case NUM -> deserializeNumExpr(in);
-			case STRING -> deserializeStrExpr(in);
+			case STR -> deserializeStrExpr(in);
 			case UNARY -> deserializeUnaryExpr(in);
 			
 			default -> throw new RuntimeException("%s".formatted(type));
@@ -229,12 +232,12 @@ public class LinkableDeserializer {
 		return new CompilerStat(syntaxPosition, targetType, parts);
 	}
 	
-	//	private WhileStat deserializeWhileStat(DataInputStream in) throws IOException {
-	//		ISyntaxPosition syntaxPosition = deserializeISyntaxPosition(in);
-	//		Expr condition = deserializeExpr(in);
-	//		Stat body = deserializeStat(in);
-	//		return new WhileStat(condition, body, syntaxPosition);
-	//	}
+	private WhileStat deserializeWhileStat(DataInputStream in) throws IOException {
+		ISyntaxPosition syntaxPosition = header.deserializeISyntaxPosition(in);
+		Expr condition = deserializeExpr(in);
+		Stat body = deserializeStat(in);
+		return new WhileStat(syntaxPosition, condition, body);
+	}
 	
 	private NamespaceStat deserializeNamespaceStat(DataInputStream in) throws IOException {
 		ISyntaxPosition syntaxPosition = header.deserializeISyntaxPosition(in);

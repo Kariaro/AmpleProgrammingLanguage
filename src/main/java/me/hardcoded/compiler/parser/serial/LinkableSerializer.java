@@ -5,6 +5,7 @@ import me.hardcoded.compiler.parser.LinkableObject;
 import me.hardcoded.compiler.parser.expr.*;
 import me.hardcoded.compiler.parser.stat.*;
 import me.hardcoded.compiler.parser.type.Reference;
+import me.hardcoded.compiler.parser.type.ReferenceSyntax;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -65,13 +66,15 @@ public class LinkableSerializer {
 		}
 		
 		header.writeVarInt(obj.getExportedReferences().size(), out);
-		for (Reference reference : obj.getExportedReferences()) {
-			header.serializeReference(reference, out);
+		for (ReferenceSyntax referenceSyntax : obj.getExportedReferences()) {
+			header.serializeReference(referenceSyntax.getReference(), out);
+			header.serializeISyntaxPosition(referenceSyntax.getSyntaxPosition(), out);
 		}
 		
 		header.writeVarInt(obj.getImportedReferences().size(), out);
-		for (Reference reference : obj.getImportedReferences()) {
-			header.serializeReference(reference, out);
+		for (ReferenceSyntax referenceSyntax : obj.getImportedReferences()) {
+			header.serializeReference(referenceSyntax.getReference(), out);
+			header.serializeISyntaxPosition(referenceSyntax.getSyntaxPosition(), out);
 		}
 		
 		return bs.toByteArray();
@@ -94,14 +97,12 @@ public class LinkableSerializer {
 			case EMPTY -> serializeEmptyStat((EmptyStat) stat, out);
 			case FOR -> serializeForStat((ForStat) stat, out);
 			case FUNC -> serializeFuncStat((FuncStat) stat, out);
-			//			case GOTO -> serializeGotoStat((GotoStat) stat, out);
 			case IF -> serializeIfStat((IfStat) stat, out);
-			//			case LABEL -> serializeLabelStat((LabelStat) stat, out);
 			case RETURN -> serializeReturnStat((ReturnStat) stat, out);
 			case SCOPE -> serializeScopeStat((ScopeStat) stat, out);
 			case VAR -> serializeVarStat((VarStat) stat, out);
 			case COMPILER -> serializeCompilerStat((CompilerStat) stat, out);
-			//			case WHILE -> serializeWhileStat((WhileStat) stat, out);
+			case WHILE -> serializeWhileStat((WhileStat) stat, out);
 			case NAMESPACE -> serializeNamespaceStat((NamespaceStat) stat, out);
 			
 			/* Expressions */
@@ -109,13 +110,11 @@ public class LinkableSerializer {
 			case BINARY -> serializeBinaryExpr((BinaryExpr) stat, out);
 			case CALL -> serializeCallExpr((CallExpr) stat, out);
 			case CAST -> serializeCastExpr((CastExpr) stat, out);
-			//			case COMMA -> serializeCommaExpr((CommaExpr) stat, out);
 			case NAME -> serializeNameExpr((NameExpr) stat, out);
 			case NONE -> serializeNoneExpr((NoneExpr) stat, out);
 			case NUM -> serializeNumExpr((NumExpr) stat, out);
-			case STRING -> serializeStrExpr((StrExpr) stat, out);
+			case STR -> serializeStrExpr((StrExpr) stat, out);
 			case UNARY -> serializeUnaryExpr((UnaryExpr) stat, out);
-			//			case CONDITIONAL -> serializeConditionalExpr((ConditionalExpr) stat, out);
 			
 			default -> throw new RuntimeException("%s".formatted(type));
 		}
@@ -196,10 +195,10 @@ public class LinkableSerializer {
 		}
 	}
 	
-	//	private void serializeWhileStat(WhileStat stat, DataOutputStream out) throws IOException {
-	//		serializeStat(stat.getValue(), out);
-	//		serializeStat(stat.getBody(), out);
-	//	}
+	private void serializeWhileStat(WhileStat stat, DataOutputStream out) throws IOException {
+		serializeStat(stat.getCondition(), out);
+		serializeStat(stat.getBody(), out);
+	}
 	
 	private void serializeNamespaceStat(NamespaceStat stat, DataOutputStream out) throws IOException {
 		header.serializeReference(stat.getReference(), out);

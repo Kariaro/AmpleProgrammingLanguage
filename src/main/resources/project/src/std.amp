@@ -1,0 +1,55 @@
+// std namespace library
+
+namespace std {
+    func (export) strlen (u8[]: pointer) : i64 {
+        i64: len = 0l;
+
+        while (pointer[len] != cast<u8>(0)) {
+             len = len + 1l;
+        }
+
+        ret len;
+    }
+
+    func (export) memcpy (u8[]: dest, u8[]: src, i64: length) {
+        for (i64: i = 0l; i < length; i = i + 1l) {
+            dest[i] = src[i];
+        }
+
+        ret;
+    }
+
+    func (export) printstr (u8[]: pointer, i64: length) {
+        compiler<asm>(
+            "mov rsi, {}" : pointer
+            "mov rdx, {}" : length
+            "mov rdi, 1"
+            "mov rax, 1"
+            "syscall"
+        );
+
+        ret;
+    }
+
+    func (export) print (u8[]: string) {
+        std::printstr(string, std::strlen(string));
+        ret;
+    }
+
+
+    func (export) printf (u8[]: format, ...[]: args) {
+        i64: length = std::strlen(format);
+
+        for (i64: i = 0l; i < length; i = i + 1l) {
+            // For each character
+            u8: char = format[i];
+
+            if (char == '%') {
+                // We have a format
+                std::print("Format character\n");
+            }
+        }
+
+        ret;
+    }
+}

@@ -2,7 +2,6 @@ package me.hardcoded.compiler.parser;
 
 import me.hardcoded.compiler.context.AmpleConfig;
 import me.hardcoded.compiler.context.LangReader;
-import me.hardcoded.compiler.errors.ErrorUtil;
 import me.hardcoded.compiler.errors.ParseException;
 import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.parser.expr.Expr;
@@ -10,15 +9,13 @@ import me.hardcoded.compiler.parser.expr.NoneExpr;
 import me.hardcoded.compiler.parser.expr.NumExpr;
 import me.hardcoded.compiler.parser.scope.ProgramScope;
 import me.hardcoded.compiler.parser.stat.*;
-import me.hardcoded.compiler.parser.type.Namespace;
-import me.hardcoded.compiler.parser.type.Primitives;
-import me.hardcoded.compiler.parser.type.Reference;
-import me.hardcoded.compiler.parser.type.ValueType;
+import me.hardcoded.compiler.parser.type.*;
 import me.hardcoded.lexer.LexerTokenizer;
 import me.hardcoded.lexer.Token;
 import me.hardcoded.utils.AmpleCache;
 import me.hardcoded.utils.MutableSyntaxImpl;
 import me.hardcoded.utils.Position;
+import me.hardcoded.utils.error.ErrorUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -88,8 +85,8 @@ public class AmpleParser {
 		// Parse the current code
 		ProgStat program = parse();
 		
-		List<Reference> importedReferences = new ArrayList<>();
-		List<Reference> exportedReferences = new ArrayList<>();
+		List<ReferenceSyntax> importedReferences = new ArrayList<>();
+		List<ReferenceSyntax> exportedReferences = new ArrayList<>();
 		for (Reference reference : context.getAllReferences()) {
 			// If the reference is not used inside the linkable object we ignore it
 			//			if (reference.getUsages() < 1) {
@@ -97,11 +94,11 @@ public class AmpleParser {
 			//			}
 			
 			if (reference.isImported()) {
-				importedReferences.add(reference);
+				importedReferences.add(new ReferenceSyntax(reference, context.getFirstReferencePosition(reference)));
 			}
 			
 			if (reference.isExported()) {
-				exportedReferences.add(reference);
+				exportedReferences.add(new ReferenceSyntax(reference, context.getFirstReferencePosition(reference)));
 			}
 		}
 		
@@ -191,6 +188,26 @@ public class AmpleParser {
 		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(reader.position(), null);
 		reader.advance();
 		
+		//		int modifiers = 0;
+		//		if (reader.type() == Token.Type.L_PAREN) {
+		//			reader.advance();
+		//
+		//			while (reader.type() != Token.Type.R_PAREN) {
+		//				switch (reader.type()) {
+		//					case EXPORT -> {
+		//						modifiers |= Reference.EXPORT;
+		//					}
+		//					default -> {
+		//						throw createParseException(reader.syntaxPosition(), "Invalid namespace modifier '%s'", reader.value());
+		//					}
+		//				}
+		//				reader.advance();
+		//			}
+		//
+		//			tryMatchOrError(Token.Type.R_PAREN);
+		//			reader.advance();
+		//		}
+		
 		int namespaceCount = 0;
 		do {
 			tryMatchOrError(Token.Type.IDENTIFIER);
@@ -216,6 +233,13 @@ public class AmpleParser {
 		
 		while (reader.type() != Token.Type.R_CURLY) {
 			Stat element = parseStatement(false);
+			
+			//			// Apply modifiers
+			//			if ((modifiers & Reference.EXPORT) != 0) {
+			//				if (element instanceof FuncStat funcStat) {
+			//					funcStat.getReference().setExported(true);
+			//				}
+			//			}
 			
 			// Remove empty statements
 			if (!element.isEmpty()) {
@@ -315,6 +339,10 @@ public class AmpleParser {
 		}
 		reference.setModifiers(modifiers);
 		
+		if (reference.isExported()) {
+			context.setReferencePosition(reference, functionNameSyntax);
+		}
+		
 		FuncStat stat = new FuncStat(mutableSyntax, parameters, reference);
 		
 		tryMatchOrError(Token.Type.L_CURLY, () -> "Missing function body");
@@ -368,6 +396,7 @@ public class AmpleParser {
 				return forStatement();
 			}
 			case WHILE -> {
+				return whileStatement();
 			}
 		}
 		
@@ -488,6 +517,23 @@ public class AmpleParser {
 		ScopeStat body = statements();
 		
 		return new ForStat(ISyntaxPosition.of(startPos, body.getSyntaxPosition().getEndPosition()), initializer, condition, action, body);
+	}
+	
+	private WhileStat whileStatement() throws ParseException {
+		Position startPos = reader.position();
+		reader.advance();
+		
+		tryMatchOrError(Token.Type.L_PAREN);
+		reader.advance();
+		
+		Expr condition = expression();
+		
+		tryMatchOrError(Token.Type.R_PAREN);
+		reader.advance();
+		
+		ScopeStat body = statements();
+		
+		return new WhileStat(ISyntaxPosition.of(startPos, body.getSyntaxPosition().getEndPosition()), condition, body);
 	}
 	
 	private IfStat ifStatement() throws ParseException {

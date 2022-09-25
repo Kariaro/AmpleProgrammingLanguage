@@ -167,7 +167,7 @@ public class ParseUtil {
 			case NAME -> nameExpr((NameExpr) expr);
 			case NONE -> noneExpr((NoneExpr) expr);
 			case NUM -> numExpr((NumExpr) expr);
-			case STRING -> strExpr((StrExpr) expr);
+			case STR -> strExpr((StrExpr) expr);
 			case UNARY -> unaryExpr((UnaryExpr) expr);
 			default -> expr.toString();
 		};

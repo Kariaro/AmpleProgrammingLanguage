@@ -1,8 +1,8 @@
 package me.hardcoded.compiler.parser.expr;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
-import me.hardcoded.compiler.parser.type.Operation;
 import me.hardcoded.compiler.parser.serial.TreeType;
+import me.hardcoded.compiler.parser.type.Operation;
 import me.hardcoded.compiler.parser.type.ValueType;
 
 public class BinaryExpr extends Expr {
@@ -43,8 +43,12 @@ public class BinaryExpr extends Expr {
 	@Override
 	public ValueType getType() {
 		// Both left and right must have the same value type
-		// throw new UnsupportedOperationException();
-		// TODO: Validate
+		if (operation == Operation.ARRAY) {
+			// This will return the type of one lower
+			// Should be invalid for non pointer types
+			return left.getType().createArray(left.getType().getDepth() - 1);
+		}
+		
 		return left.getType();
 	}
 	

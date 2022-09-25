@@ -31,12 +31,12 @@ public class StrExpr extends Expr {
 	@Override
 	public ValueType getType() {
 		// TODO: Get the primitive type from the context type class
-		return Primitives.I8.createArray(1);
+		return Primitives.U8.createArray(1);
 	}
 	
 	@Override
 	public TreeType getTreeType() {
-		return TreeType.STRING;
+		return TreeType.STR;
 	}
 	
 	@Override

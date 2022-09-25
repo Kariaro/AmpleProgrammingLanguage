@@ -1,8 +1,14 @@
 package me.hardcoded.compiler.intermediate;
 
 import me.hardcoded.compiler.context.AmpleConfig;
+import me.hardcoded.compiler.errors.CompilerException;
+import me.hardcoded.compiler.errors.ParseException;
+import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.intermediate.generator.IntermediateGenerator;
+import me.hardcoded.compiler.intermediate.inst.Inst;
 import me.hardcoded.compiler.intermediate.inst.IntermediateFile;
+import me.hardcoded.compiler.intermediate.inst.Opcode;
+import me.hardcoded.compiler.intermediate.inst.Procedure;
 import me.hardcoded.compiler.parser.LinkableObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -27,7 +33,7 @@ public class AmpleLinker {
 		this.ampleConfig = ampleConfig;
 	}
 	
-	public IntermediateFile link(List<LinkableObject> list) {
+	public IntermediateFile link(List<LinkableObject> list) throws CompilerException {
 		IntermediateFile file = new IntermediateFile();
 		
 		ExportMap exportMap = new ExportMap();
@@ -47,30 +53,30 @@ public class AmpleLinker {
 			generator.generate(link);
 		}
 		
-		//		LOGGER.debug("");
-		//		for (Procedure proc : file.getProcedures()) {
-		//			switch (proc.getType()) {
-		//				case FUNCTION -> LOGGER.debug("# func {}", proc);
-		//				case VARIABLE -> LOGGER.debug("# variable {}", proc);
-		//				default -> LOGGER.debug("# proc = {}", proc.getType());
-		//			}
-		//
-		//			for (Inst inst : proc.getInstructions()) {
-		//				ISyntaxPosition pos = inst.getSyntaxPosition();
-		//				String details = "(line: %3d, column: %3d)".formatted(pos.getStartPosition().line, pos.getStartPosition().column);
-		//
-		//				if (inst.getOpcode() == Opcode.LABEL) {
-		//					LOGGER.debug("    {} {}", details, inst);
-		//				} else {
-		//					LOGGER.debug("        {} {}", details, inst);
-		//				}
-		//			}
-		//		}
+		LOGGER.debug("");
+		for (Procedure proc : file.getProcedures()) {
+			switch (proc.getType()) {
+				case FUNCTION -> LOGGER.debug("# func {}", proc);
+				case VARIABLE -> LOGGER.debug("# variable {}", proc);
+				default -> LOGGER.debug("# proc = {}", proc.getType());
+			}
+			
+			for (Inst inst : proc.getInstructions()) {
+				ISyntaxPosition pos = inst.getSyntaxPosition();
+				String details = "(line: %3d, column: %3d)".formatted(pos.getStartPosition().line, pos.getStartPosition().column);
+				
+				if (inst.getOpcode() == Opcode.LABEL) {
+					LOGGER.debug("    {} {}", details, inst);
+				} else {
+					LOGGER.debug("        {} {}", details, inst);
+				}
+			}
+		}
 		
 		return file;
 	}
 	
-	private boolean checkImports(ExportMap exportMap, List<LinkableObject> list) {
+	private boolean checkImports(ExportMap exportMap, List<LinkableObject> list) throws ParseException {
 		for (LinkableObject link : list) {
 			if (!exportMap.add(link)) {
 				return false;

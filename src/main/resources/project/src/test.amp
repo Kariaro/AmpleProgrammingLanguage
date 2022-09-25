@@ -1,6 +1,7 @@
+@link "std.amp";
 @link "../link_test.amp";
 
-func pr inthex (i64: number) {
+func printhex (i64: number) {
     u8[]: hex_data = stack_alloc<u8, 16>("0123456789abcdef");
     u8[]: hex_strs = stack_alloc<u8, 17>("................\n");
 
@@ -10,7 +11,7 @@ func pr inthex (i64: number) {
         continue;
     }
 
-    printstr(hex_strs, 17L);
+    std::printstr(hex_strs, 17L);
     ret;
 }
 
@@ -36,7 +37,17 @@ func main () : i32 {
 
     i32: a = 64;
     params(0xfedcba9876543210L, 0xfdb97531, cast<i16>(0xfb73), cast<i8>(0xf7));
+
+    // This will create a constant and assign the pointer to the variable
+    u8[]: string = "Hello World!\nasdfasdfasdfasdfasdf\n";
+
+    std::printstr(string, std::strlen(string));
+    printhex(cast<i32>(std::strlen(string)));
+
+    std::printf("Format string %s\n", "", "", "");
+
+
     printhex(32);
-    printstr(stack_alloc<u8, 13>("Hello World!\n"), 13L);
+    std::printstr(stack_alloc<u8, 13>("Hello World!\n"), 13L);
     ret 0;
 }

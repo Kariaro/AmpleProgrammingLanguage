@@ -32,6 +32,14 @@ public class AmpleMangler {
 	}
 	
 	public static String mangleType(ValueType type) {
+		if (type.isLinked()) {
+			return "?";
+		}
+		
+		if (type.isVarargs()) {
+			return ".";
+		}
+		
 		StringBuilder sb = new StringBuilder();
 		if (type.isSigned())
 			sb.append('s');
@@ -49,6 +57,14 @@ public class AmpleMangler {
 	
 	public static ValueType demangleType(String value) {
 		char type = value.charAt(0);
+		if (type == '?') {
+			return new ValueType("", 0, 0, ValueType.LINKED);
+		}
+		
+		if (type == '.') {
+			return new ValueType("", 0, 1, ValueType.VARARGS);
+		}
+		
 		int depth = Character.digit(value.charAt(1), 16);
 		int size = BASE64.indexOf(value.charAt(2)) + (BASE64.indexOf(value.charAt(3)) * 64);
 		int flags = switch (type) {
@@ -96,7 +112,11 @@ public class AmpleMangler {
 			Iterator<Reference> iter = parameters.iterator();
 			while (iter.hasNext()) {
 				Reference reference = iter.next();
-				sb.append(reference.getValueType());
+				if (reference.getValueType().isLinked()) {
+					sb.append("?");
+				} else {
+					sb.append(reference.getValueType());
+				}
 				
 				if (iter.hasNext()) {
 					sb.append(", ");
