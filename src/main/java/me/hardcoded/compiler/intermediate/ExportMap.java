@@ -41,13 +41,27 @@ public class ExportMap {
 					));
 				}
 				
-				if (functions.put(mangledName, reference) != null) {
-					throw new ParseException(ErrorUtil.createFullError(referenceSyntax.getSyntaxPosition(),
-						"The project already exports a function '%s' (%s)".formatted(
-							reference.getName(),
-							mangledName
-						)
-					));
+				// TODO: Redesign this system
+				if (AmpleMangler.isFunctionVarargs(mangledName)) {
+					if (varargFunctions.put(mangledName, reference) != null) {
+						throw new ParseException(ErrorUtil.createFullError(referenceSyntax.getSyntaxPosition(),
+							"The project already exports a function '%s' (%s)".formatted(
+								reference.getName(),
+								mangledName
+							)
+						));
+					} else {
+						functions.put(mangledName, reference);
+					}
+				} else {
+					if (functions.put(mangledName, reference) != null) {
+						throw new ParseException(ErrorUtil.createFullError(referenceSyntax.getSyntaxPosition(),
+							"The project already exports a function '%s' (%s)".formatted(
+								reference.getName(),
+								mangledName
+							)
+						));
+					}
 				}
 			}
 			
@@ -84,6 +98,18 @@ public class ExportMap {
 			return result;
 		}
 		
+		// Check if it matches a vararg function
+		// TODO: Optimize this
+		for (String vararg : varargFunctions.keySet()) {
+			AmpleMangler.MangledFunction mangledFunction = AmpleMangler.demangleFunction(vararg);
+			
+			if (mangledFunction.matches(mangledName)) {
+				return varargFunctions.get(vararg);
+			}
+			
+			mangledFunction.getParameterCount();
+		}
+		
 		//		if ((result = variables.get(mangledName)) != null) {
 		//			return result;
 		//		}
@@ -115,12 +141,6 @@ public class ExportMap {
 						reference.getMangledName() == null ? "" : (" [" + AmpleMangler.demangleFunction(reference.getMangledName()) + "]")
 					))
 				);
-				//				throw new ParseException(ErrorUtil.createFullError(referenceSyntax.getSyntaxPosition(),
-				//					"Missing symbol '%s'%s".formatted(
-				//						reference.getPath(),
-				//						reference.getMangledName() == null ? "" : (" [" + AmpleMangler.demangleFunction(reference.getMangledName()) + "]")
-				//					))
-				//				);
 			}
 		}
 		

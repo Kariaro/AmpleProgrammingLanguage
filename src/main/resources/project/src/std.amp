@@ -31,22 +31,53 @@ namespace std {
         ret;
     }
 
+    func (export) printhex (u64: number) {
+        u8[]: hex_data = stack_alloc<u8, 16>("0123456789abcdef");
+        u8[]: hex_strs = stack_alloc<u8, 16>("................");
+
+        for (i32: i = 15; i >= 0; i = i - 1) {
+            hex_strs[i] = hex_data[number & cast<u64>(15)];
+            number = number >> cast<u64>(4);
+            continue;
+        }
+
+        std::printstr(hex_strs, 16l);
+        ret;
+    }
+
     func (export) print (u8[]: string) {
         std::printstr(string, std::strlen(string));
         ret;
     }
 
-
     func (export) printf (u8[]: format, ...[]: args) {
         i64: length = std::strlen(format);
+        u8[]: ptr = cast<u8[]>(args);
 
         for (i64: i = 0l; i < length; i = i + 1l) {
             // For each character
             u8: char = format[i];
 
             if (char == '%') {
+                // print format character
+                i = i + 1l;
+                char = format[i];
+
                 // We have a format
-                std::print("Format character\n");
+                if (char == 's') {
+                    u8[]: str = cast<u8[]>(cast<u64[]>(ptr)[0]);
+                    std::print(str);
+                    ptr = ptr + cast<u8[]>(8);
+                } else if (char == 'p') {
+                    u64: num = cast<u64[]>(ptr)[0];
+                    std::printhex(num);
+                    ptr = ptr + cast<u8[]>(8);
+                } else {
+                    std::print("\nerror: Invalid format character!\n");
+                }
+            } else {
+                // print the character
+                std::printstr(format + cast<u8[]>(i), 1l);
             }
         }
 

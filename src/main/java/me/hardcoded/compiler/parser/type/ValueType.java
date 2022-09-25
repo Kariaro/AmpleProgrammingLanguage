@@ -87,6 +87,14 @@ public class ValueType {
 	}
 	
 	public String toShortName() {
+		if (isLinked()) {
+			return "?";
+		}
+		
+		if (isVarargs()) {
+			return "..." + "[]".repeat(depth);
+		}
+		
 		StringBuilder sb = new StringBuilder();
 		
 		if ((flags & CONST) != 0) {
@@ -94,15 +102,15 @@ public class ValueType {
 		}
 		
 		switch (flags & STORAGE_TYPE) {
-			case SIGNED -> sb.append("int");
-			case UNSIGNED -> sb.append("uint");
-			case FLOATING -> sb.append("float");
+			case SIGNED -> sb.append("i");
+			case UNSIGNED -> sb.append("u");
+			case FLOATING -> sb.append("f");
 			case LINKED -> sb.append("?");
-			case VARARGS -> sb.append("...");
+			case VARARGS -> sb.append(".");
 			default -> sb.append("unk");
 		}
 		
-		return sb.append("_").append(size).append("[]".repeat(depth)).toString();
+		return sb.append(size).append("[]".repeat(depth)).toString();
 	}
 	
 	@Override

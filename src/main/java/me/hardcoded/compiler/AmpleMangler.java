@@ -76,26 +76,100 @@ public class AmpleMangler {
 		return new ValueType("", size, depth, flags);
 	}
 	
+	public static boolean isFunctionVarargs(String mangledName) {
+		String[] parts = mangledName.split("@", -1);
+		return ".".equals(parts[parts.length - 1]);
+	}
+	
 	public static MangledFunction demangleFunction(String name) {
 		return new MangledFunction(name);
 	}
 	
 	public static class MangledFunction {
+		public final String mangledString;
 		public final String namespacePath;
 		public final String functionName;
+		public final String[] mangledParts;
 		public final List<Reference> parameters;
 		
-		private MangledFunction(String mangledName) {
-			String[] parts = mangledName.split("@", -1);
-			this.namespacePath = parts[0];
-			this.functionName = parts[1];
+		private MangledFunction(String mangledString) {
+			this.mangledParts = mangledString.split("@", -1);
+			this.mangledString = mangledString;
+			this.namespacePath = mangledParts[0];
+			this.functionName = mangledParts[1];
 			this.parameters = new ArrayList<>();
 			
 			Namespace empty = new Namespace();
-			for (int i = 2; i < parts.length; i++) {
-				ValueType type = AmpleMangler.demangleType(parts[i]);
+			for (int i = 2; i < mangledParts.length; i++) {
+				ValueType type = AmpleMangler.demangleType(mangledParts[i]);
 				parameters.add(new Reference("", empty, type, i - 2, Reference.VARIABLE));
 			}
+		}
+		
+		public int getParameterCount() {
+			return parameters.size();
+		}
+		
+		public boolean isVararg() {
+			return !parameters.isEmpty() && parameters.get(parameters.size() - 1).getValueType().isVarargs();
+		}
+		
+		public boolean matches(String mangled) {
+			if (mangledString.equals(mangled)) {
+				return true;
+			}
+			
+			String[] parts = mangled.split("@", -1);
+			
+			// Check that the namespace and name matches
+			if (!namespacePath.equals(parts[0]) || !functionName.equals(parts[1])) {
+				return false;
+			}
+			
+			// Not enough arguments
+			if (!isVararg()) {
+				if (mangledParts.length != parts.length) {
+					return false;
+				}
+				
+				// All arguments must match
+				for (int i = 2; i < mangledParts.length; i++) {
+					String thisParam = mangledParts[i];
+					String thatParam = parts[i];
+					
+					// Vararg params
+					if (thisParam.equals("?") || thatParam.equals("?")) {
+						continue;
+					}
+					
+					if (!thisParam.equals(thatParam)) {
+						return false;
+					}
+				}
+			} else {
+				// Varargs
+				// Part did not have enough parameters
+				if (parts.length < mangledParts.length - 1) {
+					return false;
+				}
+				
+				// All arguments must match (skip last param because that is vararg)
+				for (int i = 2; i < mangledParts.length - 1; i++) {
+					String thisParam = mangledParts[i];
+					String thatParam = parts[i];
+					
+					// Vararg params
+					if (thisParam.equals("?") || thatParam.equals("?")) {
+						continue;
+					}
+					
+					if (!thisParam.equals(thatParam)) {
+						return false;
+					}
+				}
+			}
+			
+			return true;
 		}
 		
 		@Override
