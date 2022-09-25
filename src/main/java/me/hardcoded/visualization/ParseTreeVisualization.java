@@ -520,6 +520,10 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 					ForStat s = (ForStat) stat;
 					yield List.of(s.getInitializer(), s.getCondition(), s.getAction(), s.getBody());
 				}
+				case WHILE -> {
+					WhileStat s = (WhileStat) stat;
+					yield List.of(s.getCondition(), s.getBody());
+				}
 				case IF -> {
 					IfStat s = (IfStat) stat;
 					yield List.of(s.getValue(), s.getBody(), s.getElseBody());
@@ -572,7 +576,7 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 				//				case COMMA -> List.<Object>copyOf(((CommaExpr)stat).getValues());
 				case NAME -> List.of(((NameExpr) stat).getReference());
 				//				case NULL -> List.of();
-				case STRING -> List.of('"' + StringUtils.escapeString(stat.toString()) + '"');
+				case STR -> List.of('"' + StringUtils.escapeString(stat.toString()) + '"');
 				case NUM -> List.of(stat.toString());
 				default -> List.of("<%s Not Implement>".formatted(stat.getTreeType()));
 			};

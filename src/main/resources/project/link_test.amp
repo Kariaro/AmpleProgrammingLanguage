@@ -34,18 +34,3 @@ func testing() {
 
     ret;
 }
-
-func (export) printstr (u8[]: pointer, i64: length) {
-    compiler<asm>(
-        "mov rsi, {}" : pointer
-        "mov rdx, {}" : length
-        "mov rdi, 1"
-        "mov rax, 1"
-        "syscall"
-    );
-
-    // call test in the linked file
-    // u8: val = std::path::test(1);
-
-    ret;
-}

@@ -36,7 +36,7 @@ public class FunctionScope {
 	}
 	
 	public Reference importFunction(Namespace namespace, String name, List<Reference> parameters) {
-		Reference reference = addFunction(Primitives.NONE, namespace, name, parameters);
+		Reference reference = addFunction(Primitives.LINKED, namespace, name, parameters);
 		reference.setImported(true);
 		reference.setMangledName(AmpleMangler.mangleFunction(namespace, name, parameters));
 		return reference;

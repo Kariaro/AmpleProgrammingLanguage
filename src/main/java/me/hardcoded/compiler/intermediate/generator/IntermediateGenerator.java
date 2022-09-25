@@ -1,6 +1,7 @@
 package me.hardcoded.compiler.intermediate.generator;
 
 import me.hardcoded.compiler.errors.InstException;
+import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.compiler.intermediate.ExportMap;
 import me.hardcoded.compiler.intermediate.inst.*;
 import me.hardcoded.compiler.parser.LinkableObject;
@@ -8,13 +9,11 @@ import me.hardcoded.compiler.parser.expr.*;
 import me.hardcoded.compiler.parser.stat.*;
 import me.hardcoded.compiler.parser.type.*;
 import me.hardcoded.utils.Position;
+import me.hardcoded.utils.error.ErrorUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class IntermediateGenerator {
 	private static final Logger LOGGER = LogManager.getLogger(IntermediateGenerator.class);
@@ -38,11 +37,11 @@ public class IntermediateGenerator {
 		this.wrappedReferences = new HashMap<>();
 	}
 	
-	public void generate(LinkableObject obj) {
+	public void generate(LinkableObject obj) throws InstException {
 		generateProgStat(obj.getProgram());
 	}
 	
-	private InstRef generateStat(Stat stat, Procedure procedure) {
+	private InstRef generateStat(Stat stat, Procedure procedure) throws InstException {
 		return switch (stat.getTreeType()) {
 			// Root
 			case PROGRAM -> generateProgStat((ProgStat) stat);
@@ -59,26 +58,24 @@ public class IntermediateGenerator {
 			case SCOPE -> generateScopeStat((ScopeStat) stat, procedure);
 			case VAR -> generateVarStat((VarStat) stat, procedure);
 			case COMPILER -> generateCompilerStat((CompilerStat) stat, procedure);
-			//			case WHILE -> generateWhileStat((WhileStat) stat, procedure);
+			case WHILE -> generateWhileStat((WhileStat) stat, procedure);
 			
 			// Expressions
 			case STACK_ALLOC -> generateStackAllocExpr((StackAllocExpr) stat, procedure);
 			case BINARY -> generateBinaryExpr((BinaryExpr) stat, procedure);
 			case CALL -> generateCallExpr((CallExpr) stat, procedure);
 			case CAST -> generateCastExpr((CastExpr) stat, procedure);
-			//			case COMMA -> generateCommaExpr((CommaExpr) stat, procedure);
 			case NAME -> generateNameExpr((NameExpr) stat, procedure);
 			case NONE -> generateNoneExpr((NoneExpr) stat, procedure);
 			case NUM -> generateNumExpr((NumExpr) stat, procedure);
-			//			case STR -> generateStrExpr((StrExpr) stat, procedure);
+			case STR -> generateStrExpr((StrExpr) stat, procedure);
 			case UNARY -> generateUnaryExpr((UnaryExpr) stat, procedure);
-			//			case CONDITIONAL -> generateConditionalExpr((ConditionalExpr) stat, procedure);
 			default -> throw new RuntimeException("Invalid expr %s".formatted(stat.getTreeType()));
 		};
 	}
 	
 	@Deprecated
-	private InstParam generateParam(Stat stat, Procedure procedure) {
+	private InstParam generateParam(Stat stat, Procedure procedure) throws InstException {
 		return switch (stat.getTreeType()) {
 			case NUM -> {
 				NumExpr expr = (NumExpr) stat;
@@ -89,7 +86,7 @@ public class IntermediateGenerator {
 		};
 	}
 	
-	private InstRef generateProgStat(ProgStat stat) {
+	private InstRef generateProgStat(ProgStat stat) throws InstException {
 		LinkedList<Stat> stats = new LinkedList<>(stat.getElements());
 		
 		while (!stats.isEmpty()) {
@@ -118,23 +115,23 @@ public class IntermediateGenerator {
 		return NONE;
 	}
 	
-	private InstRef generateBreakStat(BreakStat stat, Procedure procedure) {
+	private InstRef generateBreakStat(BreakStat stat, Procedure procedure) throws InstException {
 		procedure.addInst(new Inst(Opcode.JMP, stat.getSyntaxPosition())
 			.addParam(new InstParam.Ref(breakBranch)));
 		return NONE;
 	}
 	
-	private InstRef generateContinueStat(ContinueStat stat, Procedure procedure) {
+	private InstRef generateContinueStat(ContinueStat stat, Procedure procedure) throws InstException {
 		procedure.addInst(new Inst(Opcode.JMP, stat.getSyntaxPosition())
 			.addParam(new InstParam.Ref(continueBranch)));
 		return NONE;
 	}
 	
-	private InstRef generateEmptyStat(EmptyStat stat, Procedure procedure) {
+	private InstRef generateEmptyStat(EmptyStat stat, Procedure procedure) throws InstException {
 		return NONE;
 	}
 	
-	private InstRef generateForStat(ForStat stat, Procedure procedure) {
+	private InstRef generateForStat(ForStat stat, Procedure procedure) throws InstException {
 		InstRef nextBranch = createLocalLabel(".for.next");
 		InstRef loopBranch = createLocalLabel(".for.loop");
 		InstRef endBranch = createLocalLabel(".for.end");
@@ -182,7 +179,7 @@ public class IntermediateGenerator {
 		return NONE;
 	}
 	
-	private InstRef generateFuncStat(FuncStat stat, Procedure procedure) {
+	private InstRef generateFuncStat(FuncStat stat, Procedure procedure) throws InstException {
 		InstRef reference = wrapReference(stat.getReference(), funcCount++);
 		
 		Inst functionLabel = new Inst(Opcode.LABEL, stat.getSyntaxPosition())
@@ -199,13 +196,20 @@ public class IntermediateGenerator {
 		
 		List<Inst> list = procedure.getInstructions();
 		if (list.isEmpty() || list.get(list.size() - 1).getOpcode() != Opcode.RET) {
-			throw new RuntimeException("Missing return statement : " + stat.getReference());
+			throw new InstException(ErrorUtil.createFullError(
+				ISyntaxPosition.of(stat.getSyntaxPosition().getStartPosition(), stat.getSyntaxPosition().getStartPosition()),
+				"Missing return statement '%s'".formatted(
+					stat.getReference()
+				)
+			));
+			
+			// throw new RuntimeException("Missing return statement : " + stat.getReference());
 		}
 		
 		return NONE;
 	}
 	
-	private InstRef generateIfStat(IfStat stat, Procedure procedure) {
+	private InstRef generateIfStat(IfStat stat, Procedure procedure) throws InstException {
 		InstRef elseBranch = createLocalLabel(".if.else");
 		InstRef endBranch = createLocalLabel(".if.end");
 		
@@ -230,13 +234,13 @@ public class IntermediateGenerator {
 		return NONE;
 	}
 	
-	//	private InstRef generateLabelStat(LabelStat stat, Procedure procedure) {
+	//	private InstRef generateLabelStat(LabelStat stat, Procedure procedure) throws InstException {
 	//		procedure.addInst(new Inst(Opcode.LABEL, stat.getSyntaxPosition())
 	//			.addParam(new InstParam.Ref(wrapReference(stat.getReference()))));
 	//		return NONE;
 	//	}
 	
-	private InstRef generateReturnStat(ReturnStat stat, Procedure procedure) {
+	private InstRef generateReturnStat(ReturnStat stat, Procedure procedure) throws InstException {
 		if (stat.hasValue()) {
 			InstRef value = generateStat(stat.getValue(), procedure);
 			procedure.addInst(new Inst(Opcode.RET, stat.getSyntaxPosition())
@@ -247,7 +251,7 @@ public class IntermediateGenerator {
 		return NONE;
 	}
 	
-	private InstRef generateScopeStat(ScopeStat stat, Procedure procedure) {
+	private InstRef generateScopeStat(ScopeStat stat, Procedure procedure) throws InstException {
 		for (Stat s : stat.getElements()) {
 			generateStat(s, procedure);
 		}
@@ -255,7 +259,7 @@ public class IntermediateGenerator {
 		return NONE;
 	}
 	
-	private InstRef generateVarStat(VarStat stat, Procedure procedure) {
+	private InstRef generateVarStat(VarStat stat, Procedure procedure) throws InstException {
 		InstRef holder = wrapReference(stat.getReference());
 		InstRef value = generateStat(stat.getValue(), procedure);
 		
@@ -269,21 +273,18 @@ public class IntermediateGenerator {
 		}
 		
 		if (!holder.getValueType().equals(value.getValueType())) {
-			Position pos = stat.getSyntaxPosition().getStartPosition();
-			
-			throw new InstException(
-				"(line: %d, column: %d) Left and Right side does not match (%s != %s)",
-				pos.line + 1,
-				pos.column + 1,
-				holder.getValueType().toShortName(),
-				value.getValueType().toShortName()
-			);
+			throw new InstException(ErrorUtil.createFullError(stat.getValue().getSyntaxPosition(),
+				"Left and Right side does not match (%s != %s)".formatted(
+					holder.getValueType().toShortName(),
+					value.getValueType().toShortName()
+				)
+			));
 		}
 		
 		return NONE;
 	}
 	
-	private InstRef generateCompilerStat(CompilerStat stat, Procedure procedure) {
+	private InstRef generateCompilerStat(CompilerStat stat, Procedure procedure) throws InstException {
 		for (CompilerStat.Part part : stat.getParts()) {
 			Inst inst = new Inst(Opcode.INLINE_ASM, stat.getSyntaxPosition())
 				.addParam(new InstParam.Str(stat.getTargetType()))
@@ -299,40 +300,40 @@ public class IntermediateGenerator {
 		return NONE;
 	}
 	
-	//	private InstRef generateWhileStat(WhileStat stat, Procedure procedure) {
-	//		InstRef nextBranch = createLocalLabel(".while.next");
-	//		InstRef endBranch = createLocalLabel(".while.end");
-	//
-	//		InstRef oldBreakBranch = breakBranch;
-	//		InstRef oldContinueBranch = continueBranch;
-	//		breakBranch = endBranch;
-	//		continueBranch = nextBranch;
-	//
-	//		// next:
-	//		procedure.addInst(new Inst(Opcode.LABEL, stat.getSyntaxPosition())
-	//			.addParam(new InstParam.Ref(nextBranch)));
-	//
-	//		InstRef check = generateStat(stat.getCondition(), procedure);
-	//		procedure.addInst(new Inst(Opcode.JZ, stat.getSyntaxPosition())
-	//			.addParam(new InstParam.Ref(check))
-	//			.addParam(new InstParam.Ref(endBranch)));
-	//
-	//		generateStat(stat.getBody(), procedure);
-	//		procedure.addInst(new Inst(Opcode.JMP, stat.getSyntaxPosition())
-	//			.addParam(new InstParam.Ref(nextBranch)));
-	//
-	//		// end:
-	//		procedure.addInst(new Inst(Opcode.LABEL, stat.getSyntaxPosition())
-	//			.addParam(new InstParam.Ref(endBranch)));
-	//
-	//		breakBranch = oldBreakBranch;
-	//		continueBranch = oldContinueBranch;
-	//
-	//		return NONE;
-	//	}
+	private InstRef generateWhileStat(WhileStat stat, Procedure procedure) throws InstException {
+		InstRef nextBranch = createLocalLabel(".while.next");
+		InstRef endBranch = createLocalLabel(".while.end");
+		
+		InstRef oldBreakBranch = breakBranch;
+		InstRef oldContinueBranch = continueBranch;
+		breakBranch = endBranch;
+		continueBranch = nextBranch;
+		
+		// next:
+		procedure.addInst(new Inst(Opcode.LABEL, stat.getSyntaxPosition())
+			.addParam(new InstParam.Ref(nextBranch)));
+		
+		InstRef check = generateStat(stat.getCondition(), procedure);
+		procedure.addInst(new Inst(Opcode.JZ, stat.getSyntaxPosition())
+			.addParam(new InstParam.Ref(check))
+			.addParam(new InstParam.Ref(endBranch)));
+		
+		generateStat(stat.getBody(), procedure);
+		procedure.addInst(new Inst(Opcode.JMP, stat.getSyntaxPosition())
+			.addParam(new InstParam.Ref(nextBranch)));
+		
+		// end:
+		procedure.addInst(new Inst(Opcode.LABEL, stat.getSyntaxPosition())
+			.addParam(new InstParam.Ref(endBranch)));
+		
+		breakBranch = oldBreakBranch;
+		continueBranch = oldContinueBranch;
+		
+		return NONE;
+	}
 	
 	// Expressions
-	private InstRef generateStackAllocExpr(StackAllocExpr expr, Procedure procedure) {
+	private InstRef generateStackAllocExpr(StackAllocExpr expr, Procedure procedure) throws InstException {
 		ValueType stackType = expr.getType().createArray(1);
 		InstRef stack = createDataReference(".stack", stackType);
 		
@@ -359,7 +360,7 @@ public class IntermediateGenerator {
 		}
 	}
 	
-	private InstRef generateBinaryExpr(BinaryExpr expr, Procedure procedure) {
+	private InstRef generateBinaryExpr(BinaryExpr expr, Procedure procedure) throws InstException {
 		if (expr.getOperation() == Operation.C_AND
 			|| expr.getOperation() == Operation.C_OR) {
 			return generateConditionalExpr(expr, procedure);
@@ -383,30 +384,41 @@ public class IntermediateGenerator {
 			.addParam(new InstParam.Ref(right)));
 		
 		if (!left.getValueType().equals(right.getValueType())) {
-			Position pos = expr.getSyntaxPosition().getStartPosition();
-			throw new InstException(
-				"(line: %d, column: %d) Left and Right side does not match (%s != %s)",
-				pos.line + 1,
-				pos.column + 1,
-				left.getValueType().toShortName(),
-				right.getValueType().toShortName()
-			);
+			throw new InstException(ErrorUtil.createFullError(expr.getSyntaxPosition(),
+				"Left and Right side does not match (%s != %s)".formatted(
+					left.getValueType().toShortName(),
+					right.getValueType().toShortName()
+				)
+			));
 		}
 		
 		return holder;
 	}
 	
-	private InstRef generateCallExpr(CallExpr expr, Procedure procedure) {
-		InstRef caller = wrapReference(expr.getReference());
+	private InstRef generateCallExpr(CallExpr expr, Procedure procedure) throws InstException {
+		// First resolve the parameters
+		List<InstParam.Ref> params = new ArrayList<>();
+		for (Expr parameter : expr.getParameters()) {
+			InstRef paramRef = generateStat(parameter, procedure);
+			params.add(new InstParam.Ref(paramRef));
+		}
+		
+		InstRef caller;
+		if (expr.getReference().isImported()) {
+			List<Reference> parameters = params.stream().map(param -> (Reference) param.getReference()).toList();
+			caller = wrapFunctionReference(expr.getReference(), parameters);
+		} else {
+			caller = wrapReference(expr.getReference());
+		}
+		
 		InstRef holder = createDataReference(".call", caller.getValueType());
 		
 		Inst callInst = new Inst(Opcode.CALL, expr.getSyntaxPosition())
 			.addParam(new InstParam.Ref(holder))
 			.addParam(new InstParam.Ref(caller));
 		
-		for (Expr parameter : expr.getParameters()) {
-			InstRef paramRef = generateStat(parameter, procedure);
-			callInst.addParam(new InstParam.Ref(paramRef));
+		for (InstParam param : params) {
+			callInst.addParam(param);
 		}
 		
 		procedure.addInst(callInst);
@@ -414,7 +426,7 @@ public class IntermediateGenerator {
 		return holder;
 	}
 	
-	private InstRef generateCastExpr(CastExpr expr, Procedure procedure) {
+	private InstRef generateCastExpr(CastExpr expr, Procedure procedure) throws InstException {
 		InstRef holder = createDataReference(".cast", expr.getType());
 		InstRef value = generateStat(expr.getValue(), procedure);
 		
@@ -426,30 +438,15 @@ public class IntermediateGenerator {
 		return holder;
 	}
 	
-	//	private InstRef generateCommaExpr(CommaExpr expr, Procedure procedure) {
-	//		InstRef holder = NONE;
-	//
-	//		Iterator<Expr> iter = expr.getValues().iterator();
-	//		if (iter.hasNext()) {
-	//			holder = generateStat(iter.next(), procedure);
-	//		}
-	//
-	//		while (iter.hasNext()) {
-	//			generateStat(iter.next(), procedure);
-	//		}
-	//
-	//		return holder;
-	//	}
-	
-	private InstRef generateNameExpr(NameExpr expr, Procedure procedure) {
+	private InstRef generateNameExpr(NameExpr expr, Procedure procedure) throws InstException {
 		return wrapReference(expr.getReference());
 	}
 	
-	private InstRef generateNoneExpr(NoneExpr expr, Procedure procedure) {
+	private InstRef generateNoneExpr(NoneExpr expr, Procedure procedure) throws InstException {
 		return createDataReference(".none", Primitives.NONE);
 	}
 	
-	private InstRef generateNumExpr(NumExpr expr, Procedure procedure) {
+	private InstRef generateNumExpr(NumExpr expr, Procedure procedure) throws InstException {
 		InstRef holder = createDataReference(".number", expr.getType());
 		procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
 			.addParam(new InstParam.Ref(holder))
@@ -458,17 +455,16 @@ public class IntermediateGenerator {
 		return holder;
 	}
 	
-	// TODO: Put this in a special place
-	//	private InstRef generateStrExpr(StrExpr expr, Procedure procedure) {
-	//		InstRef holder = createDataReference(".string");
-	//		procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
-	//			.addParam(new InstParam.Ref(holder))
-	//			.addParam(new InstParam.Str(expr.getValue())));
-	//
-	//		return holder;
-	//	}
+	private InstRef generateStrExpr(StrExpr expr, Procedure procedure) throws InstException {
+		InstRef holder = createDataReference(".string", expr.getType());
+		procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
+			.addParam(new InstParam.Ref(holder))
+			.addParam(new InstParam.Str(expr.getValue())));
+		
+		return holder;
+	}
 	
-	private InstRef generateUnaryExpr(UnaryExpr expr, Procedure procedure) {
+	private InstRef generateUnaryExpr(UnaryExpr expr, Procedure procedure) throws InstException {
 		InstRef holder = createDataReference(".unary", expr.getType());
 		InstRef value = generateStat(expr.getValue(), procedure);
 		
@@ -480,7 +476,7 @@ public class IntermediateGenerator {
 		return holder;
 	}
 	
-	private InstRef generateArrayExpr(BinaryExpr expr, Procedure procedure) {
+	private InstRef generateArrayExpr(BinaryExpr expr, Procedure procedure) throws InstException {
 		InstRef holder = createDataReference(".array", expr.getType().createArray(0));
 		InstRef left = generateStat(expr.getLeft(), procedure);
 		InstRef right = generateStat(expr.getRight(), procedure);
@@ -491,7 +487,7 @@ public class IntermediateGenerator {
 		return holder;
 	}
 	
-	private InstRef generateAssignExpr(BinaryExpr expr, Procedure procedure) {
+	private InstRef generateAssignExpr(BinaryExpr expr, Procedure procedure) throws InstException {
 		InstRef holder;
 		if (expr.getLeft() instanceof BinaryExpr left
 			&& left.getOperation() == Operation.ARRAY) {
@@ -540,7 +536,7 @@ public class IntermediateGenerator {
 		return holder;
 	}
 	
-	private InstRef generateConditionalExpr(BinaryExpr expr, Procedure procedure) {
+	private InstRef generateConditionalExpr(BinaryExpr expr, Procedure procedure) throws InstException {
 		boolean isAnd = expr.getOperation() == Operation.C_AND;
 		
 		InstRef jmpBranch = createLocalLabel(isAnd ? ".cand.end" : ".cor.value");
@@ -611,6 +607,26 @@ public class IntermediateGenerator {
 	private InstRef wrapReference(Reference reference, int id) {
 		if (reference.isImported() || reference.isExported()) {
 			reference = exportMap.getReference(reference);
+		}
+		
+		InstRef result = wrappedReferences.get(reference);
+		if (result != null) {
+			return result;
+		}
+		
+		result = new InstRef(reference.getName(), reference.getNamespace(), reference.getValueType(), id, 0);
+		result.setType(reference.getType());
+		wrappedReferences.put(reference, result);
+		return result;
+	}
+	
+	private InstRef wrapFunctionReference(Reference reference, List<Reference> parameters) {
+		return wrapFunctionReference(reference, parameters, count++);
+	}
+	
+	private InstRef wrapFunctionReference(Reference reference, List<Reference> parameters, int id) {
+		if (reference.isImported() || reference.isExported()) {
+			reference = exportMap.getMangledFunctionReference(reference, parameters);
 		}
 		
 		InstRef result = wrappedReferences.get(reference);

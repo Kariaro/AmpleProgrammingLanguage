@@ -1,12 +1,12 @@
 package me.hardcoded.lexer;
 
-import java.util.Objects;
-
 import me.hardcoded.compiler.impl.ISyntaxPosition;
+
+import java.util.Objects;
 
 /**
  * A token class.
- * 
+ *
  * @author HardCoded
  */
 public class Token {
@@ -106,6 +106,7 @@ public class Token {
 		// Delimiters
 		SEMICOLON,
 		QUESTION_MARK,
+		VARARGS,
 		COLON,
 		
 		// Classes
@@ -113,5 +114,8 @@ public class Token {
 		
 		// Preprocessors
 		LINK,
+		
+		// Reserved
+		RESERVED,
 	}
 }

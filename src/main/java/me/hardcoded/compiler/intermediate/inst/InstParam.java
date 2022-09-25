@@ -82,11 +82,11 @@ public interface InstParam {
 	
 	class Str implements InstParam {
 		private final String value;
-
+		
 		public Str(String value) {
 			this.value = value;
 		}
-
+		
 		public String getValue() {
 			return value;
 		}
@@ -94,7 +94,7 @@ public interface InstParam {
 		@Override
 		public ValueType getSize() {
 			// TODO: Get this from context
-			return Primitives.I8.createArray(1);
+			return Primitives.U8.createArray(1);
 		}
 		
 		@Override

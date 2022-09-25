@@ -1,6 +1,7 @@
 package me.hardcoded.compiler;
 
 import me.hardcoded.compiler.context.AmpleConfig;
+import me.hardcoded.compiler.errors.CompilerException;
 import me.hardcoded.compiler.impl.ICodeGenerator;
 import me.hardcoded.compiler.intermediate.AmpleLinker;
 import me.hardcoded.compiler.intermediate.inst.IntermediateFile;
@@ -74,7 +75,7 @@ public class AmpleCompiler {
 		throw new RuntimeException("Failed to load file");
 	}
 	
-	public void compile() throws IOException {
+	public void compile() throws IOException, CompilerException {
 		CompilerConfiguration config = ampleConfig.getConfiguration();
 		File inputFile = config.getSourceFile();
 		File outputFolder = config.getOutputFolder();
@@ -160,8 +161,16 @@ public class AmpleCompiler {
 			case ASSEMBLER -> codeGenerator.getAssembler(file);
 		};
 		
+		if (bytes == null) {
+			throw new RuntimeException("Failed to generate assembler or bytecode");
+		}
+		
 		String path = new File(config.getOutputFolder(), "compile").getAbsolutePath();
-		Files.write(Path.of(path), bytes);
+		try {
+			Files.write(Path.of(path), bytes);
+		} catch (IOException e) {
+			LOGGER.error("", e);
+		}
 		LOGGER.info("");
 		LOGGER.info("{}", path);
 		

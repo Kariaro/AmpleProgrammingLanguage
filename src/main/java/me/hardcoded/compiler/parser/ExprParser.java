@@ -139,6 +139,38 @@ public class ExprParser {
 	// The leaf branches of the expression tree.
 	private Expr atomExpression() throws ParseException {
 		switch (reader.type()) {
+			case STRING -> {
+				ISyntaxPosition textSyntaxPosition = reader.syntaxPosition();
+				String text = reader.value();
+				reader.advance();
+				
+				try {
+					text = text.substring(1, text.length() - 1);
+					text = StringUtils.unescapeString(text);
+					
+					return new StrExpr(textSyntaxPosition, text);
+				} catch (Exception e) {
+					throw parser.createParseException(textSyntaxPosition,
+						"Failed to parse string - %s".formatted(e.getMessage())
+					);
+				}
+			}
+			case CHARACTER -> {
+				ISyntaxPosition charSyntaxPosition = reader.syntaxPosition();
+				String text = reader.value();
+				reader.advance();
+				
+				try {
+					text = text.substring(1, text.length() - 1);
+					text = StringUtils.unescapeString(text);
+					
+					return new NumExpr(charSyntaxPosition, Primitives.U8, text.charAt(0));
+				} catch (Exception e) {
+					throw parser.createParseException(charSyntaxPosition,
+						"Failed to parse character - %s".formatted(e.getMessage())
+					);
+				}
+			}
 			case INT -> {
 				String text = reader.value();
 				
@@ -230,6 +262,7 @@ public class ExprParser {
 	private Expr callExpression(Namespace namespace) throws ParseException {
 		Position startPos = reader.position();
 		
+		ISyntaxPosition nameSyntaxPosition = reader.syntaxPosition();
 		String name = reader.value();
 		reader.advance();
 		
@@ -255,12 +288,11 @@ public class ExprParser {
 		Reference reference = context.getFunctionScope().getFunction(namespace, name, simpleParameters);
 		if (reference == null) {
 			reference = context.getFunctionScope().importFunction(namespace, name, simpleParameters);
+			context.setReferencePosition(reference, nameSyntaxPosition);
 		}
 		
 		parser.tryMatchOrError(Token.Type.R_PAREN);
 		reader.advance();
-		
-		// TODO: Print invalid caller
 		
 		return new CallExpr(ISyntaxPosition.of(startPos, reader.lastPositionEnd()), reference, parameters);
 	}

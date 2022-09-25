@@ -41,7 +41,7 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 		
 		return null;
 	}
-
+	
 	@Override
 	protected void setup() {
 		panel = new LocalPanel();
@@ -60,8 +60,10 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 			public void mouseWheelMoved(MouseWheelEvent event) {
 				if ((event.getModifiersEx() & MouseEvent.CTRL_DOWN_MASK) != 0) {
 					int newSize = panel.fontSize - (int) event.getPreciseWheelRotation();
-					if (newSize <  4) newSize = 4;
-					if (newSize > 32) newSize = 32;
+					if (newSize < 4)
+						newSize = 4;
+					if (newSize > 32)
+						newSize = 32;
 					panel.setFontSize(newSize);
 				} else {
 					panel.setScroll(panel.getScroll() + (int) event.getPreciseWheelRotation());
@@ -113,7 +115,7 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 					ISyntaxPosition syntaxPosition;
 					
 					if (mousePos.line < startPosition.line
-					|| (mousePos.line == startPosition.line && mousePos.column < startPosition.column)) {
+						|| (mousePos.line == startPosition.line && mousePos.column < startPosition.column)) {
 						Position test = new Position(startPosition.column + 1, startPosition.line, 0);
 						syntaxPosition = ISyntaxPosition.of(mousePos, test);
 					} else {
@@ -165,7 +167,7 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 		JMenu options = new JMenu("Options");
 		menuBar.add(options);
 	}
-
+	
 	@Override
 	protected void showObject(Object value) {
 		if (!(value instanceof List tokens)) {
@@ -349,7 +351,7 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 			}
 			
 			Color color = switch (token.type) {
-				case FUNC, RETURN, FOR, IF, ELSE, CONTINUE, BREAK -> colorCache.getColor(0xCC7832);
+				case FUNC, WHILE, RETURN, FOR, IF, ELSE, CONTINUE, BREAK -> colorCache.getColor(0xCC7832);
 				case WHITESPACE -> Color.LIGHT_GRAY;
 				case STRING, CHARACTER -> colorCache.getColor(0x6a8759);
 				case INT, LONG -> colorCache.getColor(0x6897bb);
@@ -370,7 +372,7 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 					}
 					case '\n' -> {
 						pointer.column = 0;
-						pointer.line ++;
+						pointer.line++;
 						drawLine(g, pointer.line);
 						g.setColor(color);
 						continue;
@@ -415,7 +417,7 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 				(int) (height * bounds.getHeight())
 			);
 		}
-
+		
 		public void display(List<Token> tokens) {
 		
 		}

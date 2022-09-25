@@ -82,6 +82,7 @@ public class AmpleLexer {
 			// Delimiters
 			.addRule(Type.SEMICOLON, i -> i.addString(";"))
 			.addRule(Type.QUESTION_MARK, i -> i.addString("?"))
+			.addRule(Type.VARARGS, i -> i.addString("..."))
 			
 			// Classes
 			.addRule(Type.NAMESPACE_OPERATOR, i -> i.addString("::"))
@@ -104,6 +105,9 @@ public class AmpleLexer {
 			.addRule(Type.BREAK, i -> i.addString("break"))
 			.addRule(Type.NAMESPACE, i -> i.addString("namespace"))
 			.addRule(Type.EXPORT, i -> i.addString("export"))
+			
+			// Reserved
+			.addRule(Type.RESERVED, i -> i.addStrings("const", "volatile", "synchronized", "final", "pub", "priv", "module", "using"))
 			
 			.toImmutable();
 	}
