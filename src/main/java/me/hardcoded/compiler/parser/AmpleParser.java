@@ -552,7 +552,7 @@ public class AmpleParser {
 		Stat elseBody;
 		if (reader.type() == Token.Type.ELSE) {
 			reader.advance();
-			elseBody = statements();
+			elseBody = statement();
 		} else {
 			elseBody = new EmptyStat(reader.syntaxPosition());
 		}

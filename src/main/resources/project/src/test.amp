@@ -44,7 +44,7 @@ func main () : i32 {
     std::printstr(string, std::strlen(string));
     printhex(cast<i32>(std::strlen(string)));
 
-    std::printf("Format string %s\n", "", "", "");
+    std::printf("Format string '%s' num='%p'\n", "abcd", 3232l);
 
 
     printhex(32);

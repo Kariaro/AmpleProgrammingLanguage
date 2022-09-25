@@ -143,11 +143,18 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					int size = AsmUtils.getTypeSize(param.getValueType());
 					String regName = AsmUtils.getRegSize("AX", param);
 					
-					sb.add("mov %s, %s [RBP + 0x%x]".formatted(
-						regName,
-						AsmUtils.getPointerName(size),
-						offset
-					));
+					if (param.getValueType().isVarargs()) {
+						sb.add("lea %s, [RBP + 0x%x]".formatted(
+							regName,
+							offset
+						));
+					} else {
+						sb.add("mov %s, %s [RBP + 0x%x]".formatted(
+							regName,
+							AsmUtils.getPointerName(size),
+							offset
+						));
+					}
 					sb.add("mov %s, %s".formatted(
 						AsmUtils.getParamValue(param, proc),
 						regName
