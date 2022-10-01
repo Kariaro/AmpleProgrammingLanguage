@@ -21,11 +21,13 @@ public class AsmCodeGenerator extends ICodeGenerator {
 		super(ampleConfig);
 	}
 	
-	private static class AsmContext {
-		private final Map<String, byte[]> globalStrings;
+	static class AsmContext {
+		public final Map<String, byte[]> globalStrings;
+		public final ElfHeader elfHeader;
 		
 		AsmContext() {
-			globalStrings = new LinkedHashMap<>();
+			this.globalStrings = new LinkedHashMap<>();
+			this.elfHeader = new ElfHeader();
 		}
 		
 		public String addGlobalString(byte[] content) {
@@ -89,38 +91,17 @@ public class AsmCodeGenerator extends ICodeGenerator {
 		
 		{
 			StringBuilder header = new StringBuilder();
-			header.append("BITS 64\n\n");
-			header.append("section .data\n");
-			for (Map.Entry<String, byte[]> entry : context.globalStrings.entrySet()) {
-				header.append("    ").append(entry.getKey()).append(" db ");
-				byte[] array = entry.getValue();
-				
-				for (int i = 0; i < array.length; i++) {
-					if (i > 0) {
-						header.append(", ");
-					}
-					
-					int c = Byte.toUnsignedInt(array[i]);
-					if (Character.isLetterOrDigit(c)) {
-						header.append("'").append((char) c).append("'");
-					} else {
-						header.append("0x%02x".formatted(c));
-					}
-				}
-				
-				if (array.length > 0) {
-					header.append(", ");
-				}
-				
-				header.append("0\n");
-			}
-			header.append("section .text\n");
-			header.append("    global _start:\n\n");
-			header.append("_start:\n");
-			header.append("    call %s\n".formatted(main.toSimpleString()));
-			header.append("    ret\n");
-			header.append("\n");
-			sb.insert(0, header);
+			context.elfHeader.appendHeader(header);
+			context.elfHeader.appendSectionText(header,
+				"__start:\n" +
+					"    call %s\n".formatted(main.toSimpleString()) +
+					"    mov rdi, rax\n" +
+					"    mov rax, 60\n" +
+					"    syscall\n" +
+					"\n", sb.toString());
+			context.elfHeader.appendSectionData(header, context);
+			
+			sb = header;
 		}
 		
 		return sb.toString().trim().getBytes(StandardCharsets.UTF_8);

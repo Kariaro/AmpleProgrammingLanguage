@@ -233,8 +233,7 @@ class LinkableHeader {
 		String name = deserializeString(in);
 		int column = readVarInt(in);
 		int line = readVarInt(in);
-		int offset = readVarInt(in);
-		return new Position(name == null ? null : new File(name), column, line, offset);
+		return new Position(name == null ? null : new File(name), column, line);
 	}
 	
 	
@@ -269,7 +268,6 @@ class LinkableHeader {
 		serializeString(position.file == null ? null : position.file.getAbsolutePath(), out);
 		writeVarInt(position.column, out);
 		writeVarInt(position.line, out);
-		writeVarInt(position.offset, out);
 	}
 	
 	

@@ -4,6 +4,7 @@ import me.hardcoded.compiler.context.AmpleLexer;
 import me.hardcoded.compiler.impl.ISyntaxPosition;
 import me.hardcoded.lexer.Token.Type;
 import me.hardcoded.utils.Position;
+import me.hardcoded.utils.error.ErrorUtil;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -31,12 +32,13 @@ public class LexerTokenizer {
 		String input = text;
 		
 		while (offset < length) {
-			Position startPosition = new Position(file, column, line, offset);
+			Position startPosition = new Position(file, column, line); // offset
 			
 			GenericLexerContext<Type>.LexerToken lexerToken = AmpleLexer.LEXER.nextToken(input);
 			if (lexerToken == null) {
-				// TODO: Use parse exception
-				throw new RuntimeException("(%s) (line: %d, column: %d): Could not parse token".formatted(file, line + 1, column + 1));
+				throw new RuntimeException(ErrorUtil.createFullError(ISyntaxPosition.of(startPosition, startPosition),
+					"Could not parse token"
+				));
 			}
 			
 			if (lexerToken.length + offset > length) {
@@ -54,7 +56,7 @@ public class LexerTokenizer {
 				}
 			}
 			
-			Position endPosition = new Position(file, column, line, offset + lexerToken.length);
+			Position endPosition = new Position(file, column, line); // offset + lexerToken.length
 			tokenList.add(new Token(
 				lexerToken.type,
 				lexerToken.content,

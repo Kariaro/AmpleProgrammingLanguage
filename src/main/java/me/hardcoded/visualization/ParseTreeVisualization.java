@@ -6,7 +6,6 @@ import me.hardcoded.compiler.parser.stat.*;
 import me.hardcoded.compiler.parser.type.Associativity;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.utils.Position;
-import me.hardcoded.utils.StringUtils;
 import me.hardcoded.utils.SyntaxUtils;
 
 import javax.imageio.ImageIO;
@@ -386,10 +385,7 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 					if (showReferenceType) {
 						sb.append(ref.getValueType()).append(' ');
 					}
-					if (!ref.getNamespace().isRoot()) {
-						sb.append(ref.getNamespace()).append("::");
-					}
-					sb.append(ref.getName());
+					sb.append(ref.getPath());
 					if (showReferenceId) {
 						sb.append(' ').append(ref.toSimpleString());
 					}
@@ -544,10 +540,6 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 					StackAllocExpr s = (StackAllocExpr) stat;
 					yield List.of(s.getSize(), s.getValue());
 				}
-				//				case WHILE -> {
-				//					WhileStat s = (WhileStat)stat;
-				//					yield List.of(s.getCondition(), s.getBody());
-				//				}
 				case NAMESPACE -> {
 					NamespaceStat s = (NamespaceStat) stat;
 					yield List.of(s.getReference(), s.getElements());
@@ -573,11 +565,8 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 					CastExpr e = (CastExpr) stat;
 					yield List.of(e.getType(), e.getValue());
 				}
-				//				case COMMA -> List.<Object>copyOf(((CommaExpr)stat).getValues());
 				case NAME -> List.of(((NameExpr) stat).getReference());
-				//				case NULL -> List.of();
-				case STR -> List.of('"' + StringUtils.escapeString(stat.toString()) + '"');
-				case NUM -> List.of(stat.toString());
+				case NUM, STR -> List.of(stat.toString());
 				default -> List.of("<%s Not Implement>".formatted(stat.getTreeType()));
 			};
 		}
