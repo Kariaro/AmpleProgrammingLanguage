@@ -116,10 +116,10 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 					
 					if (mousePos.line < startPosition.line
 						|| (mousePos.line == startPosition.line && mousePos.column < startPosition.column)) {
-						Position test = new Position(startPosition.column + 1, startPosition.line, 0);
+						Position test = new Position(startPosition.column + 1, startPosition.line);
 						syntaxPosition = ISyntaxPosition.of(mousePos, test);
 					} else {
-						Position test = new Position(mousePos.column + 1, mousePos.line, 0);
+						Position test = new Position(mousePos.column + 1, mousePos.line);
 						syntaxPosition = ISyntaxPosition.of(startPosition, test);
 					}
 					
@@ -140,7 +140,7 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 					x = panel.columnWidth;
 				}
 				
-				return new Position(x - panel.columnWidth, y, 0);
+				return new Position(x - panel.columnWidth, y);
 			}
 			
 			@Override

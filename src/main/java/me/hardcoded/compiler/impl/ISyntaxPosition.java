@@ -1,9 +1,9 @@
 package me.hardcoded.compiler.impl;
 
-import java.io.File;
-
 import me.hardcoded.utils.ImmutableSyntaxImpl;
 import me.hardcoded.utils.Position;
+
+import java.io.File;
 
 /**
  * @author HardCoded
@@ -24,7 +24,7 @@ public interface ISyntaxPosition {
 	}
 	
 	static ISyntaxPosition empty(File file) {
-		return new ImmutableSyntaxImpl(new Position(file, 0, 0, 0), new Position(file, 0, 0, 0));
+		return new ImmutableSyntaxImpl(new Position(file, 0, 0), new Position(file, 0, 0));
 	}
 	
 	static ISyntaxPosition of(Position start, Position end) {

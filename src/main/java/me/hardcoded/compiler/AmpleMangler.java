@@ -42,7 +42,7 @@ public class AmpleMangler {
 		
 		StringBuilder sb = new StringBuilder();
 		if (type.isSigned())
-			sb.append('s');
+			sb.append('i');
 		else if (type.isUnsigned())
 			sb.append('u');
 		else if (type.isFloating())
@@ -68,7 +68,7 @@ public class AmpleMangler {
 		int depth = Character.digit(value.charAt(1), 16);
 		int size = BASE64.indexOf(value.charAt(2)) + (BASE64.indexOf(value.charAt(3)) * 64);
 		int flags = switch (type) {
-			case 's' -> ValueType.SIGNED;
+			case 'i' -> ValueType.SIGNED;
 			case 'u' -> ValueType.UNSIGNED;
 			case 'f' -> ValueType.FLOATING;
 			default -> ValueType.GENERIC;
