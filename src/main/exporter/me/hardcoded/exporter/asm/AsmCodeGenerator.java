@@ -16,6 +16,7 @@ import java.util.Map;
 
 public class AsmCodeGenerator extends ICodeGenerator {
 	private static final Logger LOGGER = LogManager.getLogger(AsmCodeGenerator.class);
+	private static final boolean DEBUG = true;
 	
 	public AsmCodeGenerator(AmpleConfig ampleConfig) {
 		super(ampleConfig);
@@ -23,11 +24,13 @@ public class AsmCodeGenerator extends ICodeGenerator {
 	
 	static class AsmContext {
 		public final Map<String, byte[]> globalStrings;
-		public final ElfHeader elfHeader;
+		public final Map<String, String> labelStrings;
+		public final ElfHeader2 elfHeader;
 		
 		AsmContext() {
 			this.globalStrings = new LinkedHashMap<>();
-			this.elfHeader = new ElfHeader();
+			this.labelStrings = new LinkedHashMap<>();
+			this.elfHeader = new ElfHeader2(DEBUG, "");
 		}
 		
 		public String addGlobalString(byte[] content) {
@@ -35,6 +38,10 @@ public class AsmCodeGenerator extends ICodeGenerator {
 			String name = "global_string_" + index;
 			globalStrings.put(name, content);
 			return name;
+		}
+		
+		public void addLabelString(String label, String name) {
+			labelStrings.put(label, name);
 		}
 	}
 	
@@ -93,13 +100,14 @@ public class AsmCodeGenerator extends ICodeGenerator {
 			StringBuilder header = new StringBuilder();
 			context.elfHeader.appendHeader(header);
 			context.elfHeader.appendSectionText(header,
-				"__start:\n" +
-					"    call %s\n".formatted(main.toSimpleString()) +
+				"    call %s\n".formatted(main.toSimpleString()) +
 					"    mov rdi, rax\n" +
 					"    mov rax, 60\n" +
 					"    syscall\n" +
 					"\n", sb.toString());
 			context.elfHeader.appendSectionData(header, context);
+			context.elfHeader.appendSectionSections(header);
+			context.elfHeader.appendSectionDebug(header, context);
 			
 			sb = header;
 		}
@@ -144,10 +152,12 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					offset += (size >> 3);
 				}
 				
+				context.addLabelString(reference.toSimpleString(), reference.getPath());
 				String label = reference.toSimpleString() + ":\n";
 				return label + sb.stream().reduce("", (a, b) -> a + '\n' + b).indent(4).stripTrailing().replaceFirst("    \n", "");
 			}
 			
+			context.addLabelString(proc.getName() + "." + reference.toSimpleString(), "." + reference.toSimpleString());
 			return "  ." + reference.toSimpleString() + ':';
 		}
 		
