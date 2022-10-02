@@ -17,13 +17,12 @@ public class ParseUtil {
 			case FOR -> forStat((ForStat) stat);
 			case FUNC -> funcStat((FuncStat) stat);
 			case IF -> ifStat((IfStat) stat);
-			//			case LABEL -> labelStat((LabelStat) stat);
 			case PROGRAM -> programStat((ProgStat) stat);
 			case COMPILER -> compilerStat((CompilerStat) stat);
 			case RETURN -> returnStat((ReturnStat) stat);
 			case SCOPE -> scopeStat((ScopeStat) stat);
 			case VAR -> varStat((VarStat) stat);
-			//			case WHILE -> whileStat((WhileStat) stat);
+			case WHILE -> whileStat((WhileStat) stat);
 			case NAMESPACE -> namespaceStat((NamespaceStat) stat);
 			
 			default -> {
@@ -143,9 +142,9 @@ public class ParseUtil {
 		return s.getReference().getValueType() + ": " + getReferenceName(s.getReference()) + " = " + expr(s.getValue()) + ";";
 	}
 	
-	//	public static String whileStat(WhileStat s) {
-	//		return "while (" + expr(s.getCondition()) + ") " + stat(s.getBody());
-	//	}
+	public static String whileStat(WhileStat s) {
+		return "while (" + expr(s.getCondition()) + ") " + stat(s.getBody());
+	}
 	
 	public static String namespaceStat(NamespaceStat s) {
 		StringBuilder sb = new StringBuilder();

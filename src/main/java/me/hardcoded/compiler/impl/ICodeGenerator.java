@@ -13,19 +13,21 @@ public abstract class ICodeGenerator {
 	
 	/**
 	 * Returns an output byte array from an input {@code IRProgram}
-	 * 
+	 *
+	 * @param config  the current compiler configuration
 	 * @param program the {@code Object} to export
 	 * @return a byte array
 	 */
-	public abstract byte[] getBytecode(IntermediateFile program) throws CodeGenException;
+	public abstract byte[] getBytecode(AmpleConfig config, IntermediateFile program) throws CodeGenException;
 	
 	/**
 	 * Returns the current program as this instruction sets assembly language
 	 *
+	 * @param config  the current compiler configuration
 	 * @param program the {@code Object} to export
 	 * @return a string
 	 */
-	public abstract byte[] getAssembler(IntermediateFile program) throws CodeGenException;
+	public abstract byte[] getAssembler(AmpleConfig config, IntermediateFile program) throws CodeGenException;
 	
 	/**
 	 * Called upon resetting the code generator.

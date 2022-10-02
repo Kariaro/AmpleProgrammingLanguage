@@ -17,6 +17,7 @@ import java.util.Map;
 public class AsmCodeGenerator extends ICodeGenerator {
 	private static final Logger LOGGER = LogManager.getLogger(AsmCodeGenerator.class);
 	private static final boolean DEBUG = true;
+	private static final boolean SELF = true;
 	
 	public AsmCodeGenerator(AmpleConfig ampleConfig) {
 		super(ampleConfig);
@@ -25,12 +26,10 @@ public class AsmCodeGenerator extends ICodeGenerator {
 	static class AsmContext {
 		public final Map<String, byte[]> globalStrings;
 		public final Map<String, String> labelStrings;
-		public final ElfHeader2 elfHeader;
 		
 		AsmContext() {
 			this.globalStrings = new LinkedHashMap<>();
 			this.labelStrings = new LinkedHashMap<>();
-			this.elfHeader = new ElfHeader2(DEBUG, "");
 		}
 		
 		public String addGlobalString(byte[] content) {
@@ -46,13 +45,13 @@ public class AsmCodeGenerator extends ICodeGenerator {
 	}
 	
 	@Override
-	public byte[] getBytecode(IntermediateFile program) throws CodeGenException {
-		byte[] assembler = getAssembler(program);
-		return NasmUtils.compile(ampleConfig, assembler);
+	public byte[] getBytecode(AmpleConfig config, IntermediateFile program) throws CodeGenException {
+		byte[] assembler = getAssembler(config, program);
+		return NasmUtils.compile(ampleConfig, SELF ? "bin" : "elf64", assembler);
 	}
 	
 	@Override
-	public byte[] getAssembler(IntermediateFile program) throws CodeGenException {
+	public byte[] getAssembler(AmpleConfig config, IntermediateFile program) throws CodeGenException {
 		StringBuilder sb = new StringBuilder();
 		
 		AsmContext context = new AsmContext();
@@ -98,16 +97,17 @@ public class AsmCodeGenerator extends ICodeGenerator {
 		
 		{
 			StringBuilder header = new StringBuilder();
-			context.elfHeader.appendHeader(header);
-			context.elfHeader.appendSectionText(header,
+			ElfHeader elfHeader = new ElfHeader(DEBUG, SELF, "");
+			elfHeader.appendHeader(header);
+			elfHeader.appendSectionText(header,
 				"    call %s\n".formatted(main.toSimpleString()) +
 					"    mov rdi, rax\n" +
 					"    mov rax, 60\n" +
 					"    syscall\n" +
 					"\n", sb.toString());
-			context.elfHeader.appendSectionData(header, context);
-			context.elfHeader.appendSectionSections(header);
-			context.elfHeader.appendSectionDebug(header, context);
+			elfHeader.appendSectionData(header, context);
+			elfHeader.appendSectionSections(header);
+			elfHeader.appendSectionDebug(header, context);
 			
 			sb = header;
 		}
@@ -560,10 +560,6 @@ public class AsmCodeGenerator extends ICodeGenerator {
 	@Override
 	public void reset() {
 	
-	}
-	
-	public static int getTypeSize(ValueType type) {
-		return getTypeByteSize(type) << 3;
 	}
 	
 	public static int getTypeByteSize(ValueType type) {

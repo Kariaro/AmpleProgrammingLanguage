@@ -10,9 +10,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -21,10 +18,8 @@ import java.util.Objects;
  * <p>
  * 1. Generate a token list from an input.<br>
  * 2. Generate a basic parse tree.<br>
- * 3. Optimize the parse tree.<br>
- * 4. Generate the reduced instruction language.<br>
- * 5. Optimize the reduced instruction language.<br>
- * 6. Export the language with a code generator.<br>
+ * 3. Generate the reduced instruction language.<br>
+ * 4. Export the language with a code generator.<br>
  *
  * @author HardCoded
  */
@@ -45,22 +40,9 @@ public class Main {
 		return LOGGER;
 	}
 	
-	static {
-		Locale.setDefault(Locale.US);
-	}
-	
-	private static void printHelpMessage() {
-		try (InputStream stream = Main.class.getResourceAsStream("/command/help.txt")) {
-			assert stream != null;
-			LOGGER.info("\n{}", new String(stream.readAllBytes()));
-		} catch (IOException e) {
-			LOGGER.error("", e);
-		}
-	}
-	
 	public static void main(String[] args) throws Exception {
 		if (!DebugUtils.isDeveloper() && args.length < 1) {
-			printHelpMessage();
+			LOGGER.info("{}", CompilerConfiguration.getHelpMessage());
 			return;
 		}
 		
@@ -82,7 +64,11 @@ public class Main {
 			};
 		}
 		
-		CompilerConfiguration config = CompilerConfiguration.parseArgs(args);
+		CompilerConfiguration config = CompilerConfiguration.parseArgs(LOGGER, args);
+		if (config == null) {
+			System.exit(1);
+			return;
+		}
 		
 		// Print compiler statistics
 		LOGGER.info("---------------------------------------------------------");

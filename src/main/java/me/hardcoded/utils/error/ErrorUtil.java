@@ -23,7 +23,7 @@ public class ErrorUtil {
 			int errorStart = error.getStartPosition().column;
 			int errorEnd = error.getEndPosition().column;
 			int columns = Math.max(1, errorEnd - errorStart);
-			int padSize = Math.max(1, (int) Math.ceil(Math.log10(errorLine)));
+			int padSize = Math.max(1, (int) Math.floor(Math.log10(errorLine)) + 1);
 			
 			String numPadding = " ".repeat(padSize);
 			String numFormat = "%" + padSize + "d";

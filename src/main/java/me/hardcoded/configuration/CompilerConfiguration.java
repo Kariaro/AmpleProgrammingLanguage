@@ -1,14 +1,11 @@
 package me.hardcoded.configuration;
 
-import me.hardcoded.main.Main;
-import me.hardcoded.utils.FileUtils;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 // TODO: Make this into an XML format
@@ -105,7 +102,7 @@ public class CompilerConfiguration {
 	}
 	
 	void setWorkingDirectory(String pathname) {
-		set(Type.WORKING_DIRECTORY, FileUtils.makeAbsolute(new File(pathname)));
+		set(Type.WORKING_DIRECTORY, Path.of(pathname).toAbsolutePath().toFile());
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -126,31 +123,46 @@ public class CompilerConfiguration {
 		return new File(workingDirectory, file.getPath()).getAbsoluteFile();
 	}
 	
-	public List<File> lookupFile(String pathname) {
-		return List.of(getWorkingDirectory().toPath().resolve(pathname).toAbsolutePath().toFile());
-	}
-	
 	@Override
 	public String toString() {
 		return map.toString();
 	}
 	
-	private static void printHelpMessage() {
-		try (InputStream stream = Main.class.getResourceAsStream("/command/help.txt")) {
-			System.out.println(new String(stream.readAllBytes()));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	public static String getHelpMessage() {
+		return "Help message for AmpleProgrammingLanguage https://github.com/Kariaro/AmpleProgrammingLanguage\n\n" +
+			"Usage: [options]\n\n" +
+			"options:\n" +
+			"    -? -h --help\n" +
+			"                  display this help message\n\n" +
+			"    -w --working-directory <path>\n" +
+			"                  set the working directory\n\n" +
+			"    -f --format <format>\n" +
+			"                  the output format type\n\n" +
+			"    --format-list\n" +
+			"                  prints all available formats\n\n" +
+			"    -i --input-file <pathname>\n" +
+			"                  set the main entry point of the compiler\n\n" +
+			"    -o --output-file <pathname>\n" +
+			"                  set the output file of this compiler\n\n" +
+			"    -b --bytecode\n" +
+			"                  set the output to bytecode (default)\n\n" +
+			"    -a --assembler\n" +
+			"                  set the output to assembler\n\n" +
+			"    -c --compile\n" +
+			"                  set the compiler mode to compile (default)\n\n" +
+			"    -r --run\n" +
+			"                  set the compiler mode to run\n";
 	}
 	
-	private static void printFormatListMessage() {
-		System.out.println("Available formats:");
-		System.out.println(Arrays.stream(OutputFormat.values())
-			.map("[%s]\n"::formatted).reduce((a, b) -> a + b).orElse("").trim()
-		);
+	public static String getFormatListMessage() {
+		return "Available formats:\n" +
+			Arrays.stream(OutputFormat.values())
+				.map("[%s]\n"::formatted)
+				.reduce((a, b) -> a + b)
+				.orElse("").trim();
 	}
 	
-	public static CompilerConfiguration parseArgs(String[] args) {
+	public static CompilerConfiguration parseArgs(Logger logger, String[] args) {
 		CompilerConfiguration config = new CompilerConfiguration();
 		
 		/*
@@ -177,7 +189,7 @@ public class CompilerConfiguration {
 				
 				switch (str) {
 					case "--format-list" -> {
-						printFormatListMessage();
+						logger.info("{}", getFormatListMessage());
 						return config;
 					}
 					
@@ -216,19 +228,21 @@ public class CompilerConfiguration {
 					}
 					
 					default -> {
-						System.out.printf("Invalid argument '%s'\n\n", str);
-						printHelpMessage();
+						logger.info("Invalid argument '{}'", str);
+						logger.info("{}", getHelpMessage());
+						return null;
 					}
 					
 					case "-?", "-h", "--help" -> {
-						printHelpMessage();
-						return config;
+						logger.info("{}", getHelpMessage());
+						return null;
 					}
 				}
 			}
 		} catch (ArrayIndexOutOfBoundsException e) {
-			System.out.println("Invalid argument");
-			printHelpMessage();
+			logger.info("Invalid argument");
+			logger.info("{}", getHelpMessage());
+			return null;
 		}
 		
 		return config;

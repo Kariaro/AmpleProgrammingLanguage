@@ -12,27 +12,27 @@ public class IRCodeGenerator extends ICodeGenerator {
 	}
 	
 	@Override
-	public byte[] getBytecode(IntermediateFile program) throws CodeGenException {
-//		ByteArrayOutputStream bs = new ByteArrayOutputStream();
-//
-//		try {
-//			//IRSerializer.write(program, bs);
-//		} catch (Exception e) {
-//			throw new CodeGenException("Failed to write ir code", e.getCause());
-//		}
-//
-//		return bs.toByteArray();
+	public byte[] getBytecode(AmpleConfig config, IntermediateFile program) throws CodeGenException {
+		//		ByteArrayOutputStream bs = new ByteArrayOutputStream();
+		//
+		//		try {
+		//			//IRSerializer.write(program, bs);
+		//		} catch (Exception e) {
+		//			throw new CodeGenException("Failed to write ir code", e.getCause());
+		//		}
+		//
+		//		return bs.toByteArray();
 		throw new UnsupportedOperationException();
 	}
-
+	
 	@Override
-	public byte[] getAssembler(IntermediateFile program) throws CodeGenException {
-//		return IRPrintUtils.printPretty(program).getBytes();
+	public byte[] getAssembler(AmpleConfig config, IntermediateFile program) throws CodeGenException {
+		//		return IRPrintUtils.printPretty(program).getBytes();
 		throw new UnsupportedOperationException();
 	}
-
+	
 	@Override
 	public void reset() {
-
+	
 	}
 }
