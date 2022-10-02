@@ -3,9 +3,11 @@ package me.hardcoded.compiler.intermediate;
 import me.hardcoded.compiler.AmpleMangler;
 import me.hardcoded.compiler.errors.ParseException;
 import me.hardcoded.compiler.parser.LinkableObject;
+import me.hardcoded.compiler.parser.type.Primitives;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ReferenceSyntax;
 import me.hardcoded.utils.error.ErrorUtil;
+import me.hardcoded.utils.types.MangledFunctionMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -15,13 +17,11 @@ import java.util.Map;
 
 public class ExportMap {
 	private static final Logger LOGGER = LogManager.getLogger(ExportMap.class);
-	final Map<String, Reference> functions;
+	final MangledFunctionMap functions;
 	final Map<String, Reference> variables;
-	final Map<String, Reference> varargFunctions;
 	
 	protected ExportMap() {
-		varargFunctions = new HashMap<>();
-		functions = new HashMap<>();
+		functions = new MangledFunctionMap();
 		variables = new HashMap<>();
 	}
 	
@@ -41,27 +41,15 @@ public class ExportMap {
 					));
 				}
 				
-				// TODO: Redesign this system
-				if (AmpleMangler.isFunctionVarargs(mangledName)) {
-					if (varargFunctions.put(mangledName, reference) != null) {
-						throw new ParseException(ErrorUtil.createFullError(referenceSyntax.getSyntaxPosition(),
-							"The project already exports a function '%s' (%s)".formatted(
-								reference.getName(),
-								mangledName
-							)
-						));
-					} else {
-						functions.put(mangledName, reference);
-					}
-				} else {
-					if (functions.put(mangledName, reference) != null) {
-						throw new ParseException(ErrorUtil.createFullError(referenceSyntax.getSyntaxPosition(),
-							"The project already exports a function '%s' (%s)".formatted(
-								reference.getName(),
-								mangledName
-							)
-						));
-					}
+				if (!functions.put(reference)) {
+					Reference blocker = functions.getBlocker(reference);
+					
+					throw new ParseException(ErrorUtil.createFullError(referenceSyntax.getSyntaxPosition(),
+						"The project already exports a function '%s' (%s)".formatted(
+							reference.getName(),
+							AmpleMangler.demangleFunction(blocker.getMangledName())
+						)
+					));
 				}
 			}
 			
@@ -79,8 +67,7 @@ public class ExportMap {
 	
 	public Reference getReference(Reference reference) {
 		if (reference.isFunction()) {
-			String mangledName = reference.getMangledName();
-			return functions.get(mangledName);
+			return functions.get(reference);
 		}
 		
 		if (reference.isVariable()) {
@@ -91,28 +78,12 @@ public class ExportMap {
 	}
 	
 	public Reference getMangledFunctionReference(Reference reference, List<Reference> parameters) {
-		String mangledName = AmpleMangler.mangleFunction(reference.getNamespace(), reference.getName(), parameters);
+		String mangledName = AmpleMangler.mangleFunction(Primitives.LINKED, reference.getNamespace(), reference.getName(), parameters);
 		
 		Reference result;
 		if ((result = functions.get(mangledName)) != null) {
 			return result;
 		}
-		
-		// Check if it matches a vararg function
-		// TODO: Optimize this
-		for (String vararg : varargFunctions.keySet()) {
-			AmpleMangler.MangledFunction mangledFunction = AmpleMangler.demangleFunction(vararg);
-			
-			if (mangledFunction.matches(mangledName)) {
-				return varargFunctions.get(vararg);
-			}
-			
-			mangledFunction.getParameterCount();
-		}
-		
-		//		if ((result = variables.get(mangledName)) != null) {
-		//			return result;
-		//		}
 		
 		return null;
 	}

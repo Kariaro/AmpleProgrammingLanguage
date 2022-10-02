@@ -157,8 +157,8 @@ public class AmpleCompiler {
 		ICodeGenerator codeGenerator = format.createNew(ampleConfig);
 		
 		byte[] bytes = switch (ampleConfig.getConfiguration().getTargetFormat()) {
-			case BYTECODE -> codeGenerator.getBytecode(file);
-			case ASSEMBLER -> codeGenerator.getAssembler(file);
+			case BYTECODE -> codeGenerator.getBytecode(ampleConfig, file);
+			case ASSEMBLER -> codeGenerator.getAssembler(ampleConfig, file);
 		};
 		
 		if (bytes == null) {

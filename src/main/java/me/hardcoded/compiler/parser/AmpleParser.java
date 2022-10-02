@@ -1,5 +1,6 @@
 package me.hardcoded.compiler.parser;
 
+import me.hardcoded.compiler.AmpleMangler;
 import me.hardcoded.compiler.context.AmpleConfig;
 import me.hardcoded.compiler.context.LangReader;
 import me.hardcoded.compiler.errors.ParseException;
@@ -309,6 +310,10 @@ public class AmpleParser {
 			reader.advance();
 			
 			if (reader.type() == Token.Type.COMMA) {
+				if (type.isVarargs()) {
+					throw createParseException(reader.peak(1).syntaxPosition, "Cannot add parameters after vararg");
+				}
+				
 				reader.advance();
 				if (reader.type() == Token.Type.R_PAREN) {
 					throw createParseException("Invalid comma before ')'");
@@ -331,17 +336,23 @@ public class AmpleParser {
 		
 		Reference reference = context.getFunctionScope().addFunction(returnType, context.getNamespaceScope().getNamespace(), functionName, parameters);
 		if (reference == null) {
+			Reference blocker = context.getFunctionScope().getFunctionBlocking(context.getNamespaceScope().getNamespace(), functionName, parameters);
+			ISyntaxPosition syntaxPosition = context.getFirstReferencePosition(blocker);
+			Position startPos = syntaxPosition == null ? null : syntaxPosition.getStartPosition();
+			
 			throw createParseException(
 				functionNameSyntax,
-				"A function with the name '%s' already exists",
-				functionName
+				"A function with the name '%s' already exists (%s) (line: %s, column: %s)",
+				functionName,
+				AmpleMangler.demangleFunction(blocker.getMangledName()),
+				startPos == null ? "?" : (startPos.line + 1),
+				startPos == null ? "?" : (startPos.column + 1)
 			);
 		}
 		reference.setModifiers(modifiers);
 		
-		if (reference.isExported()) {
-			context.setReferencePosition(reference, functionNameSyntax);
-		}
+		// Always set reference position
+		context.setReferencePosition(reference, functionNameSyntax);
 		
 		FuncStat stat = new FuncStat(mutableSyntax, parameters, reference);
 		
@@ -602,7 +613,7 @@ public class AmpleParser {
 	
 	// Shunting yard algorithm
 	private Expr expression() throws ParseException {
-		return new ExprParser(this, context, reader).parse(false);
+		return new ExprParser(this, context, reader).parse();
 	}
 	
 	boolean isType() {

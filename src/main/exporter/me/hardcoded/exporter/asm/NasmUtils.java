@@ -21,7 +21,7 @@ public class NasmUtils {
 		return new File(getNasmFolder(), "nasm.exe");
 	}
 	
-	public static byte[] compile(AmpleConfig config, byte[] bytes) {
+	public static byte[] compile(AmpleConfig config, String format, byte[] bytes) {
 		File outputFolder = config.getConfiguration().getOutputFolder();
 		String inputFile = new File(outputFolder, "out.asm").getAbsolutePath(); //DebugUtils.getNextFileId(outputFolder, "out_%d.asm");
 		String outputFile = new File(outputFolder, "out.elf").getAbsolutePath(); // DebugUtils.getNextFileId(outputFolder, "out_%d.elf");
@@ -39,8 +39,7 @@ public class NasmUtils {
 			new ProcessBuilder(
 				getNasm().getAbsolutePath(),
 				inputFile,
-				"-f", "bin",
-				"-g",
+				"-f", format,
 				"-s",
 				"-o", outputFile)
 				.directory(outputFolder)

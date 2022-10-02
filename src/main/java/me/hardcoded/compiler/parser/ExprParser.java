@@ -27,12 +27,12 @@ public class ExprParser {
 		this.reader = reader;
 	}
 	
-	public Expr parse(boolean allowComma) throws ParseException {
-		return parse(allowComma, Operation.MAX_PRECEDENCE);
+	public Expr parse() throws ParseException {
+		return parse(Operation.MAX_PRECEDENCE);
 	}
 	
 	// At some point in the future. Unroll this and make it not recursive
-	public Expr parse(boolean allowComma, int precedence) throws ParseException {
+	public Expr parse(int precedence) throws ParseException {
 		if (precedence == 0) {
 			return atomExpression();
 		}
@@ -49,7 +49,7 @@ public class ExprParser {
 			Position start = reader.position();
 			reader.advance();
 			
-			Expr value = parse(false, precedence);
+			Expr value = parse(precedence);
 			left = new UnaryExpr(
 				ISyntaxPosition.of(start, value.getSyntaxPosition().getEndPosition()),
 				operation,
@@ -58,7 +58,7 @@ public class ExprParser {
 		}
 		
 		if (left == null) {
-			left = parse(false, precedence - 1);
+			left = parse(precedence - 1);
 		}
 		
 		// Suffix
@@ -95,9 +95,9 @@ public class ExprParser {
 				
 				Expr right;
 				if (operation.getAssociativity() == Associativity.Right) {
-					right = parse(false, precedence);
+					right = parse(precedence);
 				} else {
-					right = parse(false, precedence - 1);
+					right = parse(precedence - 1);
 				}
 				
 				left = new BinaryExpr(ISyntaxPosition.of(left.getSyntaxPosition(), right.getSyntaxPosition()), operation, left, right);
@@ -116,7 +116,7 @@ public class ExprParser {
 				boolean found = true;
 				switch (operation) {
 					case ARRAY -> {
-						Expr right = parse(false);
+						Expr right = parse();
 						
 						parser.tryMatchOrError(Token.Type.R_SQUARE);
 						reader.advance();
@@ -248,7 +248,7 @@ public class ExprParser {
 			}
 			case L_PAREN -> {
 				reader.advance();
-				Expr expr = parse(false, Operation.MAX_PRECEDENCE);
+				Expr expr = parse(Operation.MAX_PRECEDENCE);
 				parser.tryMatchOrError(Token.Type.R_PAREN);
 				reader.advance();
 				return expr;
@@ -271,7 +271,7 @@ public class ExprParser {
 		
 		List<Expr> parameters = new ArrayList<>();
 		while (reader.type() != Token.Type.R_PAREN) {
-			parameters.add(parse(false));
+			parameters.add(parse());
 			
 			if (reader.type() == Token.Type.COMMA) {
 				reader.advance();
@@ -364,7 +364,7 @@ public class ExprParser {
 				parser.tryMatchOrError(Token.Type.L_PAREN);
 				reader.advance();
 				
-				Expr expr = parse(false);
+				Expr expr = parse();
 				
 				parser.tryMatchOrError(Token.Type.R_PAREN);
 				reader.advance();
