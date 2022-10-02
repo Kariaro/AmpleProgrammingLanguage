@@ -4,12 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-class ElfHeader {
+class ElfHeader2 {
 	private final Elf64_Ehdr fileHeader;
 	private final List<Elf64_Phdr> programHeaderList;
 	private final List<Elf64_Shdr> sectionHeaderList;
 	private final List<String> sectionNames;
-	private int sectionNameIndex;
 	
 	// Debug variables
 	private final boolean debug;
@@ -17,12 +16,11 @@ class ElfHeader {
 	private final List<String> strtabDebug;
 	private final List<Elf64_Sym> symtabDebug;
 	
-	public ElfHeader(boolean debug, String fileName) {
+	public ElfHeader2(boolean debug, String fileName) {
 		this.fileHeader = new Elf64_Ehdr();
 		this.programHeaderList = new ArrayList<>();
 		this.sectionHeaderList = new ArrayList<>();
 		this.sectionNames = new ArrayList<>();
-		this.sectionNameIndex = 0;
 		
 		// Debug
 		this.debug = debug;
@@ -55,7 +53,7 @@ class ElfHeader {
 	
 	private void setupSectionHeaders() {
 		{ // .null
-			Elf64_Shdr shdr = new Elf64_Shdr();
+			Elf64_Shdr shdr = new Elf64_Shdr("NULL");
 			shdr.debug_name = ".null";
 			sectionHeaderList.add(shdr);
 			shdr.sh_name = Integer.toString(addSectionName(""));
@@ -73,31 +71,31 @@ class ElfHeader {
 		List<Elf64_Shdr> debugList = new ArrayList<>();
 		if (debug) {
 			{ // .symtab
-				Elf64_Shdr shdr = new Elf64_Shdr();
+				Elf64_Shdr shdr = new Elf64_Shdr("SYMTAB");
 				shdr.debug_name = ".symtab";
 				debugList.add(shdr);
 				shdr.sh_name = Integer.toString(addSectionName(".symtab"));
 				shdr.sh_type = Elf64_Shdr.SHT_SYMTAB;
 				shdr.sh_flags = 0;
 				shdr.sh_addr = "0";
-				shdr.sh_offset = "__ELF64_SECTION_SYMTAB - $$";
-				shdr.sh_size = "__ELF64_SECTION_SYMTAB_SIZE";
-				shdr.sh_link = "4h"; // TODO: Get the index of the strtable
+				shdr.sh_offset = "ELF64__SECTION_SYMTAB - $$";
+				shdr.sh_size = "ELF64__SECTION_SYMTAB_SIZE";
+				shdr.sh_link = "ELF64__SECTION_STRTAB_INDEX";
 				shdr.sh_info = Integer.toString(symtabDebug.size()); // count of symbols
 				shdr.sh_addralign = "8h";
 				shdr.sh_entsize = "18h";
 			}
 			
 			{ // .strtab
-				Elf64_Shdr shdr = new Elf64_Shdr();
+				Elf64_Shdr shdr = new Elf64_Shdr("STRTAB");
 				shdr.debug_name = ".strtab";
 				debugList.add(shdr);
 				shdr.sh_name = Integer.toString(addSectionName(".strtab"));
 				shdr.sh_type = Elf64_Shdr.SHT_STRTAB;
 				shdr.sh_flags = 0;
 				shdr.sh_addr = "0";
-				shdr.sh_offset = "__ELF64_SECTION_STRTAB - $$";
-				shdr.sh_size = "__ELF64_SECTION_STRTAB_SIZE";
+				shdr.sh_offset = "ELF64__SECTION_STRTAB - $$";
+				shdr.sh_size = "ELF64__SECTION_STRTAB_SIZE";
 				shdr.sh_link = "0";
 				shdr.sh_info = "0";
 				shdr.sh_addralign = "1h";
@@ -105,17 +103,16 @@ class ElfHeader {
 			}
 		}
 		
-		String testOff = Integer.toString(addSectionName(".shstrtab"));
 		{ // .text
-			Elf64_Shdr shdr = new Elf64_Shdr();
+			Elf64_Shdr shdr = new Elf64_Shdr("TEXT");
 			shdr.debug_name = ".text";
 			sectionHeaderList.add(shdr);
 			shdr.sh_name = Integer.toString(addSectionName(".text"));
 			shdr.sh_type = Elf64_Shdr.SHT_PROGBITS;
 			shdr.sh_flags = Elf64_Shdr.SHF_ALLOC | Elf64_Shdr.SHF_EXECINSTR;
-			shdr.sh_addr = "__ELF64_SECTION_TEXT";
-			shdr.sh_offset = "__ELF64_SECTION_TEXT - $$";
-			shdr.sh_size = "__ELF64_SECTION_TEXT_SIZE";
+			shdr.sh_addr = "ELF64__SECTION_TEXT";
+			shdr.sh_offset = "ELF64__SECTION_TEXT - $$";
+			shdr.sh_size = "ELF64__SECTION_TEXT_SIZE";
 			shdr.sh_link = "0";
 			shdr.sh_info = "0";
 			shdr.sh_addralign = "10h";
@@ -123,15 +120,15 @@ class ElfHeader {
 		}
 		
 		{ // .data
-			Elf64_Shdr shdr = new Elf64_Shdr();
+			Elf64_Shdr shdr = new Elf64_Shdr("DATA");
 			shdr.debug_name = ".data";
 			sectionHeaderList.add(shdr);
 			shdr.sh_name = Integer.toString(addSectionName(".data"));
 			shdr.sh_type = Elf64_Shdr.SHT_PROGBITS;
 			shdr.sh_flags = Elf64_Shdr.SHF_WRITE | Elf64_Shdr.SHF_ALLOC;
-			shdr.sh_addr = "__ELF64_SECTION_DATA";
-			shdr.sh_offset = "__ELF64_SECTION_DATA - $$";
-			shdr.sh_size = "__ELF64_SECTION_DATA_SIZE";
+			shdr.sh_addr = "ELF64__SECTION_DATA";
+			shdr.sh_offset = "ELF64__SECTION_DATA - $$";
+			shdr.sh_size = "ELF64__SECTION_DATA_SIZE";
 			shdr.sh_link = "0";
 			shdr.sh_info = "0";
 			shdr.sh_addralign = "10h";
@@ -141,16 +138,15 @@ class ElfHeader {
 		sectionHeaderList.addAll(debugList);
 		
 		{ // .shstrtab
-			Elf64_Shdr shdr = new Elf64_Shdr();
+			Elf64_Shdr shdr = new Elf64_Shdr("SHSTRTAB");
 			shdr.debug_name = ".shstrtab";
-			sectionNameIndex = sectionHeaderList.size();
 			sectionHeaderList.add(shdr);
-			shdr.sh_name = testOff; // Integer.toString(addSectionName(".shstrtab"));
+			shdr.sh_name = Integer.toString(addSectionName(".shstrtab"));
 			shdr.sh_type = Elf64_Shdr.SHT_STRTAB;
 			shdr.sh_flags = 0;
 			shdr.sh_addr = "0";
-			shdr.sh_offset = "__ELF64_SECTION_SHSTRTAB - $$";
-			shdr.sh_size = "__ELF64_SECTION_SHSTRTAB_SIZE";
+			shdr.sh_offset = "ELF64__SECTION_SHSTRTAB - $$";
+			shdr.sh_size = "ELF64__SECTION_SHSTRTAB_SIZE";
 			shdr.sh_link = "0";
 			shdr.sh_info = "0";
 			shdr.sh_addralign = "1h";
@@ -167,8 +163,8 @@ class ElfHeader {
 			phdr.p_offset = "0";
 			phdr.p_vaddr = "$$";
 			phdr.p_paddr = "$$";
-			phdr.p_filesz = "__ELF64_EHDR_PHDR_SIZE";
-			phdr.p_memsz = "__ELF64_EHDR_PHDR_SIZE";
+			phdr.p_filesz = "ELF64__EHDR_PHDR_SIZE";
+			phdr.p_memsz = "ELF64__EHDR_PHDR_SIZE";
 			phdr.p_align = "1000h";
 		}
 		
@@ -178,11 +174,11 @@ class ElfHeader {
 			programHeaderList.add(phdr);
 			phdr.p_type = Elf64_Phdr.PT_LOAD;
 			phdr.p_flags = Elf64_Phdr.PF_X | Elf64_Phdr.PF_R;
-			phdr.p_offset = "__ELF64_SECTION_TEXT - $$";
-			phdr.p_vaddr = "__ELF64_SECTION_TEXT";
-			phdr.p_paddr = "__ELF64_SECTION_TEXT";
-			phdr.p_filesz = "__ELF64_SECTION_TEXT_SIZE";
-			phdr.p_memsz = "__ELF64_SECTION_TEXT_SIZE";
+			phdr.p_offset = "ELF64__SECTION_TEXT - $$";
+			phdr.p_vaddr = "ELF64__SECTION_TEXT";
+			phdr.p_paddr = "ELF64__SECTION_TEXT";
+			phdr.p_filesz = "ELF64__SECTION_TEXT_SIZE";
+			phdr.p_memsz = "ELF64__SECTION_TEXT_SIZE";
 			phdr.p_align = "1000h";
 		}
 		
@@ -192,11 +188,11 @@ class ElfHeader {
 			programHeaderList.add(phdr);
 			phdr.p_type = Elf64_Phdr.PT_LOAD;
 			phdr.p_flags = Elf64_Phdr.PF_W | Elf64_Phdr.PF_R;
-			phdr.p_offset = "__ELF64_SECTION_DATA - $$";
-			phdr.p_vaddr = "__ELF64_SECTION_DATA";
-			phdr.p_paddr = "__ELF64_SECTION_DATA";
-			phdr.p_filesz = "__ELF64_SECTION_DATA_SIZE";
-			phdr.p_memsz = "__ELF64_SECTION_DATA_SIZE";
+			phdr.p_offset = "ELF64__SECTION_DATA - $$";
+			phdr.p_vaddr = "ELF64__SECTION_DATA";
+			phdr.p_paddr = "ELF64__SECTION_DATA";
+			phdr.p_filesz = "ELF64__SECTION_DATA_SIZE";
+			phdr.p_memsz = "ELF64__SECTION_DATA_SIZE";
 			phdr.p_align = "1000h";
 		}
 	}
@@ -221,8 +217,8 @@ class ElfHeader {
 			sym.st_name = "0";
 			sym.st_info = Elf64_Sym.STT_SECTION;
 			sym.st_other = "0";
-			sym.st_shndx = "1"; // TODO: Get the index of the .text block
-			sym.st_value = "__ELF64_SECTION_TEXT";
+			sym.st_shndx = "ELF64__SECTION_TEXT_INDEX";
+			sym.st_value = "ELF64__SECTION_TEXT";
 			sym.st_size = "0";
 		}
 		
@@ -233,8 +229,8 @@ class ElfHeader {
 			sym.st_name = "0";
 			sym.st_info = Elf64_Sym.STT_SECTION;
 			sym.st_other = "0";
-			sym.st_shndx = "2"; // TODO: Get the index of the .data block
-			sym.st_value = "__ELF64_SECTION_DATA";
+			sym.st_shndx = "ELF64__SECTION_DATA_INDEX";
+			sym.st_value = "ELF64__SECTION_DATA";
 			sym.st_size = "0";
 		}
 		
@@ -244,11 +240,30 @@ class ElfHeader {
 				Elf64_Sym sym = new Elf64_Sym();
 				sym.debug_name = ".data";
 				symtabDebug.add(sym);
-				sym.st_name = "0";
-				sym.st_info = Elf64_Sym.STT_SECTION;
+				sym.st_name = Integer.toString(addSymbolName(item));
+				sym.st_info = 0;
 				sym.st_other = "0";
-				sym.st_shndx = "2"; // TODO: Get the index of the .text block
-				sym.st_value = "__ELF64_SECTION_DATA";
+				sym.st_shndx = "ELF64__SECTION_DATA_INDEX";
+				sym.st_value = item;
+				sym.st_size = "0";
+			}
+		}
+		
+		// Labels
+		
+		for (var item : context.labelStrings.entrySet()) {
+			String addr = item.getKey();
+			String name = item.getValue();
+			
+			{ // .data
+				Elf64_Sym sym = new Elf64_Sym();
+				sym.debug_name = ".text";
+				symtabDebug.add(sym);
+				sym.st_name = Integer.toString(addSymbolName(name));
+				sym.st_info = 0;
+				sym.st_other = "0";
+				sym.st_shndx = "ELF64__SECTION_TEXT_INDEX";
+				sym.st_value = addr;
 				sym.st_size = "0";
 			}
 		}
@@ -264,44 +279,49 @@ class ElfHeader {
 		// Setup file header
 		fileHeader.e_type = Elf64_Ehdr.ET_EXEC;
 		fileHeader.e_machine = Elf64_Ehdr.EM_X86_64;
-		fileHeader.e_entry = "__ELF64_SECTION_TEXT";
-		fileHeader.e_phoff = "__ELF64_PHDR - $$";
-		fileHeader.e_shoff = "__ELF64_SHDR - $$";
+		fileHeader.e_entry = "ELF64__SECTION_TEXT";
+		fileHeader.e_phoff = "ELF64__PHDR - $$";
+		fileHeader.e_shoff = "ELF64__SHDR - $$";
 		fileHeader.e_flags = "0";
 		fileHeader.e_ehsize = Integer.toString(Elf64_Ehdr.SIZE);
 		fileHeader.e_phentsize = Integer.toString(Elf64_Phdr.SIZE);
 		fileHeader.e_phnum = Integer.toString(programHeaderList.size());
 		fileHeader.e_shentsize = Integer.toString(Elf64_Shdr.SIZE);
 		fileHeader.e_shnum = Integer.toString(sectionHeaderList.size());
-		fileHeader.e_shstrndx = Integer.toString(sectionNameIndex);
+		fileHeader.e_shstrndx = "ELF64__SECTION_SHSTRTAB_INDEX";
 		
 		// Create data
 		sb.append("BITS 64\n");
 		sb.append("org 400000h\n\n");
 		
-		sb.append("__ELF64_EHDR:\n");
+		for (int i = 0; i < sectionHeaderList.size(); i++) {
+			Elf64_Shdr item = sectionHeaderList.get(i);
+			sb.append("ELF64__SECTION_").append(item.label_name).append("_INDEX equ ").append(i).append("\n");
+		}
+		
+		sb.append("ELF64__EHDR:\n");
 		fileHeader.append(sb);
 		
-		sb.append("__ELF64_PHDR:\n");
+		sb.append("ELF64__PHDR:\n");
 		for (Elf64_Phdr item : programHeaderList) {
 			item.append(sb);
 		}
-		sb.append("__ELF64_EHDR_PHDR_SIZE equ $ - $$\n");
+		sb.append("ELF64__EHDR_PHDR_SIZE equ $ - $$\n");
 	}
 	
 	public void appendSectionText(StringBuilder sb, String content, String code) {
 		sb.append("align 1000h,db 0\n");
-		sb.append("__ELF64_SECTION_TEXT:\n");
+		sb.append("ELF64__SECTION_TEXT:\n");
 		sb.append("align 1h,db 0\n");
 		sb.append(content);
 		sb.append(code);
-		sb.append("__ELF64_SECTION_TEXT_SIZE equ $ - __ELF64_SECTION_TEXT\n");
+		sb.append("ELF64__SECTION_TEXT_SIZE equ $ - ELF64__SECTION_TEXT\n");
 		sb.append("\n");
 	}
 	
 	public void appendSectionData(StringBuilder sb, AsmCodeGenerator.AsmContext context) {
 		sb.append("align 1000h,db 0\n");
-		sb.append("__ELF64_SECTION_DATA:\n");
+		sb.append("ELF64__SECTION_DATA:\n");
 		sb.append("align 1h,db 0\n");
 		for (Map.Entry<String, byte[]> entry : context.globalStrings.entrySet()) {
 			sb.append("    ").append(entry.getKey()).append(" db ");
@@ -326,14 +346,14 @@ class ElfHeader {
 			
 			sb.append("0\n");
 		}
-		sb.append("__ELF64_SECTION_DATA_SIZE equ $ - __ELF64_SECTION_DATA\n");
+		sb.append("ELF64__SECTION_DATA_SIZE equ $ - ELF64__SECTION_DATA\n");
 		sb.append("\n");
 	}
 	
 	public void appendSectionSections(StringBuilder sb) {
 		// Section headers
 		sb.append("align 10h,db 0\n");
-		sb.append("__ELF64_SHDR:\n");
+		sb.append("ELF64__SHDR:\n");
 		sb.append("align 1h,db 0\n");
 		for (Elf64_Shdr item : sectionHeaderList) {
 			item.append(sb);
@@ -341,11 +361,11 @@ class ElfHeader {
 		sb.append("\n");
 		
 		// Section names
-		sb.append("__ELF64_SECTION_SHSTRTAB:\n");
+		sb.append("ELF64__SECTION_SHSTRTAB:\n");
 		for (String item : sectionNames) {
 			sb.append("     db \"").append(item).append("\", 0\n");
 		}
-		sb.append("__ELF64_SECTION_SHSTRTAB_SIZE equ $ - __ELF64_SECTION_SHSTRTAB\n");
+		sb.append("ELF64__SECTION_SHSTRTAB_SIZE equ $ - ELF64__SECTION_SHSTRTAB\n");
 		sb.append("\n");
 	}
 	
@@ -359,20 +379,20 @@ class ElfHeader {
 		
 		// .symtab
 		sb.append("align 8h,db 0\n");
-		sb.append("__ELF64_SECTION_SYMTAB:\n");
+		sb.append("ELF64__SECTION_SYMTAB:\n");
 		sb.append("align 1h,db 0\n");
 		for (Elf64_Sym item : symtabDebug) {
 			item.append(sb);
 		}
-		sb.append("__ELF64_SECTION_SYMTAB_SIZE equ $ - __ELF64_SECTION_SYMTAB\n");
+		sb.append("ELF64__SECTION_SYMTAB_SIZE equ $ - ELF64__SECTION_SYMTAB\n");
 		sb.append("\n");
 		
 		// .strtab
-		sb.append("__ELF64_SECTION_STRTAB:\n");
+		sb.append("ELF64__SECTION_STRTAB:\n");
 		for (String item : strtabDebug) {
 			sb.append("     db \"").append(item).append("\", 0\n");
 		}
-		sb.append("__ELF64_SECTION_STRTAB_SIZE equ $ - __ELF64_SECTION_STRTAB\n");
+		sb.append("ELF64__SECTION_STRTAB_SIZE equ $ - ELF64__SECTION_STRTAB\n");
 		sb.append("\n");
 	}
 	
@@ -495,7 +515,10 @@ class ElfHeader {
 			SHF_GROUP = 0x200,
 			SHF_TLS = 0x400;
 		
+		private String label_name;
 		private String debug_name;
+		
+		// Fields
 		public String sh_name;
 		public String sh_type;
 		public int sh_flags;
@@ -506,6 +529,10 @@ class ElfHeader {
 		public String sh_info;
 		public String sh_addralign;
 		public String sh_entsize;
+		
+		public Elf64_Shdr(String label_name) {
+			this.label_name = label_name;
+		}
 		
 		public void append(StringBuilder sb) {
 			if (debug_name != null) {

@@ -7,11 +7,13 @@ import java.util.*;
 class AsmProcedure {
 	private final Map<InstRef, Integer> stackOffset;
 	private final List<InstRef> params;
+	private final String name;
 	private int stackSize;
 	
 	public AsmProcedure(Procedure procedure) {
 		this.stackOffset = new HashMap<>();
 		this.params = procedure.getParameters();
+		this.name = procedure.getReference().toSimpleString();
 		
 		Set<InstRef> seenVariables = new HashSet<>();
 		
@@ -45,6 +47,10 @@ class AsmProcedure {
 				}
 			}
 		}
+	}
+	
+	public String getName() {
+		return name;
 	}
 	
 	public int getParamCount() {
