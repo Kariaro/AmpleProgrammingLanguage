@@ -616,6 +616,7 @@ public class IntermediateGenerator {
 		
 		result = new InstRef(reference.getName(), reference.getNamespace(), reference.getValueType(), id, 0);
 		result.setType(reference.getType());
+		result.setMangledName(reference.getMangledName());
 		wrappedReferences.put(reference, result);
 		return result;
 	}
@@ -636,6 +637,7 @@ public class IntermediateGenerator {
 		
 		result = new InstRef(reference.getName(), reference.getNamespace(), reference.getValueType(), id, 0);
 		result.setType(reference.getType());
+		result.setMangledName(reference.getMangledName());
 		wrappedReferences.put(reference, result);
 		return result;
 	}

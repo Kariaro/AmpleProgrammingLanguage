@@ -18,7 +18,7 @@ class AsmProcedure {
 		Set<InstRef> seenVariables = new HashSet<>();
 		
 		for (InstRef ref : params) {
-			int size = AsmCodeGenerator.getTypeByteSize(ref.getValueType());
+			int size = AsmUtils.getTypeByteSize(ref.getValueType());
 			stackSize += size; // ((size + 7) & ~7);
 			stackOffset.put(ref, stackSize);
 			seenVariables.add(ref);
@@ -29,7 +29,7 @@ class AsmProcedure {
 				if (param instanceof InstParam.Ref refParam) {
 					InstRef reference = refParam.getReference();
 					if (reference.isVariable() && seenVariables.add(reference)) {
-						int size = AsmCodeGenerator.getTypeByteSize(reference.getValueType());
+						int size = AsmUtils.getTypeByteSize(reference.getValueType());
 						stackSize += size; // ((size + 7) & ~7);
 						stackOffset.put(reference, stackSize);
 					}

@@ -15,28 +15,6 @@ class AsmUtils {
 		};
 	}
 	
-	public static String getRegSize(String name, InstParam param) {
-		if (param instanceof InstParam.Ref ref) {
-			return getRegSize(name, ref.getReference());
-		} else {
-			return getRegSize(name, param.getSize().getSize());
-		}
-	}
-	
-	public static String getRegSize(String name, InstRef ref) {
-		return getRegSize(name, getTypeSize(ref.getValueType()));
-	}
-	
-	public static String getRegSize(String name, int size) {
-		return switch (size) {
-			case 8 -> name.charAt(0) + "L";
-			case 16 -> name;
-			case 32 -> "E" + name;
-			case 64 -> "R" + name;
-			default -> throw new RuntimeException();
-		};
-	}
-	
 	public static String getParamValue(InstRef ref, AsmProcedure proc) {
 		return getStackPtr(ref, proc);
 	}
