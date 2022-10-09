@@ -1,9 +1,9 @@
 package me.hardcoded.exporter.asm;
 
+import me.hardcoded.compiler.AmpleMangler;
 import me.hardcoded.compiler.context.AmpleConfig;
 import me.hardcoded.compiler.impl.ICodeGenerator;
 import me.hardcoded.compiler.intermediate.inst.*;
-import me.hardcoded.compiler.parser.type.ValueType;
 import me.hardcoded.utils.error.CodeGenException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -17,7 +17,8 @@ import java.util.Map;
 public class AsmCodeGenerator extends ICodeGenerator {
 	private static final Logger LOGGER = LogManager.getLogger(AsmCodeGenerator.class);
 	private static final boolean DEBUG = true;
-	private static final boolean SELF = true;
+	private static final boolean SELF = false;
+	private static final boolean REG_PARAM = false;
 	
 	public AsmCodeGenerator(AmpleConfig ampleConfig) {
 		super(ampleConfig);
@@ -125,31 +126,53 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				sb.add("sub RSP, 0x%x".formatted(proc.getStackSize()));
 				sb.add("");
 				
+				// After that we use the stack
+				AsmReg[] regs = { AsmReg.DI, AsmReg.SI, AsmReg.DX, AsmReg.CX, AsmReg.R8, AsmReg.R9 };
+				
 				int offset = 16;
 				for (int i = 0; i < proc.getParamCount(); i++) {
 					InstRef param = proc.getParam(i);
 					
-					int size = AsmUtils.getTypeSize(param.getValueType());
-					String regName = AsmUtils.getRegSize("AX", param);
-					
-					if (param.getValueType().isVarargs()) {
-						sb.add("lea %s, [RBP + 0x%x]".formatted(
-							regName,
-							offset
-						));
+					if (REG_PARAM && i < regs.length) {
+						if (param.getValueType().isVarargs()) {
+							String regName = AsmReg.AX.toString(param);
+							sb.add("lea %s, [RBP + 0x%x]".formatted(
+								regName,
+								offset
+							));
+							sb.add("mov %s, %s".formatted(
+								AsmUtils.getParamValue(param, proc),
+								regName
+							));
+						} else {
+							sb.add("mov %s, %s".formatted(
+								AsmUtils.getParamValue(param, proc),
+								regs[i].toString(param)
+							));
+						}
 					} else {
-						sb.add("mov %s, %s [RBP + 0x%x]".formatted(
-							regName,
-							AsmUtils.getPointerName(size),
-							offset
+						String regName = AsmReg.AX.toString(param);
+						int size = AsmUtils.getTypeSize(param.getValueType());
+						
+						if (param.getValueType().isVarargs()) {
+							sb.add("lea %s, [RBP + 0x%x]".formatted(
+								regName,
+								offset
+							));
+						} else {
+							sb.add("mov %s, %s [RBP + 0x%x]".formatted(
+								regName,
+								AsmUtils.getPointerName(size),
+								offset
+							));
+						}
+						sb.add("mov %s, %s".formatted(
+							AsmUtils.getParamValue(param, proc),
+							regName
 						));
+						
+						offset += (size >> 3);
 					}
-					sb.add("mov %s, %s".formatted(
-						AsmUtils.getParamValue(param, proc),
-						regName
-					));
-					
-					offset += (size >> 3);
 				}
 				
 				context.addLabelString(reference.toSimpleString(), reference.getPath());
@@ -169,7 +192,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				InstRef dst = inst.getRefParam(0).getReference();
 				int size = Integer.parseInt(inst.getNumParam(1).toString());
 				
-				String regName = AsmUtils.getRegSize("AX", dst);
+				String regName = AsmReg.AX.toString(dst);
 				sb.add("lea %s, %s".formatted(
 					regName,
 					AsmUtils.getRawStackPtr(dst, -size, proc)
@@ -207,7 +230,6 @@ public class AsmCodeGenerator extends ICodeGenerator {
 						sb.add("mov RAX, %s".formatted(value));
 						regName = "RAX";
 					} else {
-						// TODO: FIXME
 						regName = value.toString();
 					}
 					
@@ -216,7 +238,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 						regName
 					));
 				} else if (src instanceof InstParam.Ref value) {
-					String regName = AsmUtils.getRegSize("AX", value.getReference());
+					String regName = AsmReg.AX.toString(value.getReference());
 					sb.add("mov %s, %s".formatted(
 						regName,
 						AsmUtils.getStackPtr(value.getReference(), proc)
@@ -250,14 +272,14 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					offsetValue = "RCX * 0x%x".formatted(offsetSize);
 					sb.add("xor RCX, RCX");
 					sb.add("mov %s, %s".formatted(
-						AsmUtils.getRegSize("CX", value.getReference()),
+						AsmReg.CX.toString(value.getReference()),
 						AsmUtils.getStackPtr(value.getReference(), proc)
 					));
 				} else {
 					throw new RuntimeException();
 				}
 				
-				String regName = AsmUtils.getRegSize("AX", dst);
+				String regName = AsmReg.AX.toString(dst);
 				sb.add("mov RBX, %s".formatted(
 					AsmUtils.getParamValue(src, proc)
 				));
@@ -294,7 +316,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					offsetValue = "RCX * 0x%x".formatted(offsetSize);
 					sb.add("xor RCX, RCX");
 					sb.add("mov %s, %s".formatted(
-						AsmUtils.getRegSize("CX", value.getReference()),
+						AsmReg.CX.toString(value.getReference()),
 						AsmUtils.getStackPtr(value.getReference(), proc)
 					));
 				} else {
@@ -308,7 +330,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 						srcValue
 					));
 				} else {
-					String regName = AsmUtils.getRegSize("AX", AsmUtils.getLowerTypeSize(dst.getValueType())); // Size of one lower
+					String regName = AsmReg.AX.toString(AsmUtils.getLowerTypeSize(dst.getValueType()) >> 3); // Size of one lower
 					sb.add("mov %s, %s".formatted(
 						regName,
 						srcValue
@@ -324,8 +346,8 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				InstParam dst = inst.getParam(0);
 				InstParam src = inst.getParam(2);
 				
-				String regSrcName = AsmUtils.getRegSize("AX", src);
-				String regDstName = AsmUtils.getRegSize("AX", dst);
+				String regSrcName = AsmReg.AX.toString(src);
+				String regDstName = AsmReg.AX.toString(dst);
 				sb.add("xor RAX, RAX");
 				sb.add("mov %s, %s".formatted(
 					regSrcName,
@@ -341,7 +363,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					InstParam param = inst.getParam(0);
 					
 					if (param instanceof InstParam.Ref src) {
-						String regName = AsmUtils.getRegSize("AX", src.getReference());
+						String regName = AsmReg.AX.toString(src.getReference());
 						sb.add("mov %s, %s".formatted(
 							regName,
 							AsmUtils.getStackPtr(src.getReference(), proc)
@@ -362,7 +384,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				InstRef a = inst.getRefParam(1).getReference();
 				InstParam b = inst.getParam(2);
 				
-				String regAName = AsmUtils.getRegSize("AX", a);
+				String regAName = AsmReg.AX.toString(a);
 				sb.add("mov %s, %s".formatted(
 					regAName,
 					AsmUtils.getStackPtr(a, proc)
@@ -384,7 +406,6 @@ public class AsmCodeGenerator extends ICodeGenerator {
 						value.toString()
 					));
 				} else if (b instanceof InstParam.Ref value) {
-					// TODO: Make sure b and a have the same size
 					sb.add("%s %s, %s".formatted(
 						type,
 						regAName,
@@ -404,8 +425,8 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				InstRef a = inst.getRefParam(1).getReference();
 				InstParam b = inst.getParam(2);
 				
-				String regAName = AsmUtils.getRegSize("AX", a);
-				String regCName = AsmUtils.getRegSize("CX", b);
+				String regAName = AsmReg.AX.toString(a);
+				String regCName = AsmReg.CX.toString(b);
 				sb.add("xor RCX, RCX");
 				sb.add("mov %s, %s".formatted(
 					regCName,
@@ -429,20 +450,19 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				));
 			}
 			case GT, GTE, LT, LTE, EQ, NEQ -> {
-				// GT is required to only have references
 				InstRef dst = inst.getRefParam(0).getReference();
 				InstRef a = inst.getRefParam(1).getReference();
 				InstRef b = inst.getRefParam(2).getReference();
 				
-				String regAName = AsmUtils.getRegSize("AX", a);
-				String regBName = AsmUtils.getRegSize("BX", b);
-				String regACmov = AsmUtils.getRegSize("AX", a);
-				String regCCmov = AsmUtils.getRegSize("CX", a);
+				String regAName = AsmReg.AX.toString(a);
+				String regBName = AsmReg.BX.toString(b);
+				String regACmov = AsmReg.AX.toString(a);
+				String regCCmov = AsmReg.CX.toString(a);
 				
 				boolean isUnsigned = a.getValueType().isUnsigned();
 				if (AsmUtils.getTypeByteSize(a.getValueType()) == 1) {
-					regACmov = AsmUtils.getRegSize("AX", 16);
-					regCCmov = AsmUtils.getRegSize("CX", 16);
+					regACmov = AsmReg.AX.toString(2);
+					regCCmov = AsmReg.CX.toString(2);
 				}
 				
 				sb.add("mov RCX, 1");
@@ -472,39 +492,61 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				));
 			}
 			case CALL -> {
-				// All call follow the 'cdecl' standard
-				
 				InstRef dst = inst.getRefParam(0).getReference();
 				InstRef fun = inst.getRefParam(1).getReference();
 				
+				if (fun.getMangledName() == null) {
+					throw new RuntimeException("Function '" + fun + "' had no mangled name!");
+				}
+				
+				AmpleMangler.MangledFunction mangledFunction = AmpleMangler.demangleFunction(fun.getMangledName());
+				boolean isVararg = mangledFunction.isVararg();
+				int maxParam = mangledFunction.getParameterCount() - (isVararg ? 1 : 0);
+				
+				AsmReg[] regs = { AsmReg.DI, AsmReg.SI, AsmReg.DX, AsmReg.CX, AsmReg.R8, AsmReg.R9 };
+				
 				int offset = 0;
-				for (int i = 2; i < inst.getParamCount(); i++) {
-					InstParam param = inst.getParam(i);
-					int size = AsmUtils.getTypeSize(param.getSize());
-					offset += (size >> 3);
+				for (int i = 0; i < inst.getParamCount() - 2; i++) {
+					InstParam param = inst.getParam(i + 2);
+					
+					if (REG_PARAM) {
+						if (i >= maxParam && isVararg || i >= regs.length) {
+							int size = AsmUtils.getTypeSize(param.getSize());
+							offset += (size >> 3);
+						}
+					} else {
+						int size = AsmUtils.getTypeSize(param.getSize());
+						offset += (size >> 3);
+					}
 				}
 				
 				if (offset != 0) {
 					sb.add("sub RSP, 0x%x".formatted(offset));
 				}
 				
-				offset = 0;
-				for (int i = 2; i < inst.getParamCount(); i++) {
-					InstParam param = inst.getParam(i);
+				for (int i = 0, pOffset = 0; i < inst.getParamCount() - 2; i++) {
+					InstParam param = inst.getParam(i + 2);
 					int size = AsmUtils.getTypeSize(param.getSize());
-					String regName = AsmUtils.getRegSize("AX", param);
 					
-					sb.add("mov %s, %s".formatted(
-						regName,
-						AsmUtils.getParamValue(param, proc)
-					));
-					sb.add("mov %s [RSP + 0x%x], %s".formatted(
-						AsmUtils.getPointerName(size),
-						offset,
-						regName
-					));
-					
-					offset += (size >> 3);
+					if (REG_PARAM && i < regs.length && i < maxParam) {
+						sb.add("mov %s, %s".formatted(
+							regs[i].toString(param),
+							AsmUtils.getParamValue(param, proc)
+						));
+					} else {
+						String regName = AsmReg.AX.toString(param);
+						sb.add("mov %s, %s".formatted(
+							regName,
+							AsmUtils.getParamValue(param, proc)
+						));
+						sb.add("mov %s [RSP + 0x%x], %s".formatted(
+							AsmUtils.getPointerName(size),
+							pOffset,
+							regName
+						));
+						
+						pOffset += (size >> 3);
+					}
 				}
 				sb.add("call %s".formatted(fun.toSimpleString()));
 				
@@ -513,7 +555,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				}
 				
 				if (dst.getValueType().getSize() != 0) {
-					String regName = AsmUtils.getRegSize("AX", dst);
+					String regName = AsmReg.AX.toString(dst);
 					sb.add("mov %s, %s".formatted(
 						AsmUtils.getStackPtr(dst, proc),
 						regName
@@ -524,7 +566,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				InstRef src = inst.getRefParam(0).getReference();
 				InstRef dst = inst.getRefParam(1).getReference();
 				
-				String regName = AsmUtils.getRegSize("AX", src);
+				String regName = AsmReg.AX.toString(src);
 				sb.add("mov %s, %s".formatted(
 					AsmUtils.getStackPtr(src, proc),
 					regName
@@ -536,7 +578,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				InstRef src = inst.getRefParam(0).getReference();
 				InstRef dst = inst.getRefParam(1).getReference();
 				
-				String regName = AsmUtils.getRegSize("AX", src);
+				String regName = AsmReg.AX.toString(src);
 				sb.add("mov %s, %s".formatted(
 					AsmUtils.getStackPtr(src, proc),
 					regName
@@ -560,14 +602,5 @@ public class AsmCodeGenerator extends ICodeGenerator {
 	@Override
 	public void reset() {
 	
-	}
-	
-	public static int getTypeByteSize(ValueType type) {
-		return (type.getDepth() > 0) ? getPointerSize() : (type.getSize() >> 3);
-	}
-	
-	// TODO: Read this from some config
-	public static int getPointerSize() {
-		return 8;
 	}
 }

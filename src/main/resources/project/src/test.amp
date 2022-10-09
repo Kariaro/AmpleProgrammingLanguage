@@ -28,7 +28,13 @@ func params (i64: a, i32: b, i16: c, i8: d) {
     ret;
 }
 
+func test (u32: a, u32: b, u32: c, u32: d, u32: e, u32: f, u32: g, u32: h) {
+    ret;
+}
+
 func main () : i32 {
+    test(0u, 1u, 2u, 3u, 4u, 5u, 6u, 7u);
+
     u32[]: test = stack_alloc<u32, 16>();
     i32: q = 0;
     test[q] = 32u;
