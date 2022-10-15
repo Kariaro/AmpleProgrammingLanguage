@@ -27,6 +27,7 @@ namespace std {
             "mov rax, 1"
             "syscall"
         );
+        compiler<int>("print" : pointer : length);
 
         ret;
     }

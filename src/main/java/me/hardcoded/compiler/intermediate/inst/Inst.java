@@ -38,6 +38,10 @@ public class Inst {
 		return (InstParam.Num) parameters.get(index);
 	}
 	
+	public InstParam.Type getTypeParam(int index) {
+		return (InstParam.Type) parameters.get(index);
+	}
+	
 	public InstParam getParam(int index) {
 		return parameters.get(index);
 	}

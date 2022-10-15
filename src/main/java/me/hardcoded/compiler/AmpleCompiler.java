@@ -11,6 +11,7 @@ import me.hardcoded.compiler.parser.serial.LinkableDeserializer;
 import me.hardcoded.compiler.parser.serial.LinkableSerializer;
 import me.hardcoded.configuration.CompilerConfiguration;
 import me.hardcoded.configuration.OutputFormat;
+import me.hardcoded.interpreter.AmpleRunner;
 import me.hardcoded.utils.AmpleCache;
 import me.hardcoded.utils.ObjectUtils;
 import org.apache.logging.log4j.LogManager;
@@ -146,12 +147,16 @@ public class AmpleCompiler {
 		// Combine all linkable objects into one instruction file
 		AmpleLinker linker = new AmpleLinker(ampleConfig);
 		IntermediateFile file = linker.link(list);
-		//		AmpleInterpreter interpreter = new AmpleInterpreter();
-		//		try {
-		//			interpreter.runBlocking(file);
-		//		} catch (InterruptedException e) {
-		//			LOGGER.error("", e);
-		//		}
+		
+		try {
+			AmpleRunner runner = new AmpleRunner();
+			runner.run(file);
+			//			interpreter.runBlocking(file);
+		} catch (Exception e) {
+			LOGGER.error("", e);
+		} finally {
+			System.exit(0);
+		}
 		
 		OutputFormat format = ampleConfig.getConfiguration().getOutputFormat();
 		ICodeGenerator codeGenerator = format.createNew(ampleConfig);

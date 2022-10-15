@@ -68,6 +68,10 @@ public class ValueType {
 		return (flags & STORAGE_TYPE) == VARARGS;
 	}
 	
+	public static int getPointerSize() {
+		return 8;
+	}
+	
 	@Override
 	public int hashCode() {
 		int result = name != null ? name.hashCode() : 0;
