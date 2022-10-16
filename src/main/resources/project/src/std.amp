@@ -68,17 +68,18 @@ namespace std {
                 if (char == 's') {
                     u8[]: str = cast<u8[]>(cast<u64[]>(ptr)[0]);
                     std::print(str);
-                    ptr = ptr + cast<u8[]>(8);
+                    ptr = cast<u8[]>(cast<u64>(ptr) + 8ul);
                 } else if (char == 'p') {
                     u64: num = cast<u64[]>(ptr)[0];
                     std::printhex(num);
-                    ptr = ptr + cast<u8[]>(8);
+                    ptr = cast<u8[]>(cast<u64>(ptr) + 8ul);
                 } else {
                     std::print("\nerror: Invalid format character!\n");
+                    break;
                 }
             } else {
                 // print the character
-                std::printstr(format + cast<u8[]>(i), 1l);
+                std::printstr(cast<u8[]>(cast<u64>(format) + cast<u64>(i)), 1l);
             }
         }
 

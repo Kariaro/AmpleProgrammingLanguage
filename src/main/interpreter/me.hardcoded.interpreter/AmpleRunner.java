@@ -42,8 +42,9 @@ public class AmpleRunner {
 		List<Value.ArrayValue> allocatedList = new ArrayList<>();
 		
 		try {
+			int max = 100000;
 			int index = 0;
-			while (index < 100) {
+			while (--max > 0) {
 				Inst inst = list.get(index);
 				Opcode opcode = inst.getOpcode();
 				
@@ -87,7 +88,7 @@ public class AmpleRunner {
 								}
 							}
 							
-							Value varargs = context.allocate(varargSize);
+							Value varargs = context.getMemory().allocate(varargSize);
 							int offset = 0;
 							for (int i = paramCount - 1; i < inst.getParamCount() - 2; i++) {
 								InstParam param = inst.getParam(i + 2);
@@ -102,7 +103,7 @@ public class AmpleRunner {
 							
 							// Set varargs param
 							funParams.put(called.getParameters().get(paramCount - 1), varargs);
-							context.deallocate(varargs.getInteger());
+							context.getMemory().deallocate(varargs.getInteger());
 						} else {
 							for (int i = 0; i < paramCount; i++) {
 								InstRef paramRef = called.getParameters().get(i);
@@ -116,7 +117,7 @@ public class AmpleRunner {
 					case RET -> {
 						if (inst.getParamCount() == 0) {
 							// Return unspecified
-							return new Value.IntegerValue(false, 0);
+							return new Value.IntegerValue(0);
 						}
 						
 						InstParam src = inst.getParam(0);
@@ -126,7 +127,7 @@ public class AmpleRunner {
 						InstRef dst = inst.getRefParam(0).getReference();
 						int size = (int) inst.getNumParam(1).getValue();
 						
-						Value.ArrayValue allocated = context.allocate(size);
+						Value.ArrayValue allocated = context.getMemory().allocate(size);
 						allocatedList.add(allocated);
 						local.put(dst, allocated);
 					}
@@ -152,10 +153,12 @@ public class AmpleRunner {
 						ValueType type = inst.getTypeParam(1).getValueType();
 						InstParam src = inst.getParam(2);
 						
+						Value.ArrayValue arrayValue = null;
+						
 						long number;
 						if (src instanceof InstParam.Str str) {
 							// Allocate string
-							Value.ArrayValue value = context.allocateString(str.getValue());
+							Value.ArrayValue value = context.getMemory().allocateString(str.getValue());
 							allocatedList.add(value);
 							number = value.getInteger();
 						} else if (src instanceof InstParam.Num num) {
@@ -166,13 +169,29 @@ public class AmpleRunner {
 								case Integer, Array -> value.getInteger();
 								case Floating -> Double.doubleToRawLongBits(value.getFloating());
 							};
+							
+							if (value instanceof Value.ArrayValue arr) {
+								arrayValue = arr;
+							}
 						} else {
 							throw new RuntimeException("Unknown parameter type '" + src.getClass() + "' (" + src + ")");
 						}
 						
 						Value result;
 						if (type.getDepth() > 0) {
-							result = context.getAllocated(number);
+							// Only allowed if the casted value was a pointer. Changing between logical size
+							if (arrayValue != null) {
+								// Make sure it's unsigned
+								result = new Value.OffsetArrayValue(arrayValue, 0);
+							} else {
+								if (src.getSize().getDepth() == 0) {
+									LOGGER.info("{}", local);
+									LOGGER.info("{}", inst);
+									throw new RuntimeException("Undefined behavior. Casting from a number to memory");
+								}
+								
+								result = context.getMemory().getAllocated(number);
+							}
 						} else {
 							int typeSize = (type.getDepth() > 0) ? ValueType.getPointerSize() : (type.getSize() >> 3);
 							if (type.isFloating()) {
@@ -190,20 +209,29 @@ public class AmpleRunner {
 									default -> throw new RuntimeException("Unknown integer type size '" + typeSize + "'");
 								};
 								
-								result = new Value.IntegerValue(type.isUnsigned(), number & mask);
+								if (typeSize == 8 && arrayValue != null) {
+									result = new Value.OffsetArrayValue(arrayValue, 0);
+								} else {
+									result = new Value.IntegerValue(number & mask);
+								}
 							}
 						}
 						
 						local.put(dst, result);
 					}
 					// Equality operators
-					case LTE, LT, GTE, GT, NEQ, EQ -> {
+					case LTE, LT, GTE, GT, ILTE, ILT, IGTE, IGT, NEQ, EQ -> {
 						InstRef dst = inst.getRefParam(0).getReference();
 						Value a = convertFromParam(local, inst.getParam(1), context);
 						Value b = convertFromParam(local, inst.getParam(2), context);
 						
+						boolean unsigned = switch (opcode) {
+							case LTE, LT, GTE, GT -> true;
+							default -> false;
+						};
+						
 						long compare = switch (a.getType()) {
-							case Integer -> a.isUnsigned()
+							case Integer -> unsigned
 								? Long.compareUnsigned(a.getInteger(), b.getInteger())
 								: Long.compare(a.getInteger(), b.getInteger());
 							case Floating -> Double.compare(a.getFloating(), b.getFloating());
@@ -211,16 +239,17 @@ public class AmpleRunner {
 						};
 						
 						boolean result = switch (opcode) {
-							case LTE -> compare <= 0;
-							case LT -> compare < 0;
-							case GTE -> compare >= 0;
-							case GT -> compare > 0;
+							case LTE, ILTE -> compare <= 0;
+							case LT, ILT -> compare < 0;
+							case GTE, IGTE -> compare >= 0;
+							case GT, IGT -> compare > 0;
+							
 							case NEQ -> compare != 0;
 							case EQ -> compare == 0;
 							default -> false; // Never reached
 						};
 						
-						local.put(dst, new Value.IntegerValue(false, result ? 1 : 0));
+						local.put(dst, new Value.IntegerValue(result ? 1 : 0));
 					}
 					
 					// Branch operators
@@ -247,56 +276,86 @@ public class AmpleRunner {
 					}
 					
 					// Arithmetic operators
-					case AND, XOR, SHR, SHL, OR, MUL, DIV, SUB, ADD -> {
+					case AND, XOR, SHR, SHL, OR, SUB, ADD, MUL, DIV, MOD, IMUL, IDIV, IMOD -> {
 						InstRef dst = inst.getRefParam(0).getReference();
 						Value a = convertFromParam(local, inst.getParam(1), context);
 						Value b = convertFromParam(local, inst.getParam(2), context);
 						
+						// Arrays are always first
+						Value.Type type = a.getType();
+						if (b.getType() == Value.Type.Array) {
+							type = Value.Type.Array;
+						}
+						
+						boolean destroyArray = switch (opcode) {
+							case ADD, SUB -> false;
+							default -> {
+								if (type == Value.Type.Array) {
+									// This will destroy the safety of the pointer
+									type = Value.Type.Integer;
+								}
+								yield true;
+							}
+						};
+						
 						long result = switch (opcode) {
-							case AND -> switch (a.getType()) {
-								case Integer, Array -> a.getInteger() & b.getInteger();
-								case Floating -> throw new RuntimeException("Cannot AND floating point values");
+							case AND -> switch (type) {
+								case Integer -> a.getInteger() & b.getInteger();
+								case Floating, Array -> throw new RuntimeException("Cannot AND " + type + " values");
 							};
-							case XOR -> switch (a.getType()) {
-								case Integer, Array -> a.getInteger() ^ b.getInteger();
-								case Floating -> throw new RuntimeException("Cannot XOR floating point values");
+							case XOR -> switch (type) {
+								case Integer -> a.getInteger() ^ b.getInteger();
+								case Floating, Array -> throw new RuntimeException("Cannot XOR " + type + " values");
 							};
-							case SHR -> switch (a.getType()) {
-								case Integer, Array -> a.getInteger() >> b.getInteger();
-								case Floating -> throw new RuntimeException("Cannot SHR floating point values");
+							case SHR -> switch (type) {
+								case Integer -> a.getInteger() >> b.getInteger();
+								case Floating, Array -> throw new RuntimeException("Cannot SHR " + type + " values");
 							};
-							case SHL -> switch (a.getType()) {
-								case Integer, Array -> a.getInteger() << b.getInteger();
-								case Floating -> throw new RuntimeException("Cannot SHL floating point values");
+							case SHL -> switch (type) {
+								case Integer -> a.getInteger() << b.getInteger();
+								case Floating, Array -> throw new RuntimeException("Cannot SHL " + type + " values");
 							};
-							case OR -> switch (a.getType()) {
-								case Integer, Array -> a.getInteger() | b.getInteger();
-								case Floating -> throw new RuntimeException("Cannot or floating point values");
+							case OR -> switch (type) {
+								case Integer -> a.getInteger() | b.getInteger();
+								case Floating, Array -> throw new RuntimeException("Cannot OR " + type + " values");
 							};
-							case MUL -> switch (a.getType()) {
-								case Integer, Array -> a.getInteger() * b.getInteger();
+							case IMUL, MUL -> switch (type) {
+								case Integer -> a.getInteger() * b.getInteger();
 								case Floating -> Double.doubleToRawLongBits(a.getFloating() * b.getFloating());
+								case Array -> throw new RuntimeException("Cannot MUL " + type + " values");
 							};
-							case DIV -> switch (a.getType()) {
-								case Integer, Array -> a.isUnsigned()
-									? Long.divideUnsigned(a.getInteger(), b.getInteger())
-									: a.getInteger() / b.getInteger();
+							case IDIV -> switch (type) {
+								case Integer -> a.getInteger() / b.getInteger();
 								case Floating -> Double.doubleToRawLongBits(a.getFloating() * b.getFloating());
+								case Array -> throw new RuntimeException("Cannot DIV " + type + " values");
 							};
-							case ADD -> switch (a.getType()) {
+							case DIV -> switch (type) {
+								case Integer -> Long.divideUnsigned(a.getInteger(), b.getInteger());
+								case Floating -> Double.doubleToRawLongBits(a.getFloating() * b.getFloating());
+								case Array -> throw new RuntimeException("Cannot DIV " + type + " values");
+							};
+							// TODO: Unsigned modulo and signed modulo
+							case MOD, IMOD -> switch (type) {
+								case Integer -> a.getInteger() % b.getInteger();
+								case Floating -> Double.doubleToRawLongBits(a.getFloating() % b.getFloating());
+								case Array -> throw new RuntimeException("Cannot MOD " + type + " values");
+							};
+							case ADD -> switch (type) {
 								case Integer, Array -> a.getInteger() + b.getInteger();
 								case Floating -> Double.doubleToRawLongBits(a.getFloating() + b.getFloating());
 							};
-							case SUB -> switch (a.getType()) {
+							case SUB -> switch (type) {
 								case Integer, Array -> a.getInteger() - b.getInteger();
 								case Floating -> Double.doubleToRawLongBits(a.getFloating() - b.getFloating());
 							};
 							default -> throw new RuntimeException("Arithmetic opcode '" + opcode + "' not implemented");
 						};
 						
-						Value value = switch (a.getType()) {
-							case Array -> new Value.OffsetArrayValue((Value.ArrayValue) a, (int) (result - a.getInteger()));
-							case Integer -> new Value.IntegerValue(a.isUnsigned(), result);
+						Value value = switch (type) {
+							case Array -> destroyArray
+								? new Value.IntegerValue(result)
+								: new Value.OffsetArrayValue((Value.ArrayValue) a, (int) (result - a.getInteger()));
+							case Integer -> new Value.IntegerValue(result);
 							case Floating -> new Value.FloatingValue(Double.longBitsToDouble(result));
 						};
 						
@@ -317,7 +376,7 @@ public class AmpleRunner {
 						}
 						
 						Value array = local.get(arr);
-						Value result = array.getIndex(arrayIdx, dst.getValueType(), context::getAllocated);
+						Value result = array.getIndex(arrayIdx, dst.getValueType(), context.getMemory()::getAllocated);
 						local.put(dst, result);
 					}
 					case INLINE_ASM -> {
@@ -340,7 +399,7 @@ public class AmpleRunner {
 								
 								long len = b.getInteger();
 								for (int i = 0; i < len; i++) {
-									Value item = a.getIndex(i, Primitives.U8, context::getAllocated);
+									Value item = a.getIndex(i, Primitives.U8, context.getMemory()::getAllocated);
 									sb.append((char) (int) item.getInteger());
 								}
 								
@@ -358,11 +417,11 @@ public class AmpleRunner {
 		} finally {
 			// Deallocate stack
 			for (Value.ArrayValue item : allocatedList) {
-				context.deallocate(item.getInteger());
+				context.getMemory().deallocate(item.getInteger());
 			}
 		}
 		
-		return new Value.IntegerValue(false, 0);
+		return new Value.IntegerValue(0);
 	}
 	
 	private static Value convertFromParam(Locals local, InstParam param, AmpleContext context) {
@@ -384,7 +443,7 @@ public class AmpleRunner {
 		if (type.isFloating()) {
 			result = new Value.FloatingValue(Double.longBitsToDouble(num.getValue()));
 		} else {
-			result = new Value.IntegerValue(type.isUnsigned(), num.getValue());
+			result = new Value.IntegerValue(num.getValue());
 		}
 		
 		return result;
@@ -392,7 +451,7 @@ public class AmpleRunner {
 	
 	private static Value convertFrom(InstParam.Str str, AmpleContext context) {
 		// TODO: Deallocate strings after creation
-		return context.allocateString(str.getValue());
+		return context.getMemory().allocateString(str.getValue());
 	}
 	
 	public int executeInstruction(int index, AmpleFunc func, AmpleContext context) {

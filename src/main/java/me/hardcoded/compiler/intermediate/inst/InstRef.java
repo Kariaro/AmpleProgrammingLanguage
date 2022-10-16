@@ -13,4 +13,12 @@ public class InstRef extends Reference {
 	public InstRef(String name, Namespace namespace, ValueType valueType, int id, int flags) {
 		super(name, namespace, valueType, id, flags);
 	}
+	
+	@Override
+	public ValueType getValueType() {
+		// TODO: Unsigned values does not exist. The opcodes contain that information
+		//       The only thing the reference should contain is the size of the reference
+		//       and some additional information for custom types
+		return super.getValueType();
+	}
 }

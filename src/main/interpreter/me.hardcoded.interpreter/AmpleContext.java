@@ -2,10 +2,9 @@ package me.hardcoded.interpreter;
 
 import me.hardcoded.compiler.intermediate.inst.*;
 import me.hardcoded.compiler.parser.type.ValueType;
-import me.hardcoded.interpreter.value.Value;
+import me.hardcoded.interpreter.value.Memory;
 
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -15,11 +14,7 @@ import java.util.Map;
 class AmpleContext {
 	private final Map<InstRef, AmpleFunc> functions;
 	private final AmpleFunc mainFunction;
-	
-	// Memory
-	private final Map<Long, Value.ArrayValue> allocatedMemory;
-	private final LinkedList<Long> availableMemory;
-	private long nextAllocated;
+	private final Memory memory;
 	
 	public AmpleContext(IntermediateFile file) {
 		this.functions = new HashMap<>();
@@ -33,53 +28,11 @@ class AmpleContext {
 		}
 		
 		this.mainFunction = functions.get(mainRef);
-		this.allocatedMemory = new HashMap<>();
-		this.availableMemory = new LinkedList<>();
-		
-		// Allocate nullptr
-		allocate(0);
+		this.memory = new Memory();
 	}
 	
-	public Value.ArrayValue allocate(int size) {
-		long idx;
-		if (availableMemory.isEmpty()) {
-			idx = nextAllocated++;
-		} else {
-			idx = availableMemory.removeFirst();
-		}
-		Value.ArrayValue value = new Value.ArrayValue(idx << 32, size);
-		allocatedMemory.put(idx, value);
-		return value;
-	}
-	
-	public Value.ArrayValue allocateString(String string) {
-		long idx;
-		if (availableMemory.isEmpty()) {
-			idx = nextAllocated++;
-		} else {
-			idx = availableMemory.removeFirst();
-		}
-		Value.StringValue value = new Value.StringValue(idx << 32, string);
-		allocatedMemory.put(idx, value);
-		return value;
-	}
-	
-	public void deallocate(long address) {
-		if ((address >> 32) == 0) {
-			// nullptr
-			return;
-		}
-		
-		allocatedMemory.remove(address);
-		availableMemory.push(address >> 32);
-	}
-	
-	public Value.ArrayValue getAllocated(long address) {
-		Value.ArrayValue arrayValue = allocatedMemory.get(address >> 32);
-		if (arrayValue != null && (int) address != 0) {
-			return new Value.OffsetArrayValue(arrayValue, (int) address);
-		}
-		return arrayValue;
+	public Memory getMemory() {
+		return memory;
 	}
 	
 	public AmpleFunc getMainFunction() {
