@@ -226,11 +226,19 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					long number = value.getValue();
 					
 					String regName;
+					// If the high 32 bits are set we need to store it in a register
 					if ((number >>> 32) != 0) {
 						sb.add("mov RAX, %s".formatted(value));
 						regName = "RAX";
 					} else {
-						regName = value.toString();
+						if (src.getSize().calculateBytes() > 4 && ((number >> 31) & 1) != 0) {
+							// The top 32 bits are zero so this is allowed
+							// If the 32nd bit is set it will be negative
+							sb.add("mov RAX, %s".formatted(value));
+							regName = "RAX";
+						} else {
+							regName = value.toString();
+						}
 					}
 					
 					sb.add("mov %s, %s".formatted(
@@ -342,14 +350,18 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					));
 				}
 			}
-			case CAST -> {
+			case SEXT, ZEXT, TRUNC -> {
 				InstParam dst = inst.getParam(0);
-				InstParam src = inst.getParam(2);
+				InstParam src = inst.getParam(1);
 				
-				String regSrcName = AsmReg.AX.toString(src);
+				String regSrcName = AsmReg.AX.toString(inst.getOpcode() == Opcode.SEXT ? dst : src);
 				String regDstName = AsmReg.AX.toString(dst);
-				sb.add("xor RAX, RAX");
-				sb.add("mov %s, %s".formatted(
+				
+				if (dst.getSize().calculateBytes() > src.getSize().calculateBytes()) {
+					sb.add("xor RAX, RAX");
+				}
+				sb.add("mov%s %s, %s".formatted(
+					inst.getOpcode() == Opcode.SEXT ? "sx" : "",
 					regSrcName,
 					AsmUtils.getParamValue(src, proc)
 				));
@@ -437,7 +449,6 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					AsmUtils.getParamValue(a, proc)
 				));
 				
-				// TODO: Signed and unsigned shifts
 				String type = switch (inst.getOpcode()) {
 					case SHR -> "shr";
 					case SHL -> "shl";
@@ -592,7 +603,88 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				InstRef dst = inst.getRefParam(0).getReference();
 				sb.add("jmp .%s".formatted(dst.toSimpleString()));
 			}
+			case NEG -> {
+				InstRef dst = inst.getRefParam(0).getReference();
+				InstParam src = inst.getParam(1);
+				
+				String regName = AsmReg.AX.toString(src);
+				sb.add("mov %s, %s".formatted(
+					regName,
+					AsmUtils.getParamValue(src, proc)
+				));
+				sb.add("neg %s".formatted(regName));
+				sb.add("mov %s, %s".formatted(
+					AsmUtils.getStackPtr(dst, proc),
+					regName
+				));
+			}
+			case IDIV, DIV -> {
+				boolean unsigned = inst.getOpcode() == Opcode.DIV;
+				InstRef dst = inst.getRefParam(0).getReference();
+				InstParam a = inst.getParam(1);
+				InstParam b = inst.getParam(2);
+				
+				String regAName = AsmReg.AX.toString(a);
+				sb.add("xor RDX, RDX");
+				sb.add("mov %s, %s".formatted(
+					regAName,
+					AsmUtils.getParamValue(a, proc)
+				));
+				sb.add("%s %s".formatted(
+					unsigned ? "div" : "idiv",
+					AsmUtils.getParamValue(b, proc)
+				));
+				sb.add("mov %s, %s".formatted(
+					AsmUtils.getStackPtr(dst, proc),
+					regAName
+				));
+			}
+			case IMUL, MUL -> {
+				boolean unsigned = inst.getOpcode() == Opcode.MUL;
+				InstRef dst = inst.getRefParam(0).getReference();
+				InstParam a = inst.getParam(1);
+				InstParam b = inst.getParam(2);
+				
+				String regAName = AsmReg.AX.toString(a);
+				sb.add("xor RDX, RDX");
+				sb.add("mov %s, %s".formatted(
+					regAName,
+					AsmUtils.getParamValue(a, proc)
+				));
+				sb.add("%s %s".formatted(
+					unsigned ? "mul" : "imul",
+					AsmUtils.getParamValue(b, proc)
+				));
+				sb.add("mov %s, %s".formatted(
+					AsmUtils.getStackPtr(dst, proc),
+					regAName
+				));
+			}
+			case IMOD, MOD -> {
+				boolean unsigned = inst.getOpcode() == Opcode.MOD;
+				InstRef dst = inst.getRefParam(0).getReference();
+				InstParam a = inst.getParam(1);
+				InstParam b = inst.getParam(2);
+				
+				String regAName = AsmReg.AX.toString(a);
+				String remName = AsmReg.DX.toString(a);
+				sb.add("xor RDX, RDX");
+				sb.add("mov %s, %s".formatted(
+					regAName,
+					AsmUtils.getParamValue(a, proc)
+				));
+				sb.add("%s %s".formatted(
+					unsigned ? "div" : "idiv",
+					AsmUtils.getParamValue(b, proc)
+				));
+				sb.add("mov %s, %s".formatted(
+					AsmUtils.getStackPtr(dst, proc),
+					remName
+				));
+			}
+			
 			default -> {
+				LOGGER.warn("Undefined opcode '{}'", inst.getOpcode());
 				sb.add("; NOT IMPLEMENTED");
 				sb.add("ud2");
 			}

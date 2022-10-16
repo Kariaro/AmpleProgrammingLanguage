@@ -21,16 +21,30 @@ public interface Value {
 	
 	double getFloating();
 	
-	class IntegerValue implements Value {
+	class NumberValue implements Value {
 		private final long value;
+		private final boolean floating;
 		
-		public IntegerValue(long value) {
+		public NumberValue(boolean floating, long value) {
+			this.floating = floating;
 			this.value = value;
+		}
+		
+		public NumberValue(long value) {
+			this(false, value);
+		}
+		
+		public NumberValue(double value) {
+			this(true, Double.doubleToRawLongBits(value));
+		}
+		
+		public NumberValue(float value) {
+			this(true, Float.floatToRawIntBits(value));
 		}
 		
 		@Override
 		public Type getType() {
-			return Type.Integer;
+			return floating ? Type.Floating : Type.Integer;
 		}
 		
 		@Override
@@ -45,55 +59,27 @@ public interface Value {
 		
 		@Override
 		public long getInteger() {
+			if (floating) {
+				throw new UnsupportedOperationException();
+			}
+			
 			return value;
 		}
 		
 		@Override
 		public double getFloating() {
-			throw new UnsupportedOperationException();
+			if (!floating) {
+				throw new UnsupportedOperationException();
+			}
+			
+			return Double.doubleToRawLongBits(value);
 		}
 		
 		@Override
 		public String toString() {
-			return Long.toString(value);
-		}
-	}
-	
-	class FloatingValue implements Value {
-		private final double value;
-		
-		public FloatingValue(double value) {
-			this.value = value;
-		}
-		
-		@Override
-		public Type getType() {
-			return Type.Floating;
-		}
-		
-		@Override
-		public Value getIndex(int index, ValueType type, Function<Long, Value> addressResolver) {
-			throw new UnsupportedOperationException();
-		}
-		
-		@Override
-		public void setIndex(int index, Value value, ValueType type) {
-			throw new UnsupportedOperationException();
-		}
-		
-		@Override
-		public long getInteger() {
-			throw new UnsupportedOperationException();
-		}
-		
-		@Override
-		public double getFloating() {
-			return value;
-		}
-		
-		@Override
-		public String toString() {
-			return Double.toString(value);
+			return floating
+				? Double.toString(Double.longBitsToDouble(value))
+				: Long.toString(value);
 		}
 	}
 	
@@ -171,9 +157,9 @@ public interface Value {
 			
 			if (type.isFloating()) {
 				if (typeSize == 8) {
-					return new FloatingValue(Double.longBitsToDouble(read));
+					return new NumberValue(Double.longBitsToDouble(read));
 				} else if (typeSize == 4) {
-					return new FloatingValue(Float.intBitsToFloat((int) read));
+					return new NumberValue(Float.intBitsToFloat((int) read));
 				} else {
 					throw new RuntimeException("Undefined behavior. Unimplemented floating type size");
 				}
@@ -184,7 +170,7 @@ public interface Value {
 				return addressResolver.apply(read);
 			}
 			
-			return new IntegerValue(read);
+			return new NumberValue(read);
 		}
 		
 		@Override
@@ -202,16 +188,8 @@ public interface Value {
 			}
 			
 			long result;
-			if (value instanceof IntegerValue val) {
+			if (value instanceof NumberValue val) {
 				result = val.value;
-			} else if (value instanceof FloatingValue val) {
-				if (typeSize == 8) {
-					result = Double.doubleToRawLongBits(val.value);
-				} else if (typeSize == 4) {
-					result = Float.floatToRawIntBits((float) val.value);
-				} else {
-					throw new RuntimeException("Floating point of size '" + typeSize + "' is undefined");
-				}
 			} else if (value instanceof ArrayValue val) {
 				result = val.address;
 				pointer[index] = true;

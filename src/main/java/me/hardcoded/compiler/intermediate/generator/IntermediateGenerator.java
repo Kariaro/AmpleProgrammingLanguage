@@ -430,9 +430,20 @@ public class IntermediateGenerator {
 		InstRef holder = createDataReference(".cast", expr.getType());
 		InstRef value = generateStat(expr.getValue(), procedure);
 		
-		procedure.addInst(new Inst(Opcode.CAST, expr.getSyntaxPosition())
+		// casting from unsigned always zero extends
+		// casting from signed to signed sign extends
+		
+		Opcode opcode;
+		if (expr.getType().calculateBytes() <= value.getValueType().calculateBytes()) {
+			opcode = Opcode.TRUNC;
+		} else if (expr.getType().isSigned() && value.getValueType().isSigned()) {
+			opcode = Opcode.SEXT;
+		} else {
+			opcode = Opcode.ZEXT;
+		}
+		
+		procedure.addInst(new Inst(opcode, expr.getSyntaxPosition())
 			.addParam(new InstParam.Ref(holder))
-			.addParam(new InstParam.Type(expr.getType()))
 			.addParam(new InstParam.Ref(value)));
 		
 		return holder;
@@ -652,6 +663,7 @@ public class IntermediateGenerator {
 			case MINUS -> get(Opcode.SUB, Opcode.SUB, Opcode.FSUB, unsigned, floating);
 			case MULTIPLY -> get(Opcode.MUL, Opcode.IMUL, Opcode.FMUL, unsigned, floating);
 			case DIVIDE -> get(Opcode.DIV, Opcode.IDIV, Opcode.FDIV, unsigned, floating);
+			case MODULO -> get(Opcode.MOD, Opcode.IMOD, Opcode.FMOD, unsigned, floating);
 			case AND -> Opcode.AND;
 			case XOR -> Opcode.XOR;
 			case OR -> Opcode.OR;

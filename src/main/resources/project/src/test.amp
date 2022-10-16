@@ -53,7 +53,14 @@ func main () : i32 {
     std::printf("Format string '%s' num='%p'\n", "abcd", 3232l);
 
 
+    printhex(0x80000000l);
+    printhex(cast<i64>(0xf0000000u));           // 0x00000000f0000000
+    printhex(cast<i64>(cast<i32>(0xf0000000))); // 0xfffffffff0000000
+    printhex(700 / -1);
+    printhex(cast<i32>(700u / cast<u32>(-1)));
     printhex(32);
+    printhex(32 % -5);
+    printhex(cast<i32>(32u % cast<u32>(-5)));
     std::printstr(stack_alloc<u8, 13>("Hello World!\n"), 13L);
 
     // u8[]: ptr = "TESTING THIS THING\n";

@@ -68,6 +68,10 @@ public class ValueType {
 		return (flags & STORAGE_TYPE) == VARARGS;
 	}
 	
+	public int calculateBytes() {
+		return (getDepth() > 0) ? getPointerSize() : (getSize() >> 3);
+	}
+	
 	public static int getPointerSize() {
 		return 8;
 	}
