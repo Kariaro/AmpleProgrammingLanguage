@@ -66,9 +66,9 @@ public class AmpleLinker {
 				String details = "(line: %3d, column: %3d)".formatted(pos.getStartPosition().line, pos.getStartPosition().column);
 				
 				if (inst.getOpcode() == Opcode.LABEL) {
-					LOGGER.debug("    {} {}", details, inst);
+					LOGGER.debug("    {}     {}", details, inst);
 				} else {
-					LOGGER.debug("        {} {}", details, inst);
+					LOGGER.debug("        {}     {}", details, inst);
 				}
 			}
 		}

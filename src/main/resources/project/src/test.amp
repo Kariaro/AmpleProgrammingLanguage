@@ -55,5 +55,11 @@ func main () : i32 {
 
     printhex(32);
     std::printstr(stack_alloc<u8, 13>("Hello World!\n"), 13L);
+
+    // u8[]: ptr = "TESTING THIS THING\n";
+    // u64: high = cast<u64>(ptr) >> 32ul;
+    // u64: low  = cast<u64>(ptr) & 0xfffffffful;
+    // u8[]: optr = cast<u8[]>((high << 32ul) | low);
+
     ret 0;
 }

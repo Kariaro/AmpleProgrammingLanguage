@@ -374,7 +374,7 @@ public class IntermediateGenerator {
 			return generateArrayExpr(expr, procedure);
 		}
 		
-		Opcode opcode = getBinaryOpcode(expr.getOperation());
+		Opcode opcode = getBinaryOpcode(expr.getOperation(), expr.getType().isUnsigned());
 		InstRef left = generateStat(expr.getLeft(), procedure);
 		InstRef right = generateStat(expr.getRight(), procedure);
 		InstRef holder = createDataReference(".binary", expr.getType());
@@ -643,22 +643,24 @@ public class IntermediateGenerator {
 	}
 	
 	// Type conversions
-	public Opcode getBinaryOpcode(Operation operation) {
+	public Opcode getBinaryOpcode(Operation operation, boolean unsigned) {
+		boolean floating = false;
+		
 		return switch (operation) {
 			// Binary
-			case PLUS -> Opcode.ADD;
-			case MINUS -> Opcode.SUB;
-			case MULTIPLY -> Opcode.MUL;
-			case DIVIDE -> Opcode.DIV;
+			case PLUS -> get(Opcode.ADD, Opcode.ADD, Opcode.FADD, unsigned, floating);
+			case MINUS -> get(Opcode.SUB, Opcode.SUB, Opcode.FSUB, unsigned, floating);
+			case MULTIPLY -> get(Opcode.MUL, Opcode.IMUL, Opcode.FMUL, unsigned, floating);
+			case DIVIDE -> get(Opcode.DIV, Opcode.IDIV, Opcode.FDIV, unsigned, floating);
 			case AND -> Opcode.AND;
-			//			case XOR -> Opcode.XOR;
+			case XOR -> Opcode.XOR;
 			case OR -> Opcode.OR;
 			case SHIFT_RIGHT -> Opcode.SHR;
 			case SHIFT_LEFT -> Opcode.SHL;
-			case MORE_EQUAL -> Opcode.GTE;
-			case MORE_THAN -> Opcode.GT;
-			case LESS_EQUAL -> Opcode.LTE;
-			case LESS_THAN -> Opcode.LT;
+			case MORE_EQUAL -> get(Opcode.GTE, Opcode.IGTE, Opcode.FGTE, unsigned, floating);
+			case MORE_THAN -> get(Opcode.GT, Opcode.IGT, Opcode.FGT, unsigned, floating);
+			case LESS_EQUAL -> get(Opcode.LTE, Opcode.ILTE, Opcode.FLTE, unsigned, floating);
+			case LESS_THAN -> get(Opcode.LT, Opcode.ILT, Opcode.FLT, unsigned, floating);
 			case EQUAL -> Opcode.EQ;
 			case NOT_EQUAL -> Opcode.NEQ;
 			
@@ -666,11 +668,20 @@ public class IntermediateGenerator {
 		};
 	}
 	
+	private Opcode get(Opcode uOp, Opcode iOp, Opcode fOp, boolean unsigned, boolean floating) {
+		if (unsigned) {
+			if (floating) {
+				throw new RuntimeException("No unsigned floating type");
+			}
+			
+			return uOp;
+		}
+		
+		return floating ? fOp : iOp;
+	}
+	
 	public Opcode getUnaryOpcode(Operation operation) {
 		return switch (operation) {
-			//			case REFERENCE -> Opcode.REF;
-			//			case DEREFERENCE -> Opcode.LOAD;
-			
 			case NEGATIVE -> Opcode.NEG;
 			case NOT -> Opcode.NOT;
 			//			case NOR -> Opcode.NOR;

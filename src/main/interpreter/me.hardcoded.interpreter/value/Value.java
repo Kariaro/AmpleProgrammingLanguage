@@ -11,8 +11,6 @@ import java.util.function.Function;
  * @author HardCoded
  */
 public interface Value {
-	boolean isUnsigned();
-	
 	Type getType();
 	
 	Value getIndex(int index, ValueType type, Function<Long, Value> addressResolver);
@@ -24,17 +22,10 @@ public interface Value {
 	double getFloating();
 	
 	class IntegerValue implements Value {
-		private final boolean unsigned;
 		private final long value;
 		
-		public IntegerValue(boolean unsigned, long value) {
-			this.unsigned = unsigned;
+		public IntegerValue(long value) {
 			this.value = value;
-		}
-		
-		@Override
-		public boolean isUnsigned() {
-			return unsigned;
 		}
 		
 		@Override
@@ -64,9 +55,7 @@ public interface Value {
 		
 		@Override
 		public String toString() {
-			return unsigned
-				? Long.toUnsignedString(value)
-				: Long.toString(value);
+			return Long.toString(value);
 		}
 	}
 	
@@ -75,11 +64,6 @@ public interface Value {
 		
 		public FloatingValue(double value) {
 			this.value = value;
-		}
-		
-		@Override
-		public boolean isUnsigned() {
-			return false;
 		}
 		
 		@Override
@@ -116,20 +100,18 @@ public interface Value {
 	class ArrayValue implements Value {
 		protected final Integer[] values;
 		protected final long address;
+		private final boolean[] pointer;
 		
 		public ArrayValue(long address, int size) {
 			this.address = address;
 			this.values = new Integer[size];
+			this.pointer = new boolean[size];
 		}
 		
-		protected ArrayValue(long address, Integer[] values) {
+		protected ArrayValue(long address, Integer[] values, boolean[] pointer) {
 			this.address = address;
 			this.values = values;
-		}
-		
-		@Override
-		public boolean isUnsigned() {
-			return false;
+			this.pointer = pointer;
 		}
 		
 		@Override
@@ -178,6 +160,8 @@ public interface Value {
 				default -> throw new RuntimeException("Undefined behavior. Trying to read undefined sized value");
 			};
 			
+			boolean isPointer = typeSize == 8 && pointer[index];
+			
 			if (type.getDepth() > 0) {
 				Value value = addressResolver.apply(read);
 				if (value == null) {
@@ -195,7 +179,12 @@ public interface Value {
 				}
 			}
 			
-			return new IntegerValue(type.isUnsigned(), read);
+			// Resolve arrays
+			if (isPointer) {
+				return addressResolver.apply(read);
+			}
+			
+			return new IntegerValue(read);
 		}
 		
 		@Override
@@ -204,7 +193,12 @@ public interface Value {
 			
 			int typeSize = getTypeSize(type);
 			if (index < 0 || index >= values.length) {
-				throw new RuntimeException("Undefined behavior. Trying to write outside of memory");
+				throw new RuntimeException("Undefined behavior. Trying to write outside of memory (size=" + values.length + ") (index=" + index + ")");
+			}
+			
+			// Clear pointer
+			for (int i = 0; i < typeSize; i++) {
+				pointer[index + i] = false;
 			}
 			
 			long result;
@@ -220,6 +214,7 @@ public interface Value {
 				}
 			} else if (value instanceof ArrayValue val) {
 				result = val.address;
+				pointer[index] = true;
 			} else {
 				throw new RuntimeException("Unknown value type '" + (value == null ? null : value.getClass()) + "'");
 			}
@@ -248,9 +243,15 @@ public interface Value {
 		private final int offset;
 		
 		public OffsetArrayValue(ArrayValue value, int offset) {
-			super(value.address, value.values);
-			this.value = value;
-			this.offset = offset;
+			super(value.getInteger(), value.values, value.pointer);
+			
+			if (value instanceof OffsetArrayValue oav) {
+				this.offset = oav.offset + offset;
+				this.value = oav.value;
+			} else {
+				this.offset = offset;
+				this.value = value;
+			}
 		}
 		
 		@Override

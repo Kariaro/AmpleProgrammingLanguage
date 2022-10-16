@@ -1,6 +1,7 @@
 package me.hardcoded.compiler.intermediate.inst;
 
 import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.parser.type.ValueType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,8 +9,7 @@ import java.util.List;
 public class Inst {
 	private final ISyntaxPosition syntaxPosition;
 	private final List<InstParam> parameters;
-	private Opcode opcode;
-	private int flags;
+	private final Opcode opcode;
 	
 	public Inst(Opcode opcode, ISyntaxPosition syntaxPosition) {
 		this.syntaxPosition = syntaxPosition;
@@ -61,11 +61,44 @@ public class Inst {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		sb.append(opcode);
+		sb.append(opcode.toString().toLowerCase());
+		
+		if (parameters.size() > 0) {
+			InstParam param = getParam(0);
+			ValueType type = param.getSize();
+			
+			
+			boolean keep = switch (opcode) {
+				case INLINE_ASM -> false;
+				default -> true;
+			};
+			
+			if (keep && type.getSize() != 0) {
+				int typeSize = (type.getDepth() > 0) ? ValueType.getPointerSize() : (type.getSize() >> 3);
+				
+				//				String typeName = switch (typeSize) {
+				//					// case 64 -> "Z";
+				//					// case 32 -> "Y";
+				//					// case 16 -> "X";
+				//					case 8 -> "Q";
+				//					case 4 -> "D";
+				//					case 2 -> "W";
+				//					case 1 -> "B";
+				//					default -> Integer.toString(typeSize * 8);
+				//				};
+				sb.append(typeSize * 8);
+			}
+		}
 		
 		if (!parameters.isEmpty()) {
-			for (InstParam param : parameters) {
-				sb.append(", ").append(param);
+			sb.append(" ");
+			var iter = parameters.iterator();
+			while (iter.hasNext()) {
+				sb.append("(").append(iter.next()).append(")");
+				
+				if (iter.hasNext()) {
+					sb.append(", ");
+				}
 			}
 		}
 		

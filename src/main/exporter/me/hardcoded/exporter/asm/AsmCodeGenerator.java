@@ -449,7 +449,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					regAName
 				));
 			}
-			case GT, GTE, LT, LTE, EQ, NEQ -> {
+			case GT, GTE, LT, LTE, IGT, IGTE, ILT, ILTE, EQ, NEQ -> {
 				InstRef dst = inst.getRefParam(0).getReference();
 				InstRef a = inst.getRefParam(1).getReference();
 				InstRef b = inst.getRefParam(2).getReference();
@@ -458,8 +458,6 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				String regBName = AsmReg.BX.toString(b);
 				String regACmov = AsmReg.AX.toString(a);
 				String regCCmov = AsmReg.CX.toString(a);
-				
-				boolean isUnsigned = a.getValueType().isUnsigned();
 				if (AsmUtils.getTypeByteSize(a.getValueType()) == 1) {
 					regACmov = AsmReg.AX.toString(2);
 					regCCmov = AsmReg.CX.toString(2);
@@ -477,11 +475,15 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				));
 				
 				String type = switch (inst.getOpcode()) {
-					case GT -> isUnsigned ? "a" : "g";
-					case LT -> isUnsigned ? "b" : "l";
+					case GT -> "a";
+					case LT -> "b";
+					case GTE -> "ae";
+					case LTE -> "be";
+					case IGT -> "g";
+					case ILT -> "l";
+					case IGTE -> "ge";
+					case ILTE -> "le";
 					case EQ -> "e";
-					case GTE -> isUnsigned ? "ae" : "ge";
-					case LTE -> isUnsigned ? "be" : "le";
 					case NEQ -> "ne";
 					default -> throw new RuntimeException();
 				};

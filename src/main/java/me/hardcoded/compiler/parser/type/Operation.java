@@ -9,12 +9,14 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public enum Operation {
+	// @formatter:off
 	ASSIGN      ("=",  13, Token.Type.ASSIGN,      OperationType.Binary, Associativity.Right),
 	C_OR        ("||", 12, Token.Type.COR,         OperationType.Binary, Associativity.Right),
 	C_AND       ("&&", 11, Token.Type.CAND,        OperationType.Binary, Associativity.Right),
 	OR          ("|",  10, Token.Type.OR,          OperationType.Binary, Associativity.Left),
 	// XOR
 	AND         ("&",   8, Token.Type.AND,         OperationType.Binary, Associativity.Left),
+	XOR         ("&",   8, Token.Type.XOR,         OperationType.Binary, Associativity.Left),
 	EQUAL       ("==",  7, Token.Type.EQUALS,      OperationType.Binary, Associativity.Left),
 	NOT_EQUAL   ("!=",  7, Token.Type.NOT_EQUALS,  OperationType.Binary, Associativity.Left),
 	LESS_THAN   ("<",   6, Token.Type.LESS_THAN,   OperationType.Binary, Associativity.Left),
@@ -33,7 +35,7 @@ public enum Operation {
 	
 	// SPECIAL
 	ARRAY      ("[]",  5, Token.Type.L_SQUARE,    OperationType.SpecialBinary, Associativity.Left),
-	
+	// @formatter:on
 	;
 	
 	public static final Operation[] VALUES = values();
