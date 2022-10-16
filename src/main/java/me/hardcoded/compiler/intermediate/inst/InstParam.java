@@ -93,35 +93,12 @@ public interface InstParam {
 		
 		@Override
 		public ValueType getSize() {
-			// TODO: Get this from context
 			return Primitives.U8.createArray(1);
 		}
 		
 		@Override
 		public String toString() {
 			return "\"%s\"".formatted(StringUtils.escapeString(value));
-		}
-	}
-	
-	class Type implements InstParam {
-		private final ValueType valueType;
-		
-		public Type(ValueType valueType) {
-			this.valueType = valueType;
-		}
-		
-		public ValueType getValueType() {
-			return valueType;
-		}
-		
-		@Override
-		public ValueType getSize() {
-			return valueType;
-		}
-		
-		@Override
-		public String toString() {
-			return valueType.toString();
 		}
 	}
 	

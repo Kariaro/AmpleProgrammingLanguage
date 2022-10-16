@@ -117,7 +117,7 @@ public class AmpleRunner {
 					case RET -> {
 						if (inst.getParamCount() == 0) {
 							// Return unspecified
-							return new Value.IntegerValue(0);
+							return new Value.NumberValue(0);
 						}
 						
 						InstParam src = inst.getParam(0);
@@ -148,10 +148,10 @@ public class AmpleRunner {
 						Value value = convertFromParam(local, src, context);
 						local.get(dst).setIndex(arrayIdx, value, src.getSize());
 					}
-					case CAST -> {
+					case ZEXT, SEXT, TRUNC -> {
 						InstRef dst = inst.getRefParam(0).getReference();
-						ValueType type = inst.getTypeParam(1).getValueType();
-						InstParam src = inst.getParam(2);
+						ValueType type = dst.getValueType();
+						InstParam src = inst.getParam(1);
 						
 						Value.ArrayValue arrayValue = null;
 						
@@ -167,7 +167,7 @@ public class AmpleRunner {
 							Value value = local.get(ref.getReference());
 							number = switch (value.getType()) {
 								case Integer, Array -> value.getInteger();
-								case Floating -> Double.doubleToRawLongBits(value.getFloating());
+								case Floating -> throw new RuntimeException("Cannot extend floating point");
 							};
 							
 							if (value instanceof Value.ArrayValue arr) {
@@ -193,27 +193,36 @@ public class AmpleRunner {
 								result = context.getMemory().getAllocated(number);
 							}
 						} else {
-							int typeSize = (type.getDepth() > 0) ? ValueType.getPointerSize() : (type.getSize() >> 3);
 							if (type.isFloating()) {
-								switch (typeSize) {
-									case 8 -> result = new Value.FloatingValue(Double.longBitsToDouble(number));
-									case 4 -> result = new Value.FloatingValue(Float.intBitsToFloat((int) number));
-									default -> throw new RuntimeException("Unknown floating type size '" + typeSize + "'");
-								}
+								throw new RuntimeException("Floating type not extendable");
+							}
+							
+							int typeSize = type.calculateBytes();
+							long mask = switch (typeSize) {
+								case 8 -> 0xffffffffffffffffL;
+								case 4 -> 0x00000000ffffffffL;
+								case 2 -> 0x000000000000ffffL;
+								case 1 -> 0x00000000000000ffL;
+								default -> throw new RuntimeException("Unknown integer type size '" + typeSize + "'");
+							};
+							
+							int srcSize = src.getSize().calculateBytes();
+							long srcMask = (-1L) >>> (srcSize * 8);
+							number &= srcMask;
+							
+							if (typeSize == 8 && arrayValue != null) {
+								result = new Value.OffsetArrayValue(arrayValue, 0);
 							} else {
-								long mask = switch (typeSize) {
-									case 8 -> 0xffffffffffffffffL;
-									case 4 -> 0x00000000ffffffffL;
-									case 2 -> 0x000000000000ffffL;
-									case 1 -> 0x00000000000000ffL;
-									default -> throw new RuntimeException("Unknown integer type size '" + typeSize + "'");
-								};
-								
-								if (typeSize == 8 && arrayValue != null) {
-									result = new Value.OffsetArrayValue(arrayValue, 0);
-								} else {
-									result = new Value.IntegerValue(number & mask);
+								if (opcode == Opcode.SEXT) {
+									// Sign extend if last bit is set
+									
+									if ((number & (1L << (srcSize * 8 - 1))) != 0) {
+										number |= ~srcMask;
+									}
 								}
+								
+								number &= mask;
+								result = new Value.NumberValue(number & mask);
 							}
 						}
 						
@@ -249,7 +258,7 @@ public class AmpleRunner {
 							default -> false; // Never reached
 						};
 						
-						local.put(dst, new Value.IntegerValue(result ? 1 : 0));
+						local.put(dst, new Value.NumberValue(result ? 1 : 0));
 					}
 					
 					// Branch operators
@@ -353,10 +362,9 @@ public class AmpleRunner {
 						
 						Value value = switch (type) {
 							case Array -> destroyArray
-								? new Value.IntegerValue(result)
+								? new Value.NumberValue(result)
 								: new Value.OffsetArrayValue((Value.ArrayValue) a, (int) (result - a.getInteger()));
-							case Integer -> new Value.IntegerValue(result);
-							case Floating -> new Value.FloatingValue(Double.longBitsToDouble(result));
+							case Integer, Floating -> new Value.NumberValue(type == Value.Type.Floating, result);
 						};
 						
 						local.put(dst, value);
@@ -408,6 +416,11 @@ public class AmpleRunner {
 							}
 						}
 					}
+					case NEG -> {
+						InstRef dst = inst.getRefParam(0).getReference();
+						Value a = convertFromParam(local, inst.getParam(1), context);
+						local.put(dst, new Value.NumberValue(-a.getInteger()));
+					}
 					
 					default -> throw new RuntimeException("Unknown instruction '%s'".formatted(opcode));
 				}
@@ -421,7 +434,7 @@ public class AmpleRunner {
 			}
 		}
 		
-		return new Value.IntegerValue(0);
+		return new Value.NumberValue(0);
 	}
 	
 	private static Value convertFromParam(Locals local, InstParam param, AmpleContext context) {
@@ -437,16 +450,7 @@ public class AmpleRunner {
 	}
 	
 	private static Value convertFrom(InstParam.Num num, AmpleContext context) {
-		ValueType type = num.getSize();
-		
-		Value result;
-		if (type.isFloating()) {
-			result = new Value.FloatingValue(Double.longBitsToDouble(num.getValue()));
-		} else {
-			result = new Value.IntegerValue(num.getValue());
-		}
-		
-		return result;
+		return new Value.NumberValue(num.getSize().isFloating(), num.getValue());
 	}
 	
 	private static Value convertFrom(InstParam.Str str, AmpleContext context) {

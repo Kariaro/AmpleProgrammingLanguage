@@ -38,10 +38,6 @@ public class Inst {
 		return (InstParam.Num) parameters.get(index);
 	}
 	
-	public InstParam.Type getTypeParam(int index) {
-		return (InstParam.Type) parameters.get(index);
-	}
-	
 	public InstParam getParam(int index) {
 		return parameters.get(index);
 	}
@@ -67,26 +63,13 @@ public class Inst {
 			InstParam param = getParam(0);
 			ValueType type = param.getSize();
 			
-			
 			boolean keep = switch (opcode) {
-				case INLINE_ASM -> false;
+				case INLINE_ASM, STACK_ALLOC -> false;
 				default -> true;
 			};
 			
 			if (keep && type.getSize() != 0) {
-				int typeSize = (type.getDepth() > 0) ? ValueType.getPointerSize() : (type.getSize() >> 3);
-				
-				//				String typeName = switch (typeSize) {
-				//					// case 64 -> "Z";
-				//					// case 32 -> "Y";
-				//					// case 16 -> "X";
-				//					case 8 -> "Q";
-				//					case 4 -> "D";
-				//					case 2 -> "W";
-				//					case 1 -> "B";
-				//					default -> Integer.toString(typeSize * 8);
-				//				};
-				sb.append(typeSize * 8);
+				sb.append(type.calculateBytes() * 8);
 			}
 		}
 		

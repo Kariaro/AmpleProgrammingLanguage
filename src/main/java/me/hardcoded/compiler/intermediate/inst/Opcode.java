@@ -12,7 +12,7 @@ public enum Opcode {
 	NEQ,                // r0 = r1 != r2
 	SHR,                // r0 = r1 >> r2
 	SHL,                // r0 = r1 << r2
-	// Not unsigned safe
+	
 	IMOD,               // r0 = r1 % r2
 	IMUL,               // r0 = r1 * r2
 	IDIV,               // r0 = r1 / r2
@@ -21,13 +21,13 @@ public enum Opcode {
 	ILTE,               // r0 = r1 <= r2
 	ILT,                // r0 = r1 < r2
 	
-	MOD,               // r0 = r1 % r2
-	MUL,               // r0 = r1 * r2
-	DIV,               // r0 = r1 / r2
-	GTE,               // r0 = r1 >= r2
-	GT,                // r0 = r1 > r2
-	LTE,               // r0 = r1 <= r2
-	LT,                // r0 = r1 < r2
+	MOD,                // r0 = r1 % r2
+	MUL,                // r0 = r1 * r2
+	DIV,                // r0 = r1 / r2
+	GTE,                // r0 = r1 >= r2
+	GT,                 // r0 = r1 > r2
+	LTE,                // r0 = r1 <= r2
+	LT,                 // r0 = r1 < r2
 	
 	// Floating point operations
 	FADD,
@@ -47,25 +47,26 @@ public enum Opcode {
 	NEG,                // r0 = -(r1)
 	NOR,                // r0 = ~(r1)
 	
-	// Type instructions
-	CAST,                // r0 = ( SIZE )(r1)
+	// Size instructions
+	TRUNC,              // r0, SIZE -> truncate
+	SEXT,               // r0, SIZE -> sign extend
+	ZEXT,               // r0, SIZE -> zero extend
 	
 	// Special instructions
 	STACK_ALLOC,        // allocate memory on the stack
 	INLINE_ASM,         // asm('type', 'command', references...)
 	
 	// Memory instructions
-	STORE,                // (r0 [r1]) = r2
-	LOAD,                // r0 = (r1 [r2])
+	STORE,              // (r0 [r1]) = r2
+	LOAD,               // r0 = (r1 [r2])
 	
 	// Branching instructions
-	LABEL,                // A label
-	JMP,                // Jump to a label
-	JNZ,                // Jump if not zero
-	JZ,                    // Jump if zeros
+	LABEL,              // A label
+	JMP,                // goto l0
+	JNZ,                // if (r0 != 0) goto l1
+	JZ,                 // if (r0 == 0) goto l1
 	RET,                // Return from a function
 	
 	// Call instructions
-	CALL,                // Variable instruction
-	
+	CALL,               // Variable instruction
 }

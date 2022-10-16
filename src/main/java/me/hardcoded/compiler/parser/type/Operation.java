@@ -14,9 +14,8 @@ public enum Operation {
 	C_OR        ("||", 12, Token.Type.COR,         OperationType.Binary, Associativity.Right),
 	C_AND       ("&&", 11, Token.Type.CAND,        OperationType.Binary, Associativity.Right),
 	OR          ("|",  10, Token.Type.OR,          OperationType.Binary, Associativity.Left),
-	// XOR
+	XOR         ("^",   9, Token.Type.XOR,         OperationType.Binary, Associativity.Left),
 	AND         ("&",   8, Token.Type.AND,         OperationType.Binary, Associativity.Left),
-	XOR         ("&",   8, Token.Type.XOR,         OperationType.Binary, Associativity.Left),
 	EQUAL       ("==",  7, Token.Type.EQUALS,      OperationType.Binary, Associativity.Left),
 	NOT_EQUAL   ("!=",  7, Token.Type.NOT_EQUALS,  OperationType.Binary, Associativity.Left),
 	LESS_THAN   ("<",   6, Token.Type.LESS_THAN,   OperationType.Binary, Associativity.Left),
@@ -29,12 +28,12 @@ public enum Operation {
 	MINUS       ("-",   4, Token.Type.MINUS,       OperationType.Binary, Associativity.Left),
 	MULTIPLY    ("*",   3, Token.Type.MUL,         OperationType.Binary, Associativity.Left),
 	DIVIDE      ("/",   3, Token.Type.DIV,         OperationType.Binary, Associativity.Left),
-	// MODULO
+	MODULO      ("%",   3, Token.Type.MOD,         OperationType.Binary, Associativity.Left),
 	NEGATIVE    ("-",   2, Token.Type.MINUS,       OperationType.Unary, Associativity.Right),
 	NOT         ("!",   2, Token.Type.NOT,         OperationType.Unary, Associativity.Left),
 	
 	// SPECIAL
-	ARRAY      ("[]",  5, Token.Type.L_SQUARE,    OperationType.SpecialBinary, Associativity.Left),
+	ARRAY       ("[]",  5, Token.Type.L_SQUARE,    OperationType.SpecialBinary, Associativity.Left),
 	// @formatter:on
 	;
 	

@@ -155,7 +155,7 @@ public class AmpleCompiler {
 		} catch (Exception e) {
 			LOGGER.error("", e);
 		} finally {
-			System.exit(0);
+			//System.exit(0);
 		}
 		
 		OutputFormat format = ampleConfig.getConfiguration().getOutputFormat();
