@@ -17,18 +17,18 @@ public class DebugUtils {
 		Thread thread = new Thread(() -> {
 			String last = "";
 			try {
-				while(true) {
+				while (true) {
 					StackTraceElement[] array = Thread.getAllStackTraces().get(mainThread);
 					String curr = Arrays.deepToString(array);
 					
-					if(!last.equals(curr)) {
+					if (!last.equals(curr)) {
 						last = curr;
 						
 						System.out.println("=".repeat(100));
 						System.out.println(curr.replace(", ", "\n"));
 					}
 				}
-			} catch(Exception e) {
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		});
@@ -38,8 +38,8 @@ public class DebugUtils {
 	
 	/**
 	 * Returns the highest file name that matches the file name pattern.
-	 * 
-	 * @param directory the directory
+	 *
+	 * @param directory       the directory
 	 * @param fileNamePattern the file name pattern where {@code %d} is the index
 	 * @return the absolute path of the next file name
 	 */

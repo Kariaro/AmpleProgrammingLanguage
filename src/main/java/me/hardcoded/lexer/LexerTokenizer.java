@@ -6,19 +6,18 @@ import me.hardcoded.lexer.Token.Type;
 import me.hardcoded.utils.Position;
 import me.hardcoded.utils.error.ErrorUtil;
 
-import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
 public class LexerTokenizer {
-	public static List<Token> parse(File file, byte[] bytes) {
-		List<Token> tokenList = parseKeepWhitespace(file, bytes);
+	public static List<Token> parse(String path, byte[] bytes) {
+		List<Token> tokenList = parseKeepWhitespace(path, bytes);
 		tokenList.removeIf(token -> token.type == Type.WHITESPACE);
 		return tokenList;
 	}
 	
-	public static List<Token> parseKeepWhitespace(File file, byte[] bytes) {
+	public static List<Token> parseKeepWhitespace(String path, byte[] bytes) {
 		String text = new String(bytes, StandardCharsets.UTF_8);
 		List<Token> tokenList = new ArrayList<>();
 		int offset = 0;
@@ -32,7 +31,9 @@ public class LexerTokenizer {
 			
 			GenericLexerContext<Type>.LexerToken lexerToken = AmpleLexer.LEXER.nextToken(input);
 			if (lexerToken == null) {
-				throw new RuntimeException(ErrorUtil.createFullError(ISyntaxPos.of(file, startPos, startPos),
+				throw new RuntimeException(ErrorUtil.createFullError(
+					ISyntaxPos.of(path, startPos, startPos),
+					text,
 					"Could not parse token"
 				));
 			}
@@ -56,7 +57,7 @@ public class LexerTokenizer {
 			tokenList.add(new Token(
 				lexerToken.type,
 				lexerToken.content,
-				ISyntaxPos.of(file, startPos, endPos)
+				ISyntaxPos.of(path, startPos, endPos)
 			));
 			
 			input = input.substring(lexerToken.length);

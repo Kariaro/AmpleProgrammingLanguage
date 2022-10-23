@@ -117,10 +117,10 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 					if (mousePos.line() < startPosition.line()
 						|| (mousePos.line() == startPosition.line() && mousePos.column() < startPosition.column())) {
 						Position test = new Position(startPosition.column() + 1, startPosition.line());
-						syntaxPosition = ISyntaxPos.of(null, mousePos, test);
+						syntaxPosition = ISyntaxPos.of("", mousePos, test);
 					} else {
 						Position test = new Position(mousePos.column() + 1, mousePos.line());
-						syntaxPosition = ISyntaxPos.of(null, startPosition, test);
+						syntaxPosition = ISyntaxPos.of("", startPosition, test);
 					}
 					
 					handler.fireEvent(new VisualizationEvent.SyntaxSelectionEvent(

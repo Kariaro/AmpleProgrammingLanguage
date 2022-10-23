@@ -42,8 +42,8 @@ public class AmpleLinker {
 			throw new RuntimeException("Project is not linkable");
 		}
 		
-		LOGGER.info("");
-		LOGGER.info("Generate Intermediate File:");
+		LOGGER.debug("");
+		LOGGER.debug("Generate Intermediate File:");
 		IntermediateGenerator generator = new IntermediateGenerator(file, exportMap);
 		for (int i = list.size() - 1; i >= 0; i--) {
 			// Include each linkable object in the intermediate generator
@@ -51,9 +51,9 @@ public class AmpleLinker {
 			
 			Path path = link.getFile().toPath();
 			if (path.isAbsolute()) {
-				LOGGER.info(" - {} : {}", link.getChecksum(), ampleConfig.getConfiguration().getWorkingDirectory().toPath().relativize(path));
+				LOGGER.debug(" - {} : {}", link.getChecksum(), ampleConfig.getConfiguration().getWorkingDirectory().toPath().relativize(path));
 			} else {
-				LOGGER.info(" - {} : {}", link.getChecksum(), path);
+				LOGGER.debug(" - {} : {}", link.getChecksum(), path);
 			}
 			//			LOGGER.debug("\n{}", ParseUtil.stat(link.getProgram()));
 			

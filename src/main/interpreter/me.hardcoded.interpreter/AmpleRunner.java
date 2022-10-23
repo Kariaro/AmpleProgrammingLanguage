@@ -31,22 +31,34 @@ public class AmpleRunner {
 		runFunction(main, new Locals(), context);
 	}
 	
-	public void runCodeBlock(IntermediateFile instFile) throws AmpleInterpreterException {
-		AmpleContext context = new AmpleContext(instFile);
-		
-		int size = context.getCodeBlocks();
-		
-		if (size < 1) {
-			throw new AmpleInterpreterException("Could not find and code blocks");
+	public void runRepl(ReplContext ctx) {
+		AmpleContext context = new AmpleContext(ctx.file);
+		if (ctx.local == null) {
+			ctx.local = new Locals();
 		}
 		
 		// Should these share locals?
-		for (int i = 0; i < context.getCodeBlocks(); i++) {
+		for (int i = ctx.index; i < context.getCodeBlocks(); i++) {
 			AmpleFunc block = context.getCodeBlock(i);
-			runFunction(block, new Locals(), context);
+			runFunction(block, new Locals(), ctx.local, context);
 		}
 		
-		// TODO: Return stdout???
+		ctx.index = context.getCodeBlocks();
+	}
+	
+	public static class ReplContext {
+		private IntermediateFile file;
+		private int index;
+		private Locals local;
+		
+		public void setFile(IntermediateFile file) {
+			this.file = file;
+		}
+		
+		public void clear() {
+			index = 0;
+			local = null;
+		}
 	}
 	
 	public Value runFunction(AmpleFunc func, Locals params, AmpleContext context) {
@@ -56,6 +68,10 @@ public class AmpleRunner {
 		Locals local = new Locals();
 		local.add(params);
 		
+		return runFunction(func, params, local, context);
+	}
+	
+	private Value runFunction(AmpleFunc func, Locals params, Locals local, AmpleContext context) {
 		List<Inst> list = func.getInstructions();
 		List<Value.ArrayValue> allocatedList = new ArrayList<>();
 		

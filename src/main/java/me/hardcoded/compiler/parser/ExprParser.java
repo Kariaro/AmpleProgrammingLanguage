@@ -247,7 +247,9 @@ public class ExprParser {
 				
 				Reference reference = context.getLocalScope().getVariable(namespace, reader.value());
 				if (reference == null) {
-					throw parser.createParseException("Could not find the variable '%s'", reader.value());
+					reference = context.getLocalScope().importVariable(namespace, reader.value());
+					context.setReferencePosition(reference, reader.syntaxPosition());
+					// throw parser.createParseException("Could not find the variable '%s'", reader.value());
 				}
 				
 				NameExpr expr = new NameExpr(reader.syntaxPosition(), reference);

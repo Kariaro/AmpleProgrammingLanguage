@@ -3,6 +3,10 @@ package me.hardcoded.repl;
 import me.hardcoded.compiler.context.AmpleConfig;
 import me.hardcoded.compiler.intermediate.inst.IntermediateFile;
 import me.hardcoded.interpreter.AmpleRunner;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Configurator;
 
 import java.util.Scanner;
 
@@ -10,10 +14,18 @@ import java.util.Scanner;
  * Read Eval Print Loop
  */
 public class ReadEvalPrintLoop {
+	private static final Logger LOGGER = LogManager.getLogger(ReadEvalPrintLoop.class);
 	private final AmpleConfig ampleConfig;
 	
 	public ReadEvalPrintLoop(AmpleConfig ampleConfig) {
 		this.ampleConfig = ampleConfig;
+	}
+	
+	private static void printHelp() {
+		System.out.println("reset    - reset the state of repl");
+		System.out.println("exit     - close the repl");
+		System.out.println("help     - show this help message");
+		System.out.println();
 	}
 	
 	public void run() {
@@ -21,25 +33,30 @@ public class ReadEvalPrintLoop {
 		
 		REPLCompiler compiler = new REPLCompiler(ampleConfig);
 		
-		StringBuilder sb = new StringBuilder();
+		AmpleRunner runner = new AmpleRunner();
+		AmpleRunner.ReplContext context = new AmpleRunner.ReplContext();
+		
+		// Only info
+		Configurator.setAllLevels(LogManager.getRootLogger().getName(), Level.INFO);
+		
+		printHelp();
 		while (true) {
-			System.out.println(">>>");
+			System.out.println(">> ");
 			
 			String line = scanner.nextLine();
 			switch (line.trim()) {
-				case "reset" -> {
+				case "reset":
 					compiler.clear();
+					context.clear();
 					continue;
-				}
-				case "exit" -> {
+				case "exit":
 					return;
-				}
-				case "help" -> {
-					// TODO: Implement help
+				case "help":
+					printHelp();
 					continue;
-				}
 			}
 			
+			StringBuilder sb = new StringBuilder();
 			do {
 				sb.append(line).append('\n');
 				line = scanner.nextLine().stripTrailing();
@@ -49,17 +66,18 @@ public class ReadEvalPrintLoop {
 				continue;
 			}
 			
-			line = sb.toString();
-			sb.delete(0, sb.length());
+			line = sb.toString().trim();
+			if (line.isBlank()) {
+				continue;
+			}
 			
 			// We want to take the code and compile it to intermediate instructions quietly
-			System.out.println("You wrote: " + line);
-			
 			try {
 				IntermediateFile code = compiler.compile(line);
+				context.setFile(code);
 				
-				AmpleRunner runner = new AmpleRunner();
-				runner.runCodeBlock(code);
+				// Run the code repl
+				runner.runRepl(context);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

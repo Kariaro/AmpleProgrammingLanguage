@@ -2,6 +2,7 @@ package me.hardcoded.compiler.parser.scope;
 
 import me.hardcoded.compiler.AmpleMangler;
 import me.hardcoded.compiler.parser.type.Namespace;
+import me.hardcoded.compiler.parser.type.Primitives;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ValueType;
 
@@ -44,6 +45,13 @@ public class LocalScope {
 	
 	public void popLocals() {
 		localScope.getLast().popScope();
+	}
+	
+	public Reference importVariable(Namespace namespace, String name) {
+		Reference reference = addLocalVariable(namespace, Primitives.LINKED, name);
+		reference.setImported(true);
+		reference.setMangledName(AmpleMangler.mangleVariable(namespace, name));
+		return reference;
 	}
 	
 	public Reference addLocalVariable(Namespace namespace, ValueType valueType, String name) {
