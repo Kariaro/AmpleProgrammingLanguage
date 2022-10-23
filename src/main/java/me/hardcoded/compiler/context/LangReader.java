@@ -21,36 +21,20 @@ public class LangReader {
 	
 	private LangReader(File file, List<Token> list) {
 		this.list = list;
-		this.start = new Token(Type.WHITESPACE, ISyntaxPos.empty(file));
+		this.start = new Token(Type.WHITESPACE, ISyntaxPos.empty(file.getAbsolutePath()));
 		
 		if (!list.isEmpty()) {
 			Token t1 = list.get(list.size() - 1);
 			Position end = t1.syntaxPosition.getEndPosition();
-			this.end = new Token(Type.EOF, ISyntaxPos.of(file, end, end));
+			this.end = new Token(Type.EOF, ISyntaxPos.of(file.getAbsolutePath(), end, end));
 		} else {
-			this.end = new Token(Type.EOF, ISyntaxPos.empty(file));
+			this.end = new Token(Type.EOF, ISyntaxPos.empty(file.getAbsolutePath()));
 		}
 	}
-	
-	//	public int readerIndex() {
-	//		return index;
-	//	}
-	//
-	//	public void readerIndex(int index) {
-	//		this.index = index;
-	//	}
 	
 	public void advance() {
 		index++;
 	}
-	
-	//	public void recede() {
-	//		index--;
-	//	}
-	//
-	//	public int indexOf(Token token) {
-	//		return list.indexOf(token);
-	//	}
 	
 	public int remaining() {
 		return list.size() - index;

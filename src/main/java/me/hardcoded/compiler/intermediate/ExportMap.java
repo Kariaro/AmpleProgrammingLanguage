@@ -20,14 +20,17 @@ public class ExportMap {
 	final MangledFunctionMap functions;
 	final Map<String, Reference> variables;
 	
-	protected ExportMap() {
+	public ExportMap() {
 		functions = new MangledFunctionMap();
 		variables = new HashMap<>();
 	}
 	
-	// Instead of making a map that links different symbols to
+	public void clear() {
+		functions.clear();
+		variables.clear();
+	}
 	
-	protected boolean add(LinkableObject obj) throws ParseException {
+	public boolean add(LinkableObject obj) throws ParseException {
 		for (ReferenceSyntax referenceSyntax : obj.getExportedReferences()) {
 			Reference reference = referenceSyntax.getReference();
 			
@@ -106,7 +109,8 @@ public class ExportMap {
 			
 			if (getReference(reference) == null) {
 				LOGGER.warn("The imported symbol '{}' was not found in the project", reference.getPath());
-				LOGGER.warn("{}", ErrorUtil.createFullError(referenceSyntax.getSyntaxPosition(),
+				LOGGER.warn("{}", ErrorUtil.createFullError(
+					referenceSyntax.getSyntaxPosition(),
 					"Missing symbol '%s'%s".formatted(
 						reference.getPath(),
 						reference.getMangledName() == null ? "" : (" [" + AmpleMangler.demangleFunction(reference.getMangledName()) + "]")

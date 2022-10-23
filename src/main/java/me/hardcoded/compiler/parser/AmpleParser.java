@@ -49,6 +49,8 @@ public class AmpleParser {
 	// Configurable fields
 	private LangReader reader;
 	private File currentFile;
+	private String fileContent;
+	private boolean repl;
 	
 	public AmpleParser(AmpleConfig ampleConfig) {
 		this.context = new ProgramScope();
@@ -72,20 +74,23 @@ public class AmpleParser {
 	public LinkableObject fromFile(File file) throws ParseException, IOException {
 		//			LOGGER.error("Could not find the file '{}'", file.getAbsolutePath());
 		//			throw new ParseException("Failed to read file '%s'", file.getAbsolutePath());
-		return fromBytes(file, Files.readAllBytes(file.toPath()));
+		return fromBytes(file.getAbsolutePath(), Files.readAllBytes(file.toPath()));
 	}
 	
-	public LinkableObject fromBytes(File file, byte[] bytes) throws ParseException {
+	public LinkableObject fromReplBytes(String path, byte[] bytes) throws ParseException {
+		repl = true;
+		return fromBytes(path, bytes);
+	}
+	
+	private LinkableObject fromBytes(String path, byte[] bytes) throws ParseException {
 		if (bytes == null) {
 			throw createParseException("Tried to parse an array 'null'");
 		}
 		
-		LangReader oldContext = reader;
-		File oldFile = currentFile;
-		
 		// Update the fields inside this class
-		currentFile = file;
-		reader = LangReader.wrap(file, LexerTokenizer.parse(file, bytes));
+		currentFile = new File(path);
+		fileContent = new String(bytes);
+		reader = LangReader.wrap(currentFile, LexerTokenizer.parse(path, bytes));
 		
 		// Parse the current code
 		ProgStat program = parse();
@@ -112,17 +117,13 @@ public class AmpleParser {
 		LOGGER.debug("  imported = {}", importedReferences);
 		LOGGER.debug("  exported = {}", exportedReferences);
 		
-		AmpleCache.putFileSource(file, new String(bytes));
+		AmpleCache.putFileSource(currentFile, new String(bytes));
 		String fileChecksum = AmpleCache.getDataChecksum(bytes);
-		LinkableObject linkableObject = new LinkableObject(file, fileChecksum, program, importedFiles, exportedReferences, importedReferences);
+		LinkableObject linkableObject = new LinkableObject(currentFile, fileChecksum, program, importedFiles, exportedReferences, importedReferences);
 		
 		if (reader.remaining() != 0) {
 			throw createParseException(reader.syntaxPosition(), "Failed to parse file fully");
 		}
-		
-		// TODO: Remove
-		reader = oldContext;
-		currentFile = oldFile;
 		
 		return linkableObject;
 	}
@@ -131,7 +132,7 @@ public class AmpleParser {
 	 * This is the start of the parsing
 	 */
 	private ProgStat parse() throws ParseException {
-		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(currentFile, reader.position(), null);
+		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(currentFile.getAbsolutePath(), reader.position(), null);
 		ProgStat list = new ProgStat(mutableSyntax);
 		
 		while (reader.remaining() > 0) {
@@ -184,22 +185,43 @@ public class AmpleParser {
 			return funcStatement();
 		}
 		
-		if (isType()) {
-			return varStatement(false);
-		}
-		
-		// REPL (Read Eval Print Loop)
-		// Scopes should work for REPL
-		
-		if (reader.type() == Token.Type.L_CURLY) {
-			return statements();
+		if (repl) {
+			// REPL (Read Eval Print Loop)
+			// Scopes should work for REPL
+			
+			return replStatements();
+		} else {
+			if (isType()) {
+				return varStatement(false);
+			}
 		}
 		
 		throw createParseException(reader.syntaxPosition(), "Invalid statement");
 	}
 	
+	private Stat replStatements() throws ParseException {
+		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(currentFile.getAbsolutePath(), reader.position(), null);
+		ScopeStat stat = new ScopeStat(mutableSyntax);
+		
+		while (reader.remaining() > 0) {
+			Stat element = statement();
+			
+			if (element instanceof VarStat var) {
+				// All direct variables are exported
+				var.getReference().setExported(true);
+			}
+			
+			if (!element.isEmpty()) {
+				stat.addElement(element);
+			}
+		}
+		
+		mutableSyntax.end = reader.lastPositionEnd();
+		return stat;
+	}
+	
 	private Stat namespaceStatement() throws ParseException {
-		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(currentFile, reader.position(), null);
+		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(currentFile.getAbsolutePath(), reader.position(), null);
 		reader.advance();
 		
 		//		int modifiers = 0;
@@ -274,7 +296,7 @@ public class AmpleParser {
 	}
 	
 	private Stat funcStatement() throws ParseException {
-		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(currentFile, reader.position(), null);
+		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(currentFile.getAbsolutePath(), reader.position(), null);
 		reader.advance();
 		
 		int modifiers = 0;
@@ -295,6 +317,10 @@ public class AmpleParser {
 			
 			tryMatchOrError(Token.Type.R_PAREN);
 			reader.advance();
+		}
+		
+		if (repl) {
+			modifiers |= Reference.EXPORT;
 		}
 		
 		tryMatchOrError(Token.Type.IDENTIFIER);
@@ -380,7 +406,7 @@ public class AmpleParser {
 	}
 	
 	private ScopeStat statements() throws ParseException {
-		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(currentFile, reader.position(), null);
+		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(currentFile.getAbsolutePath(), reader.position(), null);
 		ScopeStat stat = new ScopeStat(mutableSyntax);
 		reader.advance();
 		
@@ -684,17 +710,17 @@ public class AmpleParser {
 	}
 	
 	ParseException createParseException(ISyntaxPos syntaxPosition, String format, Object... args) {
-		return createParseException(syntaxPosition.getFile(), syntaxPosition, format, args);
+		return createParseException(syntaxPosition.getPath(), syntaxPosition, format, args);
 	}
 	
-	ParseException createParseException(File file, ISyntaxPos syntaxPosition, String format, Object... args) {
+	ParseException createParseException(String path, ISyntaxPos syntaxPosition, String format, Object... args) {
 		String msg = String.format(format, args);
 		
 		StringBuilder sb = new StringBuilder();
-		if (file == null) {
+		if (path == null) {
 			sb.append("(?) ");
 		} else {
-			sb.append("(").append(file).append(") ");
+			sb.append("(").append(path).append(") ");
 		}
 		
 		if (syntaxPosition == null) {
@@ -702,7 +728,7 @@ public class AmpleParser {
 		} else {
 			Position position = syntaxPosition.getStartPosition();
 			sb.append("(line: ").append(position.line() + 1).append(", column: ").append(position.column() + 1).append("): ")
-				.append(ErrorUtil.createError(syntaxPosition, msg));
+				.append(ErrorUtil.createError(syntaxPosition, fileContent, msg));
 		}
 		
 		return new ParseException(sb.toString());

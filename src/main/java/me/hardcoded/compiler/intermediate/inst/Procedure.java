@@ -76,7 +76,10 @@ public class Procedure {
 	
 	@Override
 	public String toString() {
-		return reference.getPath();
+		return switch (type) {
+			case CODE -> super.toString();
+			default -> reference.getPath();
+		};
 	}
 	
 }

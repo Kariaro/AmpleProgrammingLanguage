@@ -2,17 +2,17 @@ package me.hardcoded.utils;
 
 import me.hardcoded.compiler.impl.ISyntaxPos;
 
-import java.io.File;
+import java.util.Objects;
 
 public class ImmutableSyntaxImpl implements ISyntaxPos {
 	public final Position start;
 	public final Position end;
-	public final File file;
+	public final String path;
 	
-	public ImmutableSyntaxImpl(File file, Position start, Position end) {
+	public ImmutableSyntaxImpl(String path, Position start, Position end) {
 		this.start = start;
 		this.end = end;
-		this.file = file;
+		this.path = Objects.requireNonNull(path);
 	}
 	
 	@Override
@@ -26,7 +26,7 @@ public class ImmutableSyntaxImpl implements ISyntaxPos {
 	}
 	
 	@Override
-	public File getFile() {
-		return file;
+	public String getPath() {
+		return path;
 	}
 }

@@ -2,94 +2,120 @@ package me.hardcoded.repl;
 
 import me.hardcoded.compiler.context.AmpleConfig;
 import me.hardcoded.compiler.errors.CompilerException;
-import me.hardcoded.compiler.intermediate.AmpleLinker;
+import me.hardcoded.compiler.errors.ParseException;
+import me.hardcoded.compiler.intermediate.ExportMap;
+import me.hardcoded.compiler.intermediate.generator.IntermediateGenerator;
 import me.hardcoded.compiler.intermediate.inst.IntermediateFile;
 import me.hardcoded.compiler.parser.AmpleParser;
 import me.hardcoded.compiler.parser.LinkableObject;
 import me.hardcoded.configuration.CompilerConfiguration;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-// TODO: Implement REPL (Read Eval Print Loop)
 public class REPLCompiler {
-	private static final Logger LOGGER = LogManager.getLogger(REPLCompiler.class);
-	
 	private final AmpleConfig ampleConfig;
-	private final List<LinkableObject> previous;
 	private final Set<String> importedPaths;
+	private final IntermediateGenerator generator;
+	private final IntermediateFile file;
 	
 	public REPLCompiler(AmpleConfig ampleConfig) {
 		this.ampleConfig = ampleConfig;
 		
 		// Repl
-		this.previous = new ArrayList<>();
 		this.importedPaths = new HashSet<>();
+		this.file = new IntermediateFile();
+		this.generator = new IntermediateGenerator(file, new ExportMap());
 	}
 	
 	public void clear() {
-		previous.clear();
+		generator.reset();
 		importedPaths.clear();
+		file.getProcedures().clear();
 	}
 	
 	public IntermediateFile compile(String code) throws CompilerException {
 		CompilerConfiguration config = ampleConfig.getConfiguration();
 		File workingDir = config.getWorkingDirectory();
 		
-		// Compile the code
-		LinkedList<LinkableObject> list = new LinkedList<>(previous);
-		
+		List<LinkableObject> objects = new ArrayList<>();
 		try {
-			LinkableObject first = new AmpleParser(ampleConfig).fromBytes(new File("", "System.in"), code.getBytes());
-			list.add(first);
+			LinkableObject first = new AmpleParser(ampleConfig).fromReplBytes("System.in", code.getBytes());
+			objects.add(first);
 			
 			LinkedList<String> importableFiles = new LinkedList<>(first.getImports());
-			
-			
 			while (!importableFiles.isEmpty()) {
 				File file = new File(workingDir, importableFiles.poll()).getCanonicalFile();
 				
 				if (importedPaths.add(file.getAbsolutePath())) {
 					LinkableObject obj = new AmpleParser(ampleConfig).fromFile(file.getAbsoluteFile());
-					list.add(obj);
 					importableFiles.addAll(obj.getImports());
 					
-					previous.add(obj);
+					objects.add(obj);
 				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		
-		// Combine all linkable objects into one instruction file
-		// Link the code
-		AmpleLinker linker = new AmpleLinker(ampleConfig);
-		IntermediateFile file = linker.link(list);
+		// Update the export map
+		if (!checkImports(generator.getExportMap(), objects)) {
+			throw new RuntimeException("Project is not linkable");
+		}
 		
-		//		OutputFormat format = ampleConfig.getConfiguration().getOutputFormat();
-		//		ICodeGenerator codeGenerator = format.createNew(ampleConfig);
-		//
-		//		byte[] bytes = switch (ampleConfig.getConfiguration().getTargetFormat()) {
-		//			case BYTECODE -> codeGenerator.getBytecode(ampleConfig, file);
-		//			case ASSEMBLER -> codeGenerator.getAssembler(ampleConfig, file);
-		//		};
-		//
-		//		if (bytes == null) {
-		//			throw new RuntimeException("Failed to generate assembler or bytecode");
-		//		}
-		//
-		//		String path = new File(config.getOutputFolder(), "compile").getAbsolutePath();
-		//		try {
-		//			Files.write(Path.of(path), bytes);
-		//		} catch (IOException e) {
-		//			LOGGER.error("", e);
-		//		}
-		//		LOGGER.info("");
-		//		LOGGER.info("{}", path);
+		for (int i = objects.size() - 1; i >= 0; i--) {
+			// Include each linkable object in the intermediate generator
+			LinkableObject link = objects.get(i);
+			
+			//			Path path = link.getFile().toPath();
+			//			if (path.isAbsolute()) {
+			//				LOGGER.debug(" - {} : {}", link.getChecksum(), ampleConfig.getConfiguration().getWorkingDirectory().toPath().relativize(path));
+			//			} else {
+			//				LOGGER.debug(" - {} : {}", link.getChecksum(), path);
+			//			}
+			
+			generator.generate(link);
+		}
+		
+		/*
+		LOGGER.debug("");
+		for (Procedure proc : file.getProcedures()) {
+			switch (proc.getType()) {
+				case FUNCTION -> LOGGER.debug("# func {}", proc);
+				case VARIABLE -> LOGGER.debug("# variable {}", proc);
+				default -> LOGGER.debug("# proc = {}", proc.getType());
+			}
+			
+			for (Inst inst : proc.getInstructions()) {
+				ISyntaxPos pos = inst.getSyntaxPosition();
+				String details = "(line: %3d, column: %3d)".formatted(pos.getStartPosition().line(), pos.getStartPosition().column());
+				
+				if (inst.getOpcode() == Opcode.LABEL) {
+					LOGGER.debug("    {}     {}", details, inst);
+				} else {
+					LOGGER.debug("        {}     {}", details, inst);
+				}
+			}
+		}
+		*/
 		
 		return file;
+	}
+	
+	private boolean checkImports(ExportMap exportMap, List<LinkableObject> list) throws ParseException {
+		for (LinkableObject link : list) {
+			if (!exportMap.add(link)) {
+				return false;
+			}
+		}
+		
+		for (LinkableObject link : list) {
+			if (!exportMap.containsThrowErrors(link)) {
+				return false;
+			}
+		}
+		
+		return true;
 	}
 }

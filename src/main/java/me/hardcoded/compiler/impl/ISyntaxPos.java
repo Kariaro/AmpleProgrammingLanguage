@@ -22,15 +22,19 @@ public interface ISyntaxPos {
 	Position getEndPosition();
 	
 	/**
-	 * Returns the file this object belongs to
+	 * Returns the path this object belongs to
 	 */
-	File getFile();
+	String getPath();
 	
-	static ISyntaxPos empty(File file) {
-		return new ImmutableSyntaxImpl(file, new Position(0, 0), new Position(0, 0));
+	static ISyntaxPos empty(String path) {
+		return new ImmutableSyntaxImpl(path, new Position(0, 0), new Position(0, 0));
+	}
+	
+	static ISyntaxPos of(String path, Position start, Position end) {
+		return new ImmutableSyntaxImpl(path, start, end);
 	}
 	
 	static ISyntaxPos of(File file, Position start, Position end) {
-		return new ImmutableSyntaxImpl(file, start, end);
+		return new ImmutableSyntaxImpl(file.getAbsolutePath(), start, end);
 	}
 }

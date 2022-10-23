@@ -227,11 +227,10 @@ class LinkableHeader {
 		String name = deserializeString(in);
 		Position start = readPosition(in);
 		Position end = readPosition(in);
-		return ISyntaxPos.of(name == null ? null : new File(name), start, end);
+		return ISyntaxPos.of(name, start, end);
 	}
 	
 	private Position readPosition(DataInputStream in) throws IOException {
-		String name = deserializeString(in);
 		int column = readVarInt(in);
 		int line = readVarInt(in);
 		return new Position(column, line);
@@ -261,7 +260,7 @@ class LinkableHeader {
 	}
 	
 	private void writeISyntaxPosition(ISyntaxPos syntaxPos, DataOutputStream out) throws IOException {
-		serializeString(syntaxPos.getFile() == null ? null : syntaxPos.getFile().getAbsolutePath(), out);
+		serializeString(syntaxPos.getPath(), out);
 		writePosition(syntaxPos.getStartPosition(), out);
 		writePosition(syntaxPos.getEndPosition(), out);
 	}

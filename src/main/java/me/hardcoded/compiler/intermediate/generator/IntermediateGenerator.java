@@ -22,7 +22,7 @@ public class IntermediateGenerator {
 	private static final InstRef NONE = new InstRef("<invalid>", NONE_NAMESPACE, Primitives.NONE, -1, 0);
 	
 	private final IntermediateFile file;
-	private final ExportMap exportMap;
+	private ExportMap exportMap;
 	
 	// Used for reference creation
 	private final Map<Reference, InstRef> wrappedReferences;
@@ -36,6 +36,17 @@ public class IntermediateGenerator {
 		this.file = file;
 		this.exportMap = exportMap;
 		this.wrappedReferences = new HashMap<>();
+		this.exportMap = new ExportMap();
+	}
+	
+	public void reset() {
+		wrappedReferences.clear();
+		// Clear export map
+		exportMap.clear();
+	}
+	
+	public ExportMap getExportMap() {
+		return exportMap;
 	}
 	
 	public void generate(LinkableObject obj) throws InstException {
@@ -201,7 +212,7 @@ public class IntermediateGenerator {
 		if (list.isEmpty() || list.get(list.size() - 1).getOpcode() != Opcode.RET) {
 			throw new InstException(ErrorUtil.createFullError(
 				ISyntaxPos.of(
-					stat.getSyntaxPosition().getFile(),
+					stat.getSyntaxPosition().getPath(),
 					stat.getSyntaxPosition().getStartPosition(),
 					stat.getSyntaxPosition().getStartPosition()
 				),
