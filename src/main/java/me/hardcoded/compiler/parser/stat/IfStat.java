@@ -1,6 +1,6 @@
 package me.hardcoded.compiler.parser.stat;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.expr.Expr;
 import me.hardcoded.compiler.parser.serial.TreeType;
 
@@ -9,8 +9,8 @@ public class IfStat extends Stat {
 	private Stat body;
 	private Stat elseBody;
 	
-	public IfStat(ISyntaxPosition syntaxPosition, Expr value, Stat body, Stat elseBody) {
-		super(syntaxPosition);
+	public IfStat(ISyntaxPos syntaxPos, Expr value, Stat body, Stat elseBody) {
+		super(syntaxPos);
 		this.value = value;
 		this.body = body;
 		this.elseBody = elseBody;

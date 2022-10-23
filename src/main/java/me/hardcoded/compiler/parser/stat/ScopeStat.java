@@ -1,6 +1,6 @@
 package me.hardcoded.compiler.parser.stat;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.serial.TreeType;
 
 import java.util.ArrayList;
@@ -9,8 +9,8 @@ import java.util.List;
 public class ScopeStat extends Stat {
 	private List<Stat> elements;
 	
-	public ScopeStat(ISyntaxPosition syntaxPosition) {
-		super(syntaxPosition);
+	public ScopeStat(ISyntaxPos syntaxPos) {
+		super(syntaxPos);
 		this.elements = new ArrayList<>();
 	}
 	

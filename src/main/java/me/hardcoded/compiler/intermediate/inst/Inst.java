@@ -1,24 +1,24 @@
 package me.hardcoded.compiler.intermediate.inst;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.type.ValueType;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Inst {
-	private final ISyntaxPosition syntaxPosition;
+	private final ISyntaxPos syntaxPos;
 	private final List<InstParam> parameters;
 	private final Opcode opcode;
 	
-	public Inst(Opcode opcode, ISyntaxPosition syntaxPosition) {
-		this.syntaxPosition = syntaxPosition;
+	public Inst(Opcode opcode, ISyntaxPos syntaxPos) {
+		this.syntaxPos = syntaxPos;
 		this.parameters = new ArrayList<>();
 		this.opcode = opcode;
 	}
 	
-	public ISyntaxPosition getSyntaxPosition() {
-		return syntaxPosition;
+	public ISyntaxPos getSyntaxPosition() {
+		return syntaxPos;
 	}
 	
 	public Inst addParam(InstParam param) {

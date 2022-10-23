@@ -1,6 +1,6 @@
 package me.hardcoded.compiler.parser.scope;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.type.Namespace;
 import me.hardcoded.compiler.parser.type.Primitives;
 import me.hardcoded.compiler.parser.type.Reference;
@@ -15,7 +15,7 @@ public class ProgramScope {
 	private final FunctionScope functionScope;
 	private final LocalScope localScope;
 	private final TypeScope typeScope;
-	final Map<Reference, ISyntaxPosition> firstReferencePosition;
+	final Map<Reference, ISyntaxPos> firstReferencePosition;
 	final Map<String, Reference> importedReference;
 	final List<Reference> allReferences;
 	int count;
@@ -63,11 +63,11 @@ public class ProgramScope {
 		return importedReference;
 	}
 	
-	public ISyntaxPosition getFirstReferencePosition(Reference reference) {
+	public ISyntaxPos getFirstReferencePosition(Reference reference) {
 		return firstReferencePosition.get(reference);
 	}
 	
-	public void setReferencePosition(Reference reference, ISyntaxPosition syntaxPosition) {
+	public void setReferencePosition(Reference reference, ISyntaxPos syntaxPosition) {
 		if (firstReferencePosition.putIfAbsent(reference, syntaxPosition) != null) {
 			throw new RuntimeException("Reference was added multiple times");
 		}

@@ -1,14 +1,18 @@
 package me.hardcoded.utils;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 
-public class ImmutableSyntaxImpl implements ISyntaxPosition {
+import java.io.File;
+
+public class ImmutableSyntaxImpl implements ISyntaxPos {
 	public final Position start;
 	public final Position end;
+	public final File file;
 	
-	public ImmutableSyntaxImpl(Position start, Position end) {
+	public ImmutableSyntaxImpl(File file, Position start, Position end) {
 		this.start = start;
 		this.end = end;
+		this.file = file;
 	}
 	
 	@Override
@@ -19,5 +23,10 @@ public class ImmutableSyntaxImpl implements ISyntaxPosition {
 	@Override
 	public Position getEndPosition() {
 		return end;
+	}
+	
+	@Override
+	public File getFile() {
+		return file;
 	}
 }

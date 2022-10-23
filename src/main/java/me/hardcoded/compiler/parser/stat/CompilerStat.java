@@ -1,6 +1,6 @@
 package me.hardcoded.compiler.parser.stat;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.serial.TreeType;
 import me.hardcoded.compiler.parser.type.Reference;
 
@@ -10,8 +10,8 @@ public class CompilerStat extends Stat {
 	private List<Part> parts;
 	private String targetType;
 	
-	public CompilerStat(ISyntaxPosition syntaxPosition, String targetType, List<Part> parts) {
-		super(syntaxPosition);
+	public CompilerStat(ISyntaxPos syntaxPos, String targetType, List<Part> parts) {
+		super(syntaxPos);
 		this.targetType = targetType;
 		this.parts = parts;
 	}
@@ -44,7 +44,7 @@ public class CompilerStat extends Stat {
 	 *
 	 * <code>"mov RAX, {}" : reference</code>
 	 */
-	public static record Part(ISyntaxPosition syntaxPosition, String command, List<Reference> references) {
+	public static record Part(ISyntaxPos syntaxPosition, String command, List<Reference> references) {
 	
 	}
 }

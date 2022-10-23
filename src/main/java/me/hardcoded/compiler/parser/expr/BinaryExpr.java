@@ -1,6 +1,6 @@
 package me.hardcoded.compiler.parser.expr;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.serial.TreeType;
 import me.hardcoded.compiler.parser.type.Operation;
 import me.hardcoded.compiler.parser.type.ValueType;
@@ -10,8 +10,8 @@ public class BinaryExpr extends Expr {
 	private Expr right;
 	private Operation operation;
 	
-	public BinaryExpr(ISyntaxPosition syntaxPosition, Operation operation, Expr left, Expr right) {
-		super(syntaxPosition);
+	public BinaryExpr(ISyntaxPos syntaxPos, Operation operation, Expr left, Expr right) {
+		super(syntaxPos);
 		this.left = left;
 		this.right = right;
 		this.operation = operation;

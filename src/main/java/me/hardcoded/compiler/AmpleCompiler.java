@@ -26,7 +26,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
 
-// TODO: Implement REPL (Read Eval Print Loop)
 public class AmpleCompiler {
 	private static final Logger LOGGER = LogManager.getLogger(AmpleCompiler.class);
 	

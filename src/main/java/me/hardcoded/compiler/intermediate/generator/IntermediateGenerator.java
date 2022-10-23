@@ -1,7 +1,7 @@
 package me.hardcoded.compiler.intermediate.generator;
 
 import me.hardcoded.compiler.errors.InstException;
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.intermediate.ExportMap;
 import me.hardcoded.compiler.intermediate.inst.*;
 import me.hardcoded.compiler.parser.LinkableObject;
@@ -28,6 +28,7 @@ public class IntermediateGenerator {
 	private final Map<Reference, InstRef> wrappedReferences;
 	private int count;
 	private int funcCount;
+	private LinkableObject linkableObject;
 	private InstRef breakBranch;
 	private InstRef continueBranch;
 	
@@ -38,6 +39,7 @@ public class IntermediateGenerator {
 	}
 	
 	public void generate(LinkableObject obj) throws InstException {
+		this.linkableObject = obj;
 		generateProgStat(obj.getProgram());
 	}
 	
@@ -104,6 +106,7 @@ public class IntermediateGenerator {
 			Procedure procedure = new Procedure(switch (s.getTreeType()) {
 				case FUNC -> Procedure.ProcedureType.FUNCTION;
 				case VAR -> Procedure.ProcedureType.VARIABLE;
+				case SCOPE -> Procedure.ProcedureType.CODE;
 				default -> throw new RuntimeException("Invalid statement inside procedure");
 			});
 			
@@ -197,7 +200,11 @@ public class IntermediateGenerator {
 		List<Inst> list = procedure.getInstructions();
 		if (list.isEmpty() || list.get(list.size() - 1).getOpcode() != Opcode.RET) {
 			throw new InstException(ErrorUtil.createFullError(
-				ISyntaxPosition.of(stat.getSyntaxPosition().getStartPosition(), stat.getSyntaxPosition().getStartPosition()),
+				ISyntaxPos.of(
+					stat.getSyntaxPosition().getFile(),
+					stat.getSyntaxPosition().getStartPosition(),
+					stat.getSyntaxPosition().getStartPosition()
+				),
 				"Missing return statement '%s'".formatted(
 					stat.getReference()
 				)
@@ -518,8 +525,8 @@ public class IntermediateGenerator {
 				Position pos = expr.getSyntaxPosition().getStartPosition();
 				throw new InstException(
 					"(line: %d, column: %d) Left and Right side does not match (%s != %s)",
-					pos.line + 1,
-					pos.column + 1,
+					pos.line() + 1,
+					pos.column() + 1,
 					childType.toShortName(),
 					right.getValueType().toShortName()
 				);
@@ -536,8 +543,8 @@ public class IntermediateGenerator {
 				Position pos = expr.getSyntaxPosition().getStartPosition();
 				throw new InstException(
 					"(line: %d, column: %d) Left and Right side does not match (%s != %s)",
-					pos.line + 1,
-					pos.column + 1,
+					pos.line() + 1,
+					pos.column() + 1,
 					left.getValueType().toShortName(),
 					right.getValueType().toShortName()
 				);

@@ -1,6 +1,6 @@
 package me.hardcoded.compiler.parser.stat;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.expr.Expr;
 import me.hardcoded.compiler.parser.serial.TreeType;
 
@@ -8,8 +8,8 @@ public class WhileStat extends Stat {
 	private Expr condition;
 	private Stat body;
 	
-	public WhileStat(ISyntaxPosition syntaxPosition, Expr condition, Stat body) {
-		super(syntaxPosition);
+	public WhileStat(ISyntaxPos syntaxPos, Expr condition, Stat body) {
+		super(syntaxPos);
 		this.condition = condition;
 		this.body = body;
 	}

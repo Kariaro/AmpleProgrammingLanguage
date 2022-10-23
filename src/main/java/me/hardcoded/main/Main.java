@@ -5,6 +5,7 @@ import me.hardcoded.compiler.context.AmpleConfig;
 import me.hardcoded.configuration.CompilerConfiguration;
 import me.hardcoded.configuration.OutputFormat;
 import me.hardcoded.configuration.TargetFormat;
+import me.hardcoded.repl.ReadEvalPrintLoop;
 import me.hardcoded.utils.DebugUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -70,6 +71,7 @@ public class Main {
 			return;
 		}
 		
+		
 		// Print compiler statistics
 		LOGGER.info("---------------------------------------------------------");
 		LOGGER.info("HardCoded AmpleProgrammingLanguage compiler {} (2021-10-15)", getVersion());
@@ -82,10 +84,18 @@ public class Main {
 		LOGGER.info("UseCache     : {}", config.useCache() ? "True" : "False");
 		LOGGER.info("---------------------------------------------------------");
 		
+		boolean repl = true;
+		
 		long start = System.nanoTime();
+		
 		try {
-			AmpleCompiler compiler = new AmpleCompiler(new AmpleConfig(config));
-			compiler.compile();
+			if (repl) {
+				ReadEvalPrintLoop loop = new ReadEvalPrintLoop(new AmpleConfig(config));
+				loop.run();
+			} else {
+				AmpleCompiler compiler = new AmpleCompiler(new AmpleConfig(config));
+				compiler.compile();
+			}
 		} catch (Exception e) {
 			LOGGER.error("", e);
 		}

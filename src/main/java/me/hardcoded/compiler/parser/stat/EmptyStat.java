@@ -1,11 +1,11 @@
 package me.hardcoded.compiler.parser.stat;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.serial.TreeType;
 
 public class EmptyStat extends Stat {
-	public EmptyStat(ISyntaxPosition syntaxPosition) {
-		super(syntaxPosition);
+	public EmptyStat(ISyntaxPos syntaxPos) {
+		super(syntaxPos);
 	}
 	
 	@Override

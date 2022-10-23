@@ -1,6 +1,6 @@
 package me.hardcoded.visualization;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.utils.Position;
 
 public abstract class VisualizationEvent {
@@ -39,14 +39,14 @@ public abstract class VisualizationEvent {
 	}
 	
 	public static class SyntaxSelectionEvent extends VisualizationEvent {
-		private final ISyntaxPosition syntaxPosition;
+		private final ISyntaxPos syntaxPosition;
 		
-		public SyntaxSelectionEvent(Visualization source, ISyntaxPosition syntaxPosition) {
+		public SyntaxSelectionEvent(Visualization source, ISyntaxPos syntaxPosition) {
 			super(source, Type.SYNTAX_SELECTION_EVENT);
 			this.syntaxPosition = syntaxPosition;
 		}
 		
-		public ISyntaxPosition getSyntaxPosition() {
+		public ISyntaxPos getSyntaxPosition() {
 			return syntaxPosition;
 		}
 	}

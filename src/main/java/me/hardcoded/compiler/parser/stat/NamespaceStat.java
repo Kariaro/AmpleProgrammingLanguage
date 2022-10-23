@@ -1,6 +1,6 @@
 package me.hardcoded.compiler.parser.stat;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.serial.TreeType;
 import me.hardcoded.compiler.parser.type.Reference;
 
@@ -11,8 +11,8 @@ public class NamespaceStat extends Stat {
 	private List<Stat> elements;
 	private Reference reference;
 	
-	public NamespaceStat(ISyntaxPosition syntaxPosition, Reference reference) {
-		super(syntaxPosition);
+	public NamespaceStat(ISyntaxPos syntaxPos, Reference reference) {
+		super(syntaxPos);
 		this.elements = new ArrayList<>();
 		this.reference = reference;
 	}

@@ -1,15 +1,15 @@
 package me.hardcoded.compiler.context;
 
-import java.util.List;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.lexer.Token;
 import me.hardcoded.lexer.Token.Type;
 import me.hardcoded.utils.DebugUtils;
 import me.hardcoded.utils.Position;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.io.File;
+import java.util.List;
 
 public class LangReader {
 	private static final Logger LOGGER = LogManager.getLogger(LangReader.class);
@@ -19,38 +19,38 @@ public class LangReader {
 	private final Token end;
 	private int index;
 	
-	private LangReader(List<Token> list) {
+	private LangReader(File file, List<Token> list) {
 		this.list = list;
-		this.start = new Token(Type.WHITESPACE, ISyntaxPosition.empty());
+		this.start = new Token(Type.WHITESPACE, ISyntaxPos.empty(file));
 		
 		if (!list.isEmpty()) {
 			Token t1 = list.get(list.size() - 1);
 			Position end = t1.syntaxPosition.getEndPosition();
-			this.end = new Token(Type.EOF, ISyntaxPosition.of(end, end));
+			this.end = new Token(Type.EOF, ISyntaxPos.of(file, end, end));
 		} else {
-			this.end = new Token(Type.EOF, ISyntaxPosition.empty());
+			this.end = new Token(Type.EOF, ISyntaxPos.empty(file));
 		}
 	}
 	
-//	public int readerIndex() {
-//		return index;
-//	}
-//
-//	public void readerIndex(int index) {
-//		this.index = index;
-//	}
+	//	public int readerIndex() {
+	//		return index;
+	//	}
+	//
+	//	public void readerIndex(int index) {
+	//		this.index = index;
+	//	}
 	
 	public void advance() {
 		index++;
 	}
 	
-//	public void recede() {
-//		index--;
-//	}
-//
-//	public int indexOf(Token token) {
-//		return list.indexOf(token);
-//	}
+	//	public void recede() {
+	//		index--;
+	//	}
+	//
+	//	public int indexOf(Token token) {
+	//		return list.indexOf(token);
+	//	}
 	
 	public int remaining() {
 		return list.size() - index;
@@ -61,12 +61,12 @@ public class LangReader {
 		
 		if (DebugUtils.DEBUG_LANGCONTEXT_STACK_TRACE) {
 			Position pos = token.syntaxPosition.getStartPosition();
-			LOGGER.debug("[{}] (Line: {}, Column: {}), {}", Thread.getAllStackTraces().get(Thread.currentThread())[4], pos.line, pos.column, token);
+			LOGGER.debug("[{}] (Line: {}, Column: {}), {}", Thread.getAllStackTraces().get(Thread.currentThread())[4], pos.line(), pos.column(), token);
 		}
 		
 		return token;
 	}
-
+	
 	public String value() {
 		return token().value;
 	}
@@ -87,21 +87,23 @@ public class LangReader {
 		return peak(0).syntaxPosition.getEndPosition();
 	}
 	
-	public ISyntaxPosition syntaxPosition() {
+	public ISyntaxPos syntaxPosition() {
 		return token().syntaxPosition;
 	}
 	
 	/**
 	 * Returns the token at the specified relative position.
 	 * <br>Note that this method will never return {@code null}.
-	 * 
-	 * @param	offset
-	 * @return	the token at the specified relative position
+	 *
+	 * @param offset
+	 * @return the token at the specified relative position
 	 */
 	public Token peak(int offset) {
 		int idx = index + offset;
-		if (idx < 0) return start;
-		if (idx >= list.size()) return end;
+		if (idx < 0)
+			return start;
+		if (idx >= list.size())
+			return end;
 		return list.get(idx);
 	}
 	
@@ -120,7 +122,7 @@ public class LangReader {
 		return value();
 	}
 	
-	public static LangReader wrap(List<Token> list) {
-		return new LangReader(list);
+	public static LangReader wrap(File file, List<Token> list) {
+		return new LangReader(file, list);
 	}
 }

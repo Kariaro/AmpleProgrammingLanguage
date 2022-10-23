@@ -1,8 +1,8 @@
 package me.hardcoded.compiler.parser.stat;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
-import me.hardcoded.compiler.parser.type.Reference;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.serial.TreeType;
+import me.hardcoded.compiler.parser.type.Reference;
 
 import java.util.List;
 import java.util.Objects;
@@ -12,8 +12,8 @@ public class FuncStat extends Stat {
 	private Reference reference;
 	private Stat body;
 	
-	public FuncStat(ISyntaxPosition syntaxPosition, List<Reference> parameters, Reference reference) {
-		super(syntaxPosition);
+	public FuncStat(ISyntaxPos syntaxPos, List<Reference> parameters, Reference reference) {
+		super(syntaxPos);
 		this.parameters = parameters;
 		this.reference = Objects.requireNonNull(reference);
 	}

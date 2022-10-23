@@ -1,6 +1,6 @@
 package me.hardcoded.compiler.parser.expr;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.serial.TreeType;
 import me.hardcoded.compiler.parser.type.ValueType;
 
@@ -8,26 +8,26 @@ public class NumExpr extends Expr {
 	private long value;
 	private ValueType type;
 	
-	public NumExpr(ISyntaxPosition syntaxPosition, ValueType type, long value) {
-		super(syntaxPosition);
+	public NumExpr(ISyntaxPos syntaxPos, ValueType type, long value) {
+		super(syntaxPos);
 		this.type = type;
 		this.value = value;
 	}
 	
-	public NumExpr(ISyntaxPosition syntaxPosition, ValueType type, int value) {
-		super(syntaxPosition);
+	public NumExpr(ISyntaxPos syntaxPos, ValueType type, int value) {
+		super(syntaxPos);
 		this.type = type;
 		this.value = Integer.toUnsignedLong(value);
 	}
 	
-	public NumExpr(ISyntaxPosition syntaxPosition, ValueType type, double value) {
-		super(syntaxPosition);
+	public NumExpr(ISyntaxPos syntaxPos, ValueType type, double value) {
+		super(syntaxPos);
 		this.type = type;
 		this.value = Double.doubleToRawLongBits(value);
 	}
 	
-	public NumExpr(ISyntaxPosition syntaxPosition, ValueType type, float value) {
-		super(syntaxPosition);
+	public NumExpr(ISyntaxPos syntaxPos, ValueType type, float value) {
+		super(syntaxPos);
 		this.type = type;
 		this.value = Integer.toUnsignedLong(Float.floatToRawIntBits(value));
 	}

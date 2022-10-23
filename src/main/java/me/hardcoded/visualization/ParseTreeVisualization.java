@@ -1,6 +1,6 @@
 package me.hardcoded.visualization;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.expr.*;
 import me.hardcoded.compiler.parser.stat.*;
 import me.hardcoded.compiler.parser.type.Associativity;
@@ -252,9 +252,9 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 		}
 	}
 	
-	private void setElementSelected(List<Element> list, ISyntaxPosition position) {
+	private void setElementSelected(List<Element> list, ISyntaxPos position) {
 		for (Element e : list) {
-			ISyntaxPosition syntaxPosition = e.syntaxPosition;
+			ISyntaxPos syntaxPosition = e.syntaxPosition;
 			if (syntaxPosition != null && SyntaxUtils.syntaxIntersect(position, syntaxPosition)) {
 				e.selected = true;
 				for (Element children : e.elements) {
@@ -273,7 +273,7 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 				return value;
 			}
 			
-			ISyntaxPosition syntaxPosition = element.syntaxPosition;
+			ISyntaxPos syntaxPosition = element.syntaxPosition;
 			if (syntaxPosition != null && SyntaxUtils.syntaxIntersect(syntaxPosition, pos)) {
 				return element;
 			}
@@ -354,7 +354,7 @@ public final class ParseTreeVisualization extends Visualization implements Visua
 		public boolean selected;
 		
 		private String content;
-		private ISyntaxPosition syntaxPosition;
+		private ISyntaxPos syntaxPosition;
 		
 		private Element(Object object) {
 			this.elements = new ArrayList<>();

@@ -4,6 +4,7 @@ import me.hardcoded.compiler.intermediate.inst.*;
 import me.hardcoded.compiler.parser.type.ValueType;
 import me.hardcoded.interpreter.value.Memory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,17 +14,28 @@ import java.util.Map;
  */
 class AmpleContext {
 	private final Map<InstRef, AmpleFunc> functions;
+	private final List<AmpleFunc> codeBlocks;
 	private final AmpleFunc mainFunction;
 	private final Memory memory;
 	
 	public AmpleContext(IntermediateFile file) {
 		this.functions = new HashMap<>();
+		this.codeBlocks = new ArrayList<>();
 		
+		int blocks = 0;
 		InstRef mainRef = null;
 		for (Procedure proc : file.getProcedures()) {
-			functions.put(proc.getReference(), new AmpleFunc(proc));
-			if ("main".equals(proc.getReference().getName())) {
-				mainRef = proc.getReference();
+			switch (proc.getType()) {
+				case FUNCTION -> {
+					functions.put(proc.getReference(), new AmpleFunc(proc));
+					if ("main".equals(proc.getReference().getName())) {
+						mainRef = proc.getReference();
+					}
+				}
+				case CODE -> {
+					// We want to save these
+					codeBlocks.add(new AmpleFunc(proc));
+				}
 			}
 		}
 		
@@ -41,6 +53,14 @@ class AmpleContext {
 	
 	public AmpleFunc getFunction(InstRef reference) {
 		return functions.get(reference);
+	}
+	
+	public int getCodeBlocks() {
+		return codeBlocks.size();
+	}
+	
+	public AmpleFunc getCodeBlock(int index) {
+		return codeBlocks.get(index);
 	}
 	
 	public static class AmpleFunc {

@@ -1,10 +1,10 @@
 package me.hardcoded.visualization;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.intermediate.inst.Inst;
 import me.hardcoded.compiler.intermediate.inst.IntermediateFile;
 import me.hardcoded.compiler.intermediate.inst.Procedure;
-import me.hardcoded.compiler.parser.expr.*;
+import me.hardcoded.compiler.parser.expr.Expr;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.utils.Position;
 import me.hardcoded.utils.SyntaxUtils;
@@ -51,40 +51,42 @@ public final class InstFileVisualization extends Visualization implements Visual
 		
 		return null;
 	}
-
+	
 	@Override
 	protected void setup() {
 		panel = new LocalPanel();
 		panel.setOpaque(true);
-
+		
 		frame.setSize(640, 460);
 		frame.setContentPane(panel);
 		MouseAdapter adapter = new MouseAdapter() {
 			private double selectedX;
 			private double selectedY;
-
+			
 			private double scrollam = 1;
 			private double scroll = 1;
-
+			
 			@Override
 			public void mouseWheelMoved(MouseWheelEvent event) {
 				double amount = event.getPreciseWheelRotation() / 5.0;
-
+				
 				scrollam += amount;
-				if (scrollam < -2) scrollam = -2;
-				if (scrollam > 20) scrollam = 20;
-
+				if (scrollam < -2)
+					scrollam = -2;
+				if (scrollam > 20)
+					scrollam = 20;
+				
 				double last = scroll;
 				scroll = Math.pow(1.3, scrollam - 1);
-
+				
 				Point mouse = event.getPoint();
 				panel.xpos += mouse.x * (scroll - last);
 				panel.ypos += mouse.y * (scroll - last);
-
+				
 				panel.zoom = 1.0 / scroll;
 				panel.repaint();
 			}
-
+			
 			@Override
 			public void mousePressed(MouseEvent event) {
 				selectedX = event.getX() * scroll - panel.xpos;
@@ -104,14 +106,14 @@ public final class InstFileVisualization extends Visualization implements Visual
 					panel.repaint();
 				}
 			}
-
+			
 			@Override
 			public void mouseDragged(MouseEvent event) {
 				panel.xpos = event.getX() * scroll - selectedX;
 				panel.ypos = event.getY() * scroll - selectedY;
 				panel.repaint();
 			}
-
+			
 			@Override
 			public void mouseMoved(MouseEvent event) {
 				double mx = event.getX() * scroll - panel.xpos;
@@ -166,7 +168,7 @@ public final class InstFileVisualization extends Visualization implements Visual
 		
 		options.add(viewType);
 	}
-
+	
 	@Override
 	protected void showObject(Object value) {
 		if (!(value instanceof IntermediateFile program)) {
@@ -211,6 +213,7 @@ public final class InstFileVisualization extends Visualization implements Visual
 	
 	/**
 	 * Returns the element at the specified coordinates
+	 *
 	 * @param mx the x coordinate
 	 * @param my the y coordinate
 	 * @return the element at the specified coordinates
@@ -251,9 +254,9 @@ public final class InstFileVisualization extends Visualization implements Visual
 		}
 	}
 	
-	private void setElementSelected(List<Element> list, ISyntaxPosition position) {
+	private void setElementSelected(List<Element> list, ISyntaxPos position) {
 		for (Element e : list) {
-			ISyntaxPosition syntaxPosition = e.syntaxPosition;
+			ISyntaxPos syntaxPosition = e.syntaxPosition;
 			if (syntaxPosition != null && SyntaxUtils.syntaxIntersect(position, syntaxPosition)) {
 				e.selected = true;
 				for (Element children : e.elements) {
@@ -272,10 +275,10 @@ public final class InstFileVisualization extends Visualization implements Visual
 				return value;
 			}
 			
-			ISyntaxPosition syntaxPosition = element.syntaxPosition;
-			if (syntaxPosition != null /* && SyntaxUtils.syntaxIntersect(syntaxPosition, pos) */ ) {
+			ISyntaxPos syntaxPosition = element.syntaxPosition;
+			if (syntaxPosition != null /* && SyntaxUtils.syntaxIntersect(syntaxPosition, pos) */) {
 				Position start = syntaxPosition.getStartPosition();
-				if (start.column == pos.column && start.line == pos.line) {
+				if (start.column() == pos.column() && start.line() == pos.line()) {
 					return element;
 				}
 			}
@@ -307,49 +310,52 @@ public final class InstFileVisualization extends Visualization implements Visual
 	private class LocalPanel extends JPanel {
 		private final List<Element> elements = new ArrayList<>();
 		private final Font font = new Font("Consolas", Font.PLAIN, 18);
-
+		
 		private double zoom = 1;
 		private double xpos = 0;
 		private double ypos = 0;
-
+		
 		@Override
 		public void paint(Graphics gr) {
-			Graphics2D g = (Graphics2D)gr;
+			Graphics2D g = (Graphics2D) gr;
 			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 			g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
 			g.setFont(font);
-
+			
 			g.setColor(Color.WHITE);
 			g.fillRect(0, 0, panel.getWidth(), panel.getHeight());
-
+			
 			g.scale(zoom, zoom);
 			g.translate(xpos, ypos);
-
+			
 			synchronized (elements) {
-				for (Element e : elements) e.paintLines(g);
-				for (Element e : elements) e.paint(g);
+				for (Element e : elements)
+					e.paintLines(g);
+				for (Element e : elements)
+					e.paint(g);
 			}
 		}
-
+		
 		public void display(IntermediateFile program) {
 			synchronized (elements) {
 				elements.clear();
-
+				
 				Element entry = new Element(program);
 				elements.add(entry);
 				entry.move(-(entry.x + (entry.x_offset - entry.width) / 2), -entry.y);
 			}
 		}
 	}
-
+	
 	private FontRenderContext _frc;
+	
 	private double getStringWidth(String string) {
 		if (_frc == null) {
 			_frc = new FontRenderContext(new AffineTransform(), true, true);
 		}
 		return panel.font.getStringBounds(string, _frc).getWidth();
 	}
-
+	
 	private class Element {
 		public double x;
 		public double y;
@@ -359,28 +365,28 @@ public final class InstFileVisualization extends Visualization implements Visual
 		public double y_offset;
 		public boolean hover;
 		public boolean selected;
-
+		
 		private final List<Element> elements;
-		private ISyntaxPosition syntaxPosition;
+		private ISyntaxPos syntaxPosition;
 		private String content;
 		private Color body = Color.lightGray;
-
+		
 		private Element(Object object) {
 			this.elements = new ArrayList<>();
-
+			
 			if (object instanceof Expr) {
 				body = Color.white;
 			}
-
+			
 			List<Object> children = getElements(object);
-
+			
 			if (object instanceof Inst inst) {
 				setContent(inst.toString());
 				syntaxPosition = inst.getSyntaxPosition();
 			} else if (object instanceof List list) {
 				int size = list.size();
 				setContent("<list " + size + (size == 1 ? " element>" : " elements>"));
-
+				
 				if (list.size() == 0) {
 					return;
 				}
@@ -404,7 +410,7 @@ public final class InstFileVisualization extends Visualization implements Visual
 				y_offset = 0;
 				
 				double y_off = 0;
-
+				
 				for (Object obj : children) {
 					Element e = new Element(obj);
 					e.move(width + 10, y_off);
@@ -415,7 +421,7 @@ public final class InstFileVisualization extends Visualization implements Visual
 				height = (int) y_off - 15;
 			}
 		}
-
+		
 		public void setContent(String value) {
 			content = value;
 			width = content.length() * 12 + 10;
@@ -424,7 +430,7 @@ public final class InstFileVisualization extends Visualization implements Visual
 			x_offset = width + 1;
 			y_offset = 0;
 		}
-
+		
 		public void move(double x, double y) {
 			this.x += x;
 			this.y += y;
@@ -432,7 +438,7 @@ public final class InstFileVisualization extends Visualization implements Visual
 				e.move(x, y);
 			}
 		}
-
+		
 		public void paint(Graphics2D g) {
 			drawContent(g, x, y);
 			
@@ -468,12 +474,12 @@ public final class InstFileVisualization extends Visualization implements Visual
 			Rectangle rect = fm.getStringBounds(content, g).getBounds();
 			g.drawString(content, xp + 5 - rect.x, yp - rect.y + (height - rect.height) / 2 + 3);
 		}
-
+		
 		public void paintLines(Graphics2D g) {
 		
 		}
 	}
-
+	
 	private static List<Object> getElements(Object obj) {
 		if (obj instanceof IntermediateFile file) {
 			return List.copyOf(file.getProcedures());
@@ -482,7 +488,7 @@ public final class InstFileVisualization extends Visualization implements Visual
 		if (obj instanceof Procedure proc) {
 			return List.copyOf(proc.getInstructions());
 		}
-
+		
 		return List.of();
 	}
 }

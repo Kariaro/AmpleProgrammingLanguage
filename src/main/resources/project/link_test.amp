@@ -3,7 +3,7 @@
 namespace std {
     u32: var1 = 0u;
 
-    func test() {
+    fn test() {
         u32: value_should_be_in_root_namespace = 0u;
         ret;
     }
@@ -11,18 +11,18 @@ namespace std {
     namespace path {
         u32: var1 = 0u;
 
-        func (export) test(i32: param1) : u8 {
+        fn (export) test(i32: param1) : u8 {
             ret cast<u8>(1);
         }
     }
 }
 
 // Function is in another scope
-func test() {
+fn test() {
     ret;
 }
 
-func testing() {
+fn testing() {
     // Should call the local function
     test();
 

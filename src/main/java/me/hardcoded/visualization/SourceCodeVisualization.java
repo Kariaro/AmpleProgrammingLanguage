@@ -1,6 +1,6 @@
 package me.hardcoded.visualization;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.lexer.Token;
 import me.hardcoded.utils.Position;
 import me.hardcoded.utils.SyntaxUtils;
@@ -112,15 +112,15 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 				
 				if (startPosition != null && mouseSelection) {
 					Position mousePos = getMouse(event.getPoint());
-					ISyntaxPosition syntaxPosition;
+					ISyntaxPos syntaxPosition;
 					
-					if (mousePos.line < startPosition.line
-						|| (mousePos.line == startPosition.line && mousePos.column < startPosition.column)) {
-						Position test = new Position(startPosition.column + 1, startPosition.line);
-						syntaxPosition = ISyntaxPosition.of(mousePos, test);
+					if (mousePos.line() < startPosition.line()
+						|| (mousePos.line() == startPosition.line() && mousePos.column() < startPosition.column())) {
+						Position test = new Position(startPosition.column() + 1, startPosition.line());
+						syntaxPosition = ISyntaxPos.of(null, mousePos, test);
 					} else {
-						Position test = new Position(mousePos.column + 1, mousePos.line);
-						syntaxPosition = ISyntaxPosition.of(startPosition, test);
+						Position test = new Position(mousePos.column() + 1, mousePos.line());
+						syntaxPosition = ISyntaxPos.of(null, startPosition, test);
 					}
 					
 					handler.fireEvent(new VisualizationEvent.SyntaxSelectionEvent(
@@ -217,7 +217,7 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 		private Font font;
 		private Rectangle2D bounds;
 		
-		private ISyntaxPosition syntaxSelection;
+		private ISyntaxPos syntaxSelection;
 		private Token hover;
 		
 		public int getScroll() {
@@ -236,8 +236,8 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 			List<Token> tokens = sourceCode;
 			if (tokens != null && !tokens.isEmpty()) {
 				Position end = tokens.get(tokens.size() - 1).syntaxPosition.getEndPosition();
-				if (scroll > end.line) {
-					scroll = end.line;
+				if (scroll > end.line()) {
+					scroll = end.line();
 				}
 			}
 			
@@ -258,7 +258,7 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 			this.hover = token;
 		}
 		
-		public void setSyntaxSelection(ISyntaxPosition syntaxPosition) {
+		public void setSyntaxSelection(ISyntaxPos syntaxPosition) {
 			this.syntaxSelection = syntaxPosition;
 		}
 		
@@ -300,7 +300,7 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 			);
 			
 			{
-				ISyntaxPosition pos = syntaxSelection;
+				ISyntaxPos pos = syntaxSelection;
 				if (pos != null) {
 					Position s = pos.getStartPosition();
 					Position e = pos.getEndPosition();
@@ -308,20 +308,20 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 					int intWidth = (int) (getWidth() / bounds.getWidth()) + 1;
 					int of = xpos;
 					
-					int sp = columnWidth + s.column;
+					int sp = columnWidth + s.column();
 					int se = 0;
-					if (s.column - xpos < 0) {
-						se = s.column - xpos;
+					if (s.column() - xpos < 0) {
+						se = s.column() - xpos;
 						sp -= se;
 					}
 					
 					g.setColor(colorCache.getColor(0x214283));
-					if (s.line != e.line) {
-						drawBox(g, s.line, sp, intWidth, 1);
-						drawBox(g, e.line, columnWidth + of, e.column - of, 1);
-						drawBox(g, s.line + 1, columnWidth + of, intWidth, e.line - s.line - 1);
+					if (s.line() != e.line()) {
+						drawBox(g, s.line(), sp, intWidth, 1);
+						drawBox(g, e.line(), columnWidth + of, e.column() - of, 1);
+						drawBox(g, s.line() + 1, columnWidth + of, intWidth, e.line() - s.line() - 1);
 					} else {
-						drawBox(g, s.line, sp, e.column - s.column + se, 1);
+						drawBox(g, s.line(), sp, e.column() - s.column() + se, 1);
 					}
 				}
 			}
@@ -336,14 +336,14 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 		}
 		
 		public void paintToken(Graphics2D g, Pointer pointer, Token token) {
-			ISyntaxPosition pos = token.syntaxPosition;
+			ISyntaxPos pos = token.syntaxPosition;
 			Position startPos = pos.getStartPosition();
 			
-			boolean showLine = pointer.line != startPos.line;
+			boolean showLine = pointer.line != startPos.line();
 			boolean hover = this.hover == token;
 			
-			pointer.column = startPos.column;
-			pointer.line = startPos.line;
+			pointer.column = startPos.column();
+			pointer.line = startPos.line();
 			
 			String value = token.value;
 			if (showLine) {

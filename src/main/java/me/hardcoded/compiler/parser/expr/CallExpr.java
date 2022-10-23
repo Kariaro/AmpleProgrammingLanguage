@@ -1,8 +1,8 @@
 package me.hardcoded.compiler.parser.expr;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
-import me.hardcoded.compiler.parser.type.Reference;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.serial.TreeType;
+import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ValueType;
 
 import java.util.List;
@@ -12,8 +12,8 @@ public class CallExpr extends Expr {
 	private Reference reference;
 	private List<Expr> parameters;
 	
-	public CallExpr(ISyntaxPosition syntaxPosition, Reference reference, List<Expr> parameters) {
-		super(syntaxPosition);
+	public CallExpr(ISyntaxPos syntaxPos, Reference reference, List<Expr> parameters) {
+		super(syntaxPos);
 		this.reference = Objects.requireNonNull(reference);
 		this.parameters = parameters;
 	}

@@ -4,7 +4,7 @@ import me.hardcoded.compiler.AmpleMangler;
 import me.hardcoded.compiler.context.AmpleConfig;
 import me.hardcoded.compiler.context.LangReader;
 import me.hardcoded.compiler.errors.ParseException;
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.expr.Expr;
 import me.hardcoded.compiler.parser.expr.NoneExpr;
 import me.hardcoded.compiler.parser.expr.NumExpr;
@@ -65,13 +65,17 @@ public class AmpleParser {
 		}
 	}
 	
+	public File getCurrentFile() {
+		return currentFile;
+	}
+	
 	public LinkableObject fromFile(File file) throws ParseException, IOException {
 		//			LOGGER.error("Could not find the file '{}'", file.getAbsolutePath());
 		//			throw new ParseException("Failed to read file '%s'", file.getAbsolutePath());
 		return fromBytes(file, Files.readAllBytes(file.toPath()));
 	}
 	
-	private LinkableObject fromBytes(File file, byte[] bytes) throws ParseException {
+	public LinkableObject fromBytes(File file, byte[] bytes) throws ParseException {
 		if (bytes == null) {
 			throw createParseException("Tried to parse an array 'null'");
 		}
@@ -81,7 +85,7 @@ public class AmpleParser {
 		
 		// Update the fields inside this class
 		currentFile = file;
-		reader = LangReader.wrap(LexerTokenizer.parse(file, bytes));
+		reader = LangReader.wrap(file, LexerTokenizer.parse(file, bytes));
 		
 		// Parse the current code
 		ProgStat program = parse();
@@ -108,6 +112,7 @@ public class AmpleParser {
 		LOGGER.debug("  imported = {}", importedReferences);
 		LOGGER.debug("  exported = {}", exportedReferences);
 		
+		AmpleCache.putFileSource(file, new String(bytes));
 		String fileChecksum = AmpleCache.getDataChecksum(bytes);
 		LinkableObject linkableObject = new LinkableObject(file, fileChecksum, program, importedFiles, exportedReferences, importedReferences);
 		
@@ -115,6 +120,7 @@ public class AmpleParser {
 			throw createParseException(reader.syntaxPosition(), "Failed to parse file fully");
 		}
 		
+		// TODO: Remove
 		reader = oldContext;
 		currentFile = oldFile;
 		
@@ -125,7 +131,7 @@ public class AmpleParser {
 	 * This is the start of the parsing
 	 */
 	private ProgStat parse() throws ParseException {
-		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(reader.position(), null);
+		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(currentFile, reader.position(), null);
 		ProgStat list = new ProgStat(mutableSyntax);
 		
 		while (reader.remaining() > 0) {
@@ -167,7 +173,7 @@ public class AmpleParser {
 			tryMatchOrError(Token.Type.SEMICOLON);
 			reader.advance();
 			
-			return new EmptyStat(ISyntaxPosition.of(startPos, reader.lastPositionEnd()));
+			return new EmptyStat(ISyntaxPos.of(currentFile, startPos, reader.lastPositionEnd()));
 		}
 		
 		if (isNamespace()) {
@@ -182,11 +188,18 @@ public class AmpleParser {
 			return varStatement(false);
 		}
 		
+		// REPL (Read Eval Print Loop)
+		// Scopes should work for REPL
+		
+		if (reader.type() == Token.Type.L_CURLY) {
+			return statements();
+		}
+		
 		throw createParseException(reader.syntaxPosition(), "Invalid statement");
 	}
 	
 	private Stat namespaceStatement() throws ParseException {
-		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(reader.position(), null);
+		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(currentFile, reader.position(), null);
 		reader.advance();
 		
 		//		int modifiers = 0;
@@ -261,7 +274,7 @@ public class AmpleParser {
 	}
 	
 	private Stat funcStatement() throws ParseException {
-		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(reader.position(), null);
+		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(currentFile, reader.position(), null);
 		reader.advance();
 		
 		int modifiers = 0;
@@ -285,7 +298,7 @@ public class AmpleParser {
 		}
 		
 		tryMatchOrError(Token.Type.IDENTIFIER);
-		ISyntaxPosition functionNameSyntax = reader.syntaxPosition();
+		ISyntaxPos functionNameSyntax = reader.syntaxPosition();
 		String functionName = reader.value();
 		reader.advance();
 		
@@ -337,7 +350,7 @@ public class AmpleParser {
 		Reference reference = context.getFunctionScope().addFunction(returnType, context.getNamespaceScope().getNamespace(), functionName, parameters);
 		if (reference == null) {
 			Reference blocker = context.getFunctionScope().getFunctionBlocking(context.getNamespaceScope().getNamespace(), functionName, parameters);
-			ISyntaxPosition syntaxPosition = context.getFirstReferencePosition(blocker);
+			ISyntaxPos syntaxPosition = context.getFirstReferencePosition(blocker);
 			Position startPos = syntaxPosition == null ? null : syntaxPosition.getStartPosition();
 			
 			throw createParseException(
@@ -345,8 +358,8 @@ public class AmpleParser {
 				"A function with the name '%s' already exists (%s) (line: %s, column: %s)",
 				functionName,
 				AmpleMangler.demangleFunction(blocker.getMangledName()),
-				startPos == null ? "?" : (startPos.line + 1),
-				startPos == null ? "?" : (startPos.column + 1)
+				startPos == null ? "?" : (startPos.line() + 1),
+				startPos == null ? "?" : (startPos.column() + 1)
 			);
 		}
 		reference.setModifiers(modifiers);
@@ -367,7 +380,7 @@ public class AmpleParser {
 	}
 	
 	private ScopeStat statements() throws ParseException {
-		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(reader.position(), null);
+		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(currentFile, reader.position(), null);
 		ScopeStat stat = new ScopeStat(mutableSyntax);
 		reader.advance();
 		
@@ -420,20 +433,20 @@ public class AmpleParser {
 				if (reader.type() != Token.Type.SEMICOLON) {
 					expr = expression();
 				} else {
-					expr = new NoneExpr(ISyntaxPosition.of(reader.position(), reader.position()));
+					expr = new NoneExpr(ISyntaxPos.of(currentFile, reader.position(), reader.position()));
 				}
 				
-				yield new ReturnStat(ISyntaxPosition.of(startPos, reader.nextPositionEnd()), expr);
+				yield new ReturnStat(ISyntaxPos.of(currentFile, startPos, reader.nextPositionEnd()), expr);
 			}
 			case CONTINUE -> {
 				Position startPos = reader.position();
 				reader.advance();
-				yield new ContinueStat(ISyntaxPosition.of(startPos, reader.nextPositionEnd()));
+				yield new ContinueStat(ISyntaxPos.of(currentFile, startPos, reader.nextPositionEnd()));
 			}
 			case BREAK -> {
 				Position startPos = reader.position();
 				reader.advance();
-				yield new BreakStat(ISyntaxPosition.of(startPos, reader.nextPositionEnd()));
+				yield new BreakStat(ISyntaxPos.of(currentFile, startPos, reader.nextPositionEnd()));
 			}
 			case COMPILER -> compilerStatement();
 			default -> expression();
@@ -487,13 +500,13 @@ public class AmpleParser {
 				references.add(reference);
 			}
 			
-			parts.add(new CompilerStat.Part(ISyntaxPosition.of(partStartPos, reader.lastPositionEnd()), command, references));
+			parts.add(new CompilerStat.Part(ISyntaxPos.of(currentFile, partStartPos, reader.lastPositionEnd()), command, references));
 		}
 		
 		tryMatchOrError(Token.Type.R_PAREN);
 		reader.advance();
 		
-		return new CompilerStat(ISyntaxPosition.of(startPos, reader.lastPositionEnd()), targetType, parts);
+		return new CompilerStat(ISyntaxPos.of(currentFile, startPos, reader.lastPositionEnd()), targetType, parts);
 	}
 	
 	private ForStat forStatement() throws ParseException {
@@ -527,7 +540,7 @@ public class AmpleParser {
 		
 		ScopeStat body = statements();
 		
-		return new ForStat(ISyntaxPosition.of(startPos, body.getSyntaxPosition().getEndPosition()), initializer, condition, action, body);
+		return new ForStat(ISyntaxPos.of(currentFile, startPos, body.getSyntaxPosition().getEndPosition()), initializer, condition, action, body);
 	}
 	
 	private WhileStat whileStatement() throws ParseException {
@@ -544,7 +557,7 @@ public class AmpleParser {
 		
 		ScopeStat body = statements();
 		
-		return new WhileStat(ISyntaxPosition.of(startPos, body.getSyntaxPosition().getEndPosition()), condition, body);
+		return new WhileStat(ISyntaxPos.of(currentFile, startPos, body.getSyntaxPosition().getEndPosition()), condition, body);
 	}
 	
 	private IfStat ifStatement() throws ParseException {
@@ -568,13 +581,13 @@ public class AmpleParser {
 			elseBody = new EmptyStat(reader.syntaxPosition());
 		}
 		
-		return new IfStat(ISyntaxPosition.of(startPos, elseBody.getSyntaxPosition().getEndPosition()), value, body, elseBody);
+		return new IfStat(ISyntaxPos.of(currentFile, startPos, elseBody.getSyntaxPosition().getEndPosition()), value, body, elseBody);
 	}
 	
 	private VarStat varStatement(boolean localVariable) throws ParseException {
 		Position startPos = reader.position();
 		
-		ISyntaxPosition typeSyntaxPosition = reader.syntaxPosition();
+		ISyntaxPos typeSyntaxPosition = reader.syntaxPosition();
 		ValueType type = readType();
 		if (type == null) {
 			throw createParseException(typeSyntaxPosition, "Unknown type");
@@ -584,7 +597,7 @@ public class AmpleParser {
 		reader.advance();
 		
 		tryMatchOrError(Token.Type.IDENTIFIER);
-		ISyntaxPosition namePos = reader.syntaxPosition();
+		ISyntaxPos namePos = reader.syntaxPosition();
 		String name = reader.value();
 		reader.advance();
 		
@@ -608,7 +621,7 @@ public class AmpleParser {
 		}
 		
 		Reference reference = context.getLocalScope().addLocalVariable(namespace, type, name);
-		return new VarStat(ISyntaxPosition.of(startPos, reader.lastPositionEnd()), reference, value);
+		return new VarStat(ISyntaxPos.of(currentFile, startPos, reader.lastPositionEnd()), reference, value);
 	}
 	
 	// Shunting yard algorithm
@@ -670,11 +683,11 @@ public class AmpleParser {
 		return createParseException(reader == null ? null : reader.syntaxPosition(), format, args);
 	}
 	
-	ParseException createParseException(ISyntaxPosition syntaxPosition, String format, Object... args) {
-		return createParseException(syntaxPosition.getStartPosition().file, syntaxPosition, format, args);
+	ParseException createParseException(ISyntaxPos syntaxPosition, String format, Object... args) {
+		return createParseException(syntaxPosition.getFile(), syntaxPosition, format, args);
 	}
 	
-	ParseException createParseException(File file, ISyntaxPosition syntaxPosition, String format, Object... args) {
+	ParseException createParseException(File file, ISyntaxPos syntaxPosition, String format, Object... args) {
 		String msg = String.format(format, args);
 		
 		StringBuilder sb = new StringBuilder();
@@ -688,7 +701,7 @@ public class AmpleParser {
 			sb.append("(line: ?, column: ?): ").append(msg);
 		} else {
 			Position position = syntaxPosition.getStartPosition();
-			sb.append("(line: ").append(position.line + 1).append(", column: ").append(position.column + 1).append("): ")
+			sb.append("(line: ").append(position.line() + 1).append(", column: ").append(position.column() + 1).append("): ")
 				.append(ErrorUtil.createError(syntaxPosition, msg));
 		}
 		

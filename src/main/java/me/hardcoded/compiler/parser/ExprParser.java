@@ -2,7 +2,7 @@ package me.hardcoded.compiler.parser;
 
 import me.hardcoded.compiler.context.LangReader;
 import me.hardcoded.compiler.errors.ParseException;
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.expr.*;
 import me.hardcoded.compiler.parser.scope.ProgramScope;
 import me.hardcoded.compiler.parser.type.*;
@@ -51,7 +51,7 @@ public class ExprParser {
 			
 			Expr value = parse(precedence);
 			left = new UnaryExpr(
-				ISyntaxPosition.of(start, value.getSyntaxPosition().getEndPosition()),
+				ISyntaxPos.of(parser.getCurrentFile(), start, value.getSyntaxPosition().getEndPosition()),
 				operation,
 				value
 			);
@@ -74,7 +74,7 @@ public class ExprParser {
 				shouldContinue = true;
 				
 				left = new UnaryExpr(
-					ISyntaxPosition.of(left.getSyntaxPosition().getStartPosition(), reader.lastPositionEnd()),
+					ISyntaxPos.of(parser.getCurrentFile(), left.getSyntaxPosition().getStartPosition(), reader.lastPositionEnd()),
 					operation,
 					left
 				);
@@ -100,7 +100,11 @@ public class ExprParser {
 					right = parse(precedence - 1);
 				}
 				
-				left = new BinaryExpr(ISyntaxPosition.of(left.getSyntaxPosition(), right.getSyntaxPosition()), operation, left, right);
+				left = new BinaryExpr(ISyntaxPos.of(
+					parser.getCurrentFile(),
+					left.getSyntaxPosition().getStartPosition(),
+					right.getSyntaxPosition().getEndPosition()
+				), operation, left, right);
 			}
 		} while (shouldContinue);
 		
@@ -121,7 +125,11 @@ public class ExprParser {
 						parser.tryMatchOrError(Token.Type.R_SQUARE);
 						reader.advance();
 						
-						left = new BinaryExpr(ISyntaxPosition.of(left.getSyntaxPosition().getStartPosition(), reader.lastPositionEnd()), operation, left, right);
+						left = new BinaryExpr(ISyntaxPos.of(
+							parser.getCurrentFile(),
+							left.getSyntaxPosition().getStartPosition(),
+							reader.lastPositionEnd()
+						), operation, left, right);
 					}
 					default -> found = false;
 				}
@@ -140,7 +148,7 @@ public class ExprParser {
 	private Expr atomExpression() throws ParseException {
 		switch (reader.type()) {
 			case STRING -> {
-				ISyntaxPosition textSyntaxPosition = reader.syntaxPosition();
+				ISyntaxPos textSyntaxPosition = reader.syntaxPosition();
 				String text = reader.value();
 				reader.advance();
 				
@@ -156,7 +164,7 @@ public class ExprParser {
 				}
 			}
 			case CHARACTER -> {
-				ISyntaxPosition charSyntaxPosition = reader.syntaxPosition();
+				ISyntaxPos charSyntaxPosition = reader.syntaxPosition();
 				String text = reader.value();
 				reader.advance();
 				
@@ -262,7 +270,7 @@ public class ExprParser {
 	private Expr callExpression(Namespace namespace) throws ParseException {
 		Position startPos = reader.position();
 		
-		ISyntaxPosition nameSyntaxPosition = reader.syntaxPosition();
+		ISyntaxPos nameSyntaxPosition = reader.syntaxPosition();
 		String name = reader.value();
 		reader.advance();
 		
@@ -294,7 +302,7 @@ public class ExprParser {
 		parser.tryMatchOrError(Token.Type.R_PAREN);
 		reader.advance();
 		
-		return new CallExpr(ISyntaxPosition.of(startPos, reader.lastPositionEnd()), reference, parameters);
+		return new CallExpr(ISyntaxPos.of(parser.getCurrentFile(), startPos, reader.lastPositionEnd()), reference, parameters);
 	}
 	
 	private Expr specialCallExpression() throws ParseException {
@@ -307,7 +315,7 @@ public class ExprParser {
 				parser.tryMatchOrError(Token.Type.LESS_THAN);
 				reader.advance();
 				
-				ISyntaxPosition typeSyntaxPosition = reader.syntaxPosition();
+				ISyntaxPos typeSyntaxPosition = reader.syntaxPosition();
 				ValueType type = parser.readType();
 				if (type == null) {
 					throw parser.createParseException(typeSyntaxPosition, "Unknown type");
@@ -350,7 +358,7 @@ public class ExprParser {
 				parser.tryMatchOrError(Token.Type.R_PAREN);
 				reader.advance();
 				
-				return new StackAllocExpr(ISyntaxPosition.of(startPos, reader.lastPositionEnd()), type, size, expr);
+				return new StackAllocExpr(ISyntaxPos.of(parser.getCurrentFile(), startPos, reader.lastPositionEnd()), type, size, expr);
 			}
 			case "cast" -> {
 				parser.tryMatchOrError(Token.Type.LESS_THAN);
@@ -369,7 +377,7 @@ public class ExprParser {
 				parser.tryMatchOrError(Token.Type.R_PAREN);
 				reader.advance();
 				
-				return new CastExpr(ISyntaxPosition.of(startPos, reader.lastPositionEnd()), type, expr);
+				return new CastExpr(ISyntaxPos.of(parser.getCurrentFile(), startPos, reader.lastPositionEnd()), type, expr);
 			}
 		}
 		

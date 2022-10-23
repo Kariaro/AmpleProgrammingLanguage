@@ -1,8 +1,8 @@
 package me.hardcoded.compiler.parser.expr;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
-import me.hardcoded.compiler.parser.type.Reference;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.serial.TreeType;
+import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ValueType;
 
 import java.util.Objects;
@@ -10,8 +10,8 @@ import java.util.Objects;
 public class NameExpr extends Expr {
 	private Reference reference;
 	
-	public NameExpr(ISyntaxPosition syntaxPosition, Reference reference) {
-		super(syntaxPosition);
+	public NameExpr(ISyntaxPos syntaxPos, Reference reference) {
+		super(syntaxPos);
 		this.reference = Objects.requireNonNull(reference);
 	}
 	
