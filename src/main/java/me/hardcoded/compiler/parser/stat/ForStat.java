@@ -1,6 +1,6 @@
 package me.hardcoded.compiler.parser.stat;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.expr.Expr;
 import me.hardcoded.compiler.parser.serial.TreeType;
 
@@ -10,8 +10,8 @@ public class ForStat extends Stat {
 	private Expr action;
 	private Stat body;
 	
-	public ForStat(ISyntaxPosition syntaxPosition, Stat initializer, Expr condition, Expr action, Stat body) {
-		super(syntaxPosition);
+	public ForStat(ISyntaxPos syntaxPos, Stat initializer, Expr condition, Expr action, Stat body) {
+		super(syntaxPos);
 		this.initializer = initializer;
 		this.condition = condition;
 		this.action = action;

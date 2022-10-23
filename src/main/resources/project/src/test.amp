@@ -1,7 +1,7 @@
 @link "std.amp";
 @link "../link_test.amp";
 
-func printhex (i64: number) {
+fn printhex (i64: number) {
     u8[]: hex_data = stack_alloc<u8, 16>("0123456789abcdef");
     u8[]: hex_strs = stack_alloc<u8, 17>("................\n");
 
@@ -15,12 +15,12 @@ func printhex (i64: number) {
     ret;
 }
 
-func printhex (i32: number) {
+fn printhex (i32: number) {
     printhex(cast<i64>(number));
     ret;
 }
 
-func params (i64: a, i32: b, i16: c, i8: d) {
+fn params (i64: a, i32: b, i16: c, i8: d) {
     printhex(a);
     printhex(cast<i64>(b));
     printhex(cast<i64>(c));
@@ -28,11 +28,11 @@ func params (i64: a, i32: b, i16: c, i8: d) {
     ret;
 }
 
-func test (u32: a, u32: b, u32: c, u32: d, u32: e, u32: f, u32: g, u32: h) {
+fn test (u32: a, u32: b, u32: c, u32: d, u32: e, u32: f, u32: g, u32: h) {
     ret;
 }
 
-func main () : i32 {
+fn main () : i32 {
     test(0u, 1u, 2u, 3u, 4u, 5u, 6u, 7u);
 
     u32[]: test = stack_alloc<u32, 16>();

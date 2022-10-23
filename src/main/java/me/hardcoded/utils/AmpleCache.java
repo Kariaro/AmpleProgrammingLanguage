@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Cache class for ample resources
@@ -93,5 +95,15 @@ public class AmpleCache {
 			.getWorkingDirectory().toPath().relativize(file.toPath());
 		
 		return "serial_" + relativePath.toString().replace("_", "__").replaceAll("[\\\\/]", "_") + ".serial";
+	}
+	
+	private static final Map<String, String> FILE_SOURCES = new HashMap<>();
+	
+	public static void putFileSource(File file, String content) {
+		FILE_SOURCES.put(file.getAbsolutePath(), content);
+	}
+	
+	public static String getFileSource(File file) {
+		return FILE_SOURCES.get(file.getAbsolutePath());
 	}
 }

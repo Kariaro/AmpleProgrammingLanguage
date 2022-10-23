@@ -1,6 +1,6 @@
 package me.hardcoded.lexer;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 
 import java.util.Objects;
 
@@ -10,17 +10,17 @@ import java.util.Objects;
  * @author HardCoded
  */
 public class Token {
-	public final ISyntaxPosition syntaxPosition;
+	public final ISyntaxPos syntaxPosition;
 	public final String value;
 	public final Type type;
 	
-	public Token(Type type, String value, ISyntaxPosition syntaxPosition) {
+	public Token(Type type, String value, ISyntaxPos syntaxPosition) {
 		this.syntaxPosition = Objects.requireNonNull(syntaxPosition);
 		this.value = Objects.requireNonNull(value);
 		this.type = Objects.requireNonNull(type);
 	}
 	
-	public Token(Type type, ISyntaxPosition syntaxPosition) {
+	public Token(Type type, ISyntaxPos syntaxPosition) {
 		this(type, "", syntaxPosition);
 	}
 	
@@ -35,7 +35,6 @@ public class Token {
 		
 		// Test
 		FUNC,
-		PROC, // Procedure
 		COMMA,
 		
 		// Comparisons

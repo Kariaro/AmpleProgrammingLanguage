@@ -1,7 +1,7 @@
 package me.hardcoded.lexer;
 
 import me.hardcoded.compiler.context.AmpleLexer;
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.lexer.Token.Type;
 import me.hardcoded.utils.Position;
 import me.hardcoded.utils.error.ErrorUtil;
@@ -12,10 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class LexerTokenizer {
-	public static List<Token> parse(byte[] bytes) {
-		return parse(null, bytes);
-	}
-	
 	public static List<Token> parse(File file, byte[] bytes) {
 		List<Token> tokenList = parseKeepWhitespace(file, bytes);
 		tokenList.removeIf(token -> token.type == Type.WHITESPACE);
@@ -32,11 +28,11 @@ public class LexerTokenizer {
 		String input = text;
 		
 		while (offset < length) {
-			Position startPosition = new Position(file, column, line); // offset
+			Position startPos = new Position(column, line); // offset
 			
 			GenericLexerContext<Type>.LexerToken lexerToken = AmpleLexer.LEXER.nextToken(input);
 			if (lexerToken == null) {
-				throw new RuntimeException(ErrorUtil.createFullError(ISyntaxPosition.of(startPosition, startPosition),
+				throw new RuntimeException(ErrorUtil.createFullError(ISyntaxPos.of(file, startPos, startPos),
 					"Could not parse token"
 				));
 			}
@@ -56,11 +52,11 @@ public class LexerTokenizer {
 				}
 			}
 			
-			Position endPosition = new Position(file, column, line); // offset + lexerToken.length
+			Position endPos = new Position(column, line); // offset + lexerToken.length
 			tokenList.add(new Token(
 				lexerToken.type,
 				lexerToken.content,
-				ISyntaxPosition.of(startPosition, endPosition)
+				ISyntaxPos.of(file, startPos, endPos)
 			));
 			
 			input = input.substring(lexerToken.length);

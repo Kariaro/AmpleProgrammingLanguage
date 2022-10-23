@@ -88,8 +88,7 @@ public class AmpleLexer {
 			.addRule(Type.NAMESPACE_OPERATOR, i -> i.addString("::"))
 			
 			// Preprocessors
-			.addRule(Type.FUNC, i -> i.addString("func"))
-			.addRule(Type.PROC, i -> i.addString("proc"))
+			.addRule(Type.FUNC, i -> i.addString("fn"))
 			.addRule(Type.LINK, i -> i.addString("@link"))
 			.addRule(Type.RETURN, i -> i.addString("ret"))
 			.addRule(Type.COLON, i -> i.addString(":"))

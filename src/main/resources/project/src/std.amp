@@ -1,7 +1,7 @@
 // std namespace library
 
 namespace std {
-    func (export) strlen (u8[]: pointer) : i64 {
+    fn (export) strlen (u8[]: pointer) : i64 {
         i64: len = 0l;
 
         while (pointer[len] != cast<u8>(0)) {
@@ -11,7 +11,7 @@ namespace std {
         ret len;
     }
 
-    func (export) memcpy (u8[]: dest, u8[]: src, i64: length) {
+    fn (export) memcpy (u8[]: dest, u8[]: src, i64: length) {
         for (i64: i = 0l; i < length; i = i + 1l) {
             dest[i] = src[i];
         }
@@ -19,7 +19,7 @@ namespace std {
         ret;
     }
 
-    func (export) printstr (u8[]: pointer, i64: length) {
+    fn (export) printstr (u8[]: pointer, i64: length) {
         compiler<asm>(
             "mov rsi, {}" : pointer
             "mov rdx, {}" : length
@@ -32,7 +32,7 @@ namespace std {
         ret;
     }
 
-    func (export) printhex (u64: number) {
+    fn (export) printhex (u64: number) {
         u8[]: hex_data = stack_alloc<u8, 16>("0123456789abcdef");
         u8[]: hex_strs = stack_alloc<u8, 16>("................");
 
@@ -46,12 +46,12 @@ namespace std {
         ret;
     }
 
-    func (export) print (u8[]: string) {
+    fn (export) print (u8[]: string) {
         std::printstr(string, std::strlen(string));
         ret;
     }
 
-    func (export) printf (u8[]: format, ...[]: args) {
+    fn (export) printf (u8[]: format, ...[]: args) {
         i64: length = std::strlen(format);
         u8[]: ptr = cast<u8[]>(args);
 

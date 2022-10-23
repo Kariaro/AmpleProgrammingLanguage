@@ -1,6 +1,6 @@
 package me.hardcoded.compiler.parser.serial;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.type.Namespace;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ValueType;
@@ -19,7 +19,7 @@ class LinkableHeader {
 	protected final RefPos<ValueType> valueTypeMap;
 	protected final RefPos<Namespace> namespaceMap;
 	protected final RefPos<Reference> referenceMap;
-	protected final RefPos<ISyntaxPosition> syntaxPositionMap;
+	protected final RefPos<ISyntaxPos> syntaxPositionMap;
 	protected File file;
 	protected String checksum;
 	
@@ -87,7 +87,7 @@ class LinkableHeader {
 		}
 		
 		for (int i = 0, size = readVarInt(in); i < size; i++) {
-			ISyntaxPosition syntaxPosition = readISyntaxPosition(in);
+			ISyntaxPos syntaxPosition = readISyntaxPosition(in);
 			syntaxPositionMap.put(syntaxPosition);
 		}
 	}
@@ -139,7 +139,7 @@ class LinkableHeader {
 		}
 		
 		writeVarInt(syntaxPositionMap.list.size(), out);
-		for (ISyntaxPosition syntaxPosition : syntaxPositionMap.list) {
+		for (ISyntaxPos syntaxPosition : syntaxPositionMap.list) {
 			writeISyntaxPosition(syntaxPosition, out);
 		}
 		
@@ -223,17 +223,18 @@ class LinkableHeader {
 		return reference;
 	}
 	
-	private ISyntaxPosition readISyntaxPosition(DataInputStream in) throws IOException {
+	private ISyntaxPos readISyntaxPosition(DataInputStream in) throws IOException {
+		String name = deserializeString(in);
 		Position start = readPosition(in);
 		Position end = readPosition(in);
-		return ISyntaxPosition.of(start, end);
+		return ISyntaxPos.of(name == null ? null : new File(name), start, end);
 	}
 	
 	private Position readPosition(DataInputStream in) throws IOException {
 		String name = deserializeString(in);
 		int column = readVarInt(in);
 		int line = readVarInt(in);
-		return new Position(name == null ? null : new File(name), column, line);
+		return new Position(column, line);
 	}
 	
 	
@@ -259,15 +260,15 @@ class LinkableHeader {
 		writeVarInt(reference.getFlags(), out);
 	}
 	
-	private void writeISyntaxPosition(ISyntaxPosition syntaxPosition, DataOutputStream out) throws IOException {
-		writePosition(syntaxPosition.getStartPosition(), out);
-		writePosition(syntaxPosition.getEndPosition(), out);
+	private void writeISyntaxPosition(ISyntaxPos syntaxPos, DataOutputStream out) throws IOException {
+		serializeString(syntaxPos.getFile() == null ? null : syntaxPos.getFile().getAbsolutePath(), out);
+		writePosition(syntaxPos.getStartPosition(), out);
+		writePosition(syntaxPos.getEndPosition(), out);
 	}
 	
 	private void writePosition(Position position, DataOutputStream out) throws IOException {
-		serializeString(position.file == null ? null : position.file.getAbsolutePath(), out);
-		writeVarInt(position.column, out);
-		writeVarInt(position.line, out);
+		writeVarInt(position.column(), out);
+		writeVarInt(position.line(), out);
 	}
 	
 	
@@ -296,7 +297,7 @@ class LinkableHeader {
 		return referenceMap.get(idx);
 	}
 	
-	public ISyntaxPosition deserializeISyntaxPosition(DataInputStream in) throws IOException {
+	public ISyntaxPos deserializeISyntaxPosition(DataInputStream in) throws IOException {
 		int idx = readVarInt(in);
 		return syntaxPositionMap.get(idx);
 	}
@@ -327,7 +328,7 @@ class LinkableHeader {
 		writeVarInt(idx, out);
 	}
 	
-	public void serializeISyntaxPosition(ISyntaxPosition syntaxPosition, DataOutputStream out) throws IOException {
+	public void serializeISyntaxPosition(ISyntaxPos syntaxPosition, DataOutputStream out) throws IOException {
 		int idx = syntaxPositionMap.put(syntaxPosition);
 		writeVarInt(idx, out);
 	}

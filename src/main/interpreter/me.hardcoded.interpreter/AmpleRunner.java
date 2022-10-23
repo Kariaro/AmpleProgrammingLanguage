@@ -24,11 +24,29 @@ public class AmpleRunner {
 		AmpleFunc main = context.getMainFunction();
 		
 		if (main == null) {
-			throw new AmpleInterpreterException();
+			throw new AmpleInterpreterException("Could not find main function");
 		}
 		
 		// Update the inst format
 		runFunction(main, new Locals(), context);
+	}
+	
+	public void runCodeBlock(IntermediateFile instFile) throws AmpleInterpreterException {
+		AmpleContext context = new AmpleContext(instFile);
+		
+		int size = context.getCodeBlocks();
+		
+		if (size < 1) {
+			throw new AmpleInterpreterException("Could not find and code blocks");
+		}
+		
+		// Should these share locals?
+		for (int i = 0; i < context.getCodeBlocks(); i++) {
+			AmpleFunc block = context.getCodeBlock(i);
+			runFunction(block, new Locals(), context);
+		}
+		
+		// TODO: Return stdout???
 	}
 	
 	public Value runFunction(AmpleFunc func, Locals params, AmpleContext context) {
@@ -45,6 +63,11 @@ public class AmpleRunner {
 			int max = 100000;
 			int index = 0;
 			while (--max > 0) {
+				if (index >= list.size()) {
+					// This means that a return was not present but for code blocks this is fine
+					break;
+				}
+				
 				Inst inst = list.get(index);
 				Opcode opcode = inst.getOpcode();
 				

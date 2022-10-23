@@ -1,6 +1,6 @@
 package me.hardcoded.compiler.parser.serial;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.LinkableObject;
 import me.hardcoded.compiler.parser.expr.*;
 import me.hardcoded.compiler.parser.stat.*;
@@ -83,7 +83,7 @@ public class LinkableSerializer {
 	// Statements
 	private void serializeStat(Stat stat, DataOutputStream out) throws IOException {
 		TreeType type = stat.getTreeType();
-		ISyntaxPosition syntaxPosition = stat.getSyntaxPosition();
+		ISyntaxPos syntaxPosition = stat.getSyntaxPosition();
 		
 		// Write statement header (TYPE, SYNTAX_POSITION)
 		header.writeVarInt(type.ordinal(), out);

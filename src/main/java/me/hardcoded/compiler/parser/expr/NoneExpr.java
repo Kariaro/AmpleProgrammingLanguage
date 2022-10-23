@@ -1,12 +1,12 @@
 package me.hardcoded.compiler.parser.expr;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.serial.TreeType;
 import me.hardcoded.compiler.parser.type.ValueType;
 
 public class NoneExpr extends Expr {
-	public NoneExpr(ISyntaxPosition syntaxPosition) {
-		super(syntaxPosition);
+	public NoneExpr(ISyntaxPos syntaxPos) {
+		super(syntaxPos);
 	}
 	
 	@Override

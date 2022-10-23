@@ -1,17 +1,17 @@
 package me.hardcoded.compiler.parser.stat;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.serial.TreeType;
 
 public abstract class Stat {
-	private final ISyntaxPosition syntaxPosition;
+	private final ISyntaxPos syntaxPos;
 	
-	public Stat(ISyntaxPosition syntaxPosition) {
-		this.syntaxPosition = syntaxPosition;
+	public Stat(ISyntaxPos syntaxPos) {
+		this.syntaxPos = syntaxPos;
 	}
 	
-	public final ISyntaxPosition getSyntaxPosition() {
-		return this.syntaxPosition;
+	public final ISyntaxPos getSyntaxPosition() {
+		return this.syntaxPos;
 	}
 	
 	/**

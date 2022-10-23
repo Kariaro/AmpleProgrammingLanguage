@@ -3,7 +3,7 @@ package me.hardcoded.compiler.intermediate;
 import me.hardcoded.compiler.context.AmpleConfig;
 import me.hardcoded.compiler.errors.CompilerException;
 import me.hardcoded.compiler.errors.ParseException;
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.intermediate.generator.IntermediateGenerator;
 import me.hardcoded.compiler.intermediate.inst.Inst;
 import me.hardcoded.compiler.intermediate.inst.IntermediateFile;
@@ -13,6 +13,7 @@ import me.hardcoded.compiler.parser.LinkableObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -47,7 +48,13 @@ public class AmpleLinker {
 		for (int i = list.size() - 1; i >= 0; i--) {
 			// Include each linkable object in the intermediate generator
 			LinkableObject link = list.get(i);
-			LOGGER.info(" - {} : {}", link.getChecksum(), ampleConfig.getConfiguration().getWorkingDirectory().toPath().relativize(link.getFile().toPath()));
+			
+			Path path = link.getFile().toPath();
+			if (path.isAbsolute()) {
+				LOGGER.info(" - {} : {}", link.getChecksum(), ampleConfig.getConfiguration().getWorkingDirectory().toPath().relativize(path));
+			} else {
+				LOGGER.info(" - {} : {}", link.getChecksum(), path);
+			}
 			//			LOGGER.debug("\n{}", ParseUtil.stat(link.getProgram()));
 			
 			generator.generate(link);
@@ -62,8 +69,8 @@ public class AmpleLinker {
 			}
 			
 			for (Inst inst : proc.getInstructions()) {
-				ISyntaxPosition pos = inst.getSyntaxPosition();
-				String details = "(line: %3d, column: %3d)".formatted(pos.getStartPosition().line, pos.getStartPosition().column);
+				ISyntaxPos pos = inst.getSyntaxPosition();
+				String details = "(line: %3d, column: %3d)".formatted(pos.getStartPosition().line(), pos.getStartPosition().column());
 				
 				if (inst.getOpcode() == Opcode.LABEL) {
 					LOGGER.debug("    {}     {}", details, inst);

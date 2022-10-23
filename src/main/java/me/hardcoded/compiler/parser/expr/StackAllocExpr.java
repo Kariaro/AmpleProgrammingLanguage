@@ -1,8 +1,7 @@
 package me.hardcoded.compiler.parser.expr;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.serial.TreeType;
-import me.hardcoded.compiler.parser.type.Operation;
 import me.hardcoded.compiler.parser.type.ValueType;
 
 public class StackAllocExpr extends Expr {
@@ -10,8 +9,8 @@ public class StackAllocExpr extends Expr {
 	private int size;
 	private Expr value;
 	
-	public StackAllocExpr(ISyntaxPosition syntaxPosition, ValueType type, int size, Expr value) {
-		super(syntaxPosition);
+	public StackAllocExpr(ISyntaxPos syntaxPos, ValueType type, int size, Expr value) {
+		super(syntaxPos);
 		this.size = size;
 		this.value = value;
 		

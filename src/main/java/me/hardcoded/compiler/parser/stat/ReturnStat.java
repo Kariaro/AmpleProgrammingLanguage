@@ -1,6 +1,6 @@
 package me.hardcoded.compiler.parser.stat;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.expr.Expr;
 import me.hardcoded.compiler.parser.expr.NoneExpr;
 import me.hardcoded.compiler.parser.serial.TreeType;
@@ -8,8 +8,8 @@ import me.hardcoded.compiler.parser.serial.TreeType;
 public class ReturnStat extends Stat {
 	private Expr value;
 	
-	public ReturnStat(ISyntaxPosition syntaxPosition, Expr value) {
-		super(syntaxPosition);
+	public ReturnStat(ISyntaxPos syntaxPos, Expr value) {
+		super(syntaxPos);
 		this.value = value;
 	}
 	

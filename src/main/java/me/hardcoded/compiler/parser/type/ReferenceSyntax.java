@@ -1,12 +1,12 @@
 package me.hardcoded.compiler.parser.type;
 
-import me.hardcoded.compiler.impl.ISyntaxPosition;
+import me.hardcoded.compiler.impl.ISyntaxPos;
 
 public class ReferenceSyntax {
 	private final Reference reference;
-	private final ISyntaxPosition syntaxPosition;
+	private final ISyntaxPos syntaxPosition;
 	
-	public ReferenceSyntax(Reference reference, ISyntaxPosition syntaxPosition) {
+	public ReferenceSyntax(Reference reference, ISyntaxPos syntaxPosition) {
 		this.reference = reference;
 		this.syntaxPosition = syntaxPosition;
 	}
@@ -15,7 +15,7 @@ public class ReferenceSyntax {
 		return reference;
 	}
 	
-	public ISyntaxPosition getSyntaxPosition() {
+	public ISyntaxPos getSyntaxPosition() {
 		return syntaxPosition;
 	}
 	
