@@ -204,7 +204,7 @@ public class AmpleMangler {
 		@Override
 		public String toString() {
 			StringBuilder sb = new StringBuilder();
-			sb.append("func ");
+			sb.append("fn ");
 			if (namespacePath.isEmpty()) {
 				sb.append(functionName);
 			} else {

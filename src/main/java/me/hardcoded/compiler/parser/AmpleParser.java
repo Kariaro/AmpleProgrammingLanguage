@@ -98,11 +98,6 @@ public class AmpleParser {
 		List<ReferenceSyntax> importedReferences = new ArrayList<>();
 		List<ReferenceSyntax> exportedReferences = new ArrayList<>();
 		for (Reference reference : context.getAllReferences()) {
-			// If the reference is not used inside the linkable object we ignore it
-			//			if (reference.getUsages() < 1) {
-			//				continue;
-			//			}
-			
 			if (reference.isImported()) {
 				importedReferences.add(new ReferenceSyntax(reference, context.getFirstReferencePosition(reference)));
 			}

@@ -64,7 +64,7 @@ public class Inst {
 			ValueType type = param.getSize();
 			
 			boolean keep = switch (opcode) {
-				case INLINE_ASM, STACK_ALLOC -> false;
+				case INLINE_ASM, STACK_ALLOC, LABEL -> false;
 				default -> true;
 			};
 			

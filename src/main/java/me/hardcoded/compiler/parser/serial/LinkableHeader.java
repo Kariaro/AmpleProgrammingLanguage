@@ -214,11 +214,10 @@ class LinkableHeader {
 		String mangledName = deserializeString(in);
 		Namespace namespace = deserializeNamespace(in);
 		ValueType valueType = deserializeValueType(in);
-		int usages = readVarInt(in);
 		int id = readVarInt(in);
 		int flags = readVarInt(in);
 		
-		Reference reference = new Reference(name, namespace, valueType, id, flags, usages);
+		Reference reference = new Reference(name, namespace, valueType, id, flags);
 		reference.setMangledName(mangledName);
 		return reference;
 	}
@@ -254,7 +253,6 @@ class LinkableHeader {
 		serializeString(reference.getMangledName(), out);
 		serializeNamespace(reference.getNamespace(), out);
 		serializeValueType(reference.getValueType(), out);
-		writeVarInt(reference.getUsages(), out);
 		writeVarInt(reference.getId(), out);
 		writeVarInt(reference.getFlags(), out);
 	}

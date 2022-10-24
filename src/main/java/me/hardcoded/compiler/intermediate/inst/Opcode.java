@@ -2,32 +2,34 @@ package me.hardcoded.compiler.intermediate.inst;
 
 public enum Opcode {
 	// Arithmetic instructions
-	MOV,                // r0 = r1
-	ADD,                // r0 = r1 + r2
-	SUB,                // r0 = r1 - r2
-	AND,                // r0 = r1 & r2
-	XOR,                // r0 = r1 ^ r2
-	OR,                 // r0 = r1 | r2
-	EQ,                 // r0 = r1 == r2
-	NEQ,                // r0 = r1 != r2
-	SHR,                // r0 = r1 >> r2
-	SHL,                // r0 = r1 << r2
+	MOV,                // r0 = r1           (r = r/imm)
+	ADD,                // r0 = r0 +  r1     (r = r +  r)
+	SUB,                // r0 = r0 -  r1     (r = r -  r)
+	AND,                // r0 = r0 &  r1     (r = r &  r)
+	XOR,                // r0 = r0 ^  r1     (r = r ^  r)
+	OR,                 // r0 = r0 |  r1     (r = r |  r)
+	SHR,                // r0 = r0 >> r1     (r = r >> r)
+	SHL,                // r0 = r0 << r1     (r = r << r)
+	EQ,                 // r0 = r0 == r1     (r = r == r)
+	NEQ,                // r0 = r0 != r1     (r = r != r)
 	
-	IMOD,               // r0 = r1 % r2
-	IMUL,               // r0 = r1 * r2
-	IDIV,               // r0 = r1 / r2
-	IGTE,               // r0 = r1 >= r2
-	IGT,                // r0 = r1 > r2
-	ILTE,               // r0 = r1 <= r2
-	ILT,                // r0 = r1 < r2
+	MUL,                // r0 = r0 *  r1     (r = r *  r)
+	DIV,                // r0 = r0 /  r1     (r = r /  r)
+	MOD,                // r0 = r0 %  r1     (r = r %  r)
+	GTE,                // r0 = r0 >= r1     (r = r >= r)
+	GT,                 // r0 = r0 >  r1     (r = r >  r)
 	
-	MOD,                // r0 = r1 % r2
-	MUL,                // r0 = r1 * r2
-	DIV,                // r0 = r1 / r2
-	GTE,                // r0 = r1 >= r2
-	GT,                 // r0 = r1 > r2
-	LTE,                // r0 = r1 <= r2
-	LT,                 // r0 = r1 < r2
+	IMUL,               // r0 = r0 *  r1     (r = r *  r)
+	IDIV,               // r0 = r0 /  r1     (r = r /  r)
+	IMOD,               // r0 = r0 %  r1     (r = r %  r)
+	IGTE,               // r0 = r0 >= r1     (r = r >= r)
+	IGT,                // r0 = r0 >  r1     (r = r >  r)
+	
+	// TODO: Redundant instructions
+	LTE,                // r0 = r0 <= r1     (r = r <= r) (GT r2, r1)
+	LT,                 // r0 = r0 <  r1     (r = r <  r) (GTE r2, r1)
+	ILTE,               // r0 = r0 <= r1     (r = r <= r) (IGT r2, r1)
+	ILT,                // r0 = r0 <  r1     (r = r <  r) (IGTE r2, r1)
 	
 	// Floating point operations
 	FADD,
@@ -44,7 +46,7 @@ public enum Opcode {
 	
 	// Unary instructions
 	NOT,                // r0 = !(r1)
-	NEG,                // r0 = -(r1)
+	NEG,                // r0 = -(r1) // TODO: Change to SUB
 	NOR,                // r0 = ~(r1)
 	
 	// Size instructions

@@ -1,0 +1,5 @@
+; memory is [r + imm] or [imm]
+
+mov r/m, r/m/imm
+add, sub, xor, and, mul, div, or, mod, shr, shl, eq, neq, gt, gte, lt, lte
+    r, r/m/imm

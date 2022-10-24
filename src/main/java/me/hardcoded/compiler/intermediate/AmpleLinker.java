@@ -34,6 +34,8 @@ public class AmpleLinker {
 		this.ampleConfig = ampleConfig;
 	}
 	
+	// TODO: Implement an LinkableIntermediateFile
+	// TODO: Implement an assembler language for ample intermediate instructions
 	public IntermediateFile link(List<LinkableObject> list) throws CompilerException {
 		IntermediateFile file = new IntermediateFile();
 		
