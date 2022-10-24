@@ -393,13 +393,12 @@ public class AsmCodeGenerator extends ICodeGenerator {
 			}
 			case ADD, SUB, AND, XOR, OR -> {
 				InstRef dst = inst.getRefParam(0).getReference();
-				InstRef a = inst.getRefParam(1).getReference();
-				InstParam b = inst.getParam(2);
+				InstParam b = inst.getParam(1);
 				
-				String regAName = AsmReg.AX.toString(a);
+				String regAName = AsmReg.AX.toString(dst);
 				sb.add("mov %s, %s".formatted(
 					regAName,
-					AsmUtils.getStackPtr(a, proc)
+					AsmUtils.getStackPtr(dst, proc)
 				));
 				
 				String type = switch (inst.getOpcode()) {
@@ -434,10 +433,9 @@ public class AsmCodeGenerator extends ICodeGenerator {
 			}
 			case SHR, SHL -> {
 				InstRef dst = inst.getRefParam(0).getReference();
-				InstRef a = inst.getRefParam(1).getReference();
-				InstParam b = inst.getParam(2);
+				InstParam b = inst.getParam(1);
 				
-				String regAName = AsmReg.AX.toString(a);
+				String regAName = AsmReg.AX.toString(dst);
 				String regCName = AsmReg.CX.toString(b);
 				sb.add("xor RCX, RCX");
 				sb.add("mov %s, %s".formatted(
@@ -446,7 +444,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				));
 				sb.add("mov %s, %s".formatted(
 					regAName,
-					AsmUtils.getParamValue(a, proc)
+					AsmUtils.getParamValue(dst, proc)
 				));
 				
 				String type = switch (inst.getOpcode()) {
@@ -462,14 +460,13 @@ public class AsmCodeGenerator extends ICodeGenerator {
 			}
 			case GT, GTE, LT, LTE, IGT, IGTE, ILT, ILTE, EQ, NEQ -> {
 				InstRef dst = inst.getRefParam(0).getReference();
-				InstRef a = inst.getRefParam(1).getReference();
-				InstRef b = inst.getRefParam(2).getReference();
+				InstRef b = inst.getRefParam(1).getReference();
 				
-				String regAName = AsmReg.AX.toString(a);
+				String regAName = AsmReg.AX.toString(dst);
 				String regBName = AsmReg.BX.toString(b);
-				String regACmov = AsmReg.AX.toString(a);
-				String regCCmov = AsmReg.CX.toString(a);
-				if (AsmUtils.getTypeByteSize(a.getValueType()) == 1) {
+				String regACmov = AsmReg.AX.toString(dst);
+				String regCCmov = AsmReg.CX.toString(dst);
+				if (AsmUtils.getTypeByteSize(dst.getValueType()) == 1) {
 					regACmov = AsmReg.AX.toString(2);
 					regCCmov = AsmReg.CX.toString(2);
 				}
@@ -481,7 +478,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					AsmUtils.getParamValue(b, proc)
 				));
 				sb.add("cmp %s, %s".formatted(
-					AsmUtils.getStackPtr(a, proc),
+					AsmUtils.getStackPtr(dst, proc),
 					regBName
 				));
 				
@@ -621,14 +618,13 @@ public class AsmCodeGenerator extends ICodeGenerator {
 			case IDIV, DIV -> {
 				boolean unsigned = inst.getOpcode() == Opcode.DIV;
 				InstRef dst = inst.getRefParam(0).getReference();
-				InstParam a = inst.getParam(1);
-				InstParam b = inst.getParam(2);
+				InstParam b = inst.getParam(1);
 				
-				String regAName = AsmReg.AX.toString(a);
+				String regAName = AsmReg.AX.toString(dst);
 				sb.add("xor RDX, RDX");
 				sb.add("mov %s, %s".formatted(
 					regAName,
-					AsmUtils.getParamValue(a, proc)
+					AsmUtils.getParamValue(dst, proc)
 				));
 				sb.add("%s %s".formatted(
 					unsigned ? "div" : "idiv",
@@ -642,14 +638,13 @@ public class AsmCodeGenerator extends ICodeGenerator {
 			case IMUL, MUL -> {
 				boolean unsigned = inst.getOpcode() == Opcode.MUL;
 				InstRef dst = inst.getRefParam(0).getReference();
-				InstParam a = inst.getParam(1);
-				InstParam b = inst.getParam(2);
+				InstParam b = inst.getParam(1);
 				
-				String regAName = AsmReg.AX.toString(a);
+				String regAName = AsmReg.AX.toString(dst);
 				sb.add("xor RDX, RDX");
 				sb.add("mov %s, %s".formatted(
 					regAName,
-					AsmUtils.getParamValue(a, proc)
+					AsmUtils.getParamValue(dst, proc)
 				));
 				sb.add("%s %s".formatted(
 					unsigned ? "mul" : "imul",
@@ -663,15 +658,14 @@ public class AsmCodeGenerator extends ICodeGenerator {
 			case IMOD, MOD -> {
 				boolean unsigned = inst.getOpcode() == Opcode.MOD;
 				InstRef dst = inst.getRefParam(0).getReference();
-				InstParam a = inst.getParam(1);
-				InstParam b = inst.getParam(2);
+				InstParam b = inst.getParam(1);
 				
-				String regAName = AsmReg.AX.toString(a);
-				String remName = AsmReg.DX.toString(a);
+				String regAName = AsmReg.AX.toString(dst);
+				String remName = AsmReg.DX.toString(dst);
 				sb.add("xor RDX, RDX");
 				sb.add("mov %s, %s".formatted(
 					regAName,
-					AsmUtils.getParamValue(a, proc)
+					AsmUtils.getParamValue(dst, proc)
 				));
 				sb.add("%s %s".formatted(
 					unsigned ? "div" : "idiv",

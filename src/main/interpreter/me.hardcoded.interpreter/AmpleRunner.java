@@ -237,16 +237,9 @@ public class AmpleRunner {
 							}
 							
 							int typeSize = type.calculateBytes();
-							long mask = switch (typeSize) {
-								case 8 -> 0xffffffffffffffffL;
-								case 4 -> 0x00000000ffffffffL;
-								case 2 -> 0x000000000000ffffL;
-								case 1 -> 0x00000000000000ffL;
-								default -> throw new RuntimeException("Unknown integer type size '" + typeSize + "'");
-							};
-							
+							long mask = (-1L) >>> (64 - typeSize * 8);
 							int srcSize = src.getSize().calculateBytes();
-							long srcMask = (-1L) >>> (srcSize * 8);
+							long srcMask = (-1L) >>> (64 - srcSize * 8);
 							number &= srcMask;
 							
 							if (typeSize == 8 && arrayValue != null) {
@@ -270,8 +263,8 @@ public class AmpleRunner {
 					// Equality operators
 					case LTE, LT, GTE, GT, ILTE, ILT, IGTE, IGT, NEQ, EQ -> {
 						InstRef dst = inst.getRefParam(0).getReference();
-						Value a = convertFromParam(local, inst.getParam(1), context);
-						Value b = convertFromParam(local, inst.getParam(2), context);
+						Value a = convertFromParam(local, inst.getParam(0), context);
+						Value b = convertFromParam(local, inst.getParam(1), context);
 						
 						boolean unsigned = switch (opcode) {
 							case LTE, LT, GTE, GT -> true;
@@ -326,8 +319,8 @@ public class AmpleRunner {
 					// Arithmetic operators
 					case AND, XOR, SHR, SHL, OR, SUB, ADD, MUL, DIV, MOD, IMUL, IDIV, IMOD -> {
 						InstRef dst = inst.getRefParam(0).getReference();
-						Value a = convertFromParam(local, inst.getParam(1), context);
-						Value b = convertFromParam(local, inst.getParam(2), context);
+						Value a = convertFromParam(local, inst.getParam(0), context);
+						Value b = convertFromParam(local, inst.getParam(1), context);
 						
 						// Arrays are always first
 						Value.Type type = a.getType();

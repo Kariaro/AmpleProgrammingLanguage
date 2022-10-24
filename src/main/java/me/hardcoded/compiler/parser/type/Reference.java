@@ -18,20 +18,14 @@ public class Reference {
 	private final Namespace namespace;
 	private ValueType valueType;
 	private int flags;
-	private int usages;
 	private String mangledName;
 	
 	public Reference(String name, Namespace namespace, ValueType valueType, int id, int flags) {
-		this(name, namespace, valueType, id, flags, 0);
-	}
-	
-	public Reference(String name, Namespace namespace, ValueType valueType, int id, int flags, int usages) {
 		this.name = name;
 		this.namespace = Objects.requireNonNull(namespace);
-		this.id = id;
 		this.valueType = Objects.requireNonNull(valueType);
+		this.id = id;
 		this.flags = flags;
-		this.usages = usages;
 	}
 	
 	public String getName() {
@@ -48,10 +42,6 @@ public class Reference {
 	
 	public ValueType getValueType() {
 		return valueType;
-	}
-	
-	public int getUsages() {
-		return usages;
 	}
 	
 	public int getId() {
@@ -112,14 +102,6 @@ public class Reference {
 	
 	public void setValueType(ValueType valueType) {
 		this.valueType = valueType;
-	}
-	
-	public void incUsages() {
-		usages++;
-	}
-	
-	public void decUsages() {
-		usages--;
 	}
 	
 	public String toSimpleString() {

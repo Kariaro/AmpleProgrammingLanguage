@@ -22,7 +22,7 @@ public class IntermediateGenerator {
 	private static final InstRef NONE = new InstRef("<invalid>", NONE_NAMESPACE, Primitives.NONE, -1, 0);
 	
 	private final IntermediateFile file;
-	private ExportMap exportMap;
+	private final ExportMap exportMap;
 	
 	// Used for reference creation
 	private final Map<Reference, InstRef> wrappedReferences;
@@ -34,9 +34,8 @@ public class IntermediateGenerator {
 	
 	public IntermediateGenerator(IntermediateFile file, ExportMap exportMap) {
 		this.file = file;
-		this.exportMap = exportMap;
 		this.wrappedReferences = new HashMap<>();
-		this.exportMap = new ExportMap();
+		this.exportMap = exportMap;
 	}
 	
 	public void reset() {
@@ -66,7 +65,6 @@ public class IntermediateGenerator {
 			case FOR -> generateForStat((ForStat) stat, procedure);
 			case FUNC -> generateFuncStat((FuncStat) stat, procedure);
 			case IF -> generateIfStat((IfStat) stat, procedure);
-			//			case LABEL -> generateLabelStat((LabelStat) stat, procedure);
 			case RETURN -> generateReturnStat((ReturnStat) stat, procedure);
 			case SCOPE -> generateScopeStat((ScopeStat) stat, procedure);
 			case VAR -> generateVarStat((VarStat) stat, procedure);
@@ -194,7 +192,20 @@ public class IntermediateGenerator {
 	}
 	
 	private InstRef generateFuncStat(FuncStat stat, Procedure procedure) throws InstException {
-		InstRef reference = wrapReference(stat.getReference(), funcCount++);
+		InstRef reference;
+		try {
+			reference = wrapReference(stat.getReference(), funcCount++);
+		} catch (RuntimeException e) {
+			throw new InstException(ErrorUtil.createFullError(
+				ISyntaxPos.of(
+					stat.getSyntaxPosition().getPath(),
+					stat.getSyntaxPosition().getStartPosition(),
+					stat.getSyntaxPosition().getStartPosition()
+				),
+				"Could not resolve function: " + e.getMessage()
+			));
+		}
+		
 		
 		Inst functionLabel = new Inst(Opcode.LABEL, stat.getSyntaxPosition())
 			.addParam(new InstParam.Ref(reference));
@@ -220,8 +231,6 @@ public class IntermediateGenerator {
 					stat.getReference()
 				)
 			));
-			
-			// throw new RuntimeException("Missing return statement : " + stat.getReference());
 		}
 		
 		return NONE;
@@ -395,10 +404,13 @@ public class IntermediateGenerator {
 		Opcode opcode = getBinaryOpcode(expr.getOperation(), expr.getType().isUnsigned());
 		InstRef left = generateStat(expr.getLeft(), procedure);
 		InstRef right = generateStat(expr.getRight(), procedure);
+		
 		InstRef holder = createDataReference(".binary", expr.getType());
+		procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
+			.addParam(new InstParam.Ref(holder))
+			.addParam(new InstParam.Ref(left)));
 		procedure.addInst(new Inst(opcode, expr.getSyntaxPosition())
 			.addParam(new InstParam.Ref(holder))
-			.addParam(new InstParam.Ref(left))
 			.addParam(new InstParam.Ref(right)));
 		
 		if (!left.getValueType().equals(right.getValueType())) {
@@ -635,7 +647,13 @@ public class IntermediateGenerator {
 	
 	private InstRef wrapReference(Reference reference, int id) {
 		if (reference.isImported() || reference.isExported()) {
-			reference = exportMap.getReference(reference);
+			Reference result = exportMap.getReference(reference);
+			
+			if (result == null) {
+				throw new RuntimeException("Failed to resolve reference '" + reference + "'");
+			}
+			
+			reference = result;
 		}
 		
 		InstRef result = wrappedReferences.get(reference);

@@ -187,10 +187,6 @@ public class MangledFunctionMap {
 			// Check value type
 			ValueType type = mangledFunction.getParameter(index).getValueType();
 			if (type.isLinked()) {
-				// TODO: This will check the entire map for matches
-				//       Check if there is a way to first do a length
-				//       based search and then type search
-				
 				// Only one result is allowed
 				Reference result = null;
 				

@@ -84,10 +84,9 @@ public class Main {
 		LOGGER.info("UseCache     : {}", config.useCache() ? "True" : "False");
 		LOGGER.info("---------------------------------------------------------");
 		
-		boolean repl = true;
+		boolean repl = false;
 		
 		long start = System.nanoTime();
-		
 		try {
 			if (repl) {
 				ReadEvalPrintLoop loop = new ReadEvalPrintLoop(new AmpleConfig(config));
