@@ -1,8 +1,11 @@
 package me.hardcoded.compiler.parser.expr;
 
 import me.hardcoded.compiler.impl.ISyntaxPos;
+import me.hardcoded.compiler.parser.serial.LinkableStream;
 import me.hardcoded.compiler.parser.serial.TreeType;
 import me.hardcoded.compiler.parser.type.ValueType;
+
+import java.io.IOException;
 
 public class NumExpr extends Expr {
 	private long value;
@@ -86,5 +89,21 @@ public class NumExpr extends Expr {
 		} else {
 			throw new RuntimeException("Invalid type '%x'".formatted(type.getFlags()));
 		}
+	}
+	
+	@Override
+	public void serialize(LinkableStream stream) throws IOException {
+		stream.writeObjectHeader(this);
+		
+		stream.serializeValueType(type);
+		stream.writeLong(value);
+	}
+	
+	public static NumExpr deserialize(LinkableStream stream) throws IOException {
+		var head = stream.readObjectHeader();
+		
+		ValueType type = stream.deserializeValueType();
+		long value = stream.readLong();
+		return new NumExpr(head.syntaxPos(), type, value);
 	}
 }

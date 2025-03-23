@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 /**
  * This class is used to print a java objects content. It will print all private,
  * protected and public fields and return it in a tree type string.
- * 
+ *
  * @author HardCoded
  */
 public class ObjectUtils {
@@ -31,7 +31,8 @@ public class ObjectUtils {
 			classes.add(clazz);
 			clazz = clazz.getSuperclass();
 			
-			if (clazz == Object.class) break;
+			if (clazz == Object.class)
+				break;
 		} while (clazz != null);
 		
 		// Add reverse order
@@ -80,11 +81,18 @@ public class ObjectUtils {
 			name = "";
 		}
 		
-		if (obj == null || depth < 1) {
-			return name + Objects.toString(obj, "null");
+		Class<?> clazz = obj == null ? null : obj.getClass();
+		if (obj == null || depth < 1 || (
+			clazz == Position.class
+		)) {
+			String txt = Objects.toString(obj, "null");
+			String end = "@" + Integer.toHexString(Objects.hashCode(obj));
+			if (txt.endsWith(end)) {
+				txt = txt.substring(0, txt.length() - end.length());
+			}
+			return name + txt;
 		}
 		
-		Class<?> clazz = obj.getClass();
 		String ty = name + clazz.getSimpleName() + " ";
 		
 		if (clazz == String.class) {
@@ -92,19 +100,19 @@ public class ObjectUtils {
 		} else if (clazz == File.class) {
 			return "%s( %s )".formatted(ty, obj.toString());
 		} else if (clazz == Pattern.class) {
-			return "%s(\"%s\")".formatted(ty, ((Pattern)obj).pattern());
+			return "%s(\"%s\")".formatted(ty, ((Pattern) obj).pattern());
 		} else if (clazz.isEnum()
-		|| clazz == Boolean.class
-		|| clazz == AtomicInteger.class
-		|| Number.class.isAssignableFrom(clazz)) {
+			|| clazz == Boolean.class
+			|| clazz == AtomicInteger.class
+			|| Number.class.isAssignableFrom(clazz)) {
 			return "%s(%s)".formatted(ty, obj);
 		}
-//		else if (clazz == LowType.class) {
-//			return "%s(%s, %d)".formatted(ty, ((LowType)obj).type(), ((LowType)obj).depth());
-//		}
+		//		else if (clazz == LowType.class) {
+		//			return "%s(%s, %d)".formatted(ty, ((LowType)obj).type(), ((LowType)obj).depth());
+		//		}
 		
 		if (Collection.class.isAssignableFrom(clazz)) {
-			Collection<?> list = (Collection<?>)obj;
+			Collection<?> list = (Collection<?>) obj;
 			StringBuilder sb = new StringBuilder();
 			sb.append(clazz.getSimpleName()).append(" ").append(name.trim()).append("\n");
 			
@@ -193,5 +201,38 @@ public class ObjectUtils {
 			
 			return sb.toString();
 		}
+	}
+	
+	/**
+	 * Create a diff between two string
+	 *
+	 * @param a the string of source
+	 * @param b the string of the modified text
+	 * @return the diff between the two strings
+	 */
+	public static String diffString(String a, String b) {
+		var a_lines = a.lines().toList();
+		var b_lines = b.lines().toList();
+		
+		List<String> diff = new ArrayList<>();
+		
+		// a should always match with b
+		int b_index = 0;
+		for (int i = 0; i < a_lines.size(); i++) {
+			String a_line = a_lines.get(i);
+			String b_line = b_lines.get(i);
+			
+			if (a_line.equals(b_line)) {
+				b_index += 1;
+				diff.add((i + 1) + " : " + a_line);
+			} else {
+				// Find where b matches again
+				diff.add((i + 1) + "---" + a_line);
+				diff.add((i + 1) + "+++" + b_line);
+			}
+			
+		}
+		
+		return String.join("\n", diff);
 	}
 }

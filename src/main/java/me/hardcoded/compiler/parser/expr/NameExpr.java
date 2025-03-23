@@ -1,10 +1,12 @@
 package me.hardcoded.compiler.parser.expr;
 
 import me.hardcoded.compiler.impl.ISyntaxPos;
+import me.hardcoded.compiler.parser.serial.LinkableStream;
 import me.hardcoded.compiler.parser.serial.TreeType;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ValueType;
 
+import java.io.IOException;
 import java.util.Objects;
 
 public class NameExpr extends Expr {
@@ -42,5 +44,19 @@ public class NameExpr extends Expr {
 	@Override
 	public String toString() {
 		return "(" + reference.getName() + ")";
+	}
+	
+	@Override
+	public void serialize(LinkableStream stream) throws IOException {
+		stream.writeObjectHeader(this);
+		
+		stream.serializeReference(reference);
+	}
+	
+	public static NameExpr deserialize(LinkableStream stream) throws IOException {
+		var head = stream.readObjectHeader();
+		
+		Reference reference = stream.deserializeReference();
+		return new NameExpr(head.syntaxPos(), reference);
 	}
 }

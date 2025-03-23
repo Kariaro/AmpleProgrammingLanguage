@@ -70,6 +70,7 @@ public class ErrorUtil {
 			
 			return createFullError(error, content, message);
 		} catch (IOException e) {
+			e.printStackTrace();
 			return null;
 		}
 	}

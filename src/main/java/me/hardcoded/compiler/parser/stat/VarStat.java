@@ -2,9 +2,11 @@ package me.hardcoded.compiler.parser.stat;
 
 import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.expr.Expr;
+import me.hardcoded.compiler.parser.serial.LinkableStream;
 import me.hardcoded.compiler.parser.serial.TreeType;
 import me.hardcoded.compiler.parser.type.Reference;
 
+import java.io.IOException;
 import java.util.Objects;
 
 public class VarStat extends Stat {
@@ -39,5 +41,21 @@ public class VarStat extends Stat {
 	@Override
 	public TreeType getTreeType() {
 		return TreeType.VAR;
+	}
+	
+	@Override
+	public void serialize(LinkableStream stream) throws IOException {
+		stream.writeObjectHeader(this);
+		
+		stream.serializeReference(reference);
+		value.serialize(stream);
+	}
+	
+	public static VarStat deserialize(LinkableStream stream) throws IOException {
+		var head = stream.readObjectHeader();
+		
+		Reference reference = stream.deserializeReference();
+		Expr value = stream.deserializeExpr();
+		return new VarStat(head.syntaxPos(), reference, value);
 	}
 }

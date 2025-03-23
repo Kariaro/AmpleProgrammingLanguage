@@ -6,7 +6,8 @@ public class ValueType {
 		FLOATING = 2,
 		GENERIC = 3,
 		LINKED = 4,
-		VARARGS = 5;
+		VARARGS = 5,
+		STRUCT = 6;
 	
 	public static final int STORAGE_TYPE = 15,
 		CONST = 16;

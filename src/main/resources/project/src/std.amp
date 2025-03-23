@@ -45,6 +45,31 @@ namespace std {
         std::printstr(hex_strs, 16l);
         ret;
     }
+    
+    fn printdec_u (u64: number) {
+        u8[]: dec_data = stack_alloc<u8, 10>("0123456789");
+        u8[]: dec_strs = stack_alloc<u8, 20>("....................");
+
+        i32: index = 19;
+        while (number > 0ul || index == 19) {
+            dec_strs[index] = '0' + cast<u8>(number % 10ul);
+            number = number / 10ul;
+            index = index - 1;
+        }
+        
+        printstr(cast<u8[]>(cast<u64>(dec_strs) + cast<u64>(index + 1)), cast<i64>(19 - index));
+        ret;
+    }
+    
+    fn printdec_s (i64: number) {
+        if (number < 0l) {
+            number = 0l - number;
+            printstr("-", 1l);
+        }
+
+        printdec_u(cast<u64>(number));
+        ret;
+    }
 
     fn (export) print (u8[]: string) {
         std::printstr(string, std::strlen(string));
@@ -73,6 +98,12 @@ namespace std {
                     u64: num = cast<u64[]>(ptr)[0];
                     std::printhex(num);
                     ptr = cast<u8[]>(cast<u64>(ptr) + 8ul);
+                } else if (char == 'd') {
+                    printdec_s(cast<i64>(cast<i32[]>(ptr)[0]));
+                    ptr = cast<u8[]>(cast<u64>(ptr) + 4ul);
+                } else if (char == 'u') {
+                    printdec_u(cast<u64>(cast<u32[]>(ptr)[0]));
+                    ptr = cast<u8[]>(cast<u64>(ptr) + 4ul);
                 } else {
                     std::print("\nerror: Invalid format character!\n");
                     break;

@@ -1,10 +1,13 @@
 package me.hardcoded.compiler.parser.expr;
 
 import me.hardcoded.compiler.impl.ISyntaxPos;
+import me.hardcoded.compiler.parser.serial.LinkableStream;
 import me.hardcoded.compiler.parser.serial.TreeType;
 import me.hardcoded.compiler.parser.type.Primitives;
 import me.hardcoded.compiler.parser.type.ValueType;
 import me.hardcoded.utils.StringUtils;
+
+import java.io.IOException;
 
 public class StrExpr extends Expr {
 	private String value;
@@ -42,5 +45,20 @@ public class StrExpr extends Expr {
 	@Override
 	public String toString() {
 		return '"' + StringUtils.escapeString(value) + '"';
+	}
+	
+	
+	@Override
+	public void serialize(LinkableStream stream) throws IOException {
+		stream.writeObjectHeader(this);
+		
+		stream.serializeString(value);
+	}
+	
+	public static StrExpr deserialize(LinkableStream stream) throws IOException {
+		var head = stream.readObjectHeader();
+		
+		String string = stream.deserializeString();
+		return new StrExpr(head.syntaxPos(), string);
 	}
 }

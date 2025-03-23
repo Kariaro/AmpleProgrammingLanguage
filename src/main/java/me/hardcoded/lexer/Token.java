@@ -37,6 +37,9 @@ public class Token {
 		FUNC,
 		COMMA,
 		
+		// Data
+		STRUCT,
+		
 		// Comparisons
 		EQUALS,
 		NOT_EQUALS,

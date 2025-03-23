@@ -89,6 +89,7 @@ public class AmpleLexer {
 			
 			// Preprocessors
 			.addRule(Type.FUNC, i -> i.addString("fn"))
+			.addRule(Type.STRUCT, i -> i.addString("struct"))
 			.addRule(Type.LINK, i -> i.addString("@link"))
 			.addRule(Type.RETURN, i -> i.addString("ret"))
 			.addRule(Type.COLON, i -> i.addString(":"))

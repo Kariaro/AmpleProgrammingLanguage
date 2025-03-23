@@ -1,10 +1,13 @@
 package me.hardcoded.compiler.parser.expr;
 
 import me.hardcoded.compiler.impl.ISyntaxPos;
+import me.hardcoded.compiler.parser.serial.LinkableStream;
 import me.hardcoded.compiler.parser.serial.TreeType;
 import me.hardcoded.compiler.parser.type.Associativity;
 import me.hardcoded.compiler.parser.type.Operation;
 import me.hardcoded.compiler.parser.type.ValueType;
+
+import java.io.IOException;
 
 public class UnaryExpr extends Expr {
 	private Expr value;
@@ -51,5 +54,21 @@ public class UnaryExpr extends Expr {
 		}
 		
 		return "(" + value + operation.getName() + ")";
+	}
+	
+	@Override
+	public void serialize(LinkableStream stream) throws IOException {
+		stream.writeObjectHeader(this);
+		
+		stream.writeVarInt(operation.ordinal());
+		value.serialize(stream);
+	}
+	
+	public static UnaryExpr deserialize(LinkableStream stream) throws IOException {
+		var head = stream.readObjectHeader();
+		
+		Operation operation = Operation.VALUES[stream.readVarInt()];
+		Expr value = stream.deserializeExpr();
+		return new UnaryExpr(head.syntaxPos(), operation, value);
 	}
 }

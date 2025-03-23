@@ -180,6 +180,10 @@ public class AmpleParser {
 			return funcStatement();
 		}
 		
+		if (reader.type() == Token.Type.STRUCT) {
+			return structStatement();
+		}
+		
 		if (repl) {
 			// REPL (Read Eval Print Loop)
 			// Scopes should work for REPL
@@ -290,7 +294,7 @@ public class AmpleParser {
 		return stat;
 	}
 	
-	private Stat funcStatement() throws ParseException {
+	private FuncStat funcStatement() throws ParseException {
 		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(currentFile.getAbsolutePath(), reader.position(), null);
 		reader.advance();
 		
@@ -396,6 +400,63 @@ public class AmpleParser {
 		mutableSyntax.end = reader.lastPositionEnd();
 		
 		context.getLocalScope().popLocals();
+		
+		return stat;
+	}
+	
+	private Stat structStatement() throws ParseException {
+		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(currentFile.getAbsolutePath(), reader.position(), null);
+		reader.advance();
+		
+		tryMatchOrError(Token.Type.IDENTIFIER);
+		ISyntaxPos structNameSyntax = reader.syntaxPosition();
+		String structName = reader.value();
+		reader.advance();
+		
+		context.getLocalScope().pushBlock();
+		context.getLocalScope().pushLocals();
+		context.getNamespaceScope().pushNamespace(structName);
+		
+		
+		// ValueType valueType = context.getTypeScope().addLocalType(new ValueType(structName, 0, 0, ValueType.STRUCT));
+		Reference reference = context.createEmptyReference(structName);
+		
+		// Always set reference position
+		context.setReferencePosition(reference, structNameSyntax);
+		
+		List<VarStat> variables = new ArrayList<>();
+		List<FuncStat> functions = new ArrayList<>();
+		
+		StructStat stat = new StructStat(mutableSyntax, variables, functions, reference);
+		
+		tryMatchOrError(Token.Type.L_CURLY, () -> "Missing struct body");
+		reader.advance();
+		
+		while (reader.type() != Token.Type.EOF && reader.type() != Token.Type.R_CURLY) {
+			if (isType()) {
+				variables.add(structVarStatement());
+			} else if (isFunc()) {
+				functions.add(funcStatement());
+			} else {
+				ISyntaxPos syntaxPos = reader.syntaxPosition();
+				Position pos = syntaxPos.getStartPosition();
+				throw createParseException(
+					syntaxPos,
+					"A struct with the name '%s' invalid statement (line: %s, column: %s)",
+					structName,
+					pos == null ? "?" : (pos.line() + 1),
+					pos == null ? "?" : (pos.column() + 1)
+				);
+			}
+		}
+		
+		tryMatchOrError(Token.Type.R_CURLY);
+		reader.advance();
+		
+		mutableSyntax.end = reader.lastPositionEnd();
+		
+		context.getLocalScope().popLocals();
+		context.getNamespaceScope().popNamespace();
 		
 		return stat;
 	}
@@ -639,6 +700,45 @@ public class AmpleParser {
 		
 		if (context.getLocalScope().getVariable(namespace, name) != null) {
 			throw createParseException(namePos, "A %s variable '%s' has already been defined", localVariable ? "local" : "global", name);
+		}
+		
+		Reference reference = context.getLocalScope().addLocalVariable(namespace, type, name);
+		return new VarStat(ISyntaxPos.of(currentFile, startPos, reader.lastPositionEnd()), reference, value);
+	}
+	
+	private VarStat structVarStatement() throws ParseException {
+		Position startPos = reader.position();
+		
+		ISyntaxPos typeSyntaxPosition = reader.syntaxPosition();
+		ValueType type = readType();
+		if (type == null) {
+			throw createParseException(typeSyntaxPosition, "Unknown type");
+		}
+		
+		tryMatchOrError(Token.Type.COLON);
+		reader.advance();
+		
+		tryMatchOrError(Token.Type.IDENTIFIER);
+		ISyntaxPos namePos = reader.syntaxPosition();
+		String name = reader.value();
+		reader.advance();
+		
+		Expr value;
+		if (reader.type() == Token.Type.ASSIGN) {
+			reader.advance();
+			value = expression();
+		} else {
+			value = new NoneExpr(reader.syntaxPosition());
+		}
+		
+		tryMatchOrError(Token.Type.SEMICOLON);
+		reader.advance();
+		
+		Namespace namespace;
+		namespace = context.getNamespaceScope().getNamespace();
+		
+		if (context.getLocalScope().getVariable(namespace, name) != null) {
+			throw createParseException(namePos, "A %s variable '%s' has already been defined", "struct", name);
 		}
 		
 		Reference reference = context.getLocalScope().addLocalVariable(namespace, type, name);

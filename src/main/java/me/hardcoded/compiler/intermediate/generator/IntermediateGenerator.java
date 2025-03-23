@@ -8,7 +8,6 @@ import me.hardcoded.compiler.parser.LinkableObject;
 import me.hardcoded.compiler.parser.expr.*;
 import me.hardcoded.compiler.parser.stat.*;
 import me.hardcoded.compiler.parser.type.*;
-import me.hardcoded.utils.Position;
 import me.hardcoded.utils.error.ErrorUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -107,6 +106,11 @@ public class IntermediateGenerator {
 				stats.addAll(0, ((NamespaceStat) s).getElements());
 				continue;
 			}
+			if (s instanceof StructStat) {
+				// Generate (this) functions
+				// Generate (this) members
+				continue;
+			}
 			
 			// Each statement inside of this program gets its own procedure
 			// some procedures are variable procedures and some a function
@@ -116,7 +120,7 @@ public class IntermediateGenerator {
 				case FUNC -> Procedure.ProcedureType.FUNCTION;
 				case VAR -> Procedure.ProcedureType.VARIABLE;
 				case SCOPE -> Procedure.ProcedureType.CODE;
-				default -> throw new RuntimeException("Invalid statement inside procedure");
+				default -> throw new RuntimeException("Invalid statement inside procedure %s".formatted(s.getTreeType()));
 			});
 			
 			count = 0;
@@ -414,6 +418,7 @@ public class IntermediateGenerator {
 			.addParam(new InstParam.Ref(right)));
 		
 		if (!left.getValueType().equals(right.getValueType())) {
+			System.out.println(left.getValueType() + ", " + right.getValueType());
 			throw new InstException(ErrorUtil.createFullError(expr.getSyntaxPosition(),
 				"Left and Right side does not match (%s != %s)".formatted(
 					left.getValueType().toShortName(),
@@ -545,14 +550,12 @@ public class IntermediateGenerator {
 				.createArray(arrayObject.getValueType().getDepth() - 1);
 			
 			if (!childType.equals(right.getValueType())) {
-				Position pos = expr.getSyntaxPosition().getStartPosition();
-				throw new InstException(
-					"(line: %d, column: %d) Left and Right side does not match (%s != %s)",
-					pos.line() + 1,
-					pos.column() + 1,
-					childType.toShortName(),
-					right.getValueType().toShortName()
-				);
+				throw new InstException(ErrorUtil.createFullError(expr.getSyntaxPosition(),
+					"Left and Right side does not match (%s != %s)".formatted(
+						childType.toShortName(),
+						right.getValueType().toShortName()
+					)
+				));
 			}
 		} else {
 			InstRef left = generateStat(expr.getLeft(), procedure);
@@ -563,14 +566,12 @@ public class IntermediateGenerator {
 				.addParam(new InstParam.Ref(right)));
 			
 			if (!left.getValueType().equals(right.getValueType())) {
-				Position pos = expr.getSyntaxPosition().getStartPosition();
-				throw new InstException(
-					"(line: %d, column: %d) Left and Right side does not match (%s != %s)",
-					pos.line() + 1,
-					pos.column() + 1,
-					left.getValueType().toShortName(),
-					right.getValueType().toShortName()
-				);
+				throw new InstException(ErrorUtil.createFullError(expr.getSyntaxPosition(),
+					"Left and Right side does not match (%s != %s)".formatted(
+						left.getValueType().toShortName(),
+						right.getValueType().toShortName()
+					)
+				));
 			}
 		}
 		

@@ -1,8 +1,10 @@
 package me.hardcoded.compiler.parser.stat;
 
 import me.hardcoded.compiler.impl.ISyntaxPos;
+import me.hardcoded.compiler.parser.serial.LinkableStream;
 import me.hardcoded.compiler.parser.serial.TreeType;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,5 +43,28 @@ public class ProgStat extends Stat {
 	@Override
 	public TreeType getTreeType() {
 		return TreeType.PROGRAM;
+	}
+	
+	
+	@Override
+	public void serialize(LinkableStream stream) throws IOException {
+		stream.writeObjectHeader(this);
+		
+		stream.writeVarInt(elements.size());
+		for (Stat s : elements) {
+			s.serialize(stream);
+		}
+	}
+	
+	public static ProgStat deserialize(LinkableStream stream) throws IOException {
+		var head = stream.readObjectHeader();
+		
+		ProgStat result = new ProgStat(head.syntaxPos());
+		int size = stream.readVarInt();
+		for (int i = 0; i < size; i++) {
+			result.addElement(stream.deserializeStat());
+		}
+		
+		return result;
 	}
 }

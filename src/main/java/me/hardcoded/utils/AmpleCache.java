@@ -90,11 +90,11 @@ public class AmpleCache {
 	 * @param ampleConfig the ample config
 	 * @param file        the file to resolve the cache path from
 	 */
-	public static String getCacheFileName(AmpleConfig ampleConfig, File file) {
+	public static String getCacheFileName(AmpleConfig ampleConfig, File file, String suffix) {
 		Path relativePath = ampleConfig.getConfiguration()
 			.getWorkingDirectory().toPath().relativize(file.toPath());
 		
-		return "serial_" + relativePath.toString().replace("_", "__").replaceAll("[\\\\/]", "_") + ".serial";
+		return "serial_" + relativePath.toString().replace("_", "__").replaceAll("[\\\\/]", "_") + suffix + ".serial";
 	}
 	
 	private static final Map<String, String> FILE_SOURCES = new HashMap<>();

@@ -1,7 +1,10 @@
 package me.hardcoded.compiler.parser.stat;
 
 import me.hardcoded.compiler.impl.ISyntaxPos;
+import me.hardcoded.compiler.parser.serial.LinkableStream;
 import me.hardcoded.compiler.parser.serial.TreeType;
+
+import java.io.IOException;
 
 public abstract class Stat {
 	private final ISyntaxPos syntaxPos;
@@ -28,4 +31,20 @@ public abstract class Stat {
 	 * Returns the type of this statement
 	 */
 	public abstract TreeType getTreeType();
+	
+	/**
+	 * Serialize this statement
+	 *
+	 * @param stream the stream to write to
+	 */
+	public abstract void serialize(LinkableStream stream) throws IOException;
+	
+	/**
+	 * Deserialize this statement
+	 *
+	 * @param stream the stream to read from
+	 */
+	public static Stat deserialize(LinkableStream stream) throws IOException {
+		throw new UnsupportedOperationException("Stat::deserialize not implemented");
+	}
 }

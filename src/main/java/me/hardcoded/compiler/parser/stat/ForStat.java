@@ -2,7 +2,10 @@ package me.hardcoded.compiler.parser.stat;
 
 import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.expr.Expr;
+import me.hardcoded.compiler.parser.serial.LinkableStream;
 import me.hardcoded.compiler.parser.serial.TreeType;
+
+import java.io.IOException;
 
 public class ForStat extends Stat {
 	private Stat initializer;
@@ -47,5 +50,25 @@ public class ForStat extends Stat {
 	@Override
 	public TreeType getTreeType() {
 		return TreeType.FOR;
+	}
+	
+	@Override
+	public void serialize(LinkableStream stream) throws IOException {
+		stream.writeObjectHeader(this);
+		
+		initializer.serialize(stream);
+		condition.serialize(stream);
+		action.serialize(stream);
+		body.serialize(stream);
+	}
+	
+	public static ForStat deserialize(LinkableStream stream) throws IOException {
+		var head = stream.readObjectHeader();
+		
+		Stat initializer = stream.deserializeStat();
+		Expr condition = stream.deserializeExpr();
+		Expr action = stream.deserializeExpr();
+		Stat body = stream.deserializeStat();
+		return new ForStat(head.syntaxPos(), initializer, condition, action, body);
 	}
 }

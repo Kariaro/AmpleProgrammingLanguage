@@ -1,6 +1,7 @@
 package me.hardcoded.visualization;
 
 import me.hardcoded.compiler.impl.ISyntaxPos;
+import me.hardcoded.compiler.intermediate.inst.IntermediateFile;
 import me.hardcoded.lexer.Token;
 import me.hardcoded.utils.Position;
 import me.hardcoded.utils.SyntaxUtils;
@@ -22,12 +23,12 @@ import java.util.List;
  *
  * @author HardCoded
  */
-public final class SourceCodeVisualization extends Visualization implements VisualizationListener {
+public final class InstSourceCodeVisualization extends Visualization implements VisualizationListener {
 	private LocalPanel panel;
 	private List<TokenLike> sourceCode;
 	
-	public SourceCodeVisualization(VisualizationHandler handler) {
-		super("SourceCode - Visualization", handler, 2);
+	public InstSourceCodeVisualization(VisualizationHandler handler) {
+		super("InstSourceCode - Visualization", handler, 2);
 	}
 	
 	public static record TokenLike(Token value, Position document) {
@@ -98,7 +99,7 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 					if (event.getButton() == MouseEvent.BUTTON1) {
 						Position mousePos = getMouse(event.getPoint());
 						handler.fireEvent(new VisualizationEvent.SelectionEvent(
-							SourceCodeVisualization.this,
+							InstSourceCodeVisualization.this,
 							mousePos
 						));
 					}
@@ -128,7 +129,7 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 					}
 					
 					handler.fireEvent(new VisualizationEvent.SyntaxSelectionEvent(
-						SourceCodeVisualization.this,
+						InstSourceCodeVisualization.this,
 						syntaxPosition
 					));
 				}
@@ -174,14 +175,30 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 	
 	@Override
 	protected void showObject(Object value) {
-		if (!(value instanceof List preTokens)) {
+		if (!(value instanceof IntermediateFile program)) {
 			throw new IllegalArgumentException();
 		}
-		
 		List<TokenLike> tokens = new ArrayList<>();
-		for (var item : preTokens) {
-			Token token = (Token) item;
-			tokens.add(new TokenLike(token, token.syntaxPosition.getStartPosition()));
+		var procedures = program.getProcedures();
+		int line = 0;
+		for (var proc : procedures) {
+			var instructions = proc.getInstructions();
+			{
+				var start = instructions.get(0).getSyntaxPosition();
+				var end = instructions.get(instructions.size() - 1).getSyntaxPosition();
+				var syntax = ISyntaxPos.of(start.getPath(), start.getStartPosition(), end.getEndPosition());
+				// TODO - demangle name
+				tokens.add(new TokenLike(
+					new Token(Token.Type.FUNC, "proc " + proc.getReference().toString(), syntax),
+					new Position(0, line++))
+				);
+			}
+			for (var inst : instructions) {
+				tokens.add(new TokenLike(
+					new Token(Token.Type.FUNC, inst.toString(), inst.getSyntaxPosition()),
+					new Position(5, line++))
+				);
+			}
 		}
 		
 		sourceCode = tokens;
@@ -207,6 +224,11 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 	@Override
 	public void handleSelection(VisualizationEvent.SelectionEvent event) {
 		TokenLike token = getToken(event.getPosition());
+		if (token != null) {
+			panel.setHoveredTokenTest(token.value().syntaxPosition);
+		} else {
+			panel.setHoveredTokenTest(null);
+		}
 		panel.setHoveredToken(token);
 		panel.setSyntaxSelection(null);
 		panel.repaint();
@@ -226,8 +248,10 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 		private int fontSize = 0;
 		private Font font;
 		private Rectangle2D bounds;
+		private int endLine = 0;
 		
 		private ISyntaxPos syntaxSelection;
+		private ISyntaxPos selectedToken;
 		private TokenLike hover;
 		
 		public int getScroll() {
@@ -242,19 +266,8 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 			if (scroll < 0) {
 				scroll = 0;
 			}
-			
-			List<TokenLike> tokens = sourceCode;
-			if (tokens != null && !tokens.isEmpty()) {
-				int endLine = -1;
-				for (var item : tokens) {
-					int line = item.document.line();
-					if (line > endLine) {
-						endLine = line;
-					}
-				}
-				if (scroll > endLine) {
-					scroll = endLine;
-				}
+			if (scroll > endLine) {
+				scroll = endLine;
 			}
 			
 			this.ypos = scroll;
@@ -265,13 +278,15 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 				scroll = 0;
 			}
 			
-			// TODO: Find max x scroll
-			
 			this.xpos = scroll;
 		}
 		
 		public void setHoveredToken(TokenLike token) {
 			this.hover = token;
+		}
+		
+		public void setHoveredTokenTest(ISyntaxPos token) {
+			this.selectedToken = token;
 		}
 		
 		public void setSyntaxSelection(ISyntaxPos syntaxPosition) {
@@ -357,6 +372,10 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 			
 			boolean showLine = pointer.line != startPos.line();
 			boolean hover = this.hover == token;
+			var tmp = selectedToken;
+			if (tmp != null) {
+				hover = SyntaxUtils.syntaxIntersect(token.value.syntaxPosition, selectedToken);
+			}
 			
 			pointer.column = startPos.column();
 			pointer.line = startPos.line();
@@ -435,7 +454,16 @@ public final class SourceCodeVisualization extends Visualization implements Visu
 		}
 		
 		public void display(List<TokenLike> tokens) {
+			endLine = -1;
 			
+			if (tokens != null && !tokens.isEmpty()) {
+				for (var item : tokens) {
+					int line = item.document.line();
+					if (line > endLine) {
+						endLine = line;
+					}
+				}
+			}
 		}
 	}
 	

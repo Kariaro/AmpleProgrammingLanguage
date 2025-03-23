@@ -1,9 +1,12 @@
 package me.hardcoded.compiler.parser.expr;
 
 import me.hardcoded.compiler.impl.ISyntaxPos;
+import me.hardcoded.compiler.parser.serial.LinkableStream;
 import me.hardcoded.compiler.parser.serial.TreeType;
 import me.hardcoded.compiler.parser.type.Operation;
 import me.hardcoded.compiler.parser.type.ValueType;
+
+import java.io.IOException;
 
 public class BinaryExpr extends Expr {
 	private Expr left;
@@ -60,5 +63,23 @@ public class BinaryExpr extends Expr {
 	@Override
 	public String toString() {
 		return "(" + left + " " + operation.getName() + " " + right + ")";
+	}
+	
+	@Override
+	public void serialize(LinkableStream stream) throws IOException {
+		stream.writeObjectHeader(this);
+		
+		left.serialize(stream);
+		stream.writeVarInt(operation.ordinal());
+		right.serialize(stream);
+	}
+	
+	public static BinaryExpr deserialize(LinkableStream stream) throws IOException {
+		var head = stream.readObjectHeader();
+		
+		Expr left = stream.deserializeExpr();
+		Operation operation = Operation.VALUES[stream.readVarInt()];
+		Expr right = stream.deserializeExpr();
+		return new BinaryExpr(head.syntaxPos(), operation, left, right);
 	}
 }

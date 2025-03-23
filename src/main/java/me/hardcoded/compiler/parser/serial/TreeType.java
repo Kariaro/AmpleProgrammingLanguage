@@ -14,6 +14,7 @@ public enum TreeType {
 	VAR,
 	WHILE,
 	NAMESPACE,
+	STRUCT,
 	
 	// Expressions
 	BINARY,

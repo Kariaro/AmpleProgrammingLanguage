@@ -7,13 +7,17 @@ import me.hardcoded.compiler.intermediate.AmpleLinker;
 import me.hardcoded.compiler.intermediate.inst.IntermediateFile;
 import me.hardcoded.compiler.parser.AmpleParser;
 import me.hardcoded.compiler.parser.LinkableObject;
-import me.hardcoded.compiler.parser.serial.LinkableDeserializer;
-import me.hardcoded.compiler.parser.serial.LinkableSerializer;
+import me.hardcoded.compiler.parser.serial.LinkableStream;
 import me.hardcoded.configuration.CompilerConfiguration;
 import me.hardcoded.configuration.OutputFormat;
 import me.hardcoded.interpreter.AmpleRunner;
+import me.hardcoded.lexer.LexerTokenizer;
 import me.hardcoded.utils.AmpleCache;
 import me.hardcoded.utils.ObjectUtils;
+import me.hardcoded.visualization.InstFileVisualization;
+import me.hardcoded.visualization.InstSourceCodeVisualization;
+import me.hardcoded.visualization.ParseTreeVisualization;
+import me.hardcoded.visualization.SourceCodeVisualization;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,9 +45,9 @@ public class AmpleCompiler {
 		try {
 			if (ampleConfig.getConfiguration().useCache()) {
 				try {
-					File cacheFile = new File(ampleConfig.getConfiguration().getOutputFolder(), AmpleCache.getCacheFileName(ampleConfig, file));
+					File cacheFile = new File(ampleConfig.getConfiguration().getOutputFolder(), AmpleCache.getCacheFileName(ampleConfig, file, ""));
 					if (cacheFile.exists()) {
-						LinkableObject obj = LinkableDeserializer.deserializeLinkable(Files.readAllBytes(cacheFile.toPath()));
+						LinkableObject obj = LinkableStream.deserializeLinkable(Files.readAllBytes(cacheFile.toPath()));
 						if (obj != null && obj.getChecksum().equals(AmpleCache.getFileChecksum(file))) {
 							LOGGER.info(" - [CACHE] {}", file);
 							return obj;
@@ -110,27 +114,32 @@ public class AmpleCompiler {
 			
 			for (LinkableObject obj : list) {
 				try {
-					byte[] bytes = LinkableSerializer.serializeLinkable(obj);
+					byte[] bytes = LinkableStream.serializeLinkable(obj);
 					
-					File outputFile = new File(outputFolder, AmpleCache.getCacheFileName(ampleConfig, obj.getFile()));
+					File outputFile = new File(outputFolder, AmpleCache.getCacheFileName(ampleConfig, obj.getFile(), ""));
 					Files.write(outputFile.toPath(), bytes);
 					
 					LOGGER.info(" - [{}] {}", bytes.length == 1 ? "1 byte" : (bytes.length + " bytes"), outputFile);
 					
 					// Only run this code if serialization validation is enabled
-					LinkableObject loaded = LinkableDeserializer.deserializeLinkable(bytes);
-					byte[] recombined = LinkableSerializer.serializeLinkable(loaded);
+					LinkableObject loaded = LinkableStream.deserializeLinkable(bytes);
+					byte[] recombined = LinkableStream.serializeLinkable(loaded);
+					
+					
+					File outputFile2 = new File(outputFolder, AmpleCache.getCacheFileName(ampleConfig, obj.getFile(), "_tmp"));
+					Files.write(outputFile2.toPath(), recombined);
 					
 					if (Arrays.compare(bytes, recombined) != 0) {
 						LOGGER.error("Serialized data did not match");
 						LOGGER.error("({}) became ({}) bytes", bytes.length, recombined.length);
 						
 						try {
-							String a = ObjectUtils.deepPrint(obj, 5);
-							String b = ObjectUtils.deepPrint(loaded, 5);
+							final int depth = 5;
+							String a = ObjectUtils.deepPrint(obj, depth);
+							String b = ObjectUtils.deepPrint(loaded, depth);
+							String c = ObjectUtils.diffString(a, b);
 							
-							LOGGER.info("{}", a);
-							LOGGER.info("{}", b);
+							LOGGER.info("{}", c);
 						} catch (Exception e) {
 							LOGGER.error("", e);
 						}
@@ -178,12 +187,13 @@ public class AmpleCompiler {
 		LOGGER.info("");
 		LOGGER.info("{}", path);
 		
-		//		ampleConfig.getVisualizationHandler()
-		//			.addVisualization(SourceCodeVisualization::new, LexerTokenizer.parseKeepWhitespace(
-		//				inputFile.getAbsoluteFile(),
-		//				Files.readAllBytes(inputFile.toPath())
-		//			))
-		//			.addVisualization(ParseTreeVisualization::new, list.getFirst().getProgram())
-		//			.addVisualization(InstFileVisualization::new, file);
+		ampleConfig.getVisualizationHandler()
+			.addVisualization(SourceCodeVisualization::new, LexerTokenizer.parseKeepWhitespace(
+				inputFile.getAbsolutePath(),
+				Files.readAllBytes(inputFile.toPath())
+			))
+			.addVisualization(ParseTreeVisualization::new, list.getFirst().getProgram())
+			.addVisualization(InstFileVisualization::new, file)
+			.addVisualization(InstSourceCodeVisualization::new, file);
 	}
 }
