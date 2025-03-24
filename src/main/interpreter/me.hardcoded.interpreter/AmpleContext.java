@@ -32,7 +32,7 @@ class AmpleContext {
 						mainRef = proc.getReference();
 					}
 				}
-				case CODE -> {
+				case CODE, VARIABLE -> {
 					// We want to save these
 					codeBlocks.add(new AmpleFunc(proc));
 				}

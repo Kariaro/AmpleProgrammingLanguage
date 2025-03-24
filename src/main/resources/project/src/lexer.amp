@@ -1,0 +1,383 @@
+@link "std.amp";
+
+i32 /*(const)*/ : EOF                = -1;
+i32 /*(const)*/ : WHITESPACE         = 0;
+i32 /*(const)*/ : IDENTIFIER         = 1;
+i32 /*(const)*/ : STRING             = 2;
+i32 /*(const)*/ : CHARACTER          = 3;
+i32 /*(const)*/ : NUM_U64            = 4;
+i32 /*(const)*/ : NUM_U32            = 5;
+i32 /*(const)*/ : NUM_I64            = 6;
+i32 /*(const)*/ : NUM_I32            = 7;
+i32 /*(const)*/ : VARARGS            = 8;
+i32 /*(const)*/ : DOT                = cast<i32>('.') + 10000;
+i32 /*(const)*/ : L_PARAM            = cast<i32>('(') + 10000;
+i32 /*(const)*/ : R_PARAM            = cast<i32>(')') + 10000;
+i32 /*(const)*/ : L_CURLY            = cast<i32>('{') + 10000;
+i32 /*(const)*/ : R_CURLY            = cast<i32>('}') + 10000;
+i32 /*(const)*/ : L_BRACK            = cast<i32>('[') + 10000;
+i32 /*(const)*/ : R_BRACK            = cast<i32>(']') + 10000;
+i32 /*(const)*/ : COLON              = cast<i32>(':') + 10000;
+i32 /*(const)*/ : SEMICOLON          = cast<i32>(';') + 10000;
+i32 /*(const)*/ : ASSIGN             = cast<i32>('=') + 10000;
+i32 /*(const)*/ : NOT                = cast<i32>('!') + 10000;
+i32 /*(const)*/ : NOR                = cast<i32>('~') + 10000;
+i32 /*(const)*/ : XOR                = cast<i32>('^') + 10000;
+i32 /*(const)*/ : AND                = cast<i32>('&') + 10000;
+i32 /*(const)*/ : OR                 = cast<i32>('|') + 10000;
+i32 /*(const)*/ : MINUS              = cast<i32>('-') + 10000;
+i32 /*(const)*/ : PLUS               = cast<i32>('+') + 10000;
+i32 /*(const)*/ : MUL                = cast<i32>('*') + 10000;
+i32 /*(const)*/ : DIV                = cast<i32>('/') + 10000;
+i32 /*(const)*/ : MOD                = cast<i32>('%') + 10000;
+i32 /*(const)*/ : LESS_THAN          = cast<i32>('<') + 10000;
+i32 /*(const)*/ : MORE_THAN          = cast<i32>('>') + 10000;
+i32 /*(const)*/ : COMMA              = cast<i32>(',') + 10000;
+i32 /*(const)*/ : NAMESPACE_OPERATOR = cast<i32>(':') + 256 * cast<i32>(':') + 10000;
+i32 /*(const)*/ : EQUALS             = cast<i32>('=') + 256 * cast<i32>('=') + 10000;
+i32 /*(const)*/ : NOT_EQUALS         = cast<i32>('!') + 256 * cast<i32>('=') + 10000;
+i32 /*(const)*/ : LESS_EQUAL         = cast<i32>('<') + 256 * cast<i32>('=') + 10000;
+i32 /*(const)*/ : MORE_EQUAL         = cast<i32>('>') + 256 * cast<i32>('=') + 10000;
+i32 /*(const)*/ : CAND               = cast<i32>('&') + 256 * cast<i32>('&') + 10000;
+i32 /*(const)*/ : COR                = cast<i32>('|') + 256 * cast<i32>('|') + 10000;
+i32 /*(const)*/ : SHIFT_LEFT         = cast<i32>('<') + 256 * cast<i32>('<') + 10000;
+i32 /*(const)*/ : SHIFT_RIGHT        = cast<i32>('>') + 256 * cast<i32>('>') + 10000;
+
+// token a;
+// a.type = 3;
+// a.text = "abc";
+// MEMBER_PTR [ r0 = a, r1 = "type" ]
+// STORE [r0 = a, r1 = 1, r2 = 3]
+// STORE [r0 = a, r1 = 0, r2 = "abc"]
+
+// token[] a;
+// a[0].type = 3;
+// a[0].text = "abc";
+// MEMBER_PTR [ r0 = a[0], r1 = "type", r2 = out ]
+// MOV [r0 = out, r1 = 3]
+// MEMBER_PTR [ r0 = a[0], r1 = "text", r2 = out ]
+// MOV [r0 = out, r1 = "abc"]
+
+// i32: test = a.type;
+// MEMBER_PTR [ r0 = a, r1 = "type", r2 = out ]
+// MOV [r0 = test, r1 = out]
+
+struct token {
+    u8[] : text;
+    i32  : type;
+}
+
+fn tokenize(u8[] : buffer) : token[] {
+    // Get size of input buffer
+    u64 : buffer_size = cast<u64>(std::strlen(buffer));
+    
+    // There cannot be more tokens than the amount of characters in the buffer
+    token[] : buffer_result = cast<token[]>(std::malloc((buffer_size + 1ul) * sizeof(token))); //[buffer_size + 1ul];
+    u8[]    : text = cast<u8[]>(std::malloc(0ul));
+
+    std::printf("tokenization: %p\n", buffer);
+    i32 : buffer_index = 0;
+    i32 : idx = 0;
+    i32 : last_idx = -1;
+    while (cast<u64>(idx) < buffer_size) {
+        if (last_idx == idx) {
+            break; // Prevent freeze
+        }
+
+        last_idx = idx;
+        u8: char = buffer[idx];
+        std::printf("idx: %u\n", idx);
+
+        // White spaces
+        if (char == '\t' || char == ' ' || char == '\n' || char == '\r') {
+            i32 : start = idx;
+            while (char == '\t' || char == ' ' || char == '\n' || char == '\r') {
+                idx = idx + 1;
+                char = buffer[idx];
+            }
+            text = cast<u8[]>(std::malloc(cast<u64>(idx - start)));
+            text[idx - start] = '\0';
+            for (i32 : i = 0; i < idx - start; i = i + 1) {
+                text[i] = buffer[start + i];
+            }
+            buffer_result[buffer_index].text = text;
+            buffer_result[buffer_index].type = WHITESPACE;
+            buffer_index = buffer_index + 1;
+            continue;
+        }
+        if (char == '/' && buffer[idx + 1] == '/') {
+            i32 : start = idx;
+            while (char != '\r' && char != '\n' && char != '\0') {
+                idx = idx + 1;
+                char = buffer[idx];
+            }
+            text = cast<u8[]>(std::malloc(cast<u64>(idx - start)));
+            text[idx - start] = '\0';
+            for (i32 : i = 0; i < idx - start; i = i + 1) {
+                text[i] = buffer[start + i];
+            }
+            buffer_result[buffer_index].text = text;
+            buffer_result[buffer_index].type = WHITESPACE;
+            buffer_index = buffer_index + 1;
+            continue;
+        }
+        if (char == '/' && buffer[idx + 1] == '*') {
+            i32 : start = idx;
+            idx = idx + 3;
+            while (buffer[idx] != '\0' && !(buffer[idx - 1] == '*' && buffer[idx] == '/')) {
+                idx = idx + 1;
+            }
+            text = cast<u8[]>(std::malloc(cast<u64>(idx - start)));
+            text[idx - start] = '\0';
+            for (i32 : i = 0; i < idx - start; i = i + 1) {
+                text[i] = buffer[start + i];
+            }
+            buffer_result[buffer_index].text = text;
+            buffer_result[buffer_index].type = WHITESPACE;
+            buffer_index = buffer_index + 1;
+            continue;
+        }
+
+        // Varargs
+        if (char == '.' && cast<u64>(idx + 2) < buffer_size && buffer[idx + 1] == '.' && buffer[idx + 2] == '.') {
+            buffer_result[buffer_index].text = "...";
+            buffer_result[buffer_index].type = VARARGS;
+            buffer_index = buffer_index + 1;
+            idx = idx + 3;
+            continue;
+        }
+        
+        // if (char == '{') {
+        //     buffer_result[buffer_index].text = "{";
+        //     buffer_result[buffer_index].type = L_CURLY;
+        //     buffer_index = buffer_index + 1;
+        //     idx = idx + 1;
+        //     continue;
+        // }
+
+        // todo - Could use pre allocated strings to not need allocation
+        if (
+            // single use
+               char == '{' || char == '}'
+            || char == '[' || char == ']'
+            || char == '(' || char == ')'
+            || char == '~' || char == '^'
+            || char == '+' || char == '-'
+            || char == '*' || char == '/'
+            || char == '%' || char == ';'
+            || char == ',' || char == '.'
+            || char == '?'
+    
+            // possibly multibyte
+            || char == '=' || char == '!'
+            || char == '<' || char == '>'
+            || char == '&' || char == '|'
+            || char == ':'
+        ) {
+            idx = idx + 1;
+            u8: next = buffer[idx];
+            if ((char == '>' && next == '=')
+            || (char == '>' && next == '>')
+            || (char == '<' && next == '=')
+            || (char == '<' && next == '<')
+            || (char == '=' && next == '=')
+            || (char == '!' && next == '=')
+            || (char == '&' && next == '&')
+            || (char == '|' && next == '|')
+            || (char == ':' && next == ':')
+            ) {
+                 idx = idx + 1;
+            } else {
+                 next = '\0';
+            }
+
+            if (next != '\0') {
+                text = cast<u8[]>(std::malloc(3ul));
+                text[0] = char;
+                text[1] = next;
+                text[2] = '\0';
+            } else {
+                text = cast<u8[]>(std::malloc(2ul));
+                text[0] = char;
+                text[1] = '\0';
+            }
+
+            buffer_result[buffer_index].text = text;
+            buffer_result[buffer_index].type = cast<i32>(char) + 256 * cast<i32>(next) + 10000;
+            buffer_index = buffer_index + 1;
+            continue;
+        }
+        
+        // String
+        if (char == '"') {
+            i32 : start = idx;
+            idx = idx + 1;
+            char = buffer[idx];
+            while (char != '"') {
+                if (char == '\\') {
+                    u8: next = buffer[idx + 1];
+                    if (next == '"'
+                    || next == '\''
+                    || next == 'r'
+                    || next == 't'
+                    || next == 'n'
+                    || next == '0'
+                    || next == '\\')
+                    {
+                        idx = idx + 1;
+                    } else {
+                        // todo - invalid escape????
+                    }
+                }
+                idx = idx + 1;
+                char = buffer[idx];
+            }
+            idx = idx + 1;
+            text = cast<u8[]>(std::malloc(cast<u64>(idx - start)));
+            text[idx - start] = '\0';
+            for (i32 : i = 0; i < idx - start; i = i + 1) {
+                text[i] = buffer[start + i];
+            }
+            buffer_result[buffer_index].text = text;
+            buffer_result[buffer_index].type = STRING;
+            buffer_index = buffer_index + 1;
+            continue;
+        }
+        
+        // Char
+        if (char == '"') {
+            i32 : start = idx;
+            idx = idx + 1;
+            char = buffer[idx];
+            while (char != '\'') {
+                if (char == '\\') {
+                    u8: next = buffer[idx + 1];
+                    if (next == '"'
+                    || next == '\''
+                    || next == 'r'
+                    || next == 't'
+                    || next == 'n'
+                    || next == '0'
+                    || next == '\\')
+                    {
+                        idx = idx + 1;
+                    } else {
+                        // todo - invalid escape????
+                    }
+                }
+                idx = idx + 1;
+                char = buffer[idx];
+            }
+            idx = idx + 1;
+            text = cast<u8[]>(std::malloc(cast<u64>(idx - start)));
+            text[idx - start] = '\0';
+            for (i32 : i = 0; i < idx - start; i = i + 1) {
+                text[i] = buffer[start + i];
+            }
+            buffer_result[buffer_index].text = text;
+            buffer_result[buffer_index].type = CHARACTER;
+            buffer_index = buffer_index + 1;
+            continue;
+        }
+        
+        // Identifier
+        if ((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char == '_') {
+            i32 : start = idx;
+            while ((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char == '_' || (char >= '0' && char <= 'z') || (char >= '0' && char <= '9')) {
+                idx = idx + 1;
+                char = buffer[idx];
+            }
+            text = cast<u8[]>(std::malloc(cast<u64>(idx - start)));
+            text[idx - start] = '\0';
+            for (i32 : i = 0; i < idx - start; i = i + 1) {
+                text[i] = buffer[start + i];
+            }
+            buffer_result[buffer_index].text = text;
+            buffer_result[buffer_index].type = IDENTIFIER;
+            buffer_index = buffer_index + 1;
+            continue;
+        }
+        
+        // Number
+        if (char >= '0' && char <= '9') {
+            i32 : start = idx;
+            // Hex
+            if (buffer[idx + 1] == 'x') {
+                idx = idx + 2;
+                char = buffer[idx];
+                while ((char >= 'a' && char <= 'f') || (char >= 'A' && char <= 'F') || (char >= '0' && char <= '9')) {
+                    idx = idx + 1;
+                    char = buffer[idx];
+                }
+                // todo - at least one match
+            } else if (buffer[idx + 1] == 'b') {
+                idx = idx + 2;
+                char = buffer[idx];
+                while (char == '0' || char == '1') {
+                    idx = idx + 1;
+                    char = buffer[idx];
+                }
+                // todo - at least one match
+            } else {
+                while (char >= '0' && char <= '9') {
+                    idx = idx + 1;
+                    char = buffer[idx];
+                }
+            }
+            i32: type = NUM_I32;
+            u8: next = buffer[idx];
+            
+            if (next == 'L' || next == 'l') {
+                type = NUM_I64;
+                idx = idx + 1;
+            } else if (next == 'U' || next == 'u') {
+                type = NUM_U32;
+                idx = idx + 1;
+                if (buffer[idx] == 'L' || buffer[idx] == 'l') {
+                    type = NUM_U64;
+                    idx = idx + 1;
+                }
+            }
+            text = cast<u8[]>(std::malloc(cast<u64>(idx - start)));
+            text[idx - start] = '\0';
+            for (i32 : i = 0; i < idx - start; i = i + 1) {
+                text[i] = buffer[start + i];
+            }
+            buffer_result[buffer_index].text = text;
+            buffer_result[buffer_index].type = type;
+            buffer_index = buffer_index + 1;
+            continue;
+        }
+    }
+
+    buffer_result[buffer_index].text = ""; // EMPTY
+    buffer_result[buffer_index].type = -1; // EOF
+    buffer_index = buffer_index + 1;
+    
+    std::printf("tokens: %u\n", buffer_index);
+    for (i32: i = 0; buffer_result[i].type != EOF; i = i + 1) {
+        std::printf("TOKEN [value=\"%s\" type=%d]\n", buffer_result[i].text, buffer_result[i].type);
+    }
+    // u8[] result = cast<u8[]>(std::malloc(cast<u64>(buffer_index) * sizeof(token)));
+    // std::memcpy(result, cast<u8[]>(buffer_result), buffer_index * sizeof(token));
+    ret buffer_result; // cast<token[]>(result);
+}
+
+fn (export) test_lexer() : i32 {
+    // Needed as heap does not in lang right now
+    std::init_malloc(stack_alloc<u8, 100000000>(), 100000000l);
+
+    u8[] : test = std::read_file("std.amp");
+    token[] : tokens = tokenize(test);
+    std::printf("token ptr -> %p\n", tokens);
+    
+    for (i32: i = 0; tokens[i].type != EOF; i = i + 1) {
+        std::printf("TOKEN [value=\"%s\" type=%d]\n", tokens[i].text, tokens[i].type);
+    }
+
+    u8[]: str = cast<u8[]>(std::malloc(13ul));
+    std::memcpy(str, "Hello, World\0", 13l);
+    
+    std::printf("%s\n", str);
+    ret 0;
+}

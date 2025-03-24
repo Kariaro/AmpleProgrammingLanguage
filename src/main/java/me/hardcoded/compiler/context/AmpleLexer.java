@@ -86,6 +86,7 @@ public class AmpleLexer {
 			
 			// Classes
 			.addRule(Type.NAMESPACE_OPERATOR, i -> i.addString("::"))
+			.addRule(Type.DOT, i -> i.addString("."))
 			
 			// Preprocessors
 			.addRule(Type.FUNC, i -> i.addString("fn"))

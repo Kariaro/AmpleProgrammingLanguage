@@ -27,6 +27,25 @@ public interface InstParam {
 		}
 	}
 	
+	
+	class Type implements InstParam {
+		private final ValueType type;
+		
+		public Type(ValueType type) {
+			this.type = type;
+		}
+		
+		@Override
+		public ValueType getSize() {
+			return type;
+		}
+		
+		@Override
+		public String toString() {
+			return type.toString();
+		}
+	}
+	
 	class Num implements InstParam {
 		private final ValueType type;
 		private final long value;

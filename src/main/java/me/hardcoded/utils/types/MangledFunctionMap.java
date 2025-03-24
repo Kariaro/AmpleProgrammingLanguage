@@ -69,10 +69,10 @@ public class MangledFunctionMap {
 	
 	public Reference getBlocker(String mangledName) {
 		AmpleMangler.MangledFunction mangledFunction = AmpleMangler.demangleFunction(mangledName);
-		if (isInvalidSetter(mangledFunction)) {
-			// Invalid function. Only fully defined functions are addable
-			return null;
-		}
+		// if (isInvalidSetter(mangledFunction)) {
+		// 	// Invalid function. Only fully defined functions are addable
+		// 	return null;
+		// }
 		
 		ParameterMap root = map.get(mangledFunction.getPath());
 		return root == null ? null : root.getBlocker(mangledFunction, 0);

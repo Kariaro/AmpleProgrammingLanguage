@@ -52,6 +52,10 @@ public class BinaryExpr extends Expr {
 			return left.getType().createArray(left.getType().getDepth() - 1);
 		}
 		
+		if (operation == Operation.MEMBER) {
+			return right.getType();
+		}
+		
 		return left.getType();
 	}
 	

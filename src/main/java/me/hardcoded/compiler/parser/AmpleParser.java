@@ -15,6 +15,7 @@ import me.hardcoded.lexer.LexerTokenizer;
 import me.hardcoded.lexer.Token;
 import me.hardcoded.utils.AmpleCache;
 import me.hardcoded.utils.MutableSyntaxImpl;
+import me.hardcoded.utils.ObjectUtils;
 import me.hardcoded.utils.Position;
 import me.hardcoded.utils.error.ErrorUtil;
 import org.apache.logging.log4j.LogManager;
@@ -24,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -189,10 +191,10 @@ public class AmpleParser {
 			// Scopes should work for REPL
 			
 			return replStatements();
-		} else {
-			if (isType()) {
-				return varStatement(false);
-			}
+		}
+		
+		if (isType()) {
+			return varStatement(false);
 		}
 		
 		throw createParseException(reader.syntaxPosition(), "Invalid statement");
@@ -373,16 +375,23 @@ public class AmpleParser {
 		}
 		
 		Reference reference = context.getFunctionScope().addFunction(returnType, context.getNamespaceScope().getNamespace(), functionName, parameters);
+		
+		// System.out.println(functionName + ", " + returnType + ", " + parameters + " :: " + (reference != null ? reference.getMangledName() : null));
 		if (reference == null) {
 			Reference blocker = context.getFunctionScope().getFunctionBlocking(context.getNamespaceScope().getNamespace(), functionName, parameters);
 			ISyntaxPos syntaxPosition = context.getFirstReferencePosition(blocker);
 			Position startPos = syntaxPosition == null ? null : syntaxPosition.getStartPosition();
 			
+			AmpleMangler.MangledFunction blockerName = null;
+			if (blocker != null) {
+				blockerName = AmpleMangler.demangleFunction(blocker.getMangledName());
+			}
+			
 			throw createParseException(
 				functionNameSyntax,
 				"A function with the name '%s' already exists (%s) (line: %s, column: %s)",
 				functionName,
-				AmpleMangler.demangleFunction(blocker.getMangledName()),
+				blockerName,
 				startPos == null ? "?" : (startPos.line() + 1),
 				startPos == null ? "?" : (startPos.column() + 1)
 			);
@@ -413,13 +422,16 @@ public class AmpleParser {
 		String structName = reader.value();
 		reader.advance();
 		
+		Reference reference = context.createEmptyReference(structName);
+		
 		context.getLocalScope().pushBlock();
 		context.getLocalScope().pushLocals();
 		context.getNamespaceScope().pushNamespace(structName);
 		
-		
-		// ValueType valueType = context.getTypeScope().addLocalType(new ValueType(structName, 0, 0, ValueType.STRUCT));
-		Reference reference = context.createEmptyReference(structName);
+		StructData structData = new StructData(structName);
+		ValueType valueType = new ValueType(structName, 0, 0, ValueType.STRUCT, structData);
+		reference.setValueType(valueType);
+		reference.setFlags(Reference.STRUCT);
 		
 		// Always set reference position
 		context.setReferencePosition(reference, structNameSyntax);
@@ -428,13 +440,25 @@ public class AmpleParser {
 		List<FuncStat> functions = new ArrayList<>();
 		
 		StructStat stat = new StructStat(mutableSyntax, variables, functions, reference);
+		context.getTypeScope().addLocalType(valueType);
+		
+		try {
+			System.out.println(ObjectUtils.deepPrint(reference, 4));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		
 		tryMatchOrError(Token.Type.L_CURLY, () -> "Missing struct body");
 		reader.advance();
 		
 		while (reader.type() != Token.Type.EOF && reader.type() != Token.Type.R_CURLY) {
 			if (isType()) {
-				variables.add(structVarStatement());
+				var varStat = structVarStatement();
+				structData.addMember(
+					varStat.getReference().getValueType(),
+					varStat.getReference().getName()
+				);
+				variables.add(varStat);
 			} else if (isFunc()) {
 				functions.add(funcStatement());
 			} else {
@@ -490,10 +514,6 @@ public class AmpleParser {
 			return statements();
 		}
 		
-		if (isType()) {
-			return varStatement(true);
-		}
-		
 		switch (reader.type()) {
 			case IF -> {
 				return ifStatement();
@@ -504,6 +524,17 @@ public class AmpleParser {
 			case WHILE -> {
 				return whileStatement();
 			}
+		}
+		
+		ParseException varException = null;
+		try {
+			reader.mark();
+			if (isType()) {
+				return varStatement(true);
+			}
+		} catch (ParseException e) {
+			varException = e;
+			reader.reset();
 		}
 		
 		Stat stat = switch (reader.type()) {
@@ -669,12 +700,7 @@ public class AmpleParser {
 	private VarStat varStatement(boolean localVariable) throws ParseException {
 		Position startPos = reader.position();
 		
-		ISyntaxPos typeSyntaxPosition = reader.syntaxPosition();
 		ValueType type = readType();
-		if (type == null) {
-			throw createParseException(typeSyntaxPosition, "Unknown type");
-		}
-		
 		tryMatchOrError(Token.Type.COLON);
 		reader.advance();
 		
@@ -770,17 +796,27 @@ public class AmpleParser {
 	}
 	
 	ValueType readType() throws ParseException {
+		ISyntaxPos start = reader.syntaxPosition();
 		String name = reader.value();
 		reader.advance();
 		int depth = 0;
 		while (reader.type() == Token.Type.L_SQUARE) {
 			reader.advance();
+			// TODO: Allow size to be specified
 			tryMatchOrError(Token.Type.R_SQUARE);
 			reader.advance();
 			depth++;
 		}
 		
-		return context.getTypeScope().getType(name, depth);
+		ValueType type = context.getTypeScope().getType(name, depth);
+		if (type == null) {
+			throw createParseException(
+				start,
+				"Error when reading value type named '%s'",
+				name
+			);
+		}
+		return type;
 	}
 	
 	public Namespace readNamespace() throws ParseException {
@@ -801,7 +837,8 @@ public class AmpleParser {
 	}
 	
 	ParseException createParseException(String format, Object... args) {
-		return createParseException(reader == null ? null : reader.syntaxPosition(), format, args);
+		ISyntaxPos pos = reader == null ? null : reader.syntaxPosition();
+		return createParseException(reader == null ? null : pos.getPath(), pos, format, args);
 	}
 	
 	ParseException createParseException(ISyntaxPos syntaxPosition, String format, Object... args) {
@@ -826,7 +863,20 @@ public class AmpleParser {
 				.append(ErrorUtil.createError(syntaxPosition, fileContent, msg));
 		}
 		
-		return new ParseException(sb.toString());
+		// Remove 'createParseException' call
+		ParseException exception = new ParseException(sb.toString());
+		StackTraceElement[] elements = exception.getStackTrace();
+		int cut = 0;
+		for (StackTraceElement item : elements) {
+			if (item.getMethodName().equals("createParseException")
+				|| item.getMethodName().equals("tryMatchOrError")) {
+				cut++;
+			} else {
+				break;
+			}
+		}
+		exception.setStackTrace(Arrays.copyOfRange(elements, cut, elements.length));
+		return exception;
 	}
 	
 	boolean tryMatchOrError(Token.Type type) throws ParseException {

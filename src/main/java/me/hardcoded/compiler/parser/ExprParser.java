@@ -131,6 +131,58 @@ public class ExprParser {
 							reader.lastPositionEnd()
 						), operation, left, right);
 					}
+					case MEMBER -> {
+						// Must have an identifier
+						parser.tryMatchOrError(Token.Type.IDENTIFIER);
+						if (!left.getType().isStruct()) {
+							throw parser.createParseException(reader.syntaxPosition(),
+								"Cannot get member of non struct type - %s".formatted(left.getType())
+							);
+						}
+						ISyntaxPos memberSyntaxPos = reader.syntaxPosition();
+						String memberName = reader.value();
+						reader.advance();
+						
+						// Check if member exists in struct type
+						System.out.println(left.getType() + ", " + ParseUtil.expr(left));
+						
+						// try {
+						// 	System.out.println(ObjectUtils.deepPrint(left, 6));
+						// } catch (Exception e) {
+						// 	e.printStackTrace();
+						// }
+						
+						StructData type = left.getType().getStructData();
+						if (type == null) {
+							throw parser.createParseException(left.getSyntaxPosition(),
+								"Binary expr '%s' value is missing struct data (BUG)".formatted(ParseUtil.expr(left))
+							);
+						}
+						if (!type.hasMember(memberName)) {
+							throw parser.createParseException(memberSyntaxPos,
+								"The struct '%s' does not have a member named '%s'".formatted(type.getName(), memberName)
+							);
+						}
+						
+						ValueType memberType = type.getMember(memberName);
+						Reference reference = context.createEmptyReference(memberName);
+						reference.setValueType(memberType);
+						
+						// Namespace namespace = context.getNamespaceScope().getNamespace();
+						// Reference reference = context.getLocalScope().getVariable(namespace, memberName);
+						// if (reference == null) {
+						// 	reference = context.getLocalScope().importVariable(namespace, memberName);
+						// 	context.setReferencePosition(reference, memberSyntaxPos);
+						// }
+						
+						NameExpr right = new NameExpr(memberSyntaxPos, reference);
+						
+						left = new BinaryExpr(ISyntaxPos.of(
+							parser.getCurrentFile(),
+							left.getSyntaxPosition().getStartPosition(),
+							reader.lastPositionEnd()
+						), operation, left, right);
+					}
 					default -> found = false;
 				}
 				
@@ -313,6 +365,14 @@ public class ExprParser {
 		reader.advance();
 		
 		switch (name) {
+			case "sizeof" -> {
+				parser.tryMatchOrError(Token.Type.L_PAREN);
+				reader.advance();
+				ValueType type = parser.readType();
+				parser.tryMatchOrError(Token.Type.R_PAREN);
+				reader.advance();
+				return new SizeofExpr(ISyntaxPos.of(parser.getCurrentFile(), startPos, reader.lastPositionEnd()), type);
+			}
 			case "stack_alloc" -> {
 				parser.tryMatchOrError(Token.Type.LESS_THAN);
 				reader.advance();
@@ -388,6 +448,7 @@ public class ExprParser {
 	
 	private boolean isSpecialFunction(String name) {
 		return name.equals("stack_alloc")
-			|| name.equals("cast");
+			|| name.equals("cast")
+			|| name.equals("sizeof");
 	}
 }

@@ -5,6 +5,7 @@ import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.intermediate.ExportMap;
 import me.hardcoded.compiler.intermediate.inst.*;
 import me.hardcoded.compiler.parser.LinkableObject;
+import me.hardcoded.compiler.parser.ParseUtil;
 import me.hardcoded.compiler.parser.expr.*;
 import me.hardcoded.compiler.parser.stat.*;
 import me.hardcoded.compiler.parser.type.*;
@@ -80,6 +81,7 @@ public class IntermediateGenerator {
 			case NUM -> generateNumExpr((NumExpr) stat, procedure);
 			case STR -> generateStrExpr((StrExpr) stat, procedure);
 			case UNARY -> generateUnaryExpr((UnaryExpr) stat, procedure);
+			case SIZEOF -> generateSizeofExpr((SizeofExpr) stat, procedure);
 			default -> throw new RuntimeException("Invalid expr %s".formatted(stat.getTreeType()));
 		};
 	}
@@ -383,12 +385,8 @@ public class IntermediateGenerator {
 					.addParam(new InstParam.Num(Primitives.I32, i))
 					.addParam(new InstParam.Num(Primitives.I8, text.charAt(i) & 0xff)));
 			}
-			
-			return stack;
-		} else {
-			// Uninitialized
-			return stack;
 		}
+		return stack;
 	}
 	
 	private InstRef generateBinaryExpr(BinaryExpr expr, Procedure procedure) throws InstException {
@@ -405,19 +403,30 @@ public class IntermediateGenerator {
 			return generateArrayExpr(expr, procedure);
 		}
 		
+		if (expr.getOperation() == Operation.MEMBER) {
+			return generateMemberExpr(expr, procedure);
+		}
+		
 		Opcode opcode = getBinaryOpcode(expr.getOperation(), expr.getType().isUnsigned());
 		InstRef left = generateStat(expr.getLeft(), procedure);
 		InstRef right = generateStat(expr.getRight(), procedure);
 		
 		InstRef holder = createDataReference(".binary", expr.getType());
-		procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
-			.addParam(new InstParam.Ref(holder))
-			.addParam(new InstParam.Ref(left)));
+		if (left.getValueType().isReference()) {
+			procedure.addInst(new Inst(Opcode.LOAD, expr.getSyntaxPosition())
+				.addParam(new InstParam.Ref(holder))
+				.addParam(new InstParam.Ref(left))
+				.addParam(new InstParam.Num(Primitives.U8, 0)));
+		} else {
+			procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
+				.addParam(new InstParam.Ref(holder))
+				.addParam(new InstParam.Ref(left)));
+		}
 		procedure.addInst(new Inst(opcode, expr.getSyntaxPosition())
 			.addParam(new InstParam.Ref(holder))
 			.addParam(new InstParam.Ref(right)));
 		
-		if (!left.getValueType().equals(right.getValueType())) {
+		if (!left.getValueType().equalsDeReferences(right.getValueType())) {
 			System.out.println(left.getValueType() + ", " + right.getValueType());
 			throw new InstException(ErrorUtil.createFullError(expr.getSyntaxPosition(),
 				"Left and Right side does not match (%s != %s)".formatted(
@@ -447,6 +456,9 @@ public class IntermediateGenerator {
 		}
 		
 		InstRef holder = createDataReference(".call", caller.getValueType());
+		System.out.println("^^^ " + caller.getValueType());
+		System.out.println("^^^ - " + caller.getValueType().getSize());
+		System.out.println("^^^ - " + caller.getValueType().getDepth());
 		
 		Inst callInst = new Inst(Opcode.CALL, expr.getSyntaxPosition())
 			.addParam(new InstParam.Ref(holder))
@@ -522,6 +534,16 @@ public class IntermediateGenerator {
 		return holder;
 	}
 	
+	private InstRef generateSizeofExpr(SizeofExpr expr, Procedure procedure) throws InstException {
+		InstRef holder = createDataReference(".sizeof", Primitives.U64);
+		
+		procedure.addInst(new Inst(Opcode.SIZEOF, expr.getSyntaxPosition())
+			.addParam(new InstParam.Ref(holder))
+			.addParam(new InstParam.Type(expr.getType())));
+		
+		return holder;
+	}
+	
 	private InstRef generateArrayExpr(BinaryExpr expr, Procedure procedure) throws InstException {
 		InstRef holder = createDataReference(".array", expr.getType().createArray(0));
 		InstRef left = generateStat(expr.getLeft(), procedure);
@@ -530,6 +552,39 @@ public class IntermediateGenerator {
 			.addParam(new InstParam.Ref(holder))
 			.addParam(new InstParam.Ref(left))
 			.addParam(new InstParam.Ref(right)));
+		return holder;
+	}
+	
+	private InstRef generateMemberExpr(BinaryExpr expr, Procedure procedure) throws InstException {
+		// Right should be a name expression
+		if (!(expr.getRight() instanceof NameExpr name)) {
+			throw new InstException(ErrorUtil.createFullError(expr.getRight().getSyntaxPosition(),
+				"Right side of member expression should always be a name - %s".formatted(
+					ParseUtil.expr(expr)
+				)
+			));
+		}
+		
+		InstRef holder = createDataReference(".member", name.getType().createReference());
+		
+		// Left is currently containing a struct type
+		if (expr.getLeft() instanceof BinaryExpr left
+			&& left.getOperation() == Operation.ARRAY) {
+			InstRef arrayObject = generateStat(left.getLeft(), procedure);
+			InstRef arrayOffset = generateStat(left.getRight(), procedure);
+			procedure.addInst(new Inst(Opcode.MEMBER_PTR, expr.getSyntaxPosition())
+				.addParam(new InstParam.Ref(holder))
+				.addParam(new InstParam.Ref(arrayObject))
+				.addParam(new InstParam.Ref(arrayOffset))
+				.addParam(new InstParam.Str(name.getReference().getName())));
+		} else {
+			InstRef left = generateStat(expr.getLeft(), procedure);
+			procedure.addInst(new Inst(Opcode.MEMBER_PTR, expr.getSyntaxPosition())
+				.addParam(new InstParam.Ref(holder))
+				.addParam(new InstParam.Ref(left))
+				.addParam(new InstParam.Num(Primitives.U8, 0))
+				.addParam(new InstParam.Str(name.getReference().getName())));
+		}
 		return holder;
 	}
 	
@@ -557,6 +612,15 @@ public class IntermediateGenerator {
 					)
 				));
 			}
+		} else if (expr.getLeft() instanceof BinaryExpr left
+			&& left.getOperation() == Operation.MEMBER) {
+			InstRef member = generateStat(left, procedure);
+			InstRef right = generateStat(expr.getRight(), procedure);
+			holder = right;
+			procedure.addInst(new Inst(Opcode.STORE, expr.getSyntaxPosition())
+				.addParam(new InstParam.Ref(member))
+				.addParam(new InstParam.Num(Primitives.U8, 0))
+				.addParam(new InstParam.Ref(right)));
 		} else {
 			InstRef left = generateStat(expr.getLeft(), procedure);
 			InstRef right = generateStat(expr.getRight(), procedure);

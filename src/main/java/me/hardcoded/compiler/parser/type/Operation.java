@@ -30,9 +30,10 @@ public enum Operation {
 	DIVIDE      ("/",   3, Token.Type.DIV,         OperationType.Binary, Associativity.Left),
 	MODULO      ("%",   3, Token.Type.MOD,         OperationType.Binary, Associativity.Left),
 	NEGATIVE    ("-",   2, Token.Type.MINUS,       OperationType.Unary, Associativity.Right),
-	NOT         ("!",   2, Token.Type.NOT,         OperationType.Unary, Associativity.Left),
+	NOT         ("!",   2, Token.Type.NOT,         OperationType.Unary, Associativity.Right),
 	
 	// SPECIAL
+	MEMBER      (".",   6, Token.Type.DOT,         OperationType.SpecialBinary, Associativity.Left),
 	ARRAY       ("[]",  5, Token.Type.L_SQUARE,    OperationType.SpecialBinary, Associativity.Left),
 	// @formatter:on
 	;

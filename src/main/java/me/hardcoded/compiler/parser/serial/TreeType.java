@@ -26,6 +26,7 @@ public enum TreeType {
 	STR,
 	NONE,
 	STACK_ALLOC,
+	SIZEOF,
 	COMPILER,
 	;
 	

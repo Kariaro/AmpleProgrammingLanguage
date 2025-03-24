@@ -8,6 +8,9 @@ import me.hardcoded.interpreter.value.Value;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,20 +30,27 @@ public class AmpleRunner {
 			throw new AmpleInterpreterException("Could not find main function");
 		}
 		
-		// Update the inst format
-		runFunction(main, new Locals(), context);
+		// Execute all globals
+		Locals globals = new Locals(null);
+		for (int i = 0; i < context.getCodeBlocks(); i++) {
+			var block = context.getCodeBlock(i);
+			runFunction(block, new Locals(null), globals, context);
+		}
+		
+		// Run main function
+		runFunction(main, new Locals(globals), context);
 	}
 	
 	public void runRepl(ReplContext ctx) {
 		AmpleContext context = new AmpleContext(ctx.file);
 		if (ctx.local == null) {
-			ctx.local = new Locals();
+			ctx.local = new Locals(null);
 		}
 		
 		// Should these share locals?
 		for (int i = ctx.index; i < context.getCodeBlocks(); i++) {
 			AmpleFunc block = context.getCodeBlock(i);
-			runFunction(block, new Locals(), ctx.local, context);
+			runFunction(block, new Locals(null), ctx.local, context);
 		}
 		
 		ctx.index = context.getCodeBlocks();
@@ -62,10 +72,9 @@ public class AmpleRunner {
 	}
 	
 	public Value runFunction(AmpleFunc func, Locals params, AmpleContext context) {
-		//LOGGER.debug("runFunction: {}", func);
+		// LOGGER.debug("runFunction: {}", func);
 		
-		// TODO: Global variables
-		Locals local = new Locals();
+		Locals local = new Locals(params.globals);
 		local.add(params);
 		
 		return runFunction(func, params, local, context);
@@ -75,9 +84,9 @@ public class AmpleRunner {
 		List<Inst> list = func.getInstructions();
 		List<Value.ArrayValue> allocatedList = new ArrayList<>();
 		
+		int index = 0;
 		try {
 			int max = 100000;
-			int index = 0;
 			while (--max > 0) {
 				if (index >= list.size()) {
 					// This means that a return was not present but for code blocks this is fine
@@ -109,7 +118,7 @@ public class AmpleRunner {
 						InstRef dst = inst.getRefParam(0).getReference();
 						InstRef fun = inst.getRefParam(1).getReference();
 						AmpleFunc called = context.getFunction(fun);
-						Locals funParams = new Locals();
+						Locals funParams = new Locals(params.globals);
 						
 						int paramCount = called.getParamCount();
 						
@@ -446,6 +455,64 @@ public class AmpleRunner {
 								System.out.print(sb);
 								// LOGGER.info("INTERPRETER -> '{}'", sb);
 							}
+							case "file_size" -> {
+								InstRef dst = inst.getRefParam(3).getReference();
+								InstParam pathParam = inst.getParam(2);
+								String path = "";
+								
+								if (pathParam instanceof InstParam.Str str) {
+									path = str.getValue();
+								} else {
+									Value pathData = convertFromParam(local, pathParam, context);
+									StringBuilder sb = new StringBuilder();
+									for (int i = 0; i < 256; i++) { // max len
+										Value item = pathData.getIndex(i, Primitives.U8, context.getMemory()::getAllocated);
+										if (item.getInteger() == 0) {
+											break;
+										}
+										sb.append((char) (int) item.getInteger());
+									}
+									path = sb.toString();
+								}
+								
+								
+								long size;
+								try {
+									size = Files.size(Path.of(inst.getSyntaxPosition().getPath() + "/../" + path));
+								} catch (IOException e) {
+									size = -1;
+								}
+								
+								// System.out.println("FilePath \"" + path + "\" : size = " + size);
+								local.put(dst, new Value.NumberValue(size));
+							}
+							case "read_file" -> {
+								Value dst = convertFromParam(local, inst.getParam(3), context);
+								Value name = convertFromParam(local, inst.getParam(2), context);
+								
+								StringBuilder sb = new StringBuilder();
+								for (int i = 0; i < 256; i++) { // max len
+									Value item = name.getIndex(i, Primitives.U8, context.getMemory()::getAllocated);
+									if (item.getInteger() == 0) {
+										break;
+									}
+									sb.append((char) (int) item.getInteger());
+								}
+								String path = sb.toString();
+								
+								byte[] data;
+								try {
+									data = Files.readAllBytes(Path.of(inst.getSyntaxPosition().getPath() + "/../" + path));
+								} catch (IOException e) {
+									data = new byte[0];
+								}
+								
+								for (int i = 0; i < data.length; i++) {
+									int value = 0xff & data[i];
+									dst.setIndex(i, new Value.NumberValue(value), Primitives.U8);
+								}
+							}
+							default -> throw new RuntimeException("Unknown compile command '%s'".formatted(command));
 						}
 					}
 					case NEG -> {
@@ -453,12 +520,88 @@ public class AmpleRunner {
 						Value a = convertFromParam(local, inst.getParam(1), context);
 						local.put(dst, new Value.NumberValue(-a.getInteger()));
 					}
+					case NOT -> {
+						InstRef dst = inst.getRefParam(0).getReference();
+						Value a = convertFromParam(local, inst.getParam(1), context);
+						local.put(dst, new Value.NumberValue(a.getInteger() != 0 ? 1 : 0));
+					}
+					
+					// Member
+					case SIZEOF -> {
+						// Return size of struct
+						InstRef dst = inst.getRefParam(0).getReference();
+						var type = (InstParam.Type) inst.getParam(1);
+						
+						int size = type.getSize().getSize();
+						
+						var structData = type.getSize().getStructData();
+						if (structData != null) {
+							var members = structData.getMembers();
+							size = 0;
+							for (var member : members) {
+								size += member.getValue().getSize();
+							}
+						}
+						
+						local.put(dst, new Value.NumberValue(size));
+					}
+					case MEMBER_PTR -> {
+						InstRef dst = inst.getRefParam(0).getReference();
+						InstParam src = inst.getParam(1);
+						InstParam idx = inst.getParam(2);
+						String memberName = inst.getStrParam(3).getValue();
+						
+						int arrayIdx;
+						if (idx instanceof InstParam.Ref ref) {
+							arrayIdx = (int) local.get(ref.getReference()).getInteger();
+						} else if (idx instanceof InstParam.Num num) {
+							arrayIdx = (int) num.getValue();
+						} else {
+							throw new RuntimeException("Invalid read position '" + idx + "'");
+						}
+						
+						var structData = src.getSize().getStructData();
+						if (!structData.hasMember(memberName)) {
+							throw new RuntimeException("Struct did not have member '" + memberName + "'");
+						}
+						
+						var members = structData.getMembers();
+						int offset = 0;
+						for (var member : members) {
+							if (memberName.equals(member.getKey())) {
+								// Found
+								break;
+							}
+							offset += member.getValue().getSize();
+						}
+						
+						// LOGGER.info("{}, {}, {}", local, src, arrayIdx);
+						var srcData = convertFromParam(local, src, context);
+						if (srcData instanceof Value.ArrayValue arr) {
+							Value offsetValue = new Value.OffsetArrayValue(arr, offset);
+							// System.out.println(local.get(src));
+							// System.out.println(arrayIdx);
+							// System.out.println(memberName + ", offset = " + offset);
+							// System.out.println(members);
+							// System.out.println(arr);
+							local.put(dst, offsetValue);
+						} else {
+							LOGGER.info("{}", srcData);
+							throw new RuntimeException("Cannot get member_ptr from non pointer type");
+						}
+					}
 					
 					default -> throw new RuntimeException("Unknown instruction '%s'".formatted(opcode));
 				}
 				
 				index++;
 			}
+		} catch (Exception e) {
+			Inst inst = list.get(index);
+			LOGGER.info(" : {}", local);
+			LOGGER.info("Failed at : {}", inst);
+			e.printStackTrace();
+			throw e;
 		} finally {
 			// Deallocate stack
 			for (Value.ArrayValue item : allocatedList) {
@@ -495,9 +638,19 @@ public class AmpleRunner {
 	}
 	
 	private static class Locals {
+		private final Locals globals;
 		private final Map<InstRef, Value> map = new LinkedHashMap<>();
 		
+		public Locals(Locals globals) {
+			this.globals = globals;
+		}
+		
 		public void put(InstRef ref, Value value) {
+			// Globals
+			if (globals != null && globals.map.containsKey(ref)) {
+				globals.put(ref, value);
+			}
+			
 			if (value == null) {
 				throw new RuntimeException("Invalid value cannot set '" + ref + "' to null");
 			}
@@ -505,6 +658,11 @@ public class AmpleRunner {
 		}
 		
 		public Value get(InstRef ref) {
+			// Globals
+			if (globals != null && globals.map.containsKey(ref)) {
+				return globals.get(ref);
+			}
+			
 			if (!map.containsKey(ref)) {
 				throw new RuntimeException("Invalid value cannot get '" + ref + "' because it does not exist");
 			}
@@ -514,6 +672,10 @@ public class AmpleRunner {
 		
 		public void add(Locals locals) {
 			this.map.putAll(locals.map);
+		}
+		
+		public Locals getGlobals() {
+			return globals;
 		}
 		
 		@Override

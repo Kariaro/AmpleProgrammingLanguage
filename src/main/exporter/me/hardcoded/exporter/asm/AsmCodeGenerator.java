@@ -287,6 +287,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					throw new RuntimeException();
 				}
 				
+				System.out.println(dst);
 				String regName = AsmReg.AX.toString(dst);
 				sb.add("mov RBX, %s".formatted(
 					AsmUtils.getParamValue(src, proc)
@@ -689,6 +690,6 @@ public class AsmCodeGenerator extends ICodeGenerator {
 	
 	@Override
 	public void reset() {
-	
+		
 	}
 }

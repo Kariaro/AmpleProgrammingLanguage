@@ -3,13 +3,14 @@ package me.hardcoded.compiler.parser.type;
 import java.util.Objects;
 
 public class Reference {
-	public static final int IMPORT = 1 << 5,
-		EXPORT = 1 << 6;
+	public static final int IMPORT = 1 << 8,
+		EXPORT = 1 << 9;
 	
 	public static final int VARIABLE = 0,
 		LABEL = 1,
 		FUNCTION = 2,
-		NAMESPACE = 3;
+		NAMESPACE = 3,
+		STRUCT = 4;
 	
 	public static final int MODIFIERS = IMPORT | EXPORT;
 	
@@ -68,6 +69,10 @@ public class Reference {
 		return getType() == LABEL;
 	}
 	
+	public boolean isStruct() {
+		return getType() == STRUCT;
+	}
+	
 	public boolean isImported() {
 		return (flags & IMPORT) != 0;
 	}
@@ -110,6 +115,7 @@ public class Reference {
 			case LABEL -> "lab";
 			case FUNCTION -> "fun";
 			case NAMESPACE -> "ns";
+			case STRUCT -> "dat";
 			default -> "unk";
 		};
 		

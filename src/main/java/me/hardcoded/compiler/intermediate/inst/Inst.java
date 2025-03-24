@@ -68,8 +68,9 @@ public class Inst {
 				default -> true;
 			};
 			
-			if (keep && type.getSize() != 0) {
-				sb.append(type.calculateBytes() * 8);
+			int size = type.calculateBytes() * 8;
+			if (keep && size != 0) {
+				sb.append(size);
 			}
 		}
 		

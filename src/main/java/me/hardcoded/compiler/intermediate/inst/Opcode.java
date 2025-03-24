@@ -61,6 +61,10 @@ public enum Opcode {
 	// Memory instructions
 	STORE,              // (r0 [r1]) = r2
 	LOAD,               // r0 = (r1 [r2])
+	MEMBER_PTR,         // r0 = &(r1 [r2].r3)
+	// MEMBER_STORE,       // r0.r1 = r2
+	// MEMBER_LOAD,        // r0.r1 = r2
+	SIZEOF,             // r0 = sizeof(r1)
 	
 	// Branching instructions
 	LABEL,              // A label

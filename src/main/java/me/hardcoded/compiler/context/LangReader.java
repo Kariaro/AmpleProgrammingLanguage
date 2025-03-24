@@ -9,11 +9,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.util.LinkedList;
 import java.util.List;
 
 public class LangReader {
 	private static final Logger LOGGER = LogManager.getLogger(LangReader.class);
 	
+	private final LinkedList<Integer> marked;
 	private final List<Token> list;
 	private final Token start;
 	private final Token end;
@@ -22,6 +24,7 @@ public class LangReader {
 	private LangReader(File file, List<Token> list) {
 		this.list = list;
 		this.start = new Token(Type.WHITESPACE, ISyntaxPos.empty(file.getAbsolutePath()));
+		this.marked = new LinkedList<>();
 		
 		if (!list.isEmpty()) {
 			Token t1 = list.get(list.size() - 1);
@@ -34,6 +37,14 @@ public class LangReader {
 	
 	public void advance() {
 		index++;
+	}
+	
+	public void mark() {
+		marked.addFirst(index);
+	}
+	
+	public void reset() {
+		index = marked.pollFirst();
 	}
 	
 	public int remaining() {

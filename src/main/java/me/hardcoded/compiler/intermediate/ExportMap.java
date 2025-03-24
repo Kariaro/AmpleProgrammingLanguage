@@ -108,12 +108,25 @@ public class ExportMap {
 			Reference reference = referenceSyntax.getReference();
 			
 			if (getReference(reference) == null) {
+				String demangled = reference.getMangledName();
+				if (demangled != null) {
+					try {
+						if (reference.isFunction()) {
+							demangled = AmpleMangler.demangleType(demangled).toString();
+						} else if (reference.isVariable()) {
+							demangled = AmpleMangler.demangleType(demangled).toString();
+						}
+					} catch (Exception ignore) {
+						demangled = "error<" + demangled + ">";
+					}
+				}
+				
 				LOGGER.warn("The imported symbol '{}' was not found in the project", reference.getPath());
 				LOGGER.warn("{}", ErrorUtil.createFullError(
 					referenceSyntax.getSyntaxPosition(),
 					"Missing symbol '%s'%s".formatted(
 						reference.getPath(),
-						reference.getMangledName() == null ? "" : (" [" + AmpleMangler.demangleFunction(reference.getMangledName()) + "]")
+						demangled == null ? "" : (" [" + demangled + "]")
 					))
 				);
 			}

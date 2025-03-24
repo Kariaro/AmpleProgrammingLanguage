@@ -3,6 +3,7 @@ package me.hardcoded.compiler.parser.serial;
 import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.type.Namespace;
 import me.hardcoded.compiler.parser.type.Reference;
+import me.hardcoded.compiler.parser.type.StructData;
 import me.hardcoded.compiler.parser.type.ValueType;
 import me.hardcoded.utils.Position;
 
@@ -201,7 +202,18 @@ class LinkableHeader {
 		int flags = readVarInt(in);
 		int depth = readVarInt(in);
 		int size = readVarInt(in);
-		return new ValueType(name, size, depth, flags);
+		int members = readVarInt(in);
+		StructData data = null;
+		if (members > 0) {
+			data = new StructData(name);
+			for (int i = 0; i < members; i++) {
+				var member_name = deserializeString(in);
+				var member_type = readValueType(in);
+				data.addMember(member_type, member_name);
+			}
+		}
+		
+		return new ValueType(name, size, depth, flags, data);
 	}
 	
 	private Namespace readNamespace(DataInputStream in) throws IOException {
@@ -242,6 +254,17 @@ class LinkableHeader {
 		writeVarInt(valueType.getFlags(), out);
 		writeVarInt(valueType.getDepth(), out);
 		writeVarInt(valueType.getSize(), out);
+		StructData data = valueType.getStructData();
+		if (data != null) {
+			var members = data.getMembers();
+			writeVarInt(members.size(), out);
+			for (var member : members) {
+				serializeString(member.getKey(), out);
+				writeValueType(member.getValue(), out);
+			}
+		} else {
+			writeVarInt(0, out);
+		}
 	}
 	
 	private void writeNamespace(Namespace namespace, DataOutputStream out) throws IOException {

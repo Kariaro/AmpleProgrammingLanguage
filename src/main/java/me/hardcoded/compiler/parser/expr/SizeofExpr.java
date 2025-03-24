@@ -7,18 +7,12 @@ import me.hardcoded.compiler.parser.type.ValueType;
 
 import java.io.IOException;
 
-public class CastExpr extends Expr {
+public class SizeofExpr extends Expr {
 	private ValueType type;
-	private Expr value;
 	
-	public CastExpr(ISyntaxPos syntaxPos, ValueType type, Expr value) {
+	public SizeofExpr(ISyntaxPos syntaxPos, ValueType type) {
 		super(syntaxPos);
 		this.type = type;
-		this.value = value;
-	}
-	
-	public Expr getValue() {
-		return value;
 	}
 	
 	@Override
@@ -28,7 +22,7 @@ public class CastExpr extends Expr {
 	
 	@Override
 	public boolean isPure() {
-		return value.isPure();
+		return true;
 	}
 	
 	@Override
@@ -38,27 +32,26 @@ public class CastExpr extends Expr {
 	
 	@Override
 	public TreeType getTreeType() {
-		return TreeType.CAST;
+		return TreeType.SIZEOF;
 	}
 	
 	@Override
 	public String toString() {
-		return "cast<" + type + ">( " + value + " )";
+		return "sizeof( " + type + " )";
 	}
+	
 	
 	@Override
 	public void serialize(LinkableStream stream) throws IOException {
 		stream.writeObjectHeader(this);
 		
 		stream.serializeValueType(type);
-		value.serialize(stream);
 	}
 	
-	public static CastExpr deserialize(LinkableStream stream) throws IOException {
+	public static SizeofExpr deserialize(LinkableStream stream) throws IOException {
 		var head = stream.readObjectHeader();
 		
 		ValueType type = stream.deserializeValueType();
-		Expr value = stream.deserializeExpr();
-		return new CastExpr(head.syntaxPos(), type, value);
+		return new SizeofExpr(head.syntaxPos(), type);
 	}
 }

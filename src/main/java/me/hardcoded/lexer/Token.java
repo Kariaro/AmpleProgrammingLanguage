@@ -113,6 +113,7 @@ public class Token {
 		
 		// Classes
 		NAMESPACE_OPERATOR,
+		DOT,
 		
 		// Preprocessors
 		LINK,

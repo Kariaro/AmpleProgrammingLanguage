@@ -15,7 +15,6 @@ import me.hardcoded.lexer.LexerTokenizer;
 import me.hardcoded.utils.AmpleCache;
 import me.hardcoded.utils.ObjectUtils;
 import me.hardcoded.visualization.InstFileVisualization;
-import me.hardcoded.visualization.InstSourceCodeVisualization;
 import me.hardcoded.visualization.ParseTreeVisualization;
 import me.hardcoded.visualization.SourceCodeVisualization;
 import org.apache.logging.log4j.LogManager;
@@ -193,7 +192,6 @@ public class AmpleCompiler {
 				Files.readAllBytes(inputFile.toPath())
 			))
 			.addVisualization(ParseTreeVisualization::new, list.getFirst().getProgram())
-			.addVisualization(InstFileVisualization::new, file)
-			.addVisualization(InstSourceCodeVisualization::new, file);
+			.addVisualization(InstFileVisualization::new, file);
 	}
 }
