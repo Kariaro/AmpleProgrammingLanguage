@@ -33,7 +33,7 @@ public enum Operation {
 	NOT         ("!",   2, Token.Type.NOT,         OperationType.Unary, Associativity.Right),
 	
 	// SPECIAL
-	MEMBER      (".",   6, Token.Type.DOT,         OperationType.SpecialBinary, Associativity.Left),
+	MEMBER      (".",   5, Token.Type.DOT,         OperationType.SpecialBinary, Associativity.Left),
 	ARRAY       ("[]",  5, Token.Type.L_SQUARE,    OperationType.SpecialBinary, Associativity.Left),
 	// @formatter:on
 	;

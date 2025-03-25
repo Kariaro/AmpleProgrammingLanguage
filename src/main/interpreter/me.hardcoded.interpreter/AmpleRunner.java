@@ -5,6 +5,7 @@ import me.hardcoded.compiler.parser.type.Primitives;
 import me.hardcoded.compiler.parser.type.ValueType;
 import me.hardcoded.interpreter.AmpleContext.AmpleFunc;
 import me.hardcoded.interpreter.value.Value;
+import me.hardcoded.utils.error.ErrorUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -549,7 +550,7 @@ public class AmpleRunner {
 						InstRef dst = inst.getRefParam(0).getReference();
 						InstParam src = inst.getParam(1);
 						InstParam idx = inst.getParam(2);
-						String memberName = inst.getStrParam(3).getValue();
+						int memberIndex = (int) inst.getNumParam(3).getValue();
 						
 						int arrayIdx;
 						if (idx instanceof InstParam.Ref ref) {
@@ -561,29 +562,19 @@ public class AmpleRunner {
 						}
 						
 						var structData = src.getSize().getStructData();
-						if (!structData.hasMember(memberName)) {
-							throw new RuntimeException("Struct did not have member '" + memberName + "'");
-						}
-						
 						var members = structData.getMembers();
+						int sizeof = getSize(src.getSize());
+						
 						int offset = 0;
-						for (var member : members) {
-							if (memberName.equals(member.getKey())) {
-								// Found
-								break;
-							}
-							offset += member.getValue().getSize();
+						for (int i = 0; i < memberIndex; i++) {
+							var member = members.get(i);
+							int size = getSize(member.getValue());
+							offset += size;
 						}
 						
-						// LOGGER.info("{}, {}, {}", local, src, arrayIdx);
 						var srcData = convertFromParam(local, src, context);
 						if (srcData instanceof Value.ArrayValue arr) {
-							Value offsetValue = new Value.OffsetArrayValue(arr, offset);
-							// System.out.println(local.get(src));
-							// System.out.println(arrayIdx);
-							// System.out.println(memberName + ", offset = " + offset);
-							// System.out.println(members);
-							// System.out.println(arr);
+							Value offsetValue = new Value.OffsetArrayValue(arr, offset + (sizeof * arrayIdx));
 							local.put(dst, offsetValue);
 						} else {
 							LOGGER.info("{}", srcData);
@@ -600,6 +591,8 @@ public class AmpleRunner {
 			Inst inst = list.get(index);
 			LOGGER.info(" : {}", local);
 			LOGGER.info("Failed at : {}", inst);
+			String message = ErrorUtil.createError(inst.getSyntaxPosition(), e.getMessage());
+			LOGGER.warn(message);
 			e.printStackTrace();
 			throw e;
 		} finally {
@@ -610,6 +603,21 @@ public class AmpleRunner {
 		}
 		
 		return new Value.NumberValue(0);
+	}
+	
+	private int getSize(ValueType type) {
+		var structData = type.getStructData();
+		if (type.getDepth() > 0 || structData == null) {
+			return type.calculateBytes();
+		}
+		
+		var members = structData.getMembers();
+		int size = 0;
+		for (var member : members) {
+			size += getSize(member.getValue());
+		}
+		
+		return size;
 	}
 	
 	private static Value convertFromParam(Locals local, InstParam param, AmpleContext context) {

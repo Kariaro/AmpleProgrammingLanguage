@@ -15,7 +15,6 @@ import me.hardcoded.lexer.LexerTokenizer;
 import me.hardcoded.lexer.Token;
 import me.hardcoded.utils.AmpleCache;
 import me.hardcoded.utils.MutableSyntaxImpl;
-import me.hardcoded.utils.ObjectUtils;
 import me.hardcoded.utils.Position;
 import me.hardcoded.utils.error.ErrorUtil;
 import org.apache.logging.log4j.LogManager;
@@ -441,12 +440,6 @@ public class AmpleParser {
 		
 		StructStat stat = new StructStat(mutableSyntax, variables, functions, reference);
 		context.getTypeScope().addLocalType(valueType);
-		
-		try {
-			System.out.println(ObjectUtils.deepPrint(reference, 4));
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 		
 		tryMatchOrError(Token.Type.L_CURLY, () -> "Missing struct body");
 		reader.advance();

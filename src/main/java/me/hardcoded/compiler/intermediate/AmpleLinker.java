@@ -62,6 +62,9 @@ public class AmpleLinker {
 			generator.generate(link);
 		}
 		
+		// Test
+		// new IntermediateOptimizer().generate(file);
+		
 		LOGGER.debug("");
 		for (Procedure proc : file.getProcedures()) {
 			switch (proc.getType()) {

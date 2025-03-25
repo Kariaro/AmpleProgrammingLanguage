@@ -10,8 +10,7 @@ public class ValueType {
 		STRUCT = 6;
 	
 	public static final int STORAGE_TYPE = 15,
-		CONST = 16,
-		REFERENCE = 32;
+		CONST = 16;
 	
 	// The name of the type
 	private final String name;
@@ -37,13 +36,6 @@ public class ValueType {
 	 */
 	public ValueType createArray(int depth) {
 		return new ValueType(name, size, depth, flags, structData);
-	}
-	
-	/**
-	 * Create a reference of this type
-	 */
-	public ValueType createReference() {
-		return new ValueType(name, size, depth, flags | REFERENCE, structData);
 	}
 	
 	public String getName() {
@@ -86,10 +78,6 @@ public class ValueType {
 		return (flags & STORAGE_TYPE) == STRUCT;
 	}
 	
-	public boolean isReference() {
-		return (flags & REFERENCE) != 0;
-	}
-	
 	public int calculateBytes() {
 		return (getDepth() > 0) ? getPointerSize() : (getSize() >> 3);
 	}
@@ -120,14 +108,6 @@ public class ValueType {
 			&& this.getSize() == that.getSize();
 	}
 	
-	public boolean equalsDeReferences(Object obj) {
-		if (!(obj instanceof ValueType that))
-			return false;
-		return this.getDepth() == that.getDepth()
-			&& (this.getFlags() & ~REFERENCE) == (that.getFlags() & ~REFERENCE)
-			&& this.getSize() == that.getSize();
-	}
-	
 	public String toShortName() {
 		if (isLinked()) {
 			return "?";
@@ -143,25 +123,15 @@ public class ValueType {
 			sb.append("const ");
 		}
 		
-		if (isReference()) {
-			sb.append("ref<");
-		}
-		
 		// int size = calculateBytes();
 		switch (flags & STORAGE_TYPE) {
 			case SIGNED -> sb.append("i");
 			case UNSIGNED -> sb.append("u");
 			case FLOATING -> sb.append("f");
-			case STRUCT -> sb.append("struct<" + name + ">");
+			case STRUCT -> sb.append("struct<").append(name).append(">");
 			case LINKED -> sb.append("?");
 			case VARARGS -> sb.append(".");
 			default -> sb.append("unk");
-		}
-		
-		
-		if (isReference()) {
-			sb.append(size).append("[]".repeat(depth)).append(">");
-			return sb.toString();
 		}
 		
 		return sb.append(size).append("[]".repeat(depth)).toString();

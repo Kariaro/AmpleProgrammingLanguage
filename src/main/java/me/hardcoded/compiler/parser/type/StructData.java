@@ -36,4 +36,14 @@ public class StructData {
 	public String getName() {
 		return name;
 	}
+	
+	public int getMemberIndex(String name) {
+		final int size = memberOrdered.size();
+		for (int i = 0; i < size; i++) {
+			if (memberOrdered.get(i).getKey().equals(name)) {
+				return i;
+			}
+		}
+		return -1;
+	}
 }

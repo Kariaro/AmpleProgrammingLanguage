@@ -22,6 +22,18 @@ public interface InstParam {
 		}
 		
 		@Override
+		public String toSimple() {
+			if (ref.isLabel()) {
+				return ref.getPath() + ":" + ref.getId();
+			}
+			if (ref.isFunction()) {
+				return ref.getMangledName() + ":" + ref.getId();
+			}
+			
+			return ref.getValueType() + ": r" + ref.getId();
+		}
+		
+		@Override
 		public String toString() {
 			return ref.toString();
 		}
@@ -38,6 +50,11 @@ public interface InstParam {
 		@Override
 		public ValueType getSize() {
 			return type;
+		}
+		
+		@Override
+		public String toSimple() {
+			return toString();
 		}
 		
 		@Override
@@ -62,6 +79,11 @@ public interface InstParam {
 		
 		public long getValue() {
 			return value;
+		}
+		
+		@Override
+		public String toSimple() {
+			return toString();
 		}
 		
 		@Override
@@ -116,6 +138,11 @@ public interface InstParam {
 		}
 		
 		@Override
+		public String toSimple() {
+			return toString();
+		}
+		
+		@Override
 		public String toString() {
 			return "\"%s\"".formatted(StringUtils.escapeString(value));
 		}
@@ -125,4 +152,9 @@ public interface InstParam {
 	 * Returns the size of this parameter
 	 */
 	ValueType getSize();
+	
+	/**
+	 * Simplest representation
+	 */
+	String toSimple();
 }

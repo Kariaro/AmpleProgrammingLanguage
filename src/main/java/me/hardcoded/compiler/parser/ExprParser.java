@@ -143,8 +143,7 @@ public class ExprParser {
 						String memberName = reader.value();
 						reader.advance();
 						
-						// Check if member exists in struct type
-						System.out.println(left.getType() + ", " + ParseUtil.expr(left));
+						// System.out.println(left.getType() + ", " + ParseUtil.expr(left));
 						
 						// try {
 						// 	System.out.println(ObjectUtils.deepPrint(left, 6));
@@ -152,6 +151,7 @@ public class ExprParser {
 						// 	e.printStackTrace();
 						// }
 						
+						// Check if member exists in struct type
 						StructData type = left.getType().getStructData();
 						if (type == null) {
 							throw parser.createParseException(left.getSyntaxPosition(),
@@ -168,15 +168,7 @@ public class ExprParser {
 						Reference reference = context.createEmptyReference(memberName);
 						reference.setValueType(memberType);
 						
-						// Namespace namespace = context.getNamespaceScope().getNamespace();
-						// Reference reference = context.getLocalScope().getVariable(namespace, memberName);
-						// if (reference == null) {
-						// 	reference = context.getLocalScope().importVariable(namespace, memberName);
-						// 	context.setReferencePosition(reference, memberSyntaxPos);
-						// }
-						
 						NameExpr right = new NameExpr(memberSyntaxPos, reference);
-						
 						left = new BinaryExpr(ISyntaxPos.of(
 							parser.getCurrentFile(),
 							left.getSyntaxPosition().getStartPosition(),

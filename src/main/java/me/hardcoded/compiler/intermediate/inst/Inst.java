@@ -9,7 +9,7 @@ import java.util.List;
 public class Inst {
 	private final ISyntaxPos syntaxPos;
 	private final List<InstParam> parameters;
-	private final Opcode opcode;
+	private Opcode opcode;
 	
 	public Inst(Opcode opcode, ISyntaxPos syntaxPos) {
 		this.syntaxPos = syntaxPos;
@@ -24,6 +24,10 @@ public class Inst {
 	public Inst addParam(InstParam param) {
 		parameters.add(param);
 		return this;
+	}
+	
+	public void setOpcode(Opcode opcode) {
+		this.opcode = opcode;
 	}
 	
 	public InstParam.Ref getRefParam(int index) {
@@ -64,7 +68,7 @@ public class Inst {
 			ValueType type = param.getSize();
 			
 			boolean keep = switch (opcode) {
-				case INLINE_ASM, STACK_ALLOC, LABEL -> false;
+				case INLINE_ASM, STACK_ALLOC, LABEL, MEMBER_PTR -> false;
 				default -> true;
 			};
 			
@@ -75,14 +79,32 @@ public class Inst {
 		}
 		
 		if (!parameters.isEmpty()) {
-			sb.append(" ");
-			var iter = parameters.iterator();
-			while (iter.hasNext()) {
-				sb.append("(").append(iter.next()).append(")");
-				
-				if (iter.hasNext()) {
+			String data = sb.toString();
+			sb.replace(0, sb.length(), "");
+			sb.append("%-12s ".formatted(data));
+			
+			List<String> annotators = switch (opcode) {
+				case MOV -> List.of("dst", "src");
+				case MEMBER_PTR -> List.of("dst", "src", "index", "memberIndex");
+				case STORE -> List.of("ptr", "index", "src");
+				case LOAD -> List.of("dst", "ptr", "index");
+				default -> List.of();
+			};
+			final int annotatorLen = annotators.size();
+			final int size = parameters.size();
+			for (int i = 0; i < size; i++) {
+				if (i > 0) {
 					sb.append(", ");
 				}
+				
+				if (i < annotatorLen) {
+					String txt = annotators.get(i);
+					if (txt != null) {
+						sb.append(txt).append("=");
+					}
+				}
+				
+				sb.append("<").append(parameters.get(i).toSimple()).append(">");
 			}
 		}
 		

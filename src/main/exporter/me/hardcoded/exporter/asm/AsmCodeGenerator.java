@@ -287,7 +287,6 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					throw new RuntimeException();
 				}
 				
-				System.out.println(dst);
 				String regName = AsmReg.AX.toString(dst);
 				sb.add("mov RBX, %s".formatted(
 					AsmUtils.getParamValue(src, proc)
@@ -318,7 +317,6 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				} else if (offset instanceof InstParam.Ref value) {
 					int offsetSize = AsmUtils.getLowerTypeByteSize(dst.getValueType());
 					if (offsetSize > 8) {
-						System.out.println(offsetSize);
 						throw new RuntimeException();
 					}
 					
