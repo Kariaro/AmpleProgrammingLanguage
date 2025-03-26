@@ -42,6 +42,11 @@ public class ValueType {
 		return name;
 	}
 	
+	/**
+	 * The size in bits
+	 *
+	 * @return size in bits
+	 */
 	public int getSize() {
 		return size;
 	}

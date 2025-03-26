@@ -29,6 +29,9 @@ public interface InstParam {
 			if (ref.isFunction()) {
 				return ref.getMangledName() + ":" + ref.getId();
 			}
+			// if (ref.isVariable()) {
+			// 	return ref.getName() + ":" + ref.getId();
+			// }
 			
 			return ref.getValueType() + ": r" + ref.getId();
 		}

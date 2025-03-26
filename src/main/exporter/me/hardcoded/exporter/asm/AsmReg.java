@@ -50,7 +50,7 @@ public enum AsmReg {
 					case AX, CX, DX, BX -> name.substring(0, 1) + 'L';
 					default -> name + 'L';
 				};
-				default -> throw new UnsupportedOperationException();
+				default -> throw new UnsupportedOperationException("No defined size for " + bytes);
 			};
 		}
 	}

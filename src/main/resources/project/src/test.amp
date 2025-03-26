@@ -1,4 +1,5 @@
 @link "std.amp";
+@link "lexer.amp";
 
 struct B {
     i32: itemB;
@@ -7,6 +8,7 @@ struct A {
     B[]: item0;
     u32: item1;
     i32: item2;
+    u8[]: text;
 }
 
 fn main () : i32 {
@@ -29,6 +31,15 @@ fn main () : i32 {
     std::printf("a.item2 = %d\n", item[0].item2);
     compiler<?>("------------------------------------------------------------------");
     
+    item[0].text = "Hello";
+    item[1].text = ", World";
+    item[2].text = ".";
+    item[3].text = "!";
+    for (i32: i = 0; i < 4; i = i + 1) {
+        item[i].item2 = i;
+        std::printf("item[%d].item2 = %d / [%s]\n", i, item[i].item2, item[i].text);
+    }
+    
     item[0].item0[0].itemB = 32;
     item[0].item1 = 100u;
     item[0].item2 = 111;
@@ -37,6 +48,8 @@ fn main () : i32 {
     std::printf("a.item0[0].itemB = %d\n", item[0].item0[0].itemB);
     std::printf("a.item1 = %u\n", item[0].item1);
     std::printf("a.item2 = %d\n", item[0].item2);
+    
+    test_lexer();
 
     ret 0;
 }

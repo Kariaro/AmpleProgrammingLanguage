@@ -6,6 +6,29 @@ u64 : byte_offset = 0ul;
 
 namespace std {
 
+// Allocate memory
+fn (export) malloc(u64: bytes) : u8[] {
+    u8[]: result = cast<u8[]>(byte_memory + byte_offset);
+    byte_offset = byte_offset + bytes;
+    ret result;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 fn (export) init_malloc(u8[] : data, i64: length) {
     byte_memory = cast<u64>(data);
     for (i64: i = 0l; i < length; i = i + 1l) {
@@ -14,12 +37,6 @@ fn (export) init_malloc(u8[] : data, i64: length) {
     ret;
 }
 
-// Allocate memory
-fn (export) malloc(u64: bytes) : u8[] {
-    u8[]: result = cast<u8[]>(byte_memory + byte_offset);
-    byte_offset = byte_offset + bytes;
-    ret result;
-}
 
 fn (export) read_file(u8[]: file_name) : u8[] {
     u64: file_size = 0ul;
@@ -29,7 +46,6 @@ fn (export) read_file(u8[]: file_name) : u8[] {
     compiler<int>("read_file" : file_name : file_data);
     file_size = cast<u64>(std::strlen(file_data));
     file_data[file_size + 1ul] = '\0';
-    
     
     // u64  : file_size = __builtin_filesize(file_name);
     // u8[] : file_data = cast<u8[]>(std::malloc(file_size + 1ul));

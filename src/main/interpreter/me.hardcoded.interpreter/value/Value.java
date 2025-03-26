@@ -191,13 +191,17 @@ public interface Value {
 			if (value instanceof NumberValue val) {
 				result = val.value;
 			} else if (value instanceof ArrayValue val) {
-				result = val.address;
+				result = val.getInteger(); // Important so that it can be offset
 				pointer[index] = true;
 			} else {
 				throw new RuntimeException("Unknown value type '" + (value == null ? null : value.getClass()) + "'");
 			}
 			
 			write(index, result, typeSize);
+		}
+		
+		public ArrayValue withOffset(long offset) {
+			return new OffsetArrayValue(this, (int) offset);
 		}
 		
 		@Override
@@ -214,37 +218,37 @@ public interface Value {
 		public String toString() {
 			return "Array<" + values.length + "> " + String.format("0x%016x", address);
 		}
-	}
-	
-	class OffsetArrayValue extends ArrayValue {
-		private final ArrayValue value;
-		private final int offset;
 		
-		public OffsetArrayValue(ArrayValue value, int offset) {
-			super(value.getInteger(), value.values, value.pointer);
+		static class OffsetArrayValue extends ArrayValue {
+			private final ArrayValue value;
+			private final int offset;
 			
-			if (value instanceof OffsetArrayValue oav) {
-				this.offset = oav.offset + offset;
-				this.value = oav.value;
-			} else {
-				this.offset = offset;
-				this.value = value;
+			public OffsetArrayValue(ArrayValue value, int offset) {
+				super(value.address, value.values, value.pointer);
+				
+				if (value instanceof OffsetArrayValue oav) {
+					this.offset = oav.offset + offset;
+					this.value = oav.value;
+				} else {
+					this.offset = offset;
+					this.value = value;
+				}
 			}
-		}
-		
-		@Override
-		protected int transformIndex(int index) {
-			return index + offset;
-		}
-		
-		@Override
-		public long getInteger() {
-			return address + (offset & 0xffL);
-		}
-		
-		@Override
-		public String toString() {
-			return "Array<" + values.length + "> " + String.format("0x%016x", getInteger());
+			
+			@Override
+			protected int transformIndex(int index) {
+				return index + offset;
+			}
+			
+			@Override
+			public long getInteger() {
+				return address + (offset);
+			}
+			
+			@Override
+			public String toString() {
+				return "Array<" + values.length + ":" + offset + "> " + String.format("0x%016x", getInteger());
+			}
 		}
 	}
 	

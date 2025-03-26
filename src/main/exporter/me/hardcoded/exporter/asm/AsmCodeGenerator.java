@@ -5,6 +5,7 @@ import me.hardcoded.compiler.context.AmpleConfig;
 import me.hardcoded.compiler.impl.ICodeGenerator;
 import me.hardcoded.compiler.intermediate.inst.*;
 import me.hardcoded.utils.error.CodeGenException;
+import me.hardcoded.utils.error.ErrorUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -117,6 +118,18 @@ public class AsmCodeGenerator extends ICodeGenerator {
 	}
 	
 	private String buildInstruction(AsmContext context, AsmProcedure proc, Inst inst) throws CodeGenException {
+		try {
+			return buildInstructionImpl(context, proc, inst);
+		} catch (CodeGenException e) {
+			throw e;
+		} catch (Exception e) {
+			LOGGER.warn("{}", inst);
+			LOGGER.warn("{}", ErrorUtil.createError(inst.getSyntaxPosition(), e.getMessage()));
+			throw new CodeGenException(e);
+		}
+	}
+	
+	private String buildInstructionImpl(AsmContext context, AsmProcedure proc, Inst inst) throws CodeGenException {
 		if (inst.getOpcode() == Opcode.LABEL) {
 			InstRef reference = inst.getRefParam(0).getReference();
 			if (reference.isFunction()) {
@@ -337,13 +350,18 @@ public class AsmCodeGenerator extends ICodeGenerator {
 						srcValue
 					));
 				} else {
-					String regName = AsmReg.AX.toString(AsmUtils.getLowerTypeSize(dst.getValueType()) >> 3); // Size of one lower
+					// TODO - Allow store for struct values, this is technically a memcpy
+					// System.out.println(dst.getValueType() + ", " + AsmUtils.getTypeByteSize(dst.getValueType()));
+					// String regName = AsmReg.AX.toString(AsmUtils.getLowerTypeSize(dst.getValueType()) >> 3); // Size of one lower
+					int size = AsmUtils.getTypeByteSize(dst.getValueType());
+					int srsSize = AsmUtils.getTypeByteSize(src.getSize());
+					String regName = AsmReg.AX.toString(srsSize); // Size of one lower
 					sb.add("mov %s, %s".formatted(
 						regName,
 						srcValue
 					));
 					sb.add("mov %s [RBX + %s], %s".formatted(
-						AsmUtils.getPointerName(dst.getValueType().getSize()),
+						AsmUtils.getPointerName(srsSize << 3),
 						offsetValue,
 						regName
 					));

@@ -97,8 +97,8 @@ public class IntermediateGenerator {
 			case MEMBER_LOAD -> {
 				if (stat instanceof BinaryExpr expr
 					&& expr.getOperation() == Operation.MEMBER) {
-					
-					InstRef holder = createDataReference(".member_load", expr.getType().createArray(0));
+					// System.out.println(">>>" + expr.getRight().getType());
+					InstRef holder = createDataReference(".member_load", expr.getRight().getType());
 					procedure.addInst(new Inst(Opcode.LOAD, expr.getSyntaxPosition())
 						.addParam(new InstParam.Ref(holder))
 						.addParam(new InstParam.Ref(ref))
@@ -415,21 +415,14 @@ public class IntermediateGenerator {
 		}
 		
 		Opcode opcode = getBinaryOpcode(expr.getOperation(), expr.getType().isUnsigned());
-		InstRef left = generateStat(expr.getLeft(), procedure);
+		InstRef left = specialStat(expr.getLeft(), procedure, HandleType.MEMBER_LOAD);
 		InstRef right = specialStat(expr.getRight(), procedure, HandleType.MEMBER_LOAD);
 		
 		InstRef holder = createDataReference(".binary", expr.getType());
-		if (expr.getRight() instanceof BinaryExpr leftBinary
-			&& leftBinary.getOperation() == Operation.MEMBER) {
-			procedure.addInst(new Inst(Opcode.LOAD, expr.getSyntaxPosition())
-				.addParam(new InstParam.Ref(holder))
-				.addParam(new InstParam.Ref(left))
-				.addParam(new InstParam.Num(Primitives.U8, 0)));
-		} else {
-			procedure.addInst(new Inst(Opcode.MOV, expr.getSyntaxPosition())
-				.addParam(new InstParam.Ref(holder))
-				.addParam(new InstParam.Ref(left)));
-		}
+		procedure.addInst(new Inst(Opcode.MOV, expr.getLeft().getSyntaxPosition())
+			.addParam(new InstParam.Ref(holder))
+			.addParam(new InstParam.Ref(left)));
+		
 		procedure.addInst(new Inst(opcode, expr.getSyntaxPosition())
 			.addParam(new InstParam.Ref(holder))
 			.addParam(new InstParam.Ref(right)));

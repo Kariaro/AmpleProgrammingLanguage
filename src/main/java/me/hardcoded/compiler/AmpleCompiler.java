@@ -166,6 +166,11 @@ public class AmpleCompiler {
 		}
 		
 		OutputFormat format = ampleConfig.getConfiguration().getOutputFormat();
+		
+		if (true) {
+			return;
+		}
+		
 		ICodeGenerator codeGenerator = format.createNew(ampleConfig);
 		
 		byte[] bytes = switch (ampleConfig.getConfiguration().getTargetFormat()) {

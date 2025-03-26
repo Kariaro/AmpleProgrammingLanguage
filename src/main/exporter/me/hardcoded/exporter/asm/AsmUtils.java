@@ -11,7 +11,7 @@ class AsmUtils {
 			case 16 -> "word";
 			case 32 -> "dword";
 			case 64 -> "qword";
-			default -> throw new RuntimeException();
+			default -> throw new RuntimeException("Invalid pointer name " + size);
 		};
 	}
 	

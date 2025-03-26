@@ -54,7 +54,7 @@ public class Memory {
 	public Value.ArrayValue getAllocated(long address) {
 		Value.ArrayValue arrayValue = allocatedMemory.get(address >> 32);
 		if (arrayValue != null && (int) address != 0) {
-			return new Value.OffsetArrayValue(arrayValue, (int) address);
+			return arrayValue.withOffset((int) address);
 		}
 		return arrayValue;
 	}

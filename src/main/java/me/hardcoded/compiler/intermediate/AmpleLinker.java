@@ -65,22 +65,24 @@ public class AmpleLinker {
 		// Test
 		// new IntermediateOptimizer().generate(file);
 		
-		LOGGER.debug("");
-		for (Procedure proc : file.getProcedures()) {
-			switch (proc.getType()) {
-				case FUNCTION -> LOGGER.debug("# func {}", proc);
-				case VARIABLE -> LOGGER.debug("# variable {}", proc);
-				default -> LOGGER.debug("# proc = {}", proc.getType());
-			}
-			
-			for (Inst inst : proc.getInstructions()) {
-				ISyntaxPos pos = inst.getSyntaxPosition();
-				String details = "(line: %3d, column: %3d)".formatted(pos.getStartPosition().line(), pos.getStartPosition().column());
+		if (true) {
+			LOGGER.debug("");
+			for (Procedure proc : file.getProcedures()) {
+				switch (proc.getType()) {
+					case FUNCTION -> LOGGER.debug("# func {}", proc);
+					case VARIABLE -> LOGGER.debug("# variable {}", proc);
+					default -> LOGGER.debug("# proc = {}", proc.getType());
+				}
 				
-				if (inst.getOpcode() == Opcode.LABEL) {
-					LOGGER.debug("    {}     {}", details, inst);
-				} else {
-					LOGGER.debug("        {}     {}", details, inst);
+				for (Inst inst : proc.getInstructions()) {
+					ISyntaxPos pos = inst.getSyntaxPosition();
+					String details = "(line: %3d, column: %3d)".formatted(pos.getStartPosition().line(), pos.getStartPosition().column());
+					
+					if (inst.getOpcode() == Opcode.LABEL) {
+						LOGGER.debug("    {}     {}", details, inst);
+					} else {
+						LOGGER.debug("        {}     {}", details, inst);
+					}
 				}
 			}
 		}
