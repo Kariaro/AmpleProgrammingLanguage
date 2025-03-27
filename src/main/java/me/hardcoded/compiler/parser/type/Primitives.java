@@ -21,6 +21,10 @@ public class Primitives {
 		F32 = new ValueType("f32", 32, 0, ValueType.FLOATING),
 		F64 = new ValueType("f64", 64, 0, ValueType.FLOATING);
 	
+	public static final ValueType
+		USIZE = U64,
+		ISIZE = I64;
+	
 	public static final ValueType[] VALUES = {
 		NONE, LINKED, VARARGS,
 		I8, I16, I32, I64,

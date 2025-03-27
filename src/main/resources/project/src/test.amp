@@ -1,5 +1,6 @@
 @link "std.amp";
-@link "lexer.amp";
+@link "compiler/compile.amp";
+@link "compiler/lexer.amp";
 
 struct B {
     i32: itemB;
@@ -49,7 +50,20 @@ fn main () : i32 {
     std::printf("a.item1 = %u\n", item[0].item1);
     std::printf("a.item2 = %d\n", item[0].item2);
     
+        
+    for (i32: i = 0; i < 32; i = i + 1) {
+        std::printf("%d\n", i);
+        std::printf("%p\n", sizeof(A) * cast<u64>(i) + cast<u64>(item));
+        std::printf("%p\n", __builtin_address(item[i]));
+        std::printf("%p\n", __builtin_address(item[i].item0));
+        std::printf("%p\n", __builtin_address(item[i].item0[i]));
+        std::printf("%p\n", __builtin_address(mem1[i]));
+        std::printf("-------------------------------\n");
+    }
+    std::printf("%d\n", sizeof(A));
+
     test_lexer();
+    // ctx::try_compile("std.amp", 0ul);
 
     ret 0;
 }

@@ -134,40 +134,41 @@ public class ExprParser {
 					case MEMBER -> {
 						// Must have an identifier
 						parser.tryMatchOrError(Token.Type.IDENTIFIER);
-						if (!left.getType().isStruct()) {
-							throw parser.createParseException(reader.syntaxPosition(),
-								"Cannot get member of non struct type - %s".formatted(left.getType())
-							);
-						}
+						// TODO - Linkability
+						// if (!left.getType().isStruct()) {
+						// 	throw parser.createParseException(reader.syntaxPosition(),
+						// 		"Cannot get member of non struct type - %s".formatted(left.getType())
+						// 	);
+						// }
 						ISyntaxPos memberSyntaxPos = reader.syntaxPosition();
 						String memberName = reader.value();
 						reader.advance();
 						
-						// System.out.println(left.getType() + ", " + ParseUtil.expr(left));
-						
-						// try {
-						// 	System.out.println(ObjectUtils.deepPrint(left, 6));
-						// } catch (Exception e) {
-						// 	e.printStackTrace();
-						// }
-						
-						// Check if member exists in struct type
-						StructData type = left.getType().getStructData();
-						if (type == null) {
-							throw parser.createParseException(left.getSyntaxPosition(),
-								"Binary expr '%s' value is missing struct data (BUG)".formatted(ParseUtil.expr(left))
-							);
+						// Check if member exists in struct 
+						ValueType memberType;
+						Reference reference;
+						String referenceName = left.getType().getName() + "." + memberName;
+						if (left.getType().isStruct()) {
+							StructData type = left.getType().getStructData();
+							if (type == null) {
+								throw parser.createParseException(left.getSyntaxPosition(),
+									"Binary expr '%s' value is missing struct data (BUG)".formatted(ParseUtil.expr(left))
+								);
+							}
+							if (!type.hasMember(memberName)) {
+								throw parser.createParseException(memberSyntaxPos,
+									"The struct '%s' does not have a member named '%s'".formatted(type.getName(), memberName)
+								);
+							}
+							reference = context.createEmptyReference(referenceName);
+							memberType = type.getMember(memberName);
+						} else {
+							reference = context.createImportedReference(referenceName, memberSyntaxPos);
+							reference.setFlags(Reference.TYPE);
+							memberType = new ValueType(referenceName, 0, 0, ValueType.LINKED);
 						}
-						if (!type.hasMember(memberName)) {
-							throw parser.createParseException(memberSyntaxPos,
-								"The struct '%s' does not have a member named '%s'".formatted(type.getName(), memberName)
-							);
-						}
 						
-						ValueType memberType = type.getMember(memberName);
-						Reference reference = context.createEmptyReference(memberName);
 						reference.setValueType(memberType);
-						
 						NameExpr right = new NameExpr(memberSyntaxPos, reference);
 						left = new BinaryExpr(ISyntaxPos.of(
 							parser.getCurrentFile(),
@@ -360,7 +361,7 @@ public class ExprParser {
 			case "sizeof" -> {
 				parser.tryMatchOrError(Token.Type.L_PAREN);
 				reader.advance();
-				ValueType type = parser.readType();
+				ValueType type = parser.readType(false);
 				parser.tryMatchOrError(Token.Type.R_PAREN);
 				reader.advance();
 				return new SizeofExpr(ISyntaxPos.of(parser.getCurrentFile(), startPos, reader.lastPositionEnd()), type);
@@ -370,7 +371,7 @@ public class ExprParser {
 				reader.advance();
 				
 				ISyntaxPos typeSyntaxPosition = reader.syntaxPosition();
-				ValueType type = parser.readType();
+				ValueType type = parser.readType(true);
 				if (type == null) {
 					throw parser.createParseException(typeSyntaxPosition, "Unknown type");
 				}
@@ -418,7 +419,7 @@ public class ExprParser {
 				parser.tryMatchOrError(Token.Type.LESS_THAN);
 				reader.advance();
 				
-				ValueType type = parser.readType();
+				ValueType type = parser.readType(false);
 				
 				parser.tryMatchOrError(Token.Type.MORE_THAN);
 				reader.advance();
@@ -435,10 +436,32 @@ public class ExprParser {
 			}
 		}
 		
+		BuiltinExpr.Kind kind = BuiltinExpr.Kind.getBuiltin(name);
+		if (kind != null) {
+			parser.tryMatchOrError(Token.Type.L_PAREN);
+			reader.advance();
+			
+			Expr value = parse();
+			
+			parser.tryMatchOrError(Token.Type.R_PAREN);
+			reader.advance();
+			
+			return new BuiltinExpr(
+				ISyntaxPos.of(parser.getCurrentFile(), startPos, reader.lastPositionEnd()),
+				kind,
+				value
+			);
+		}
+		
 		return new NoneExpr(reader.syntaxPosition());
 	}
 	
 	private boolean isSpecialFunction(String name) {
+		if (BuiltinExpr.Kind.isBuiltin(name)) {
+			return true;
+		}
+		
+		// Builtin
 		return name.equals("stack_alloc")
 			|| name.equals("cast")
 			|| name.equals("sizeof");

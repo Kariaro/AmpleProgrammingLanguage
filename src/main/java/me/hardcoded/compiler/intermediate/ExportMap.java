@@ -6,6 +6,7 @@ import me.hardcoded.compiler.parser.LinkableObject;
 import me.hardcoded.compiler.parser.type.Primitives;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ReferenceSyntax;
+import me.hardcoded.compiler.parser.type.ValueType;
 import me.hardcoded.utils.error.ErrorUtil;
 import me.hardcoded.utils.types.MangledFunctionMap;
 import org.apache.logging.log4j.LogManager;
@@ -19,15 +20,18 @@ public class ExportMap {
 	private static final Logger LOGGER = LogManager.getLogger(ExportMap.class);
 	final MangledFunctionMap functions;
 	final Map<String, Reference> variables;
+	final Map<String, Reference> types;
 	
 	public ExportMap() {
 		functions = new MangledFunctionMap();
 		variables = new HashMap<>();
+		types = new HashMap<>();
 	}
 	
 	public void clear() {
 		functions.clear();
 		variables.clear();
+		types.clear();
 	}
 	
 	public boolean add(LinkableObject obj) throws ParseException {
@@ -46,7 +50,6 @@ public class ExportMap {
 				
 				if (!functions.put(reference)) {
 					Reference blocker = functions.getBlocker(reference);
-					
 					throw new ParseException(ErrorUtil.createFullError(referenceSyntax.getSyntaxPosition(),
 						"The project already exports a function '%s' (%s)".formatted(
 							reference.getName(),
@@ -59,6 +62,17 @@ public class ExportMap {
 			if (reference.isVariable() && variables.put(reference.getName(), reference) != null) {
 				throw new ParseException(ErrorUtil.createFullError(referenceSyntax.getSyntaxPosition(),
 					"The project already exports a variable '%s'".formatted(
+						reference.getName()
+					)
+				));
+			}
+			
+			if (reference.isType() || reference.isStruct()) {
+				System.out.println("REFERENCED - " + reference);
+			}
+			if ((reference.isType() || reference.isStruct()) && types.put(reference.getName(), reference) != null) {
+				throw new ParseException(ErrorUtil.createFullError(referenceSyntax.getSyntaxPosition(),
+					"The project already exports a type '%s'".formatted(
 						reference.getName()
 					)
 				));
@@ -77,7 +91,15 @@ public class ExportMap {
 			return variables.get(reference.getName());
 		}
 		
+		if (reference.isType() || reference.isStruct() || reference.getValueType().isLinked()) {
+			return types.get(reference.getName());
+		}
+		
 		return null;
+	}
+	
+	public Reference getType(ValueType type) {
+		return types.get(type.getName());
 	}
 	
 	public Reference getMangledFunctionReference(Reference reference, List<Reference> parameters) {
@@ -133,5 +155,14 @@ public class ExportMap {
 		}
 		
 		return true;
+	}
+	
+	@Override
+	public String toString() {
+		return "ExportMap[\n" +
+			" - functions=" + functions + "\n" +
+			" - variables=" + variables + "\n" +
+			" - types=" + types + "\n" +
+			']';
 	}
 }

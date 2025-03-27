@@ -73,7 +73,7 @@ public class ProgramScope {
 		}
 	}
 	
-	public Reference createImportedReference(String name) {
+	public Reference createImportedReference(String name, ISyntaxPos syntaxPos) {
 		Reference reference = importedReference.get(name);
 		if (reference != null) {
 			return reference;
@@ -82,6 +82,7 @@ public class ProgramScope {
 		reference = new Reference(name, namespaceScope.getNamespace(), Primitives.NONE, count++, Reference.IMPORT);
 		importedReference.put(name, reference);
 		allReferences.add(reference);
+		firstReferencePosition.put(reference, syntaxPos);
 		return reference;
 	}
 	

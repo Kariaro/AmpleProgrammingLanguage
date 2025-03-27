@@ -8,10 +8,7 @@ import me.hardcoded.compiler.parser.type.ValueType;
 import me.hardcoded.utils.Position;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 class LinkableHeader {
 	static final int MAGIC = 0x414d4C46; // 'AMLF' A Linkable File
@@ -349,6 +346,7 @@ class LinkableHeader {
 	}
 	
 	public void serializeISyntaxPosition(ISyntaxPos syntaxPosition, DataOutputStream out) throws IOException {
+		Objects.requireNonNull(syntaxPosition, "serializeISyntaxPosition called with 'null'");
 		int idx = syntaxPositionMap.put(syntaxPosition);
 		writeVarInt(idx, out);
 	}

@@ -437,9 +437,18 @@ public class AmpleRunner {
 							};
 							
 							Value value = switch (type) {
-								case Array -> destroyArray
-									? new Value.NumberValue(result)
-									: ((Value.ArrayValue) a).withOffset(result - a.getInteger());
+								case Array -> {
+									if (destroyArray) {
+										yield new Value.NumberValue(result);
+									}
+									if (a instanceof Value.ArrayValue av) {
+										yield av.withOffset(result - a.getInteger());
+									}
+									if (b instanceof Value.ArrayValue bv) {
+										yield bv.withOffset(result - b.getInteger());
+									}
+									throw new RuntimeException("Unknown bug??");
+								}
 								case Integer, Floating -> new Value.NumberValue(type == Value.Type.Floating, result);
 							};
 							
@@ -587,7 +596,8 @@ public class AmpleRunner {
 							
 							var structData = src.getSize().getStructData();
 							var members = structData.getMembers();
-							int sizeof = getSize(src.getSize());
+							int sizeof = getSize(src.getSize().createArray(
+								Math.max(0, src.getSize().getDepth() - 1)));
 							
 							int offset = 0;
 							for (int i = 0; i < memberIndex; i++) {

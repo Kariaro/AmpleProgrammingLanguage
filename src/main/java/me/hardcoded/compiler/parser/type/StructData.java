@@ -46,4 +46,9 @@ public class StructData {
 		}
 		return -1;
 	}
+	
+	@Override
+	public String toString() {
+		return memberOrdered.toString();
+	}
 }

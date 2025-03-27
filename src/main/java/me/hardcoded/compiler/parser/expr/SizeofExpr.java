@@ -3,6 +3,7 @@ package me.hardcoded.compiler.parser.expr;
 import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.serial.LinkableStream;
 import me.hardcoded.compiler.parser.serial.TreeType;
+import me.hardcoded.compiler.parser.type.Primitives;
 import me.hardcoded.compiler.parser.type.ValueType;
 
 import java.io.IOException;
@@ -13,6 +14,10 @@ public class SizeofExpr extends Expr {
 	public SizeofExpr(ISyntaxPos syntaxPos, ValueType type) {
 		super(syntaxPos);
 		this.type = type;
+	}
+	
+	public ValueType getCheckedType() {
+		return type;
 	}
 	
 	@Override
@@ -27,7 +32,7 @@ public class SizeofExpr extends Expr {
 	
 	@Override
 	public ValueType getType() {
-		return type;
+		return Primitives.USIZE;
 	}
 	
 	@Override

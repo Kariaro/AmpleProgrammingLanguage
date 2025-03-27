@@ -28,6 +28,9 @@ public enum TreeType {
 	STACK_ALLOC,
 	SIZEOF,
 	COMPILER,
+	
+	// Special
+	BUILTIN,
 	;
 	
 	public static final TreeType[] VALUES = values();

@@ -82,6 +82,7 @@ public class IntermediateGenerator {
 			case STR -> generateStrExpr((StrExpr) stat, procedure);
 			case UNARY -> generateUnaryExpr((UnaryExpr) stat, procedure);
 			case SIZEOF -> generateSizeofExpr((SizeofExpr) stat, procedure);
+			case BUILTIN -> generateBuiltinExpr((BuiltinExpr) stat, procedure);
 			default -> throw new RuntimeException("Invalid expr %s".formatted(stat.getTreeType()));
 		};
 	}
@@ -97,8 +98,17 @@ public class IntermediateGenerator {
 			case MEMBER_LOAD -> {
 				if (stat instanceof BinaryExpr expr
 					&& expr.getOperation() == Operation.MEMBER) {
-					// System.out.println(">>>" + expr.getRight().getType());
-					InstRef holder = createDataReference(".member_load", expr.getRight().getType());
+					ValueType valueType = expr.getRight().getType();
+					if (valueType.isLinked()) {
+						System.out.println(ParseUtil.stat(expr));
+						System.out.println(valueType);
+						System.out.println(exportMap);
+						System.out.println(valueType.getName());
+						System.out.println();
+						valueType = exportMap.getType(valueType).getValueType();
+					}
+					
+					InstRef holder = createDataReference(".member_load", valueType);
 					procedure.addInst(new Inst(Opcode.LOAD, expr.getSyntaxPosition())
 						.addParam(new InstParam.Ref(holder))
 						.addParam(new InstParam.Ref(ref))
@@ -213,7 +223,7 @@ public class IntermediateGenerator {
 	private InstRef generateFuncStat(FuncStat stat, Procedure procedure) throws InstException {
 		InstRef reference;
 		try {
-			reference = wrapReference(stat.getReference(), funcCount++);
+			reference = wrapFunctionReference(stat.getReference(), stat.getParameters(), funcCount++);
 		} catch (RuntimeException e) {
 			throw new InstException(ErrorUtil.createFullError(
 				ISyntaxPos.of(
@@ -427,6 +437,7 @@ public class IntermediateGenerator {
 			.addParam(new InstParam.Ref(holder))
 			.addParam(new InstParam.Ref(right)));
 		
+		System.out.println("c " + left);
 		if (!left.getValueType().equals(right.getValueType())) {
 			throw new InstException(ErrorUtil.createFullError(expr.getSyntaxPosition(),
 				"Left and Right side does not match (%s != %s)".formatted(
@@ -448,7 +459,8 @@ public class IntermediateGenerator {
 		}
 		
 		InstRef caller;
-		if (expr.getReference().isImported()) {
+		if (expr.getReference().isImported()
+			|| expr.getReference().isExported()) {
 			List<Reference> parameters = params.stream().map(param -> (Reference) param.getReference()).toList();
 			caller = wrapFunctionReference(expr.getReference(), parameters);
 		} else {
@@ -536,9 +548,43 @@ public class IntermediateGenerator {
 		
 		procedure.addInst(new Inst(Opcode.SIZEOF, expr.getSyntaxPosition())
 			.addParam(new InstParam.Ref(holder))
-			.addParam(new InstParam.Type(expr.getType())));
+			.addParam(new InstParam.Type(expr.getCheckedType())));
 		
 		return holder;
+	}
+	
+	private InstRef generateBuiltinExpr(BuiltinExpr expr, Procedure procedure) throws InstException {
+		return switch (expr.getKind()) {
+			case PANIC -> NONE;
+			case ADDRESS -> {
+				if (expr.getValue() instanceof BinaryExpr value
+					&& value.getOperation() == Operation.ARRAY) {
+					InstRef holder_idx = createDataReference(".builtin_idx", Primitives.USIZE);
+					InstRef holder_dta = createDataReference(".builtin_dta", Primitives.USIZE);
+					InstRef left = generateStat(value.getLeft(), procedure);
+					InstRef right = specialStat(value.getRight(), procedure, HandleType.MEMBER_LOAD);
+					procedure.addInst(new Inst(Opcode.SEXT, value.getRight().getSyntaxPosition())
+						.addParam(new InstParam.Ref(holder_idx))
+						.addParam(new InstParam.Ref(right)));
+					procedure.addInst(new Inst(Opcode.SIZEOF, value.getRight().getSyntaxPosition())
+						.addParam(new InstParam.Ref(holder_dta))
+						.addParam(new InstParam.Type(left.getValueType().createArray(
+							Math.max(0, left.getValueType().getDepth() - 1)))));
+					procedure.addInst(new Inst(Opcode.MUL, value.getRight().getSyntaxPosition())
+						.addParam(new InstParam.Ref(holder_idx))
+						.addParam(new InstParam.Ref(holder_dta)));
+					procedure.addInst(new Inst(Opcode.TRUNC, value.getLeft().getSyntaxPosition())
+						.addParam(new InstParam.Ref(holder_dta))
+						.addParam(new InstParam.Ref(left)));
+					procedure.addInst(new Inst(Opcode.ADD, value.getLeft().getSyntaxPosition())
+						.addParam(new InstParam.Ref(holder_dta))
+						.addParam(new InstParam.Ref(holder_idx)));
+					yield holder_dta;
+				}
+				
+				yield generateStat(expr.getValue(), procedure);
+			}
+		};
 	}
 	
 	private InstRef generateArrayExpr(BinaryExpr expr, Procedure procedure) throws InstException {
@@ -563,10 +609,32 @@ public class IntermediateGenerator {
 		}
 		
 		ValueType leftType = expr.getLeft().getType();
-		int memberIndex = leftType.getStructData().getMemberIndex(name.getReference().getName());
-		ValueType memberType = leftType.getStructData().getMember(name.getReference().getName());
+		if (leftType.isLinked()) {
+			Reference ref = exportMap.getType(leftType);
+			leftType = ref.getValueType();
+		}
 		
-		InstRef holder = createDataReference(".member", name.getType().createArray(1));
+		// TODO - this is just a hack for now
+		String nameStr = name.getReference().getName();
+		if (nameStr.contains(".")) {
+			String[] parts = nameStr.split("\\.", 2);
+			if (leftType.getName().equals(parts[0])) {
+				nameStr = nameStr.substring(nameStr.indexOf('.') + 1);
+			}
+		}
+		
+		int memberIndex = leftType.getStructData().getMemberIndex(nameStr);
+		ValueType memberType = leftType.getStructData().getMember(nameStr);
+		if (memberType == null) {
+			throw new InstException(ErrorUtil.createFullError(expr.getRight().getSyntaxPosition(),
+				"The member named %s does not exist inside the struct %s".formatted(
+					nameStr,
+					leftType.getName()
+				)
+			));
+		}
+		
+		InstRef holder = createDataReference(".member", memberType.createArray(memberType.getDepth() + 1));
 		
 		// Left is currently containing a struct type
 		if (expr.getLeft() instanceof BinaryExpr left
@@ -719,12 +787,35 @@ public class IntermediateGenerator {
 	private InstRef wrapReference(Reference reference, int id) {
 		if (reference.isImported() || reference.isExported()) {
 			Reference result = exportMap.getReference(reference);
-			
 			if (result == null) {
 				throw new RuntimeException("Failed to resolve reference '" + reference + "'");
 			}
 			
 			reference = result;
+		} else {
+			System.out.println(reference.getValueType() + ", " + reference);
+			if (reference.getValueType().isLinked()) {
+				Reference result = exportMap.getType(reference.getValueType());
+				if (result == null) {
+					throw new RuntimeException("Linked reference was not able to find '" + reference + "'");
+				}
+				
+				// Make sure array size is kept
+				ValueType valueType = result.getValueType();
+				reference = new Reference(
+					result.getName(),
+					result.getNamespace(),
+					new ValueType(
+						valueType.getName(),
+						valueType.getSize(),
+						reference.getValueType().getDepth(),
+						valueType.getFlags(),
+						valueType.getStructData()
+					),
+					result.getId(),
+					result.getFlags()
+				);
+			}
 		}
 		
 		InstRef result = wrappedReferences.get(reference);

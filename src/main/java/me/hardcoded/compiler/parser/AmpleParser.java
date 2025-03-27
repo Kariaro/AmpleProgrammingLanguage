@@ -23,6 +23,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -73,9 +74,14 @@ public class AmpleParser {
 	}
 	
 	public LinkableObject fromFile(File file) throws ParseException, IOException {
-		//			LOGGER.error("Could not find the file '{}'", file.getAbsolutePath());
-		//			throw new ParseException("Failed to read file '%s'", file.getAbsolutePath());
-		return fromBytes(file.getAbsolutePath(), Files.readAllBytes(file.toPath()));
+		byte[] bytes;
+		try {
+			bytes = Files.readAllBytes(file.toPath());
+		} catch (NoSuchFileException e) {
+			throw createParseException("File could not be loaded [%s]", file.toString());
+		}
+		
+		return fromBytes(file.getAbsolutePath(), bytes);
 	}
 	
 	public LinkableObject fromReplBytes(String path, byte[] bytes) throws ParseException {
@@ -192,7 +198,7 @@ public class AmpleParser {
 			return replStatements();
 		}
 		
-		if (isType()) {
+		if (reader.value().equals("var") || isType()) {
 			return varStatement(false);
 		}
 		
@@ -336,7 +342,7 @@ public class AmpleParser {
 		
 		List<Reference> parameters = new ArrayList<>();
 		while (reader.type() != Token.Type.R_PAREN) {
-			ValueType type = readType();
+			ValueType type = readType(true);
 			if (type == null) {
 				throw createParseException("Missing type '%s' was not a type", reader.value());
 			}
@@ -368,7 +374,7 @@ public class AmpleParser {
 		ValueType returnType;
 		if (reader.type() == Token.Type.COLON) {
 			reader.advance();
-			returnType = readType();
+			returnType = readType(true);
 		} else {
 			returnType = Primitives.NONE;
 		}
@@ -431,6 +437,7 @@ public class AmpleParser {
 		ValueType valueType = new ValueType(structName, 0, 0, ValueType.STRUCT, structData);
 		reference.setValueType(valueType);
 		reference.setFlags(Reference.STRUCT);
+		reference.setModifiers(Reference.EXPORT);
 		
 		// Always set reference position
 		context.setReferencePosition(reference, structNameSyntax);
@@ -452,6 +459,14 @@ public class AmpleParser {
 					varStat.getReference().getName()
 				);
 				variables.add(varStat);
+				
+				// Added for type hinting
+				Reference var_type_reference = context.createEmptyReference(structName + "." + varStat.getReference().getName());
+				var_type_reference.setValueType(varStat.getReference().getValueType());
+				var_type_reference.setExported(true);
+				var_type_reference.setFlags(Reference.TYPE);
+				var_type_reference.setModifiers(Reference.EXPORT);
+				context.setReferencePosition(var_type_reference, varStat.getSyntaxPosition());
 			} else if (isFunc()) {
 				functions.add(funcStatement());
 			} else {
@@ -517,6 +532,10 @@ public class AmpleParser {
 			case WHILE -> {
 				return whileStatement();
 			}
+		}
+		
+		if (reader.value().equals("var")) {
+			return varStatement(true);
 		}
 		
 		ParseException varException = null;
@@ -622,6 +641,8 @@ public class AmpleParser {
 		tryMatchOrError(Token.Type.L_PAREN);
 		reader.advance();
 		
+		context.getLocalScope().pushLocals();
+		
 		Stat initializer = varStatement(true);
 		
 		Expr condition;
@@ -645,6 +666,8 @@ public class AmpleParser {
 		reader.advance();
 		
 		ScopeStat body = statements();
+		
+		context.getLocalScope().popLocals();
 		
 		return new ForStat(ISyntaxPos.of(currentFile, startPos, body.getSyntaxPosition().getEndPosition()), initializer, condition, action, body);
 	}
@@ -693,7 +716,11 @@ public class AmpleParser {
 	private VarStat varStatement(boolean localVariable) throws ParseException {
 		Position startPos = reader.position();
 		
-		ValueType type = readType();
+		if (reader.value().equals("var")) {
+			reader.advance();
+		}
+		
+		ValueType type = readType(false);
 		tryMatchOrError(Token.Type.COLON);
 		reader.advance();
 		
@@ -729,7 +756,7 @@ public class AmpleParser {
 		Position startPos = reader.position();
 		
 		ISyntaxPos typeSyntaxPosition = reader.syntaxPosition();
-		ValueType type = readType();
+		ValueType type = readType(false);
 		if (type == null) {
 			throw createParseException(typeSyntaxPosition, "Unknown type");
 		}
@@ -788,7 +815,7 @@ public class AmpleParser {
 		};
 	}
 	
-	ValueType readType() throws ParseException {
+	ValueType readType(boolean force) throws ParseException {
 		ISyntaxPos start = reader.syntaxPosition();
 		String name = reader.value();
 		reader.advance();
@@ -803,6 +830,16 @@ public class AmpleParser {
 		
 		ValueType type = context.getTypeScope().getType(name, depth);
 		if (type == null) {
+			if (!force) {
+				Reference reference = context.createImportedReference(
+					name,
+					ISyntaxPos.of(start.getPath(), start.getStartPosition(), reader.lastPositionEnd()));
+				reference.setFlags(Reference.TYPE);
+				type = new ValueType(name, 0, depth, ValueType.LINKED);
+				context.getTypeScope().addLocalType(type);
+				return type;
+			}
+			
 			throw createParseException(
 				start,
 				"Error when reading value type named '%s'",

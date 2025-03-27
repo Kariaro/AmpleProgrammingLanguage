@@ -43,31 +43,13 @@ i32 /*(const)*/ : COR                = cast<i32>('|') + 256 * cast<i32>('|') + 1
 i32 /*(const)*/ : SHIFT_LEFT         = cast<i32>('<') + 256 * cast<i32>('<') + 10000;
 i32 /*(const)*/ : SHIFT_RIGHT        = cast<i32>('>') + 256 * cast<i32>('>') + 10000;
 
-// token a;
-// a.type = 3;
-// a.text = "abc";
-// MEMBER_PTR [ r0 = a, r1 = "type" ]
-// STORE [r0 = a, r1 = 1, r2 = 3]
-// STORE [r0 = a, r1 = 0, r2 = "abc"]
-
-// token[] a;
-// a[0].type = 3;
-// a[0].text = "abc";
-// MEMBER_PTR [ r0 = a[0], r1 = "type", r2 = out ]
-// MOV [r0 = out, r1 = 3]
-// MEMBER_PTR [ r0 = a[0], r1 = "text", r2 = out ]
-// MOV [r0 = out, r1 = "abc"]
-
-// i32: test = a.type;
-// MEMBER_PTR [ r0 = a, r1 = "type", r2 = out ]
-// MOV [r0 = test, r1 = out]
-
+// todo - how to share this across link objects?
 struct token {
     u8[] : text;
     i32  : type;
 }
 
-fn tokenize(u8[] : buffer) : token[] {
+fn (export) tokenize(u8[] : buffer) : token[] {
     // Get size of input buffer
     u64 : buffer_size = cast<u64>(std::strlen(buffer));
     
@@ -80,7 +62,6 @@ fn tokenize(u8[] : buffer) : token[] {
     i32 : idx = 0;
     i32 : last_idx = -1;
     while (cast<u64>(idx) < buffer_size) {
-        // std::printf("idx %d, %d\n", idx, cast<i32>(buffer_size));
         if (last_idx == idx) {
             text = cast<u8[]>(std::malloc(2ul));
             text[0] = buffer[idx];
@@ -88,15 +69,6 @@ fn tokenize(u8[] : buffer) : token[] {
             std::printf("[PREVENT FREEZE] at [%s] : %d\n", text, idx);
             break; // Prevent freeze
         }
-        
-        // if (buffer_index > 0) {
-        //     std::printf("LAST TOKEN [value=\"%s\" type=%d]\n",
-        //         buffer_result[buffer_index - 1].text,
-        //         buffer_result[buffer_index - 1].type
-        //     );
-        // }
-
-        // std::printf("idx: %u\n", idx);
 
         last_idx = idx;
         u8: char = buffer[idx];
@@ -108,6 +80,7 @@ fn tokenize(u8[] : buffer) : token[] {
                 idx = idx + 1;
                 char = buffer[idx];
             }
+            /*
             text = cast<u8[]>(std::malloc(cast<u64>(idx - start + 1)));
             for (i32 : i = 0; i < idx - start; i = i + 1) {
                 text[i] = buffer[start + i];
@@ -116,6 +89,7 @@ fn tokenize(u8[] : buffer) : token[] {
             buffer_result[buffer_index].text = text;
             buffer_result[buffer_index].type = WHITESPACE;
             buffer_index = buffer_index + 1;
+            */
             continue;
         }
         if (char == '/' && buffer[idx + 1] == '/') {
@@ -124,6 +98,7 @@ fn tokenize(u8[] : buffer) : token[] {
                 idx = idx + 1;
                 char = buffer[idx];
             }
+            /*
             text = cast<u8[]>(std::malloc(cast<u64>(idx - start + 1)));
             for (i32 : i = 0; i < idx - start; i = i + 1) {
                 text[i] = buffer[start + i];
@@ -132,6 +107,7 @@ fn tokenize(u8[] : buffer) : token[] {
             buffer_result[buffer_index].text = text;
             buffer_result[buffer_index].type = WHITESPACE;
             buffer_index = buffer_index + 1;
+            */
             continue;
         }
         if (char == '/' && buffer[idx + 1] == '*') {
@@ -140,6 +116,7 @@ fn tokenize(u8[] : buffer) : token[] {
             while (buffer[idx] != '\0' && !(buffer[idx - 1] == '*' && buffer[idx] == '/')) {
                 idx = idx + 1;
             }
+            /*
             text = cast<u8[]>(std::malloc(cast<u64>(idx - start + 1)));
             for (i32 : i = 0; i < idx - start; i = i + 1) {
                 text[i] = buffer[start + i];
@@ -148,6 +125,7 @@ fn tokenize(u8[] : buffer) : token[] {
             buffer_result[buffer_index].text = text;
             buffer_result[buffer_index].type = WHITESPACE;
             buffer_index = buffer_index + 1;
+            */
             continue;
         }
 
@@ -363,27 +341,22 @@ fn tokenize(u8[] : buffer) : token[] {
         }
     }
 
-    buffer_result[buffer_index].text = ""; // EMPTY
-    buffer_result[buffer_index].type = -1; // EOF
+    buffer_result[buffer_index].text = "";
+    buffer_result[buffer_index].type = EOF;
     buffer_index = buffer_index + 1;
-
-    // u8[] result = cast<u8[]>(std::malloc(cast<u64>(buffer_index) * sizeof(token)));
-    // std::memcpy(result, cast<u8[]>(buffer_result), buffer_index * sizeof(token));
-    ret buffer_result; // cast<token[]>(result);
+    ret buffer_result;
 }
 
 fn (export) test_lexer() : i32 {
     // Needed as heap does not in lang right now
     std::init_malloc(stack_alloc<u8, 100000>(), 100000l);
 
-    u8[] : start = std::malloc(0ul);
-     
-    std::printf("ptr -> %p\n", std::malloc(0ul));
-    u8[] : test = std::read_file("std.amp");
-    token[] : tokens = tokenize(test);
-    std::printf("token ptr -> %p\n", tokens);
+    u8[]: mem_start = std::malloc(0ul);
+
+    u8[]: test = std::read_file("std.amp");
+    token[]: tokens = tokenize(test);
     
-    u8[] : end = std::malloc(0ul);
+    u8[]: mem_end = std::malloc(0ul);
 
     for (i32: i = 0; ; i = i + 1) {
         std::printf("TOKEN [value=\"%s\" type=%d]\n", tokens[i].text, tokens[i].type);
@@ -392,20 +365,6 @@ fn (export) test_lexer() : i32 {
         }
     }
 
-    std::printf("allocated -> %u\n", cast<u32>(cast<u64>(end) - cast<u64>(start)));
-    std::printf("ptr -> %p\n", std::malloc(0ul));
-    std::printf("%p\n", std::malloc(1ul));
-    std::printf("%p\n", std::malloc(1ul));
-    std::printf("%p\n", std::malloc(1ul));
-    std::printf("%p\n", std::malloc(1ul));
-    std::printf("%p\n", std::malloc(1ul));
-    
-    // for (i32: i = 0; tokens[i].type != EOF; i = i + 1) {
-    //     std::printf("TOKEN [value=\"%s\" type=%d]\n", tokens[i].text, tokens[i].type);
-    // }
-
-    u8[]: str = cast<u8[]>(std::malloc(13ul));
-    std::memcpy(str, "Hello, World\0", 13l);
-    std::printf("str ptr -> %p\n", str);
+    std::printf("allocated -> %u\n", cast<u32>(cast<u64>(mem_end) - cast<u64>(mem_start)));
     ret 0;
 }

@@ -10,7 +10,8 @@ public class Reference {
 		LABEL = 1,
 		FUNCTION = 2,
 		NAMESPACE = 3,
-		STRUCT = 4;
+		STRUCT = 4,
+		TYPE = 5;
 	
 	public static final int MODIFIERS = IMPORT | EXPORT;
 	
@@ -65,6 +66,10 @@ public class Reference {
 		return getType() == FUNCTION;
 	}
 	
+	public boolean isType() {
+		return getType() == TYPE;
+	}
+	
 	public boolean isLabel() {
 		return getType() == LABEL;
 	}
@@ -110,12 +115,13 @@ public class Reference {
 	}
 	
 	public String toSimpleString() {
-		String type = switch (flags & 0x1f) {
+		String type = switch (flags & ~MODIFIERS) {
 			case VARIABLE -> "var";
 			case LABEL -> "lab";
 			case FUNCTION -> "fun";
 			case NAMESPACE -> "ns";
 			case STRUCT -> "dat";
+			case TYPE -> "typ";
 			default -> "unk";
 		};
 		
@@ -135,9 +141,7 @@ public class Reference {
 	
 	@Override
 	public String toString() {
-		if (id < 0) {
-			return name;
-		}
+		// if (id < 0) return name;
 		
 		String mangledPart = (mangledName != null ? " " + mangledName : "");
 		return valueType + " " + getPath() + ":" + toSimpleString() + mangledPart;

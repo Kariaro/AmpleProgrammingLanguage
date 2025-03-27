@@ -1,0 +1,36 @@
+@link "compiler/lexer.amp";
+@link "std.amp";
+
+namespace ctx {
+
+fn (export) try_compile(...[]: var_files) : i32 {
+    // Needed as heap does not in lang right now
+    std::init_malloc(stack_alloc<u8, 100000>(), 100000l);
+    u8[]: mem_start = std::malloc(0ul);
+    
+    // Read files in buffer
+    u64[]: ptr = cast<u64[]>(var_files);
+    i32: file_index = 0;
+    while (ptr[file_index] != 0ul) {
+        var token[]: token_list = tokenize(std::read_file(cast<u8[]>(ptr[file_index])));
+        std::printf("token ptr -> %p\n", token_list);
+        
+        for (i32: i = 0; ; i = i + 1) {
+            std::printf("TOKEN [value=\"%s\" type=%d]\n", token_list[i].text, token_list[i].type);
+            if (token_list[i].type == -1) {
+                break;
+            }
+        }
+        
+        file_index = file_index + 1;
+    }
+    
+    u8[]: mem_end = std::malloc(0ul);
+
+    std::printf("allocated -> %u\n", cast<u32>(cast<u64>(mem_end) - cast<u64>(mem_start)));
+    std::printf("ptr -> %p\n", std::malloc(0ul));
+    ret 0;
+}
+
+
+}

@@ -23,7 +23,7 @@ public abstract class Stat {
 	public abstract boolean isEmpty();
 	
 	/**
-	 * Returns if this statement modifies memory in some way
+	 * Returns if this statement does not modify memory
 	 */
 	public abstract boolean isPure();
 	

@@ -139,6 +139,7 @@ public class LinkableStream {
 			case STR -> StrExpr.deserialize(this);
 			case UNARY -> UnaryExpr.deserialize(this);
 			case SIZEOF -> SizeofExpr.deserialize(this);
+			case BUILTIN -> BuiltinExpr.deserialize(this);
 			
 			default -> throw new RuntimeException("%s".formatted(head.type()));
 		};
