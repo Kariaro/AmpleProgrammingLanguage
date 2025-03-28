@@ -3,6 +3,15 @@ package me.hardcoded.compiler.parser.type;
 import java.util.Objects;
 
 public class Reference {
+	// TODO Simplify class
+	// public enum Kind {
+	// 	VARIABLE,
+	// 	LABEL,
+	// 	FUNCTION,
+	// 	NAMESPACE,
+	// 	TYPE
+	// };
+	
 	public static final int IMPORT = 1 << 8,
 		EXPORT = 1 << 9;
 	
@@ -10,8 +19,7 @@ public class Reference {
 		LABEL = 1,
 		FUNCTION = 2,
 		NAMESPACE = 3,
-		STRUCT = 4,
-		TYPE = 5;
+		TYPE = 4;
 	
 	public static final int MODIFIERS = IMPORT | EXPORT;
 	
@@ -74,10 +82,6 @@ public class Reference {
 		return getType() == LABEL;
 	}
 	
-	public boolean isStruct() {
-		return getType() == STRUCT;
-	}
-	
 	public boolean isImported() {
 		return (flags & IMPORT) != 0;
 	}
@@ -120,7 +124,6 @@ public class Reference {
 			case LABEL -> "lab";
 			case FUNCTION -> "fun";
 			case NAMESPACE -> "ns";
-			case STRUCT -> "dat";
 			case TYPE -> "typ";
 			default -> "unk";
 		};

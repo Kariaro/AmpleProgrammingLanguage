@@ -115,7 +115,7 @@ public class ValueType {
 	
 	public String toShortName() {
 		if (isLinked()) {
-			return "?";
+			return "?<" + name + ">" + "[]".repeat(depth);
 		}
 		
 		if (isVarargs()) {
@@ -139,7 +139,11 @@ public class ValueType {
 			default -> sb.append("unk");
 		}
 		
-		return sb.append(size).append("[]".repeat(depth)).toString();
+		if (size != 0) {
+			sb.append(size);
+		}
+		
+		return sb.append("[]".repeat(depth)).toString();
 	}
 	
 	@Override

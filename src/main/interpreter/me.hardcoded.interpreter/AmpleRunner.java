@@ -632,10 +632,17 @@ public class AmpleRunner {
 				index++;
 			}
 		} catch (Exception e) {
-			Inst inst = list.get(index);
+			var inst = list.get(index);
+			var syntaxPosition = inst.getSyntaxPosition();
+			
 			LOGGER.info(" : {}", local);
 			LOGGER.info("Failed at : {}", inst);
-			String message = ErrorUtil.createError(inst.getSyntaxPosition(), e.getMessage());
+			String message = "\nPath: (%s:%d:%d)%s".formatted(
+				syntaxPosition.getPath(),
+				syntaxPosition.getStartPosition().line() + 1,
+				syntaxPosition.getStartPosition().column() + 1,
+				ErrorUtil.createError(syntaxPosition, e.getMessage())
+			);
 			LOGGER.warn(message);
 			e.printStackTrace();
 			throw e;

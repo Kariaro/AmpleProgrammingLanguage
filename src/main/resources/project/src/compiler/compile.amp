@@ -1,28 +1,32 @@
 @link "compiler/lexer.amp";
+// @link "compiler/parser.amp";
 @link "std.amp";
 
 namespace ctx {
 
-fn (export) try_compile(...[]: var_files) : i32 {
+fn (export) try_compile(i32: file_count, ...[]: var_files) : i32 {
     // Needed as heap does not in lang right now
     std::init_malloc(stack_alloc<u8, 100000>(), 100000l);
     u8[]: mem_start = std::malloc(0ul);
     
     // Read files in buffer
     u64[]: ptr = cast<u64[]>(var_files);
-    i32: file_index = 0;
-    while (ptr[file_index] != 0ul) {
-        var token[]: token_list = tokenize(std::read_file(cast<u8[]>(ptr[file_index])));
+    for (i32: file_index = 0; file_index < file_count; file_index = file_index + 1) {
+        // std::printf("%p ptr %p\n", ptr[file_index], __builtin_address(ptr[file_index]));
+        
+        token[]: token_list = tokenize(std::read_file(cast<u8[]>(ptr[file_index])));
         std::printf("token ptr -> %p\n", token_list);
         
-        for (i32: i = 0; ; i = i + 1) {
+        for (i32: i = 0; token_list[i].type != -1; i = i + 1) {
             std::printf("TOKEN [value=\"%s\" type=%d]\n", token_list[i].text, token_list[i].type);
-            if (token_list[i].type == -1) {
-                break;
-            }
         }
         
-        file_index = file_index + 1;
+        // todo - function definitions do not get mangled properly yet for imported types to work
+        // parse_context[] : ctx = cast<parse_context[]>(std::malloc(sizeof(parse_context)));
+        // stat[] : stat_list = parse(token_list, ctx);
+        
+        // Print stat
+        print_stat(stat_list, 0);
     }
     
     u8[]: mem_end = std::malloc(0ul);

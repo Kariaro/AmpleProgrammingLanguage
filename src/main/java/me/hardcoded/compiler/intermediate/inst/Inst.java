@@ -84,7 +84,8 @@ public class Inst {
 			sb.append("%-12s ".formatted(data));
 			
 			List<String> annotators = switch (opcode) {
-				case MOV -> List.of("dst", "src");
+				case MOV, ADD, SUB -> List.of("dst", "src");
+				case CALL -> List.of("dst", "name");
 				case MEMBER_PTR -> List.of("dst", "src", "index", "memberIndex");
 				case STORE -> List.of("ptr", "index", "src");
 				case LOAD -> List.of("dst", "ptr", "index");

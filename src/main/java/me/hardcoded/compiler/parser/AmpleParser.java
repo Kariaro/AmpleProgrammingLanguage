@@ -198,7 +198,7 @@ public class AmpleParser {
 			return replStatements();
 		}
 		
-		if (reader.value().equals("var") || isType()) {
+		if (isVarStatement()) {
 			return varStatement(false);
 		}
 		
@@ -427,7 +427,7 @@ public class AmpleParser {
 		String structName = reader.value();
 		reader.advance();
 		
-		Reference reference = context.createEmptyReference(structName);
+		Reference reference = context.createTypeReference(structName, structNameSyntax);
 		
 		context.getLocalScope().pushBlock();
 		context.getLocalScope().pushLocals();
@@ -436,11 +436,8 @@ public class AmpleParser {
 		StructData structData = new StructData(structName);
 		ValueType valueType = new ValueType(structName, 0, 0, ValueType.STRUCT, structData);
 		reference.setValueType(valueType);
-		reference.setFlags(Reference.STRUCT);
+		reference.setFlags(Reference.TYPE);
 		reference.setModifiers(Reference.EXPORT);
-		
-		// Always set reference position
-		context.setReferencePosition(reference, structNameSyntax);
 		
 		List<VarStat> variables = new ArrayList<>();
 		List<FuncStat> functions = new ArrayList<>();
@@ -452,21 +449,13 @@ public class AmpleParser {
 		reader.advance();
 		
 		while (reader.type() != Token.Type.EOF && reader.type() != Token.Type.R_CURLY) {
-			if (isType()) {
+			if (isVarStatement()) {
 				var varStat = structVarStatement();
 				structData.addMember(
 					varStat.getReference().getValueType(),
 					varStat.getReference().getName()
 				);
 				variables.add(varStat);
-				
-				// Added for type hinting
-				Reference var_type_reference = context.createEmptyReference(structName + "." + varStat.getReference().getName());
-				var_type_reference.setValueType(varStat.getReference().getValueType());
-				var_type_reference.setExported(true);
-				var_type_reference.setFlags(Reference.TYPE);
-				var_type_reference.setModifiers(Reference.EXPORT);
-				context.setReferencePosition(var_type_reference, varStat.getSyntaxPosition());
 			} else if (isFunc()) {
 				functions.add(funcStatement());
 			} else {
@@ -534,19 +523,8 @@ public class AmpleParser {
 			}
 		}
 		
-		if (reader.value().equals("var")) {
+		if (isVarStatement()) {
 			return varStatement(true);
-		}
-		
-		ParseException varException = null;
-		try {
-			reader.mark();
-			if (isType()) {
-				return varStatement(true);
-			}
-		} catch (ParseException e) {
-			varException = e;
-			reader.reset();
 		}
 		
 		Stat stat = switch (reader.type()) {
@@ -716,11 +694,7 @@ public class AmpleParser {
 	private VarStat varStatement(boolean localVariable) throws ParseException {
 		Position startPos = reader.position();
 		
-		if (reader.value().equals("var")) {
-			reader.advance();
-		}
-		
-		ValueType type = readType(false);
+		ValueType type = readType(true);
 		tryMatchOrError(Token.Type.COLON);
 		reader.advance();
 		
@@ -756,7 +730,7 @@ public class AmpleParser {
 		Position startPos = reader.position();
 		
 		ISyntaxPos typeSyntaxPosition = reader.syntaxPosition();
-		ValueType type = readType(false);
+		ValueType type = readType(true);
 		if (type == null) {
 			throw createParseException(typeSyntaxPosition, "Unknown type");
 		}
@@ -796,10 +770,6 @@ public class AmpleParser {
 		return new ExprParser(this, context, reader).parse();
 	}
 	
-	boolean isType() {
-		return context.getTypeScope().getType(reader.value(), 0) != null;
-	}
-	
 	boolean isFunc() {
 		return reader.type() == Token.Type.FUNC;
 	}
@@ -815,14 +785,37 @@ public class AmpleParser {
 		};
 	}
 	
-	ValueType readType(boolean force) throws ParseException {
+	boolean isVarStatement() {
+		try {
+			reader.mark();
+			// Name must be identifier
+			tryMatchOrError(Token.Type.IDENTIFIER);
+			reader.advance();
+			// Check how many arrays or pointer depth
+			while (reader.type() == Token.Type.L_SQUARE) {
+				reader.advance();
+				tryMatchOrError(Token.Type.R_SQUARE);
+				reader.advance();
+			}
+			// Var statement must have colon after type
+			tryMatchOrError(Token.Type.COLON);
+			return true;
+		} catch (ParseException ignore) {
+			return false;
+		} finally {
+			reader.reset();
+		}
+	}
+	
+	ValueType readType(boolean allowImported) throws ParseException {
 		ISyntaxPos start = reader.syntaxPosition();
+		
+		// TODO: Allow namespaces on value types
 		String name = reader.value();
 		reader.advance();
 		int depth = 0;
 		while (reader.type() == Token.Type.L_SQUARE) {
 			reader.advance();
-			// TODO: Allow size to be specified
 			tryMatchOrError(Token.Type.R_SQUARE);
 			reader.advance();
 			depth++;
@@ -830,12 +823,11 @@ public class AmpleParser {
 		
 		ValueType type = context.getTypeScope().getType(name, depth);
 		if (type == null) {
-			if (!force) {
-				Reference reference = context.createImportedReference(
+			if (allowImported) {
+				type = context.createImportedType(
 					name,
-					ISyntaxPos.of(start.getPath(), start.getStartPosition(), reader.lastPositionEnd()));
-				reference.setFlags(Reference.TYPE);
-				type = new ValueType(name, 0, depth, ValueType.LINKED);
+					ISyntaxPos.of(start.getPath(), start.getStartPosition(), reader.lastPositionEnd())
+				).createArray(depth);
 				context.getTypeScope().addLocalType(type);
 				return type;
 			}
@@ -846,6 +838,7 @@ public class AmpleParser {
 				name
 			);
 		}
+		
 		return type;
 	}
 	

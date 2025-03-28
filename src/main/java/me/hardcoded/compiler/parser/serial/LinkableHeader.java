@@ -200,9 +200,9 @@ class LinkableHeader {
 		int depth = readVarInt(in);
 		int size = readVarInt(in);
 		int members = readVarInt(in);
-		StructData data = null;
+		StructData data = members > 0 ? new StructData(name) : null;
+		ValueType valueType = new ValueType(name, size, depth, flags, data);
 		if (members > 0) {
-			data = new StructData(name);
 			for (int i = 0; i < members; i++) {
 				var member_name = deserializeString(in);
 				var member_type = readValueType(in);
@@ -210,7 +210,7 @@ class LinkableHeader {
 			}
 		}
 		
-		return new ValueType(name, size, depth, flags, data);
+		return valueType;
 	}
 	
 	private Namespace readNamespace(DataInputStream in) throws IOException {
@@ -256,6 +256,7 @@ class LinkableHeader {
 			var members = data.getMembers();
 			writeVarInt(members.size(), out);
 			for (var member : members) {
+				// Only allow direct, recursion?
 				serializeString(member.getKey(), out);
 				writeValueType(member.getValue(), out);
 			}

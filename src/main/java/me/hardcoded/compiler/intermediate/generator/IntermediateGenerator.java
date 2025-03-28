@@ -18,6 +18,8 @@ import java.util.*;
 public class IntermediateGenerator {
 	private static final Logger LOGGER = LogManager.getLogger(IntermediateGenerator.class);
 	
+	public static boolean DEBUG = false;
+	
 	private static final Namespace NONE_NAMESPACE = new Namespace();
 	private static final InstRef NONE = new InstRef("<invalid>", NONE_NAMESPACE, Primitives.NONE, -1, 0);
 	
@@ -40,7 +42,6 @@ public class IntermediateGenerator {
 	
 	public void reset() {
 		wrappedReferences.clear();
-		// Clear export map
 		exportMap.clear();
 	}
 	
@@ -100,12 +101,14 @@ public class IntermediateGenerator {
 					&& expr.getOperation() == Operation.MEMBER) {
 					ValueType valueType = expr.getRight().getType();
 					if (valueType.isLinked()) {
-						System.out.println(ParseUtil.stat(expr));
-						System.out.println(valueType);
-						System.out.println(exportMap);
-						System.out.println(valueType.getName());
-						System.out.println();
-						valueType = exportMap.getType(valueType).getValueType();
+						ValueType leftType = expr.getLeft().getType();
+						if (leftType.isLinked()) {
+							leftType = exportMap.getType(leftType).getValueType();
+						}
+						
+						if (leftType.isStruct()) {
+							valueType = leftType.getStructData().getMember(valueType.getName());
+						}
 					}
 					
 					InstRef holder = createDataReference(".member_load", valueType);
@@ -235,7 +238,6 @@ public class IntermediateGenerator {
 			));
 		}
 		
-		
 		Inst functionLabel = new Inst(Opcode.LABEL, stat.getSyntaxPosition())
 			.addParam(new InstParam.Ref(reference));
 		procedure.addInst(functionLabel);
@@ -312,6 +314,8 @@ public class IntermediateGenerator {
 	private InstRef generateVarStat(VarStat stat, Procedure procedure) throws InstException {
 		InstRef holder = wrapReference(stat.getReference());
 		InstRef value = specialStat(stat.getValue(), procedure, HandleType.MEMBER_LOAD);
+		// TODO : Is this allowed?
+		holder.setValueType(holder.getValueType().createArray(stat.getReference().getValueType().getDepth()));
 		
 		procedure.addInst(new Inst(Opcode.MOV, stat.getSyntaxPosition())
 			.addParam(new InstParam.Ref(holder))
@@ -323,7 +327,7 @@ public class IntermediateGenerator {
 		}
 		
 		if (!holder.getValueType().equals(value.getValueType())) {
-			throw new InstException(ErrorUtil.createFullError(stat.getValue().getSyntaxPosition(),
+			throw new InstException(ErrorUtil.createFullError(stat.getSyntaxPosition(),
 				"Left and Right side does not match (%s != %s)".formatted(
 					holder.getValueType().toShortName(),
 					value.getValueType().toShortName()
@@ -424,20 +428,19 @@ public class IntermediateGenerator {
 			return generateMemberExpr(expr, procedure);
 		}
 		
-		Opcode opcode = getBinaryOpcode(expr.getOperation(), expr.getType().isUnsigned());
 		InstRef left = specialStat(expr.getLeft(), procedure, HandleType.MEMBER_LOAD);
 		InstRef right = specialStat(expr.getRight(), procedure, HandleType.MEMBER_LOAD);
 		
-		InstRef holder = createDataReference(".binary", expr.getType());
+		InstRef holder = createDataReference(".binary", left.getValueType());
 		procedure.addInst(new Inst(Opcode.MOV, expr.getLeft().getSyntaxPosition())
 			.addParam(new InstParam.Ref(holder))
 			.addParam(new InstParam.Ref(left)));
 		
+		Opcode opcode = getBinaryOpcode(expr.getOperation(), left.getValueType().isUnsigned());
 		procedure.addInst(new Inst(opcode, expr.getSyntaxPosition())
 			.addParam(new InstParam.Ref(holder))
 			.addParam(new InstParam.Ref(right)));
 		
-		System.out.println("c " + left);
 		if (!left.getValueType().equals(right.getValueType())) {
 			throw new InstException(ErrorUtil.createFullError(expr.getSyntaxPosition(),
 				"Left and Right side does not match (%s != %s)".formatted(
@@ -473,12 +476,11 @@ public class IntermediateGenerator {
 			.addParam(new InstParam.Ref(holder))
 			.addParam(new InstParam.Ref(caller));
 		
-		for (InstParam param : params) {
+		for (InstParam.Ref param : params) {
 			callInst.addParam(param);
 		}
 		
 		procedure.addInst(callInst);
-		
 		return holder;
 	}
 	
@@ -785,6 +787,8 @@ public class IntermediateGenerator {
 	}
 	
 	private InstRef wrapReference(Reference reference, int id) {
+		ValueType resultValueType = null;
+		
 		if (reference.isImported() || reference.isExported()) {
 			Reference result = exportMap.getReference(reference);
 			if (result == null) {
@@ -793,28 +797,14 @@ public class IntermediateGenerator {
 			
 			reference = result;
 		} else {
-			System.out.println(reference.getValueType() + ", " + reference);
+			// If the references value type is linked we should try find it in the export map
 			if (reference.getValueType().isLinked()) {
-				Reference result = exportMap.getType(reference.getValueType());
-				if (result == null) {
+				Reference result_do_not_use = exportMap.getType(reference.getValueType());
+				if (result_do_not_use == null) {
 					throw new RuntimeException("Linked reference was not able to find '" + reference + "'");
 				}
-				
-				// Make sure array size is kept
-				ValueType valueType = result.getValueType();
-				reference = new Reference(
-					result.getName(),
-					result.getNamespace(),
-					new ValueType(
-						valueType.getName(),
-						valueType.getSize(),
-						reference.getValueType().getDepth(),
-						valueType.getFlags(),
-						valueType.getStructData()
-					),
-					result.getId(),
-					result.getFlags()
-				);
+				ValueType result = result_do_not_use.getValueType();
+				resultValueType = result.createArray(result.getDepth());
 			}
 		}
 		
@@ -823,7 +813,13 @@ public class IntermediateGenerator {
 			return result;
 		}
 		
-		result = new InstRef(reference.getName(), reference.getNamespace(), reference.getValueType(), id, 0);
+		result = new InstRef(
+			reference.getName(),
+			reference.getNamespace(),
+			Objects.requireNonNullElse(resultValueType, reference.getValueType()),
+			id,
+			0
+		);
 		result.setType(reference.getType());
 		result.setMangledName(reference.getMangledName());
 		wrappedReferences.put(reference, result);

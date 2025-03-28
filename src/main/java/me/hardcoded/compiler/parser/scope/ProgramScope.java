@@ -4,11 +4,9 @@ import me.hardcoded.compiler.impl.ISyntaxPos;
 import me.hardcoded.compiler.parser.type.Namespace;
 import me.hardcoded.compiler.parser.type.Primitives;
 import me.hardcoded.compiler.parser.type.Reference;
+import me.hardcoded.compiler.parser.type.ValueType;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ProgramScope {
 	private final NamespaceScope namespaceScope;
@@ -73,6 +71,25 @@ public class ProgramScope {
 		}
 	}
 	
+	public ValueType createImportedType(String name, ISyntaxPos syntaxPos) {
+		Reference reference = importedReference.get(name);
+		if (reference != null) {
+			return reference.getValueType();
+		}
+		
+		reference = new Reference(
+			name,
+			namespaceScope.getNamespace(),
+			new ValueType(name, 0, 0, ValueType.LINKED),
+			count++,
+			Reference.IMPORT | Reference.TYPE
+		);
+		importedReference.put(name, reference);
+		allReferences.add(reference);
+		firstReferencePosition.put(reference, syntaxPos);
+		return reference.getValueType();
+	}
+	
 	public Reference createImportedReference(String name, ISyntaxPos syntaxPos) {
 		Reference reference = importedReference.get(name);
 		if (reference != null) {
@@ -86,8 +103,26 @@ public class ProgramScope {
 		return reference;
 	}
 	
+	public Reference createTypeReference(String name, ISyntaxPos syntaxPos) {
+		Reference reference = new Reference(name, namespaceScope.getNamespace(), Primitives.NONE, count++, Reference.TYPE);
+		importedReference.put(name, reference);
+		allReferences.add(reference);
+		firstReferencePosition.put(reference, syntaxPos);
+		return reference;
+	}
+	
 	public Reference createEmptyReference(String name) {
-		Reference reference = new Reference(name, namespaceScope.getNamespace(), Primitives.NONE, -1 - (tempCount++), 0);
+		return createEmptyReference(name, namespaceScope.getNamespace());
+	}
+	
+	public Reference createEmptyReference(String name, Namespace namespace) {
+		Reference reference = new Reference(
+			name,
+			Objects.requireNonNull(namespace),
+			Primitives.NONE,
+			-1 - (tempCount++),
+			0
+		);
 		allReferences.add(reference);
 		return reference;
 	}

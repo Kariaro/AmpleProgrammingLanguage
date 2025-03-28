@@ -35,6 +35,31 @@ public class ExportMap {
 	}
 	
 	public boolean add(LinkableObject obj) throws ParseException {
+		// First link all variables and types
+		for (ReferenceSyntax referenceSyntax : obj.getExportedReferences()) {
+			Reference reference = referenceSyntax.getReference();
+			
+			if (reference.isVariable() && variables.put(reference.getName(), reference) != null) {
+				throw new ParseException(ErrorUtil.createFullError(referenceSyntax.getSyntaxPosition(),
+					"The project already exports a variable '%s'".formatted(
+						reference.getName()
+					)
+				));
+			}
+			
+			if (reference.isType()) {
+				System.out.println("REFERENCED - " + reference);
+			}
+			if (reference.isType() && types.put(reference.getName(), reference) != null) {
+				throw new ParseException(ErrorUtil.createFullError(referenceSyntax.getSyntaxPosition(),
+					"The project already exports a type '%s'".formatted(
+						reference.getName()
+					)
+				));
+			}
+		}
+		
+		// Calculate functions, some might need to be linked as well
 		for (ReferenceSyntax referenceSyntax : obj.getExportedReferences()) {
 			Reference reference = referenceSyntax.getReference();
 			
@@ -48,8 +73,11 @@ public class ExportMap {
 					));
 				}
 				
+				// TODO: We need to demangle with the context to resolve imported types
+				
 				if (!functions.put(reference)) {
 					Reference blocker = functions.getBlocker(reference);
+					System.out.println(blocker + "," + reference);
 					throw new ParseException(ErrorUtil.createFullError(referenceSyntax.getSyntaxPosition(),
 						"The project already exports a function '%s' (%s)".formatted(
 							reference.getName(),
@@ -57,25 +85,6 @@ public class ExportMap {
 						)
 					));
 				}
-			}
-			
-			if (reference.isVariable() && variables.put(reference.getName(), reference) != null) {
-				throw new ParseException(ErrorUtil.createFullError(referenceSyntax.getSyntaxPosition(),
-					"The project already exports a variable '%s'".formatted(
-						reference.getName()
-					)
-				));
-			}
-			
-			if (reference.isType() || reference.isStruct()) {
-				System.out.println("REFERENCED - " + reference);
-			}
-			if ((reference.isType() || reference.isStruct()) && types.put(reference.getName(), reference) != null) {
-				throw new ParseException(ErrorUtil.createFullError(referenceSyntax.getSyntaxPosition(),
-					"The project already exports a type '%s'".formatted(
-						reference.getName()
-					)
-				));
 			}
 		}
 		
@@ -91,7 +100,7 @@ public class ExportMap {
 			return variables.get(reference.getName());
 		}
 		
-		if (reference.isType() || reference.isStruct() || reference.getValueType().isLinked()) {
+		if (reference.isType() || reference.getValueType().isLinked()) {
 			return types.get(reference.getName());
 		}
 		

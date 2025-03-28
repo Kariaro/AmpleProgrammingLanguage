@@ -1,0 +1,88 @@
+@link "std.amp";
+
+i32 /*(const)*/ : EOF                = -1;
+i32 /*(const)*/ : WHITESPACE         = 0;
+i32 /*(const)*/ : IDENTIFIER         = 1;
+i32 /*(const)*/ : STRING             = 2;
+i32 /*(const)*/ : CHARACTER          = 3;
+i32 /*(const)*/ : NUM_U64            = 4;
+i32 /*(const)*/ : NUM_U32            = 5;
+i32 /*(const)*/ : NUM_I64            = 6;
+i32 /*(const)*/ : NUM_I32            = 7;
+i32 /*(const)*/ : VARARGS            = 8;
+i32 /*(const)*/ : DOT                = cast<i32>('.') + 10000;
+i32 /*(const)*/ : L_PARAM            = cast<i32>('(') + 10000;
+i32 /*(const)*/ : R_PARAM            = cast<i32>(')') + 10000;
+i32 /*(const)*/ : L_CURLY            = cast<i32>('{') + 10000;
+i32 /*(const)*/ : R_CURLY            = cast<i32>('}') + 10000;
+i32 /*(const)*/ : L_BRACK            = cast<i32>('[') + 10000;
+i32 /*(const)*/ : R_BRACK            = cast<i32>(']') + 10000;
+i32 /*(const)*/ : COLON              = cast<i32>(':') + 10000;
+i32 /*(const)*/ : SEMICOLON          = cast<i32>(';') + 10000;
+i32 /*(const)*/ : ASSIGN             = cast<i32>('=') + 10000;
+i32 /*(const)*/ : NOT                = cast<i32>('!') + 10000;
+i32 /*(const)*/ : NOR                = cast<i32>('~') + 10000;
+i32 /*(const)*/ : XOR                = cast<i32>('^') + 10000;
+i32 /*(const)*/ : AND                = cast<i32>('&') + 10000;
+i32 /*(const)*/ : OR                 = cast<i32>('|') + 10000;
+i32 /*(const)*/ : MINUS              = cast<i32>('-') + 10000;
+i32 /*(const)*/ : PLUS               = cast<i32>('+') + 10000;
+i32 /*(const)*/ : MUL                = cast<i32>('*') + 10000;
+i32 /*(const)*/ : DIV                = cast<i32>('/') + 10000;
+i32 /*(const)*/ : MOD                = cast<i32>('%') + 10000;
+i32 /*(const)*/ : LESS_THAN          = cast<i32>('<') + 10000;
+i32 /*(const)*/ : MORE_THAN          = cast<i32>('>') + 10000;
+i32 /*(const)*/ : COMMA              = cast<i32>(',') + 10000;
+i32 /*(const)*/ : NAMESPACE_OPERATOR = cast<i32>(':') + 256 * cast<i32>(':') + 10000;
+i32 /*(const)*/ : EQUALS             = cast<i32>('=') + 256 * cast<i32>('=') + 10000;
+i32 /*(const)*/ : NOT_EQUALS         = cast<i32>('!') + 256 * cast<i32>('=') + 10000;
+i32 /*(const)*/ : LESS_EQUAL         = cast<i32>('<') + 256 * cast<i32>('=') + 10000;
+i32 /*(const)*/ : MORE_EQUAL         = cast<i32>('>') + 256 * cast<i32>('=') + 10000;
+i32 /*(const)*/ : CAND               = cast<i32>('&') + 256 * cast<i32>('&') + 10000;
+i32 /*(const)*/ : COR                = cast<i32>('|') + 256 * cast<i32>('|') + 10000;
+i32 /*(const)*/ : SHIFT_LEFT         = cast<i32>('<') + 256 * cast<i32>('<') + 10000;
+i32 /*(const)*/ : SHIFT_RIGHT        = cast<i32>('>') + 256 * cast<i32>('>') + 10000;
+
+i32 /*(const)*/ : STAT_PROG          = 0;
+i32 /*(const)*/ : STAT_VAR           = 1;
+
+struct stat {
+    // the type of stat
+    i32  : type;
+    i32  : data;
+    i32  : len;
+    u8[] : val; // stat list
+}
+
+struct parse_context {
+    // difficult qwq
+    
+}
+
+fn add_element(stat[] : parent, stat[] : child) {
+    i32 : idx = parent[0].len;
+    cast<stat[]>(parent[0].val)[idx] = child;
+    parent[0].len = idx + 1;
+}
+
+fn (export) parse(token[] : tokens, parse_context[] : ctx) : stat[] {
+    stat[] : prog = cast<stat[]>(std::malloc(sizeof(stat)));
+    prog[0].type = STAT_PROG;
+    prog[0].data = 0;
+    prog[0].len  = 0;
+    prog[0].val  = cast<u8[]>(std::malloc(sizeof(stat) * 256));
+    
+    ret prog;
+}
+
+fn (export) print_stat(stat[] : val, i32: indent) {
+    u8[] : indent_str = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
+    indent_str = cast<u8[]>(cast<u64>(indent_str) + cast<u64>(31 - indent));
+    
+    if (val[0].type == STAT_PROG) {
+        std::printf("%sprog\n", indent_str);
+        for (i32: i = 0; i < val[0].len; i = i + 1) {
+            print_stat(val[0].val[i], indent);
+        }
+    }
+}

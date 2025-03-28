@@ -134,20 +134,12 @@ public class ExprParser {
 					case MEMBER -> {
 						// Must have an identifier
 						parser.tryMatchOrError(Token.Type.IDENTIFIER);
-						// TODO - Linkability
-						// if (!left.getType().isStruct()) {
-						// 	throw parser.createParseException(reader.syntaxPosition(),
-						// 		"Cannot get member of non struct type - %s".formatted(left.getType())
-						// 	);
-						// }
 						ISyntaxPos memberSyntaxPos = reader.syntaxPosition();
 						String memberName = reader.value();
 						reader.advance();
 						
 						// Check if member exists in struct 
 						ValueType memberType;
-						Reference reference;
-						String referenceName = left.getType().getName() + "." + memberName;
 						if (left.getType().isStruct()) {
 							StructData type = left.getType().getStructData();
 							if (type == null) {
@@ -160,14 +152,13 @@ public class ExprParser {
 									"The struct '%s' does not have a member named '%s'".formatted(type.getName(), memberName)
 								);
 							}
-							reference = context.createEmptyReference(referenceName);
 							memberType = type.getMember(memberName);
 						} else {
-							reference = context.createImportedReference(referenceName, memberSyntaxPos);
-							reference.setFlags(Reference.TYPE);
-							memberType = new ValueType(referenceName, 0, 0, ValueType.LINKED);
+							memberType = new ValueType(memberName, 0, 0, ValueType.LINKED);
 						}
 						
+						Reference reference = context.createEmptyReference(memberName, new Namespace());
+						reference.setFlags(Reference.TYPE);
 						reference.setValueType(memberType);
 						NameExpr right = new NameExpr(memberSyntaxPos, reference);
 						left = new BinaryExpr(ISyntaxPos.of(

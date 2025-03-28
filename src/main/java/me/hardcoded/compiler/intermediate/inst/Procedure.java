@@ -1,5 +1,7 @@
 package me.hardcoded.compiler.intermediate.inst;
 
+import me.hardcoded.compiler.intermediate.generator.IntermediateGenerator;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,6 +44,9 @@ public class Procedure {
 	}
 	
 	public void addInst(Inst inst) {
+		if (IntermediateGenerator.DEBUG) {
+			System.out.println("> " + inst);
+		}
 		list.add(inst);
 	}
 	
