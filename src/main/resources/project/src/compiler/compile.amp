@@ -26,7 +26,7 @@ fn (export) try_compile(i32: file_count, ...[]: var_files) : i32 {
         // stat[] : stat_list = parse(token_list, ctx);
         
         // Print stat
-        print_stat(stat_list, 0);
+        // print_stat(stat_list, 0);
     }
     
     u8[]: mem_end = std::malloc(0ul);

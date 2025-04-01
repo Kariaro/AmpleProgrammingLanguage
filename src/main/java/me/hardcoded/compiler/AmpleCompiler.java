@@ -59,6 +59,11 @@ public class AmpleCompiler {
 			}
 			
 			LinkableObject obj = new AmpleParser(ampleConfig).fromFile(file);
+			
+			LOGGER.debug("");
+			LOGGER.debug("References:");
+			LOGGER.debug("  imported = {}", obj.getImportedReferences());
+			LOGGER.debug("  exported = {}", obj.getExportedReferences());
 			if (cacheFailure != null) {
 				LOGGER.warn(" - [SUCCESS - CACHE FAILED] {}", file, cacheFailure);
 			} else {

@@ -75,13 +75,20 @@ public class ExportMap {
 				
 				// TODO: We need to demangle with the context to resolve imported types
 				
+				System.out.println("Adding " + reference);
 				if (!functions.put(reference)) {
 					Reference blocker = functions.getBlocker(reference);
+					String mangled = null;
+					if (blocker != null) {
+						mangled = AmpleMangler.demangleFunction(blocker.getMangledName()).toString();
+					}
 					System.out.println(blocker + "," + reference);
+					System.out.println(functions);
+					System.out.println(mangledName);
 					throw new ParseException(ErrorUtil.createFullError(referenceSyntax.getSyntaxPosition(),
 						"The project already exports a function '%s' (%s)".formatted(
 							reference.getName(),
-							AmpleMangler.demangleFunction(blocker.getMangledName())
+							mangled
 						)
 					));
 				}
@@ -143,7 +150,7 @@ public class ExportMap {
 				if (demangled != null) {
 					try {
 						if (reference.isFunction()) {
-							demangled = AmpleMangler.demangleType(demangled).toString();
+							demangled = AmpleMangler.demangleFunction(demangled).toString();
 						} else if (reference.isVariable()) {
 							demangled = AmpleMangler.demangleType(demangled).toString();
 						}

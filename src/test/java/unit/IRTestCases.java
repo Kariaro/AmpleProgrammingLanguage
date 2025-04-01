@@ -1,7 +1,7 @@
 package unit;
 
-import org.junit.Test;
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+
 
 // TODO: Fix test cases
 @SuppressWarnings("unused")

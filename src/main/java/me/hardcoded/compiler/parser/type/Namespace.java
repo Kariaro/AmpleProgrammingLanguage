@@ -31,6 +31,10 @@ public class Namespace {
 		return String.join("::", parts);
 	}
 	
+	public String[] getParts() {
+		return parts;
+	}
+	
 	@Override
 	public String toString() {
 		if (parts.length == 0) {

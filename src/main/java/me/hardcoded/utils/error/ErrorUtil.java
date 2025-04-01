@@ -79,7 +79,10 @@ public class ErrorUtil {
 		StringBuilder sb = new StringBuilder();
 		
 		Position position = error.getStartPosition();
-		sb.append("(").append(error.getPath()).append(") (line: ").append(position.line() + 1).append(", column: ").append(position.column() + 1).append("): ")
+		sb.append("(").append(error.getPath())
+			.append(":").append(position.line() + 1)
+			.append(":").append(position.column() + 1)
+			.append(") (line: ").append(position.line() + 1).append(", column: ").append(position.column() + 1).append("): ")
 			.append(createError(error, content, message));
 		
 		return sb.toString();

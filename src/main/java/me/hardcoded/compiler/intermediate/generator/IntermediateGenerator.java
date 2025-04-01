@@ -235,7 +235,7 @@ public class IntermediateGenerator {
 					stat.getSyntaxPosition().getStartPosition()
 				),
 				"Could not resolve function: " + e.getMessage()
-			));
+			), e);
 		}
 		
 		Inst functionLabel = new Inst(Opcode.LABEL, stat.getSyntaxPosition())
@@ -832,7 +832,11 @@ public class IntermediateGenerator {
 	
 	private InstRef wrapFunctionReference(Reference reference, List<Reference> parameters, int id) {
 		if (reference.isImported() || reference.isExported()) {
+			Reference tmp = reference;
 			reference = exportMap.getMangledFunctionReference(reference, parameters);
+			if (reference == null) {
+				throw new RuntimeException("Failed to find the function " + tmp.getName() + ", " + parameters);
+			}
 		}
 		
 		InstRef result = wrappedReferences.get(reference);

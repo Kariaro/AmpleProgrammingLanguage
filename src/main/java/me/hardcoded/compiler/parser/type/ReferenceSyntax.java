@@ -23,6 +23,10 @@ public class ReferenceSyntax {
 	
 	@Override
 	public String toString() {
-		return reference.toString();
+		if (reference.getMangledName() == null) {
+			return reference.toString();
+		}
+		
+		return reference.getMangledName() + " (" + reference.toSimpleString() + ")";
 	}
 }

@@ -114,11 +114,6 @@ public class AmpleParser {
 			}
 		}
 		
-		LOGGER.debug("");
-		LOGGER.debug("References:");
-		LOGGER.debug("  imported = {}", importedReferences);
-		LOGGER.debug("  exported = {}", exportedReferences);
-		
 		AmpleCache.putFileSource(currentFile, new String(bytes));
 		String fileChecksum = AmpleCache.getDataChecksum(bytes);
 		LinkableObject linkableObject = new LinkableObject(currentFile, fileChecksum, program, importedFiles, exportedReferences, importedReferences);
@@ -230,26 +225,6 @@ public class AmpleParser {
 		MutableSyntaxImpl mutableSyntax = new MutableSyntaxImpl(currentFile.getAbsolutePath(), reader.position(), null);
 		reader.advance();
 		
-		//		int modifiers = 0;
-		//		if (reader.type() == Token.Type.L_PAREN) {
-		//			reader.advance();
-		//
-		//			while (reader.type() != Token.Type.R_PAREN) {
-		//				switch (reader.type()) {
-		//					case EXPORT -> {
-		//						modifiers |= Reference.EXPORT;
-		//					}
-		//					default -> {
-		//						throw createParseException(reader.syntaxPosition(), "Invalid namespace modifier '%s'", reader.value());
-		//					}
-		//				}
-		//				reader.advance();
-		//			}
-		//
-		//			tryMatchOrError(Token.Type.R_PAREN);
-		//			reader.advance();
-		//		}
-		
 		int namespaceCount = 0;
 		do {
 			tryMatchOrError(Token.Type.IDENTIFIER);
@@ -275,13 +250,6 @@ public class AmpleParser {
 		
 		while (reader.type() != Token.Type.R_CURLY) {
 			Stat element = parseStatement(false);
-			
-			//			// Apply modifiers
-			//			if ((modifiers & Reference.EXPORT) != 0) {
-			//				if (element instanceof FuncStat funcStat) {
-			//					funcStat.getReference().setExported(true);
-			//				}
-			//			}
 			
 			// Remove empty statements
 			if (!element.isEmpty()) {
@@ -343,9 +311,6 @@ public class AmpleParser {
 		List<Reference> parameters = new ArrayList<>();
 		while (reader.type() != Token.Type.R_PAREN) {
 			ValueType type = readType(true);
-			if (type == null) {
-				throw createParseException("Missing type '%s' was not a type", reader.value());
-			}
 			
 			tryMatchOrError(Token.Type.COLON);
 			reader.advance();
@@ -380,8 +345,6 @@ public class AmpleParser {
 		}
 		
 		Reference reference = context.getFunctionScope().addFunction(returnType, context.getNamespaceScope().getNamespace(), functionName, parameters);
-		
-		// System.out.println(functionName + ", " + returnType + ", " + parameters + " :: " + (reference != null ? reference.getMangledName() : null));
 		if (reference == null) {
 			Reference blocker = context.getFunctionScope().getFunctionBlocking(context.getNamespaceScope().getNamespace(), functionName, parameters);
 			ISyntaxPos syntaxPosition = context.getFirstReferencePosition(blocker);
@@ -578,14 +541,11 @@ public class AmpleParser {
 		reader.advance();
 		
 		List<CompilerStat.Part> parts = new ArrayList<>();
-		
-		// TODO: Read strings until R_PAREN
 		while (reader.type() != Token.Type.R_PAREN) {
 			tryMatchOrError(Token.Type.STRING);
 			
 			Position partStartPos = reader.position();
 			
-			// TODO: Create a utility method for this
 			String command = reader.value();
 			command = command.substring(1, command.length() - 1);
 			reader.advance();
@@ -728,12 +688,7 @@ public class AmpleParser {
 	
 	private VarStat structVarStatement() throws ParseException {
 		Position startPos = reader.position();
-		
-		ISyntaxPos typeSyntaxPosition = reader.syntaxPosition();
 		ValueType type = readType(true);
-		if (type == null) {
-			throw createParseException(typeSyntaxPosition, "Unknown type");
-		}
 		
 		tryMatchOrError(Token.Type.COLON);
 		reader.advance();

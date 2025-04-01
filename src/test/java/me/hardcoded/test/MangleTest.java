@@ -6,11 +6,12 @@ import me.hardcoded.compiler.parser.type.Primitives;
 import me.hardcoded.compiler.parser.type.Reference;
 import me.hardcoded.compiler.parser.type.ValueType;
 import me.hardcoded.utils.types.MangledFunctionMap;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 public class MangleTest {
 	public static String createFunctionString(String namespace, String name, List<ValueType> params) {
@@ -45,19 +46,19 @@ public class MangleTest {
 			Primitives.I8, Primitives.U32, Primitives.LINKED, Primitives.VARARGS
 		));
 		
-		assertTrue("Linked type", function.matches(createFunctionString("test::namespace", "test", List.of(
+		assertTrue(function.matches(createFunctionString("test::namespace", "test", List.of(
 			Primitives.LINKED,
 			Primitives.LINKED,
 			Primitives.LINKED
-		))));
+		))), "Linked type");
 		
-		assertTrue("Linked type", function.matches(createFunctionString("test::namespace", "test", List.of(
+		assertTrue(function.matches(createFunctionString("test::namespace", "test", List.of(
 			Primitives.I8,
 			Primitives.U32,
 			Primitives.I64
-		))));
+		))), "Linked type");
 		
-		assertTrue("Variable parameters", function.matches(createFunctionString("test::namespace", "test", List.of(
+		assertTrue(function.matches(createFunctionString("test::namespace", "test", List.of(
 			Primitives.LINKED,
 			Primitives.LINKED,
 			Primitives.LINKED,
@@ -66,30 +67,30 @@ public class MangleTest {
 			Primitives.U8,
 			Primitives.U8,
 			Primitives.U8
-		))));
+		))), "Variable parameters");
 		
-		assertFalse("Wrong parameter", function.matches(createFunctionString("test::namespace", "test", List.of(
+		assertFalse(function.matches(createFunctionString("test::namespace", "test", List.of(
 			Primitives.I8,
 			Primitives.U64,
 			Primitives.I64
-		))));
+		))), "Wrong parameter");
 		
-		assertFalse("Wrong namespace", function.matches(createFunctionString("test::help", "test", List.of(
+		assertFalse(function.matches(createFunctionString("test::help", "test", List.of(
 			Primitives.I8,
 			Primitives.U32,
 			Primitives.I64
-		))));
+		))), "Wrong namespace");
 		
-		assertFalse("Wrong name", function.matches(createFunctionString("test::namespace", "tet", List.of(
+		assertFalse(function.matches(createFunctionString("test::namespace", "tet", List.of(
 			Primitives.I8,
 			Primitives.U32,
 			Primitives.I64
-		))));
+		))), "Wrong name");
 		
-		assertFalse("Not enough params", function.matches(createFunctionString("test::namespace", "test", List.of(
+		assertFalse(function.matches(createFunctionString("test::namespace", "test", List.of(
 			Primitives.I8,
 			Primitives.U32
-		))));
+		))), "Not enough params");
 	}
 	
 	@Test

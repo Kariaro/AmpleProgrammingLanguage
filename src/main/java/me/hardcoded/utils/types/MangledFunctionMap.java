@@ -192,7 +192,6 @@ public class MangledFunctionMap {
 				
 				for (ParameterMap item : map.values()) {
 					Reference itemResult = item.get(mangledFunction, index + 1);
-					
 					if (result != null && itemResult != null) {
 						// If we have more than one result we return null
 						return null;
