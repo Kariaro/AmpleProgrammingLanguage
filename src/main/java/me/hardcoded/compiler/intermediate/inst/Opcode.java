@@ -50,6 +50,9 @@ public enum Opcode {
 	NOR,                // r0 = ~(r1)
 	
 	// Size instructions
+	// F_TO_D_CAST,        // r0 = FLOAT TO INTEGER
+	D_TO_F_CAST,        // r0 = INTEGER TO FLOAT
+	FBITS,              // r0 = bits from floating
 	TRUNC,              // r0, SIZE -> truncate
 	SEXT,               // r0, SIZE -> sign extend
 	ZEXT,               // r0, SIZE -> zero extend

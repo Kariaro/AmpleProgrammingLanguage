@@ -215,8 +215,18 @@ public class ExprParser {
 					);
 				}
 			}
+			case DOUBLE -> {
+				String text = reader.value();
+				text = text.replaceAll("'", "");
+				long value;
+				value = Double.doubleToRawLongBits(Double.parseDouble(text));
+				NumExpr expr = new NumExpr(reader.syntaxPosition(), Primitives.F64, value);
+				reader.advance();
+				return expr;
+			}
 			case INT -> {
 				String text = reader.value();
+				text = text.replaceAll("'", "");
 				
 				int value;
 				if (text.startsWith("0x")) {
@@ -231,6 +241,7 @@ public class ExprParser {
 			case LONG -> {
 				String text = reader.value();
 				text = text.substring(0, text.length() - 1);
+				text = text.replaceAll("'", "");
 				
 				long value;
 				if (text.startsWith("0x")) {
@@ -245,10 +256,13 @@ public class ExprParser {
 			case UINT -> {
 				String text = reader.value();
 				text = text.substring(0, text.length() - 1);
+				text = text.replaceAll("'", "");
 				
 				int value;
 				if (text.startsWith("0x")) {
 					value = Integer.parseUnsignedInt(text.substring(2), 16);
+				} else if (text.startsWith("0b")) {
+					value = Integer.parseUnsignedInt(text.substring(2), 2);
 				} else {
 					value = Integer.parseUnsignedInt(text);
 				}
@@ -259,10 +273,13 @@ public class ExprParser {
 			case ULONG -> {
 				String text = reader.value();
 				text = text.substring(0, text.length() - 2);
+				text = text.replaceAll("'", "");
 				
 				long value;
 				if (text.startsWith("0x")) {
 					value = Long.parseUnsignedLong(text.substring(2), 16);
+				} else if (text.startsWith("0b")) {
+					value = Long.parseUnsignedLong(text.substring(2), 2);
 				} else {
 					value = Long.parseUnsignedLong(text);
 				}
@@ -406,11 +423,29 @@ public class ExprParser {
 				
 				return new StackAllocExpr(ISyntaxPos.of(parser.getCurrentFile(), startPos, reader.lastPositionEnd()), type, size, expr);
 			}
-			case "cast" -> {
+			case "bit_cast", "cast", "float_cast" -> {
 				parser.tryMatchOrError(Token.Type.LESS_THAN);
 				reader.advance();
 				
+				ISyntaxPos type_pos = reader.syntaxPosition();
+				
 				ValueType type = parser.readType(false);
+				
+				CastExpr.Kind kind = CastExpr.Kind.CAST;
+				switch (name) {
+					case "float_cast" -> {
+						kind = CastExpr.Kind.D_TO_F;
+						if (!type.isFloating()) {
+							throw parser.createParseException(type_pos, "float_cast can only convert to floating point numbers");
+						}
+					}
+					case "bit_cast" -> {
+						kind = CastExpr.Kind.BIT_CAST;
+					}
+					case "cast" -> {
+						kind = CastExpr.Kind.CAST;
+					}
+				}
 				
 				parser.tryMatchOrError(Token.Type.MORE_THAN);
 				reader.advance();
@@ -423,7 +458,7 @@ public class ExprParser {
 				parser.tryMatchOrError(Token.Type.R_PAREN);
 				reader.advance();
 				
-				return new CastExpr(ISyntaxPos.of(parser.getCurrentFile(), startPos, reader.lastPositionEnd()), type, expr);
+				return new CastExpr(ISyntaxPos.of(parser.getCurrentFile(), startPos, reader.lastPositionEnd()), type, expr, kind);
 			}
 		}
 		
@@ -455,6 +490,8 @@ public class ExprParser {
 		// Builtin
 		return name.equals("stack_alloc")
 			|| name.equals("cast")
+			|| name.equals("float_cast")
+			|| name.equals("bit_cast")
 			|| name.equals("sizeof");
 	}
 }

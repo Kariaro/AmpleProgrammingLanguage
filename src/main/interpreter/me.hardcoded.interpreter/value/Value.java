@@ -19,6 +19,10 @@ public interface Value {
 	
 	long getInteger();
 	
+	default long getInteger(int size) {
+		return getInteger();
+	}
+	
 	double getFloating();
 	
 	class NumberValue implements Value {
@@ -67,12 +71,26 @@ public interface Value {
 		}
 		
 		@Override
+		public long getInteger(int size) {
+			if (floating) {
+				throw new UnsupportedOperationException();
+			}
+			
+			return switch (size) {
+				case 1 -> (byte) value;
+				case 2 -> (short) value;
+				case 4 -> (int) value;
+				default -> value;
+			};
+		}
+		
+		@Override
 		public double getFloating() {
 			if (!floating) {
 				throw new UnsupportedOperationException();
 			}
 			
-			return Double.doubleToRawLongBits(value);
+			return Double.longBitsToDouble(value);
 		}
 		
 		@Override

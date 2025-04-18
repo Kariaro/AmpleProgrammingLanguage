@@ -207,13 +207,14 @@ public class AmpleRunner {
 							Value value = convertFromParam(local, src, context);
 							local.get(dst).setIndex(arrayIdx, value, src.getSize());
 						}
-						case ZEXT, SEXT, TRUNC -> {
+						case ZEXT, SEXT, TRUNC, D_TO_F_CAST -> {
 							InstRef dst = inst.getRefParam(0).getReference();
 							ValueType type = dst.getValueType();
 							InstParam src = inst.getParam(1);
 							
 							Value.ArrayValue arrayValue = null;
 							
+							boolean from_f = false;
 							long number;
 							if (src instanceof InstParam.Str str) {
 								// Allocate string
@@ -226,7 +227,7 @@ public class AmpleRunner {
 								Value value = local.get(ref.getReference());
 								number = switch (value.getType()) {
 									case Integer, Array -> value.getInteger();
-									case Floating -> throw new RuntimeException("Cannot extend floating point");
+									case Floating -> Double.doubleToRawLongBits(value.getFloating());
 								};
 								
 								if (value instanceof Value.ArrayValue arr) {
@@ -251,6 +252,11 @@ public class AmpleRunner {
 									
 									result = context.getMemory().getAllocated(number);
 								}
+							} else if (opcode == Opcode.D_TO_F_CAST) {
+								int srcSize = src.getSize().calculateBytes();
+								long srcMask = (-1L) >>> (64 - srcSize * 8);
+								number &= srcMask;
+								result = new Value.NumberValue((double) number);
 							} else {
 								if (type.isFloating()) {
 									throw new RuntimeException("Floating type not extendable");
@@ -371,6 +377,10 @@ public class AmpleRunner {
 							if (b.getType() == Value.Type.Array) {
 								type = Value.Type.Array;
 							}
+							int s = dst.getValueType().calculateBytes();
+							if (dst.getValueType().isUnsigned()) {
+								s = 8; // no sext  // why do I even need this, move should fix this
+							}
 							
 							boolean destroyArray = switch (opcode) {
 								case ADD, SUB -> false;
@@ -385,52 +395,56 @@ public class AmpleRunner {
 							
 							long result = switch (opcode) {
 								case AND -> switch (type) {
-									case Integer -> a.getInteger() & b.getInteger();
+									case Integer -> a.getInteger(s) & b.getInteger(s);
 									case Floating, Array -> throw new RuntimeException("Cannot AND " + type + " values");
 								};
 								case XOR -> switch (type) {
-									case Integer -> a.getInteger() ^ b.getInteger();
+									case Integer -> a.getInteger(s) ^ b.getInteger(s);
 									case Floating, Array -> throw new RuntimeException("Cannot XOR " + type + " values");
 								};
 								case SHR -> switch (type) {
-									case Integer -> a.getInteger() >> b.getInteger();
+									case Integer -> a.getInteger(s) >>> b.getInteger(s);
 									case Floating, Array -> throw new RuntimeException("Cannot SHR " + type + " values");
 								};
 								case SHL -> switch (type) {
-									case Integer -> a.getInteger() << b.getInteger();
+									case Integer -> a.getInteger(s) << b.getInteger(s);
 									case Floating, Array -> throw new RuntimeException("Cannot SHL " + type + " values");
 								};
 								case OR -> switch (type) {
-									case Integer -> a.getInteger() | b.getInteger();
+									case Integer -> a.getInteger(s) | b.getInteger(s);
 									case Floating, Array -> throw new RuntimeException("Cannot OR " + type + " values");
 								};
 								case IMUL, MUL -> switch (type) {
-									case Integer -> a.getInteger() * b.getInteger();
+									case Integer -> a.getInteger(s) * b.getInteger(s);
 									case Floating -> Double.doubleToRawLongBits(a.getFloating() * b.getFloating());
 									case Array -> throw new RuntimeException("Cannot MUL " + type + " values");
 								};
 								case IDIV -> switch (type) {
-									case Integer -> a.getInteger() / b.getInteger();
+									case Integer -> a.getInteger(s) / b.getInteger(s);
 									case Floating -> Double.doubleToRawLongBits(a.getFloating() * b.getFloating());
 									case Array -> throw new RuntimeException("Cannot DIV " + type + " values");
 								};
 								case DIV -> switch (type) {
-									case Integer -> Long.divideUnsigned(a.getInteger(), b.getInteger());
+									case Integer -> Long.divideUnsigned(a.getInteger(s), b.getInteger(s));
 									case Floating -> Double.doubleToRawLongBits(a.getFloating() * b.getFloating());
 									case Array -> throw new RuntimeException("Cannot DIV " + type + " values");
 								};
-								// TODO: Unsigned modulo and signed modulo
-								case MOD, IMOD -> switch (type) {
-									case Integer -> a.getInteger() % b.getInteger();
+								case MOD -> switch (type) {
+									case Integer -> Long.remainderUnsigned(a.getInteger(s), b.getInteger(s));
+									case Floating -> Double.doubleToRawLongBits(a.getFloating() % b.getFloating());
+									case Array -> throw new RuntimeException("Cannot MOD " + type + " values");
+								};
+								case IMOD -> switch (type) {
+									case Integer -> a.getInteger(s) % b.getInteger(s);
 									case Floating -> Double.doubleToRawLongBits(a.getFloating() % b.getFloating());
 									case Array -> throw new RuntimeException("Cannot MOD " + type + " values");
 								};
 								case ADD -> switch (type) {
-									case Integer, Array -> a.getInteger() + b.getInteger();
+									case Integer, Array -> a.getInteger(s) + b.getInteger(s);
 									case Floating -> Double.doubleToRawLongBits(a.getFloating() + b.getFloating());
 								};
 								case SUB -> switch (type) {
-									case Integer, Array -> a.getInteger() - b.getInteger();
+									case Integer, Array -> a.getInteger(s) - b.getInteger(s);
 									case Floating -> Double.doubleToRawLongBits(a.getFloating() - b.getFloating());
 								};
 								default -> throw new RuntimeException("Arithmetic opcode '" + opcode + "' not implemented");
@@ -441,11 +455,11 @@ public class AmpleRunner {
 									if (destroyArray) {
 										yield new Value.NumberValue(result);
 									}
-									if (a instanceof Value.ArrayValue av) {
-										yield av.withOffset(result - a.getInteger());
+									if (a instanceof Value.ArrayValue arv) {
+										yield arv.withOffset(result - a.getInteger());
 									}
-									if (b instanceof Value.ArrayValue bv) {
-										yield bv.withOffset(result - b.getInteger());
+									if (b instanceof Value.ArrayValue brv) {
+										yield brv.withOffset(result - b.getInteger());
 									}
 									throw new RuntimeException("Unknown bug??");
 								}
@@ -568,6 +582,11 @@ public class AmpleRunner {
 							InstRef dst = inst.getRefParam(0).getReference();
 							Value a = convertFromParam(local, inst.getParam(1), context);
 							local.put(dst, new Value.NumberValue(a.getInteger() != 0 ? 1 : 0));
+						}
+						case NOR -> {
+							InstRef dst = inst.getRefParam(0).getReference();
+							Value a = convertFromParam(local, inst.getParam(1), context);
+							local.put(dst, new Value.NumberValue(~a.getInteger()));
 						}
 						
 						// Member

@@ -4,37 +4,36 @@
 
 namespace ctx {
 
-fn (export) try_compile(i32: file_count, ...[]: var_files) : i32 {
+fn (export) try_compile(file_count : i32, var_files : ...[]) : i32 {
     // Needed as heap does not in lang right now
     std::init_malloc(stack_alloc<u8, 100000>(), 100000l);
-    u8[]: mem_start = std::malloc(0ul);
+    let mem_start : u8[] = std::malloc(0ul);
     
     // Read files in buffer
-    u64[]: ptr = cast<u64[]>(var_files);
-    for (i32: file_index = 0; file_index < file_count; file_index = file_index + 1) {
+    let ptr : u64[] = cast<u64[]>(var_files);
+    for (let file_index : i32 = 0; file_index < file_count; file_index = file_index + 1) {
         // std::printf("%p ptr %p\n", ptr[file_index], __builtin_address(ptr[file_index]));
         
-        token[]: token_list = tokenize(std::read_file(cast<u8[]>(ptr[file_index])));
+        let token_list : token[] = tokenize(std::read_file(cast<u8[]>(ptr[file_index])));
         std::printf("token ptr -> %p\n", token_list);
         
-        for (i32: i = 0; token_list[i].type != -1; i = i + 1) {
+        for (let i : i32 = 0; token_list[i].type != -1; i = i + 1) {
             std::printf("TOKEN [value=\"%s\" type=%d]\n", token_list[i].text, token_list[i].type);
         }
         
         // todo - function definitions do not get mangled properly yet for imported types to work
-        // parse_context[] : ctx = cast<parse_context[]>(std::malloc(sizeof(parse_context)));
-        // stat[] : stat_list = parse(token_list, ctx);
+        // let ctx : parse_context[] = cast<parse_context[]>(std::malloc(sizeof(parse_context)));
+        // let stat_list : stat[] = parse(token_list, ctx);
         
         // Print stat
         // print_stat(stat_list, 0);
     }
     
-    u8[]: mem_end = std::malloc(0ul);
+    let mem_end : u8[] = std::malloc(0ul);
 
     std::printf("allocated -> %u\n", cast<u32>(cast<u64>(mem_end) - cast<u64>(mem_start)));
     std::printf("ptr -> %p\n", std::malloc(0ul));
     ret 0;
 }
-
 
 }

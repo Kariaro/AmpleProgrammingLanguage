@@ -100,7 +100,11 @@ public class ExportMap {
 	
 	public Reference getReference(Reference reference) {
 		if (reference.isFunction()) {
-			return functions.get(reference);
+			Reference result = functions.get(reference);
+			// System.out.println(
+			// 	"From " + reference.getMangledName() + " : " + AmpleMangler.demangleFunction(reference.getMangledName()) + "\n" +
+			// 		"To   " + result.getMangledName() + " : " + AmpleMangler.demangleFunction(result.getMangledName()) + "\n");
+			return result;
 		}
 		
 		if (reference.isVariable()) {

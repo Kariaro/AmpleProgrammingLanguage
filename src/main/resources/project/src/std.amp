@@ -1,14 +1,15 @@
 // std namespace library
+@link "std/dtoa.amp";
 
 // Private variables
-u64 : byte_memory = 0ul;
-u64 : byte_offset = 0ul;
+let byte_memory : u64 = 0ul;
+let byte_offset : u64 = 0ul;
 
 namespace std {
 
 // Allocate memory
-fn (export) malloc(u64: bytes) : u8[] {
-    u8[]: result = cast<u8[]>(byte_memory + byte_offset);
+fn (export) malloc(bytes : u64) : u8[] {
+    let result : u8[] = cast<u8[]>(byte_memory + byte_offset);
     byte_offset = byte_offset + bytes;
     ret result;
 }
@@ -29,48 +30,48 @@ fn (export) malloc(u64: bytes) : u8[] {
 
 
 
-fn (export) init_malloc(u8[] : data, i64: length) {
+fn (export) init_malloc(data : u8[], length : i64) {
     byte_memory = cast<u64>(data);
-    for (i64: i = 0l; i < length; i = i + 1l) {
+    for (let i : i64 = 0l; i < length; i = i + 1l) {
         data[i] = cast<u8>(0);
     }
     ret;
 }
 
 
-fn (export) read_file(u8[]: file_name) : u8[] {
-    u64: file_size = 0ul;
+fn (export) read_file(file_name : u8[]) : u8[] {
+    let file_size : u64 = 0ul;
     compiler<int>("file_size" : file_name : file_size);
 
-    u8[]: file_data = cast<u8[]>(std::malloc(file_size + 1ul));
+    let file_data : u8[] = cast<u8[]>(std::malloc(file_size + 1ul));
     compiler<int>("read_file" : file_name : file_data);
     file_size = cast<u64>(std::strlen(file_data));
     file_data[file_size + 1ul] = '\0';
     
-    // u64  : file_size = __builtin_filesize(file_name);
-    // u8[] : file_data = cast<u8[]>(std::malloc(file_size + 1ul));
-    // u64  : status    = __builtin_filedata(file_name, file_data);
+    // let file_size : u64  = __builtin_filesize(file_name);
+    // let file_data : u8[] = cast<u8[]>(std::malloc(file_size + 1ul));
+    // let status    : u64  = __builtin_filedata(file_name, file_data);
     // file_data[file_size] = '\0';
     
     ret file_data;
 }
 
-fn (export) strlen (u8[]: pointer) : i64 {
-    i64: len = 0l;
+fn (export) strlen (pointer : u8[]) : i64 {
+    let len : i64 = 0l;
     while (pointer[len] != cast<u8>(0)) {
          len = len + 1l;
     }
     ret len;
 }
 
-fn (export) memcpy (u8[]: dest, u8[]: src, i64: length) {
-    for (i64: i = 0l; i < length; i = i + 1l) {
+fn (export) memcpy (dest : u8[], src : u8[], length : i64) {
+    for (let i : i64 = 0l; i < length; i = i + 1l) {
         dest[i] = src[i];
     }
     ret;
 }
 
-fn (export) printstr (u8[]: pointer, i64: length) {
+fn (export) printstr (pointer : u8[], length : i64) {
     compiler<asm>(
         "mov rsi, {}" : pointer
         "mov rdx, {}" : length
@@ -82,25 +83,25 @@ fn (export) printstr (u8[]: pointer, i64: length) {
     ret;
 }
 
-fn (export) printhex (u64: number) {
-    u8[]: hex_data = stack_alloc<u8, 16>("0123456789abcdef");
-    u8[]: hex_strs = stack_alloc<u8, 16>("................");
+fn (export) printhex (number : u64) {
+    let hex_data : u8[] = stack_alloc<u8, 16>("0123456789abcdef");
+    let hex_strs : u8[] = stack_alloc<u8, 16>("................");
 
-    for (i32: i = 15; i >= 0; i = i - 1) {
+    for (let i : i32 = 15; i >= 0; i = i - 1) {
         hex_strs[i] = hex_data[number & cast<u64>(15)];
         number = number >> cast<u64>(4);
         continue;
     }
 
-    std::printstr(hex_strs, 16l);
+    printstr(hex_strs, 16l);
     ret;
 }
 
-fn printdec_u (u64: number) {
-    u8[]: dec_data = stack_alloc<u8, 10>("0123456789");
-    u8[]: dec_strs = stack_alloc<u8, 20>("....................");
+fn printdec_u (number : u64) {
+    let dec_data : u8[] = stack_alloc<u8, 10>("0123456789");
+    let dec_strs : u8[] = stack_alloc<u8, 20>("....................");
 
-    i32: index = 19;
+    let index : i32 = 19;
     while (number > 0ul || index == 19) {
         dec_strs[index] = '0' + cast<u8>(number % 10ul);
         number = number / 10ul;
@@ -111,7 +112,7 @@ fn printdec_u (u64: number) {
     ret;
 }
 
-fn printdec_s (i64: number) {
+fn printdec_s (number : i64) {
     if (number < 0l) {
         number = 0l - number;
         printstr("-", 1l);
@@ -121,18 +122,27 @@ fn printdec_s (i64: number) {
     ret;
 }
 
-fn (export) print (u8[]: string) {
-    std::printstr(string, std::strlen(string));
+fn printdec_b (number : u64, len : i32) {
+    let dec_data : u8[] = stack_alloc<u8, 4>("01");
+    for (let i : i32 = 0; i < len; i = i + 1) {
+        printstr(cast<u8[]>(cast<u64>(dec_data) + ((number >> cast<u64>(len - 1 - i)) & 1ul)), 1l);
+    }
     ret;
 }
 
-fn (export) printf (u8[]: format, ...[]: args) {
-    i64: length = std::strlen(format);
-    u8[]: ptr = cast<u8[]>(args);
+fn (export) print (string : u8[]) {
+    printstr(string, std::strlen(string));
+    ret;
+}
 
-    for (i64: i = 0l; i < length; i = i + 1l) {
+fn (export) printf (format : u8[], args : ...[]) {
+    let length : i64 = std::strlen(format);
+    let ptr : u8[] = cast<u8[]>(args);
+    let dtoa_buffer : u8[] = stack_alloc<u8, 32>();
+
+    for (let i : i64 = 0l; i < length; i = i + 1l) {
         // For each character
-        u8: char = format[i];
+        let char : u8 = format[i];
 
         if (char == '%') {
             // print format character
@@ -141,29 +151,63 @@ fn (export) printf (u8[]: format, ...[]: args) {
 
             // We have a format
             if (char == 's') {
-                u8[]: str = cast<u8[]>(cast<u64[]>(ptr)[0]);
-                std::print(str);
+                let str : u8[] = cast<u8[]>(cast<u64[]>(ptr)[0]);
+                print(str);
                 ptr = cast<u8[]>(cast<u64>(ptr) + 8ul);
-            } else if (char == 'p') {
-                u64: num = cast<u64[]>(ptr)[0];
-                std::printhex(num);
+                continue;
+            }
+            
+            if (char == 'p') {
+                let num : u64 = cast<u64[]>(ptr)[0];
+                printhex(num);
                 ptr = cast<u8[]>(cast<u64>(ptr) + 8ul);
+                continue;
+            }
+            
+            // 64 bit version
+            if (char == 'l') {
+                i = i + 1l;
+                char = format[i];
+                
+                if (char == 'd') {
+                    printdec_s(cast<i64>(cast<i64[]>(ptr)[0]));
+                    ptr = cast<u8[]>(cast<u64>(ptr) + 8ul);
+                    continue;
+                } else if (char == 'u') {
+                    printdec_u(cast<u64>(cast<u64[]>(ptr)[0]));
+                    ptr = cast<u8[]>(cast<u64>(ptr) + 8ul);
+                    continue;
+                } else if (char == 'b') {
+                    printdec_b(cast<u64>(cast<u64[]>(ptr)[0]), 64);
+                    ptr = cast<u8[]>(cast<u64>(ptr) + 8ul);
+                    continue;
+                } else if (char == 'f') {
+                    let len : i32 = d_to_s_a(dtoa_buffer, cast<f64[]>(ptr)[0]);
+                    ptr = cast<u8[]>(cast<u64>(ptr) + 8ul);
+                    printstr(dtoa_buffer, cast<i64>(len));
+                    continue;
+                }
             } else if (char == 'd') {
                 printdec_s(cast<i64>(cast<i32[]>(ptr)[0]));
                 ptr = cast<u8[]>(cast<u64>(ptr) + 4ul);
+                continue;
             } else if (char == 'u') {
                 printdec_u(cast<u64>(cast<u32[]>(ptr)[0]));
                 ptr = cast<u8[]>(cast<u64>(ptr) + 4ul);
-            } else {
-                std::print("\nerror: Invalid format character!\n");
-                break;
+                continue;
+            } else if (char == 'b') {
+                printdec_b(cast<u64>(cast<u64[]>(ptr)[0]), 32);
+                ptr = cast<u8[]>(cast<u64>(ptr) + 8ul);
+                continue;
             }
+            
+            print("\nerror: Invalid format character!\n");
+            break;
         } else {
             // print the character
-            std::printstr(cast<u8[]>(cast<u64>(format) + cast<u64>(i)), 1l);
+            printstr(cast<u8[]>(cast<u64>(format) + cast<u64>(i)), 1l);
         }
     }
-
     ret;
 }
 

@@ -10,11 +10,20 @@ import java.io.IOException;
 public class CastExpr extends Expr {
 	private ValueType type;
 	private Expr value;
+	private Kind kind;
 	
-	public CastExpr(ISyntaxPos syntaxPos, ValueType type, Expr value) {
+	public enum Kind {
+		D_TO_F,
+		F_TO_D,
+		BIT_CAST,
+		CAST,
+	}
+	
+	public CastExpr(ISyntaxPos syntaxPos, ValueType type, Expr value, Kind kind) {
 		super(syntaxPos);
 		this.type = type;
 		this.value = value;
+		this.kind = kind;
 	}
 	
 	public Expr getValue() {
@@ -31,6 +40,10 @@ public class CastExpr extends Expr {
 		return value.isPure();
 	}
 	
+	public Kind getKind() {
+		return kind;
+	}
+	
 	@Override
 	public ValueType getType() {
 		return type;
@@ -43,7 +56,12 @@ public class CastExpr extends Expr {
 	
 	@Override
 	public String toString() {
-		return "cast<" + type + ">( " + value + " )";
+		return switch (kind) {
+			case BIT_CAST -> "bit_cast<" + type + ">( " + value + " )";
+			case CAST -> "cast<" + type + ">( " + value + " )";
+			case D_TO_F -> "float_cast<" + type + ">( " + value + " )";
+			default -> "unknown_cast<" + type + ">( " + value + " )";
+		};
 	}
 	
 	@Override
@@ -52,6 +70,7 @@ public class CastExpr extends Expr {
 		
 		stream.serializeValueType(type);
 		value.serialize(stream);
+		stream.writeVarInt(kind.ordinal());
 	}
 	
 	public static CastExpr deserialize(LinkableStream stream) throws IOException {
@@ -59,6 +78,7 @@ public class CastExpr extends Expr {
 		
 		ValueType type = stream.deserializeValueType();
 		Expr value = stream.deserializeExpr();
-		return new CastExpr(head.syntaxPos(), type, value);
+		int kind = stream.readVarInt();
+		return new CastExpr(head.syntaxPos(), type, value, Kind.values()[kind]);
 	}
 }

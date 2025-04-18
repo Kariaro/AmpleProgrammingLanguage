@@ -492,12 +492,19 @@ public class IntermediateGenerator {
 		// casting from signed to signed sign extends
 		
 		Opcode opcode;
-		if (expr.getType().calculateBytes() <= value.getValueType().calculateBytes()) {
-			opcode = Opcode.TRUNC;
-		} else if (expr.getType().isSigned() && value.getValueType().isSigned()) {
-			opcode = Opcode.SEXT;
-		} else {
-			opcode = Opcode.ZEXT;
+		switch (expr.getKind()) {
+			case D_TO_F -> opcode = Opcode.D_TO_F_CAST;
+			case BIT_CAST -> opcode = Opcode.TRUNC;
+			case CAST -> {
+				if (expr.getType().calculateBytes() <= value.getValueType().calculateBytes()) {
+					opcode = Opcode.TRUNC;
+				} else if (expr.getType().isSigned() && value.getValueType().isSigned()) {
+					opcode = Opcode.SEXT;
+				} else {
+					opcode = Opcode.ZEXT;
+				}
+			}
+			default -> opcode = Opcode.TRUNC;
 		}
 		
 		procedure.addInst(new Inst(opcode, expr.getSyntaxPosition())
@@ -894,7 +901,7 @@ public class IntermediateGenerator {
 		return switch (operation) {
 			case NEGATIVE -> Opcode.NEG;
 			case NOT -> Opcode.NOT;
-			//			case NOR -> Opcode.NOR;
+			case NOR -> Opcode.NOR;
 			
 			default -> throw new RuntimeException("Unknown unary operation '%s'".formatted(operation));
 		};

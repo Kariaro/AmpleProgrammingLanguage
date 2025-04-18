@@ -1,13 +1,13 @@
 package me.hardcoded.compiler.parser.type;
 
 public class ValueType {
-	public static final int SIGNED = 0,
+	public static final int
+		SIGNED = 0,
 		UNSIGNED = 1,
 		FLOATING = 2,
-		GENERIC = 3,
-		LINKED = 4,
-		VARARGS = 5,
-		STRUCT = 6;
+		LINKED = 3,
+		VARARGS = 4,
+		STRUCT = 5;
 	
 	public static final int STORAGE_TYPE = 15,
 		CONST = 16;
@@ -126,6 +126,11 @@ public class ValueType {
 		
 		if ((flags & CONST) != 0) {
 			sb.append("const ");
+		}
+		
+		if (flags == 0 && depth == 0 && size == 0) {
+			sb.append("none");
+			return sb.toString();
 		}
 		
 		// int size = calculateBytes();

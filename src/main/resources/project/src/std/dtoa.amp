@@ -1,0 +1,456 @@
+// Double to string implementation
+@link "std.amp";
+// https://baseconvert.com/ieee-754-floating-point
+
+struct d_norm {
+    u64 : value;
+    i32 : exp;
+}
+
+fn d_to_s_norm_64(raw : u64, pow_2 : i32, result : d_norm[]) {
+    let c : u64 = 0ul;
+    let pow_10 : i32 = 0;
+    while (pow_2 <= -44) { // Multiply with 10^13
+        let a : u64 = raw >> 32ul;
+        let b : u64 = raw & 0xfffffffful;
+        c = (c * 1220703125ul);
+        b = (b * 1220703125ul) + (c >> 32ul);
+        a = (a * 1220703125ul) + (b >> 32ul);
+        b = b & 0xfffffffful;
+        c = c & 0xfffffffful;
+        pow_10 = pow_10 - 13;
+        if (a >> 62ul) {
+            raw = (a << 1ul) | (b >> 31ul);
+            c = ((b << 1ul) | (c >> 31ul)) & 0xfffffffful;
+            pow_2 = pow_2 + (31 + 13);
+        } else {
+            raw = (a << 2ul) | (b >> 30ul);
+            c = ((b << 2ul) | (c >> 30ul)) & 0xfffffffful;
+            pow_2 = pow_2 + (30 + 13);
+        }
+    }
+    while (pow_2 <= -4) { // Multiply with 10
+        let a : u64 = raw >> 32ul;
+        let b : u64 = raw & 0xfffffffful;
+        c = (c * 5ul);
+        b = (b * 5ul) + (c >> 32ul);
+        a = (a * 5ul) + (b >> 32ul);
+        b = b & 0xfffffffful;
+        pow_10 = pow_10 - 1;
+        if (a >> 34ul) {
+            raw = (a << 29ul) | (b >> 3ul);
+            c = ((b << 29ul) | (c >> 3ul)) & 0xfffffffful;
+            pow_2 = pow_2 + (3 + 1);
+        } else {
+            raw = (a << 30ul) | (b >> 2ul);
+            c = ((b << 30ul) | (c >> 2ul)) & 0xfffffffful;
+            pow_2 = pow_2 + (2 + 1);
+        }
+    }
+    while (pow_2 >= 44) { // Divide with 10^13
+        let a : u64 = raw >> 32ul;
+        let b : u64 = raw & 0xfffffffful;
+        let av : u64 = (a / 1220703125ul);
+        let ar : u64 = (a % 1220703125ul);
+        let bv : u64 = ((b + (ar << 32ul)) / 1220703125ul);
+        let br : u64 = ((b + (ar << 32ul)) % 1220703125ul);
+        let cv : u64 = ((c + (br << 32ul)) / 1220703125ul);
+        if (av >> 1ul) {
+            av = av << 30ul;
+            bv = bv << 30ul;
+            cv = cv << 30ul;
+            pow_2 = pow_2 - (30 + 13);
+        } else {
+            av = av << 31ul;
+            bv = bv << 31ul;
+            cv = cv << 31ul;
+            pow_2 = pow_2 - (31 + 13);
+        }
+        c = (cv & 0xfffffffful);
+        raw = (av << 32ul) + (bv << 0ul) + (cv >> 32ul);
+        pow_10 = pow_10 + 13;
+    }
+    while (pow_2 > 0) { // Divide with 10
+        let a : u64 = raw >> 32ul;
+        let b : u64 = raw & 0xfffffffful;
+        let av : u64 = (a / 5ul);
+        let ar : u64 = (a % 5ul);
+        let bv : u64 = ((b + (ar << 32ul)) / 5ul);
+        let br : u64 = ((b + (ar << 32ul)) % 5ul);
+        let cv : u64 = ((c + (br << 32ul)) / 5ul);
+        if (av >> 29ul) {
+            av = av << 2ul;
+            bv = bv << 2ul;
+            cv = cv << 2ul;
+            pow_2 = pow_2 - (2 + 1);
+        } else {
+            av = av << 3ul;
+            bv = bv << 3ul;
+            cv = cv << 3ul;
+            pow_2 = pow_2 - (3 + 1);
+        }
+        c = (cv & 0xfffffffful);
+        raw = (av << 32ul) + (bv << 0ul) + (cv >> 32ul);
+        pow_10 = pow_10 + 1;
+    }
+    if (pow_2 < 0) {
+        raw = raw >> cast<u64>(-pow_2);
+        pow_2 = 0;
+    }
+
+    // Make sure raw is 19 digits
+    if (raw >= 10'000'000'000'000'000'000ul) {
+        raw = raw / 10ul;
+        pow_10 = pow_10 + 1;
+    }
+
+    result[0].value = raw;
+    result[0].exp = pow_10;
+    ret;
+}
+
+fn s_to_d_norm_64(raw : u64, pow_10 : i32, result : d_norm[]) {
+    let c : u64 = 0ul;
+    let pow_2 : i32 = 0;
+
+    while (pow_10 >= 13) { // Multiply with 10^13
+        let a : u64 = raw >> 32ul;
+        let b : u64 = raw & 0xfffffffful;
+        c = (c * 1220703125ul);
+        b = (b * 1220703125ul) + (c >> 32ul);
+        a = (a * 1220703125ul) + (b >> 32ul);
+        b = b & 0xfffffffful;
+        c = c & 0xfffffffful;
+        pow_10 = pow_10 - 13;
+        if (a >> 62ul) {
+            raw = (a << 1ul) | (b >> 31ul);
+            c = ((b << 1ul) | (c >> 31ul)) & 0xfffffffful;
+            pow_2 = pow_2 + (31 + 13);
+        } else {
+            raw = (a << 2ul) | (b >> 30ul);
+            c = ((b << 2ul) | (c >> 30ul)) & 0xfffffffful;
+            pow_2 = pow_2 + (30 + 13);
+        }
+    }
+    while (pow_10 > 0) { // Multiply with 10
+        let a : u64 = raw >> 32ul;
+        let b : u64 = raw & 0xfffffffful;
+        c = (c * 5ul);
+        b = (b * 5ul) + (c >> 32ul);
+        a = (a * 5ul) + (b >> 32ul);
+        b = b & 0xfffffffful;
+        pow_10 = pow_10 - 1;
+        if (a >> 34ul) {
+            raw = (a << 29ul) | (b >> 3ul);
+            c = ((b << 29ul) | (c >> 3ul)) & 0xfffffffful;
+            pow_2 = pow_2 + (3 + 1);
+        } else {
+            raw = (a << 30ul) | (b >> 2ul);
+            c = ((b << 30ul) | (c >> 2ul)) & 0xfffffffful;
+            pow_2 = pow_2 + (2 + 1);
+        }
+    }
+    while (pow_10 <= -13) { // Divide with 10^13
+        let a : u64 = raw >> 32ul;
+        let b : u64 = raw & 0xfffffffful;
+        let av : u64 = (a / 1220703125ul);
+        let ar : u64 = (a % 1220703125ul);
+        let bv : u64 = ((b + (ar << 32ul)) / 1220703125ul);
+        let br : u64 = ((b + (ar << 32ul)) % 1220703125ul);
+        let cv : u64 = ((c + (br << 32ul)) / 1220703125ul);
+        if (av >> 1ul) {
+            av = av << 30ul;
+            bv = bv << 30ul;
+            cv = cv << 30ul;
+            pow_2 = pow_2 - (30 + 13);
+        } else {
+            av = av << 31ul;
+            bv = bv << 31ul;
+            cv = cv << 31ul;
+            pow_2 = pow_2 - (31 + 13);
+        }
+        c = (cv & 0xfffffffful);
+        raw = (av << 32ul) + (bv << 0ul) + (cv >> 32ul);
+        pow_10 = pow_10 + 13;
+    }
+    while (pow_10 < 0) { // Divide with 10
+        let a : u64 = raw >> 32ul;
+        let b : u64 = raw & 0xfffffffful;
+        let av : u64 = (a / 5ul);
+        let ar : u64 = (a % 5ul);
+        let bv : u64 = ((b + (ar << 32ul)) / 5ul);
+        let br : u64 = ((b + (ar << 32ul)) % 5ul);
+        let cv : u64 = ((c + (br << 32ul)) / 5ul);
+        if (av >> 29ul) {
+            av = av << 2ul;
+            bv = bv << 2ul;
+            cv = cv << 2ul;
+            pow_2 = pow_2 - (2 + 1);
+        } else {
+            av = av << 3ul;
+            bv = bv << 3ul;
+            cv = cv << 3ul;
+            pow_2 = pow_2 - (3 + 1);
+        }
+        c = (cv & 0xfffffffful);
+        raw = (av << 32ul) + (bv << 0ul) + (cv >> 32ul);
+        pow_10 = pow_10 + 1;
+    }
+    
+    // Align raw to 64 bit
+    while (raw > 0ul && (raw >> 63ul) != 1ul) {
+        raw = raw << 1ul;
+        raw = raw | ((c >> 31ul) & 1ul);
+        c = c << 1ul;
+        pow_2 = pow_2 - 1;
+    }
+    
+    result[0].value = raw;
+    result[0].exp = pow_2;
+    ret;
+}
+
+fn (export) d_to_s_a(buffer : u8[], a_value : f64) : i32 {
+    let repr : u64 = bit_cast<u64>(a_value);
+    let raw_mantissa : u64 = (repr & ((1ul << 52ul) - 1ul));
+    let raw_exponent : u64 = (repr << 1ul) >> 53ul;
+    let sign : u64 = (repr >> 63ul);
+
+    let index : i32 = 0;
+    if (raw_exponent == 0ul && raw_mantissa == 0ul) {
+        if (sign != 0ul) {
+            buffer[index] = '-';
+            index = index + 1;
+        }
+        buffer[index] = '0'; index = index + 1;
+        buffer[index] = '.'; index = index + 1;
+        buffer[index] = '0'; index = index + 1;
+        buffer[index] = 'e'; index = index + 1;
+        buffer[index] = '+'; index = index + 1;
+        buffer[index] = '0'; index = index + 1;
+        ret index;
+    }
+    if (raw_exponent == 2047ul) {
+        if (raw_mantissa == 0ul) {
+            if (sign != 0ul) {
+                buffer[index] = '-'; index = index + 1;
+            }
+
+            buffer[index] = 'i'; index = index + 1;
+            buffer[index] = 'n'; index = index + 1;
+            buffer[index] = 'f'; index = index + 1;
+        } else {
+            buffer[index] = 'N'; index = index + 1;
+            buffer[index] = 'a'; index = index + 1;
+            buffer[index] = 'N'; index = index + 1;
+        }
+        ret index;
+    }
+
+    let exponent : i32 = cast<i32>(raw_exponent) - (1 << 10) - 1 - 50;
+    let mantissa : u64 = raw_mantissa;
+
+    // Handle subnormals
+    if (raw_exponent > 0ul) {
+        mantissa = mantissa | (1ul << 52ul);
+    } else if (raw_mantissa > 0ul) {
+        mantissa = mantissa << 1ul;
+        while ((mantissa >> 52ul) != 1ul) {
+            exponent = exponent - 1;
+            mantissa = mantissa << 1ul;
+        }
+    }
+
+    if (sign != 0ul) {
+        buffer[index] = '-';
+        index = index + 1;
+    }
+
+    let arr : u8[] = stack_alloc<u8, 16>();
+    for (let i : i32 = 0; i < 16; i = i + 1) {
+        arr[i] = cast<u8>(0);
+    }
+
+    let val : d_norm[] = cast<d_norm[]>(arr); 
+    d_to_s_norm_64(mantissa << 11ul, exponent - 11, val);
+    let raw : u64 = val[0].value;
+    let pow10 : i32 = val[0].exp;
+
+    // Calculate how many digits are in raw
+    let digits : i32 = 1;
+    let compare : u64 = 10'000'000'000'000'000'000ul;
+    //                   9'223'372'036'854'775'807ul
+    //                  18'446'744'073'709'551'615ul
+    for (let i : i32 = 20; i > 1; i = i - 1) {
+        if (raw >= compare) {
+            digits = i;
+            break;
+        }
+        compare = compare / 10ul;
+    }
+
+    for (let i : i32 = digits - 1; i >= 0; i = i - 1) {
+        if (i == 0) {
+            buffer[index + 0] = '0' + cast<u8>(raw % 10ul);
+            buffer[index + 1] = '.';
+            break;
+        }
+        buffer[index + i + 1] = '0' + cast<u8>(raw % 10ul);
+        raw = raw / 10ul;
+    }
+    pow10 = pow10 + digits - 1;
+    index = index + digits + 1;
+
+    // Add scientific
+    buffer[index] = 'e';
+    if (pow10 < 0) {
+        buffer[index + 1] = '-';
+        pow10 = 0 - pow10;
+    } else {
+        buffer[index + 1] = '+';
+    }
+    index = index + 2;
+    if (pow10 < 100) {
+        buffer[index + 0] = '0' + cast<u8>(pow10 / 10);
+        buffer[index + 1] = '0' + cast<u8>(pow10 % 10);
+        index = index + 2;
+    } else {
+        buffer[index + 0] = '0' + cast<u8>(pow10 / 100);
+        buffer[index + 1] = '0' + cast<u8>((pow10 / 10) % 10);
+        buffer[index + 2] = '0' + cast<u8>(pow10 % 10);
+        index = index + 3;
+    }
+    ret index;
+}
+
+fn (export) s_to_d_a(buffer : u8[], length : i32) : f64 {
+    let has_frac : i32 = 0;
+    let skip_dig : i32 = 0;
+    let index : i32 = 0;
+    let pow_10 : i32 = 0;
+    let sign : i32 = 0;
+
+    if (length == 0) {
+        ret 0.0d / 0.0d; // NaN
+    }
+
+    if (buffer[index] == '-') {
+        sign = 1;
+        index = index + 1;
+    } else if (buffer[index] == '+') {
+        index = index + 1;
+    }
+
+    // value can hold up to 19 digits
+    let value : u64 = 0ul;
+    while (index != length) {
+        let c : u8 = buffer[index];
+        index = index + 1;
+        if (c >= '0' && c <= '9') {
+            if (value < 1'000'000'000'000'000'000ul) {
+                value = value * 10ul + cast<u64>(c - '0');
+            } else {
+                pow_10 = pow_10 + 1;
+            }
+
+            if (has_frac == 1) {
+                pow_10 = pow_10 - 1;
+            } else if (value > 9ul) {
+                pow_10 = pow_10 + 1;
+            }
+        } else if (c == '.') {
+            // invalid
+            if (has_frac == 1) {
+                break;
+            }
+
+            has_frac = 1;
+        } else if (c == 'e') {
+            let exp_val : i32 = 0;
+            let exp_sign : i32 = 1;
+            if (buffer[index] == '-') {
+                index = index + 1;
+                exp_sign = -1;
+            } else if (buffer[index] == '+') {
+                index = index + 1;
+            }
+
+            while (index != length) {
+                c = buffer[index];
+                index = index + 1;
+                if (c < '0' || c > '9') {
+                    break;
+                }
+                exp_val = exp_val * 10 + cast<i32>(c - '0');
+            }
+
+            pow_10 = pow_10 + (exp_val * exp_sign);
+            break;
+        } else {
+            break;
+        }
+    }
+
+    // Make value 19 digits
+    while (value > 0ul && value < 1'000'000'000'000'000'000ul) {
+        value = value * 10ul;
+        pow_10 = pow_10 - 1;
+    }
+
+    // Represent float exactly
+    let arr : u8[] = stack_alloc<u8, 16>();
+    for (let i : i32 = 0; i < 16; i = i + 1) {
+        arr[i] = cast<u8>(0);
+    }
+    let val : d_norm[] = cast<d_norm[]>(arr); 
+    s_to_d_norm_64(value, pow_10, val);
+    let v : u64 = val[0].value;
+    let e : i32 = val[0].exp;
+
+    if (e < -1074 - 11) {
+        // subnormal
+        v = v >> cast<u64>(-e - 1074 - 11);
+        e = -1074 - 11;
+    }
+
+    // Round value up
+    if ((v & 0b111'1111'1111ul) > 0b100'0000'0000ul) {
+        if (v + 0b1000'0000'0000ul > v) { // not wrap
+            v = v & (~0b0111'1111'1111ul);
+            v = v + ( 0b1000'0000'0000ul);
+        } else { // wrap
+            e = e + 1;
+            v = v & (~0b111'1111'1111ul);
+            v = v >> 1ul;
+            v = v + ( 0b100'0000'0000ul);
+        }
+    }
+
+    let result : f64 = float_cast<f64>(v >> 11ul); // Exact representation
+    // result = result * std::pow(2.0, e + 11);
+    e = e + 11;
+    for (let i : i32 = 0; i < e; i = i + 1) {
+        result = result * 2.0d;
+    }
+    for (let i : i32 = 0; i > e; i = i - 1) {
+        result = result * 0.5d;
+    }
+    // let result : f64 = 0.0d;
+    
+    if (sign == 1) {
+        ret -result;
+    }
+    ret result;
+}
+
+/*
+fn simple_dtoa(a_value : f64, buffer : u8[]) : u8[] {
+    let end : i32 = d_to_s_a(buffer, a_value);
+    buffer[end] = '\0';
+    return std::string(buffer.data());
+}
+
+fn simple_atod(a_value : u8[], len : i64) : f64 {
+    return s_to_d_a(a_value, a_value + len);
+}
+*/

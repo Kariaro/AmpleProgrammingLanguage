@@ -193,7 +193,7 @@ public class AmpleParser {
 			return replStatements();
 		}
 		
-		if (isVarStatement()) {
+		if (reader.type() == Token.Type.LET) {
 			return varStatement(false);
 		}
 		
@@ -310,14 +310,15 @@ public class AmpleParser {
 		
 		List<Reference> parameters = new ArrayList<>();
 		while (reader.type() != Token.Type.R_PAREN) {
-			ValueType type = readType(true);
+			String valueName = reader.value();
+			reader.advance();
 			
 			tryMatchOrError(Token.Type.COLON);
 			reader.advance();
 			
-			Reference reference = context.getLocalScope().addLocalVariable(context.getNamespaceScope().getNamespaceRoot(), type, reader.value());
+			ValueType type = readType(true);
+			Reference reference = context.getLocalScope().addLocalVariable(context.getNamespaceScope().getNamespaceRoot(), type, valueName);
 			parameters.add(reference);
-			reader.advance();
 			
 			if (reader.type() == Token.Type.COMMA) {
 				if (type.isVarargs()) {
@@ -484,10 +485,9 @@ public class AmpleParser {
 			case WHILE -> {
 				return whileStatement();
 			}
-		}
-		
-		if (isVarStatement()) {
-			return varStatement(true);
+			case LET -> {
+				return varStatement(true);
+			}
 		}
 		
 		Stat stat = switch (reader.type()) {
@@ -653,9 +653,7 @@ public class AmpleParser {
 	
 	private VarStat varStatement(boolean localVariable) throws ParseException {
 		Position startPos = reader.position();
-		
-		ValueType type = readType(true);
-		tryMatchOrError(Token.Type.COLON);
+		tryMatchOrError(Token.Type.LET);
 		reader.advance();
 		
 		tryMatchOrError(Token.Type.IDENTIFIER);
@@ -663,6 +661,15 @@ public class AmpleParser {
 		String name = reader.value();
 		reader.advance();
 		
+		tryMatchOrError(Token.Type.COLON);
+		reader.advance();
+		
+		ValueType type = readType(true);
+		
+		// Struct initialization
+		if (reader.type() == Token.Type.L_CURLY) {
+			
+		}
 		tryMatchOrError(Token.Type.ASSIGN);
 		reader.advance();
 		
@@ -830,7 +837,12 @@ public class AmpleParser {
 		if (path == null) {
 			sb.append("(?) ");
 		} else {
-			sb.append("(").append(path).append(") ");
+			sb.append("(").append(path);
+			if (syntaxPosition != null) {
+				Position position = syntaxPosition.getStartPosition();
+				sb.append(":").append(position.line() + 1).append(":").append(position.column() + 1);
+			}
+			sb.append(") ");
 		}
 		
 		if (syntaxPosition == null) {

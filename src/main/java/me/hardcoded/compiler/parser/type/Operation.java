@@ -29,6 +29,7 @@ public enum Operation {
 	MULTIPLY    ("*",   3, Token.Type.MUL,         OperationType.Binary, Associativity.Left),
 	DIVIDE      ("/",   3, Token.Type.DIV,         OperationType.Binary, Associativity.Left),
 	MODULO      ("%",   3, Token.Type.MOD,         OperationType.Binary, Associativity.Left),
+	NOR         ("~",   2, Token.Type.NOR,         OperationType.Unary, Associativity.Right),
 	NEGATIVE    ("-",   2, Token.Type.MINUS,       OperationType.Unary, Associativity.Right),
 	NOT         ("!",   2, Token.Type.NOT,         OperationType.Unary, Associativity.Right),
 	

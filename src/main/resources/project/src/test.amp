@@ -12,17 +12,80 @@ struct A {
     u8[]: text;
 }
 
+fn d_to_s_v(value : f64) {
+    std::printf("%lf\n", value);
+    ret;
+}
+
 fn main () : i32 {
-    u8[] : mem1 = stack_alloc<u8, 128>();
-    u8[] : mem2 = stack_alloc<u8, 128>();
+    let mem1 : u8[] = stack_alloc<u8, 128>();
+    let mem2 : u8[] = stack_alloc<u8, 128>();
     {
-        for (i32: i = 0; i < 128; i = i + 1) {
+        for (let i : i32 = 0; i < 128; i = i + 1) {
             mem1[i] = cast<u8>(0);
             mem2[i] = cast<u8>(0);
         }
     }
+    
+    if (0 == 1) {
+        d_to_s_v(9007199254740990.0d * float_cast<f64>(1ul << 11ul));
+        d_to_s_v(9007199254740990.0d * float_cast<f64>(1ul << 12ul));
+        d_to_s_v(9007199254740990.0d * float_cast<f64>(1ul << 13ul));
+        d_to_s_v(9007199254740990.0d * float_cast<f64>(1ul << 14ul));
+        d_to_s_v(9007199254740990.0d * float_cast<f64>(1ul << 15ul));
+    
+        d_to_s_v(9007199254740990.0d / float_cast<f64>(1ul << 11ul));
+        d_to_s_v(9007199254740990.0d / float_cast<f64>(1ul << 10ul));
+        d_to_s_v(9007199254740990.0d / float_cast<f64>(1ul << 9ul));
+        d_to_s_v(9007199254740990.0d / float_cast<f64>(1ul << 63ul));
+        d_to_s_v(2.2250738585072014e-308d); // DBL_MIN
+        d_to_s_v(4503599627370495.0d / 8.0d);
+        d_to_s_v(4503599627370495.0d / 4.0d);
+        d_to_s_v(4503599627370495.0d / 2.0d);
+        d_to_s_v(4503599627370495.0d);
+        d_to_s_v(9007199254740990.0d);
+        d_to_s_v(9007199254740990.5d);
+        d_to_s_v(9007199254740991.0d);
+        d_to_s_v(100.0d);
+        d_to_s_v(2.2250738585072014e-308d); // DBL_MIN
+        d_to_s_v(1.7976931348623158e+308d); // DBL_MAX
+        d_to_s_v(12431234237423482734982734982734982734287381.128342783482d);
+        d_to_s_v(100.314159265359d);
+        d_to_s_v(0.314159265359d);
+        d_to_s_v(1243123423781.128342783482d);
+        d_to_s_v(100d);
+        d_to_s_v(1234d);
+        d_to_s_v(1.5d);
+        d_to_s_v(1.99999d);
+        d_to_s_v(1.00001d);
+        d_to_s_v(0.99999d);
+        d_to_s_v(1.0d);
+        d_to_s_v(0.0d);
+        d_to_s_v(0.5d);
+        d_to_s_v(0.1d);
+        d_to_s_v(0.01d);
+        d_to_s_v(0.001d);
+        d_to_s_v(0.0001d);
+        d_to_s_v(0.00001d);
+        d_to_s_v(0.000001d);
+        d_to_s_v(18'446'744'073'709'551'615.0d);
+        d_to_s_v(20'446'744'073'709'551'615.0d);
+        d_to_s_v(4.5865e+199d);
+    
+        // Check subnormals
+        let test : f64 = 4.9406564584124654e-324d; // DBL_TRUE_MIN
+        for (let i : i32 = 0; i < 52; i = i + 1) {
+            d_to_s_v(test);
+            test = test * 2.0d;
+        }
+    
+        d_to_s_v(1000000000000000000000000000000000.0d);
+    }
+    d_to_s_v(s_to_d_a("12431234237423482734982734982734982734287381.128342783482", 58));
+    d_to_s_v(s_to_d_a("2.225073858507201383e-308", 58));
+    ret;
 
-    A[] : item = cast<A[]>(mem1);
+    let item : A[] = cast<A[]>(mem1);
     item[0].item0 = cast<B[]>(mem2);
     item[0].item0[0].itemB = 77; // = B { itemB = 10 };
 
@@ -36,7 +99,7 @@ fn main () : i32 {
     item[1].text = ", World";
     item[2].text = ".";
     item[3].text = "!";
-    for (i32: i = 0; i < 4; i = i + 1) {
+    for (let i : i32 = 0; i < 4; i = i + 1) {
         item[i].item2 = i;
         std::printf("item[%d].item2 = %d / [%s]\n", i, item[i].item2, item[i].text);
     }
@@ -50,7 +113,7 @@ fn main () : i32 {
     std::printf("a.item1 = %u\n", item[0].item1);
     std::printf("a.item2 = %d\n", item[0].item2);
     
-    for (i32: i = 0; i < 32; i = i + 1) {
+    for (let i : i32 = 0; i < 32; i = i + 1) {
         std::printf("%d\n", i);
         std::printf("%p\n", sizeof(A) * cast<u64>(i) + cast<u64>(item));
         std::printf("%p\n", __builtin_address(item[i]));

@@ -59,7 +59,7 @@ public class AmpleMangler {
 	
 	public static String mangleType(ValueType type) {
 		if (type.isVarargs()) {
-			return ".";
+			return "V";
 		}
 		
 		if (Primitives.NONE.equals(type)) {
@@ -168,7 +168,7 @@ public class AmpleMangler {
 				String name = readVarString(iter);
 				yield new ValueType(name, 0, depth, ValueType.STRUCT);
 			}
-			case '.' -> new ValueType("", 8, 1, ValueType.VARARGS);
+			case 'V' -> new ValueType("", 8, 1, ValueType.VARARGS);
 			case 'n' -> Primitives.NONE.createArray(depth);
 			
 			case 'b' -> Primitives.I8.createArray(depth);
@@ -185,6 +185,9 @@ public class AmpleMangler {
 			case 'Y' -> Primitives.U256.createArray(depth);
 			case 'z' -> Primitives.I512.createArray(depth);
 			case 'Z' -> Primitives.U512.createArray(depth);
+			case 'f' -> Primitives.F32.createArray(depth);
+			case 'F' -> Primitives.F64.createArray(depth);
+			
 			default -> {
 				throw new RuntimeException("Invalid type '" + (char) c + "'");
 			}
@@ -357,26 +360,14 @@ public class AmpleMangler {
 			}
 			sb.append(" (");
 			
-			for (int i = 0; i < getParameterCount(); i++) {
+			for (int i = 0; i < parameters.length; i++) {
 				if (i > 0) {
 					sb.append(", ");
 				}
 				
-				Reference param = getParameter(i);
-				if (param.getValueType().isLinked()) {
-					sb.append("?");
-				} else {
-					sb.append(param.getValueType());
-				}
+				sb.append(parameters[i].getValueType());
 			}
-			
-			sb.append(")");
-			
-			ValueType returnType = getReturnType();
-			// if (returnType.getSize() != 0) {
-			sb.append(" : ").append(returnType);
-			// }
-			
+			sb.append(") : ").append(returnType);
 			return sb.toString();
 		}
 	}

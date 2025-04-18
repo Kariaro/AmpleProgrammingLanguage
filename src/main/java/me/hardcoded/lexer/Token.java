@@ -39,6 +39,7 @@ public class Token {
 		
 		// Data
 		STRUCT,
+		LET,
 		
 		// Comparisons
 		EQUALS,
