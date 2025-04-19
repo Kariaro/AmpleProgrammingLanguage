@@ -173,7 +173,7 @@ public class AmpleCompiler {
 		OutputFormat format = ampleConfig.getConfiguration().getOutputFormat();
 		
 		if (true) {
-			return;
+			// return;
 		}
 		
 		ICodeGenerator codeGenerator = format.createNew(ampleConfig);
@@ -196,6 +196,9 @@ public class AmpleCompiler {
 		LOGGER.info("");
 		LOGGER.info("{}", path);
 		
+		if (true) {
+			return;
+		}
 		ampleConfig.getVisualizationHandler()
 			.addVisualization(SourceCodeVisualization::new, LexerTokenizer.parseKeepWhitespace(
 				inputFile.getAbsolutePath(),

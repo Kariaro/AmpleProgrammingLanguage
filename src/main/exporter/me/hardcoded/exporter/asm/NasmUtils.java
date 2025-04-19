@@ -39,8 +39,9 @@ public class NasmUtils {
 			new ProcessBuilder(
 				getNasm().getAbsolutePath(),
 				inputFile,
-				"-f", format,
+				"-f", "elf64",
 				"-s",
+				"-g",
 				"-o", outputFile)
 				.directory(outputFolder)
 				.inheritIO()

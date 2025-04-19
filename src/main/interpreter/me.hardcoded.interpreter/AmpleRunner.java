@@ -287,42 +287,26 @@ public class AmpleRunner {
 							local.put(dst, result);
 						}
 						// Equality operators
-						case LTE, LT, GTE, GT, ILTE, ILT, IGTE, IGT, NEQ, EQ -> {
+						case ULTE, ULT, UGTE, UGT, ILTE, ILT, IGTE, IGT, NEQ, EQ -> {
 							InstRef dst = inst.getRefParam(0).getReference();
 							Value a = convertFromParam(local, inst.getParam(0), context);
 							Value b = convertFromParam(local, inst.getParam(1), context);
 							
 							boolean unsigned = switch (opcode) {
-								case LTE, LT, GTE, GT -> true;
+								case ULTE, ULT, UGTE, UGT -> true;
 								default -> false;
 							};
 							
 							ValueType type = dst.getValueType();
+							int s = type.calculateBytes();
 							
 							long compare = switch (a.getType()) {
 								case Integer -> {
-									long av = a.getInteger();
-									long bv = b.getInteger();
+									long av = a.getInteger(s);
+									long bv = b.getInteger(s);
 									if (unsigned) {
 										yield Long.compareUnsigned(av, bv);
 									}
-									
-									// make sure signed integers are sign extended
-									switch (type.getSize()) {
-										case 32 -> {
-											av = ((int) av);
-											bv = ((int) bv);
-										}
-										case 16 -> {
-											av = ((short) av);
-											bv = ((short) bv);
-										}
-										case 8 -> {
-											av = ((byte) av);
-											bv = ((byte) bv);
-										}
-									}
-									
 									yield Long.compare(av, bv);
 								}
 								case Floating -> Double.compare(a.getFloating(), b.getFloating());
@@ -330,17 +314,35 @@ public class AmpleRunner {
 							};
 							
 							boolean result = switch (opcode) {
-								case LTE, ILTE -> compare <= 0;
-								case LT, ILT -> compare < 0;
-								case GTE, IGTE -> compare >= 0;
-								case GT, IGT -> compare > 0;
-								
+								case ULTE, ILTE -> compare <= 0;
+								case ULT, ILT -> compare < 0;
+								case UGTE, IGTE -> compare >= 0;
+								case UGT, IGT -> compare > 0;
 								case NEQ -> compare != 0;
 								case EQ -> compare == 0;
 								default -> false; // Never reached
 							};
 							
 							local.put(dst, new Value.NumberValue(result ? 1 : 0));
+						}
+						// Equality operators
+						case FLTE, FLT, FGT, FGTE, FEQ, FNEQ -> {
+							InstRef dst = inst.getRefParam(0).getReference();
+							Value a = convertFromParam(local, inst.getParam(0), context);
+							Value b = convertFromParam(local, inst.getParam(1), context);
+							
+							long compare = Double.compare(a.getFloating(), b.getFloating());
+							boolean result = switch (opcode) {
+								case FLTE -> compare <= 0;
+								case FLT -> compare < 0;
+								case FGTE -> compare >= 0;
+								case FGT -> compare > 0;
+								case FNEQ -> compare != 0;
+								case FEQ -> compare == 0;
+								default -> false; // Never reached
+							};
+							
+							local.put(dst, new Value.NumberValue(result ? 1.0 : 0.0));
 						}
 						
 						// Branch operators
@@ -367,7 +369,7 @@ public class AmpleRunner {
 						}
 						
 						// Arithmetic operators
-						case AND, XOR, SHR, SHL, OR, SUB, ADD, MUL, DIV, MOD, IMUL, IDIV, IMOD -> {
+						case AND, XOR, SHR, SHL, OR, SUB, ADD, UMUL, UDIV, UMOD, IMUL, IDIV, IMOD -> {
 							InstRef dst = inst.getRefParam(0).getReference();
 							Value a = convertFromParam(local, inst.getParam(0), context);
 							Value b = convertFromParam(local, inst.getParam(1), context);
@@ -394,59 +396,18 @@ public class AmpleRunner {
 							};
 							
 							long result = switch (opcode) {
-								case AND -> switch (type) {
-									case Integer -> a.getInteger(s) & b.getInteger(s);
-									case Floating, Array -> throw new RuntimeException("Cannot AND " + type + " values");
-								};
-								case XOR -> switch (type) {
-									case Integer -> a.getInteger(s) ^ b.getInteger(s);
-									case Floating, Array -> throw new RuntimeException("Cannot XOR " + type + " values");
-								};
-								case SHR -> switch (type) {
-									case Integer -> a.getInteger(s) >>> b.getInteger(s);
-									case Floating, Array -> throw new RuntimeException("Cannot SHR " + type + " values");
-								};
-								case SHL -> switch (type) {
-									case Integer -> a.getInteger(s) << b.getInteger(s);
-									case Floating, Array -> throw new RuntimeException("Cannot SHL " + type + " values");
-								};
-								case OR -> switch (type) {
-									case Integer -> a.getInteger(s) | b.getInteger(s);
-									case Floating, Array -> throw new RuntimeException("Cannot OR " + type + " values");
-								};
-								case IMUL, MUL -> switch (type) {
-									case Integer -> a.getInteger(s) * b.getInteger(s);
-									case Floating -> Double.doubleToRawLongBits(a.getFloating() * b.getFloating());
-									case Array -> throw new RuntimeException("Cannot MUL " + type + " values");
-								};
-								case IDIV -> switch (type) {
-									case Integer -> a.getInteger(s) / b.getInteger(s);
-									case Floating -> Double.doubleToRawLongBits(a.getFloating() * b.getFloating());
-									case Array -> throw new RuntimeException("Cannot DIV " + type + " values");
-								};
-								case DIV -> switch (type) {
-									case Integer -> Long.divideUnsigned(a.getInteger(s), b.getInteger(s));
-									case Floating -> Double.doubleToRawLongBits(a.getFloating() * b.getFloating());
-									case Array -> throw new RuntimeException("Cannot DIV " + type + " values");
-								};
-								case MOD -> switch (type) {
-									case Integer -> Long.remainderUnsigned(a.getInteger(s), b.getInteger(s));
-									case Floating -> Double.doubleToRawLongBits(a.getFloating() % b.getFloating());
-									case Array -> throw new RuntimeException("Cannot MOD " + type + " values");
-								};
-								case IMOD -> switch (type) {
-									case Integer -> a.getInteger(s) % b.getInteger(s);
-									case Floating -> Double.doubleToRawLongBits(a.getFloating() % b.getFloating());
-									case Array -> throw new RuntimeException("Cannot MOD " + type + " values");
-								};
-								case ADD -> switch (type) {
-									case Integer, Array -> a.getInteger(s) + b.getInteger(s);
-									case Floating -> Double.doubleToRawLongBits(a.getFloating() + b.getFloating());
-								};
-								case SUB -> switch (type) {
-									case Integer, Array -> a.getInteger(s) - b.getInteger(s);
-									case Floating -> Double.doubleToRawLongBits(a.getFloating() - b.getFloating());
-								};
+								case AND -> a.getInteger(s) & b.getInteger(s);
+								case XOR -> a.getInteger(s) ^ b.getInteger(s);
+								case SHR -> a.getInteger(s) >>> b.getInteger(s);
+								case SHL -> a.getInteger(s) << b.getInteger(s);
+								case OR -> a.getInteger(s) | b.getInteger(s);
+								case IMUL, UMUL -> a.getInteger(s) * b.getInteger(s);
+								case IDIV -> a.getInteger(s) / b.getInteger(s);
+								case UDIV -> Long.divideUnsigned(a.getInteger(s), b.getInteger(s));
+								case UMOD -> Long.remainderUnsigned(a.getInteger(s), b.getInteger(s));
+								case IMOD -> a.getInteger(s) % b.getInteger(s);
+								case ADD -> a.getInteger(s) + b.getInteger(s);
+								case SUB -> a.getInteger(s) - b.getInteger(s);
 								default -> throw new RuntimeException("Arithmetic opcode '" + opcode + "' not implemented");
 							};
 							
@@ -467,6 +428,22 @@ public class AmpleRunner {
 							};
 							
 							local.put(dst, value);
+						}
+						
+						case FADD, FSUB, FMOD, FDIV, FMUL -> {
+							InstRef dst = inst.getRefParam(0).getReference();
+							Value a = convertFromParam(local, inst.getParam(0), context);
+							Value b = convertFromParam(local, inst.getParam(1), context);
+							
+							long result = switch (opcode) {
+								case FMUL -> Double.doubleToRawLongBits(a.getFloating() * b.getFloating());
+								case FDIV -> Double.doubleToRawLongBits(a.getFloating() / b.getFloating());
+								case FMOD -> Double.doubleToRawLongBits(a.getFloating() % b.getFloating());
+								case FADD -> Double.doubleToRawLongBits(a.getFloating() + b.getFloating());
+								case FSUB -> Double.doubleToRawLongBits(a.getFloating() - b.getFloating());
+								default -> throw new RuntimeException("Arithmetic opcode '" + opcode + "' not implemented");
+							};
+							local.put(dst, new Value.NumberValue(true, result));
 						}
 						case LOAD -> {
 							InstRef dst = inst.getRefParam(0).getReference();
@@ -583,7 +560,7 @@ public class AmpleRunner {
 							Value a = convertFromParam(local, inst.getParam(1), context);
 							local.put(dst, new Value.NumberValue(a.getInteger() != 0 ? 1 : 0));
 						}
-						case NOR -> {
+						case BIT_NOT -> {
 							InstRef dst = inst.getRefParam(0).getReference();
 							Value a = convertFromParam(local, inst.getParam(1), context);
 							local.put(dst, new Value.NumberValue(~a.getInteger()));

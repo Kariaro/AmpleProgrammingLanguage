@@ -436,7 +436,10 @@ public class IntermediateGenerator {
 			.addParam(new InstParam.Ref(holder))
 			.addParam(new InstParam.Ref(left)));
 		
-		Opcode opcode = getBinaryOpcode(expr.getOperation(), left.getValueType().isUnsigned());
+		Opcode opcode = getBinaryOpcode(
+			expr.getOperation(),
+			left.getValueType().isUnsigned(),
+			left.getValueType().isFloating());
 		procedure.addInst(new Inst(opcode, expr.getSyntaxPosition())
 			.addParam(new InstParam.Ref(holder))
 			.addParam(new InstParam.Ref(right)));
@@ -579,7 +582,7 @@ public class IntermediateGenerator {
 						.addParam(new InstParam.Ref(holder_dta))
 						.addParam(new InstParam.Type(left.getValueType().createArray(
 							Math.max(0, left.getValueType().getDepth() - 1)))));
-					procedure.addInst(new Inst(Opcode.MUL, value.getRight().getSyntaxPosition())
+					procedure.addInst(new Inst(Opcode.UMUL, value.getRight().getSyntaxPosition())
 						.addParam(new InstParam.Ref(holder_idx))
 						.addParam(new InstParam.Ref(holder_dta)));
 					procedure.addInst(new Inst(Opcode.TRUNC, value.getLeft().getSyntaxPosition())
@@ -859,25 +862,23 @@ public class IntermediateGenerator {
 	}
 	
 	// Type conversions
-	public Opcode getBinaryOpcode(Operation operation, boolean unsigned) {
-		boolean floating = false;
-		
+	public Opcode getBinaryOpcode(Operation operation, boolean unsigned, boolean floating) {
 		return switch (operation) {
 			// Binary
 			case PLUS -> get(Opcode.ADD, Opcode.ADD, Opcode.FADD, unsigned, floating);
 			case MINUS -> get(Opcode.SUB, Opcode.SUB, Opcode.FSUB, unsigned, floating);
-			case MULTIPLY -> get(Opcode.MUL, Opcode.IMUL, Opcode.FMUL, unsigned, floating);
-			case DIVIDE -> get(Opcode.DIV, Opcode.IDIV, Opcode.FDIV, unsigned, floating);
-			case MODULO -> get(Opcode.MOD, Opcode.IMOD, Opcode.FMOD, unsigned, floating);
+			case MULTIPLY -> get(Opcode.UMUL, Opcode.IMUL, Opcode.FMUL, unsigned, floating);
+			case DIVIDE -> get(Opcode.UDIV, Opcode.IDIV, Opcode.FDIV, unsigned, floating);
+			case MODULO -> get(Opcode.UMOD, Opcode.IMOD, Opcode.FMOD, unsigned, floating);
 			case AND -> Opcode.AND;
 			case XOR -> Opcode.XOR;
 			case OR -> Opcode.OR;
 			case SHIFT_RIGHT -> Opcode.SHR;
 			case SHIFT_LEFT -> Opcode.SHL;
-			case MORE_EQUAL -> get(Opcode.GTE, Opcode.IGTE, Opcode.FGTE, unsigned, floating);
-			case MORE_THAN -> get(Opcode.GT, Opcode.IGT, Opcode.FGT, unsigned, floating);
-			case LESS_EQUAL -> get(Opcode.LTE, Opcode.ILTE, Opcode.FLTE, unsigned, floating);
-			case LESS_THAN -> get(Opcode.LT, Opcode.ILT, Opcode.FLT, unsigned, floating);
+			case MORE_EQUAL -> get(Opcode.UGTE, Opcode.IGTE, Opcode.FGTE, unsigned, floating);
+			case MORE_THAN -> get(Opcode.UGT, Opcode.IGT, Opcode.FGT, unsigned, floating);
+			case LESS_EQUAL -> get(Opcode.ULTE, Opcode.ILTE, Opcode.FLTE, unsigned, floating);
+			case LESS_THAN -> get(Opcode.ULT, Opcode.ILT, Opcode.FLT, unsigned, floating);
 			case EQUAL -> Opcode.EQ;
 			case NOT_EQUAL -> Opcode.NEQ;
 			
@@ -901,7 +902,7 @@ public class IntermediateGenerator {
 		return switch (operation) {
 			case NEGATIVE -> Opcode.NEG;
 			case NOT -> Opcode.NOT;
-			case NOR -> Opcode.NOR;
+			case NOR -> Opcode.BIT_NOT;
 			
 			default -> throw new RuntimeException("Unknown unary operation '%s'".formatted(operation));
 		};

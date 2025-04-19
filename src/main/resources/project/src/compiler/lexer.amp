@@ -67,7 +67,8 @@ fn (export) tokenize(buffer : u8[]) : token[] {
             text[0] = buffer[idx];
             text[1] = '\0';
             std::printf("[PREVENT FREEZE] at [%s] : %d\n", text, idx);
-            break; // Prevent freeze
+            idx = idx + 1;
+            // break; // Prevent freeze
         }
 
         last_idx = idx;

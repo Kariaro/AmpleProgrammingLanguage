@@ -4,6 +4,7 @@ import me.hardcoded.compiler.AmpleMangler;
 import me.hardcoded.compiler.context.AmpleConfig;
 import me.hardcoded.compiler.impl.ICodeGenerator;
 import me.hardcoded.compiler.intermediate.inst.*;
+import me.hardcoded.compiler.parser.type.ValueType;
 import me.hardcoded.utils.error.CodeGenException;
 import me.hardcoded.utils.error.ErrorUtil;
 import org.apache.logging.log4j.LogManager;
@@ -19,7 +20,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 	private static final Logger LOGGER = LogManager.getLogger(AsmCodeGenerator.class);
 	private static final boolean DEBUG = true;
 	private static final boolean SELF = false;
-	private static final boolean REG_PARAM = false;
+	private static final boolean REG_PARAM = true;
 	
 	public AsmCodeGenerator(AmpleConfig ampleConfig) {
 		super(ampleConfig);
@@ -102,7 +103,8 @@ public class AsmCodeGenerator extends ICodeGenerator {
 			ElfHeader elfHeader = new ElfHeader(DEBUG, SELF, "");
 			elfHeader.appendHeader(header);
 			elfHeader.appendSectionText(header,
-				"    call %s\n".formatted(main.toSimpleString()) +
+				"    fninit\n" +
+					"    call %s\n".formatted(main.getMangledName()) +
 					"    mov rdi, rax\n" +
 					"    mov rax, 60\n" +
 					"    syscall\n" +
@@ -189,7 +191,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				}
 				
 				context.addLabelString(reference.toSimpleString(), reference.getPath());
-				String label = reference.toSimpleString() + ":\n";
+				String label = reference.getMangledName() + ":\n";
 				return label + sb.stream().reduce("", (a, b) -> a + '\n' + b).indent(4).stripTrailing().replaceFirst("    \n", "");
 			}
 			
@@ -240,7 +242,10 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					
 					String regName;
 					// If the high 32 bits are set we need to store it in a register
-					if ((number >>> 32) != 0) {
+					if (dst.getValueType().isFloating()) {
+						sb.add("mov RAX, 0x%s".formatted(Long.toUnsignedString(number, 16)));
+						regName = "RAX";
+					} else if ((number >>> 32) != 0) {
 						sb.add("mov RAX, %s".formatted(value));
 						regName = "RAX";
 					} else {
@@ -367,6 +372,29 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					));
 				}
 			}
+			case D_TO_F_CAST -> {
+				InstParam dst = inst.getParam(0);
+				InstParam src = inst.getParam(1);
+				
+				String regSrcName = AsmReg.AX.toString(src);
+				
+				sb.add("xor RAX, RAX");
+				sb.add("mov %s, %s".formatted(
+					regSrcName,
+					AsmUtils.getParamValue(src, proc)
+				));
+				// cvttsd2si
+				// TODO - This assumes signed
+				sb.add("cvtsi2sd XMM1, RAX".formatted(
+					AsmUtils.getParamValue(dst, proc)
+				));
+				sb.add("movq RAX, XMM1".formatted(
+					AsmUtils.getParamValue(dst, proc)
+				));
+				sb.add("mov %s, RAX".formatted(
+					AsmUtils.getParamValue(dst, proc)
+				));
+			}
 			case SEXT, ZEXT, TRUNC -> {
 				InstParam dst = inst.getParam(0);
 				InstParam src = inst.getParam(1);
@@ -475,7 +503,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					regAName
 				));
 			}
-			case GT, GTE, LT, LTE, IGT, IGTE, ILT, ILTE, EQ, NEQ -> {
+			case UGT, UGTE, ULT, ULTE, IGT, IGTE, ILT, ILTE, EQ, NEQ -> {
 				InstRef dst = inst.getRefParam(0).getReference();
 				InstRef b = inst.getRefParam(1).getReference();
 				
@@ -500,10 +528,10 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				));
 				
 				String type = switch (inst.getOpcode()) {
-					case GT -> "a";
-					case LT -> "b";
-					case GTE -> "ae";
-					case LTE -> "be";
+					case UGT -> "a";
+					case ULT -> "b";
+					case UGTE -> "ae";
+					case ULTE -> "be";
 					case IGT -> "g";
 					case ILT -> "l";
 					case IGTE -> "ge";
@@ -575,7 +603,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 						pOffset += (size >> 3);
 					}
 				}
-				sb.add("call %s".formatted(fun.toSimpleString()));
+				sb.add("call %s".formatted(fun.getMangledName()));
 				
 				if (offset != 0) {
 					sb.add("add RSP, 0x%x".formatted(offset));
@@ -617,6 +645,25 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				InstRef dst = inst.getRefParam(0).getReference();
 				sb.add("jmp .%s".formatted(dst.toSimpleString()));
 			}
+			case NOT -> {
+				InstRef dst = inst.getRefParam(0).getReference();
+				InstParam src = inst.getParam(1);
+				
+				String regName = AsmReg.CX.toString(src);
+				sb.add("mov %s, %s".formatted(
+					regName,
+					AsmUtils.getParamValue(src, proc)
+				));
+				sb.add("test %s, %s".formatted(
+					regName,
+					regName
+				));
+				sb.add("sete AL");
+				sb.add("mov %s, %s".formatted(
+					AsmUtils.getStackPtr(dst, proc),
+					AsmReg.AX.toString(src)
+				));
+			}
 			case NEG -> {
 				InstRef dst = inst.getRefParam(0).getReference();
 				InstParam src = inst.getParam(1);
@@ -632,8 +679,95 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					regName
 				));
 			}
-			case IDIV, DIV -> {
-				boolean unsigned = inst.getOpcode() == Opcode.DIV;
+			case BIT_NOT -> {
+				InstRef dst = inst.getRefParam(0).getReference();
+				InstParam src = inst.getParam(1);
+				
+				String regName = AsmReg.AX.toString(src);
+				sb.add("mov %s, %s".formatted(
+					regName,
+					AsmUtils.getParamValue(src, proc)
+				));
+				sb.add("not %s".formatted(regName));
+				sb.add("mov %s, %s".formatted(
+					AsmUtils.getStackPtr(dst, proc),
+					regName
+				));
+			}
+			case FMUL -> {
+				InstRef dst = inst.getRefParam(0).getReference();
+				InstParam b = inst.getParam(1);
+				sb.add("fld %s".formatted(AsmUtils.getParamValue(dst, proc)));
+				sb.add("fmul %s".formatted(AsmUtils.getParamValue(b, proc)));
+				sb.add("fstp %s".formatted(AsmUtils.getParamValue(dst, proc)));
+			}
+			case FDIV -> {
+				InstRef dst = inst.getRefParam(0).getReference();
+				InstParam b = inst.getParam(1);
+				sb.add("fld %s".formatted(AsmUtils.getParamValue(dst, proc)));
+				sb.add("fdiv %s".formatted(AsmUtils.getParamValue(b, proc)));
+				sb.add("fstp %s".formatted(AsmUtils.getParamValue(dst, proc)));
+			}
+			case FMOD -> {
+				InstRef dst = inst.getRefParam(0).getReference();
+				InstParam b = inst.getParam(1);
+				sb.add("fld %s".formatted(AsmUtils.getParamValue(dst, proc)));
+				sb.add("fprem %s".formatted(AsmUtils.getParamValue(b, proc)));
+				sb.add("fstp %s".formatted(AsmUtils.getParamValue(dst, proc)));
+			}
+			case FLT, FLTE, FGT, FGTE -> {
+				InstRef dst = inst.getRefParam(0).getReference();
+				InstParam b = inst.getParam(1);
+				// String cmpAddress = "word [RBP - 0x%x]".formatted(proc.getStackOffset(dst));
+				sb.add("fld %s".formatted(AsmUtils.getParamValue(dst, proc)));
+				sb.add("fcom %s".formatted(AsmUtils.getParamValue(b, proc)));
+				sb.add("xor RAX, RAX");
+				sb.add("push RAX");
+				sb.add("fnstcw word [RSP]");
+				sb.add("pop RAX");
+				
+				// 15 | 14 | 13 12 11 | 10 |  9 |  8 | ...
+				// b  | c3 | TOP      | c2 | c1 | c0 | ...
+				
+				//            C3 C2 C1 C0
+				// ST0 > b ->  0  ?  ?  0
+				// ST0 < b ->  0  ?  ?  1
+				// ST0 = b ->  1  ?  ?  0
+				switch (inst.getOpcode()) {
+					case FLT -> {
+						sb.add("and AX, 0b%s".formatted("0000_0001_0000_0000").replace("_", ""));
+					}
+					case FLTE -> {
+						sb.add("and AX, 0b%s".formatted("0100_0001_0000_0000").replace("_", ""));
+					}
+					case FGT -> {
+						sb.add("and AX, 0b%s".formatted("0000_0001_0000_0000").replace("_", ""));
+						sb.add("xor AX, 0b%s".formatted("0000_0001_0000_0000").replace("_", ""));
+					}
+					case FGTE -> {
+						sb.add("and AX, 0b%s".formatted("0100_0001_0000_0000").replace("_", ""));
+						sb.add("xor AX, 0b%s".formatted("0000_0001_0000_0000").replace("_", ""));
+					}
+					case FNEQ -> {
+						sb.add("and AX, 0b%s".formatted("0100_0000_0000_0000").replace("_", ""));
+						sb.add("xor AX, 0b%s".formatted("0100_0000_0000_0000").replace("_", ""));
+					}
+					case FEQ -> {
+						sb.add("and AX, 0b%s".formatted("0100_0000_0000_0000").replace("_", ""));
+					}
+					default -> {
+						sb.add("ud2");
+					}
+				}
+				sb.add("xor RCX, RCX");
+				sb.add("mov RDX, 0x3ff0000000000000"); // 1.0
+				sb.add("test AX, AX");
+				// TODO - 32 bit floating point
+				sb.add("cmove RCX, RDX");
+				sb.add("mov %s, RCX".formatted(AsmUtils.getStackPtr(dst, proc)));
+			}
+			case IDIV, UDIV -> {
+				boolean unsigned = inst.getOpcode() == Opcode.UDIV;
 				InstRef dst = inst.getRefParam(0).getReference();
 				InstParam b = inst.getParam(1);
 				
@@ -652,8 +786,8 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					regAName
 				));
 			}
-			case IMUL, MUL -> {
-				boolean unsigned = inst.getOpcode() == Opcode.MUL;
+			case IMUL, UMUL -> {
+				boolean unsigned = inst.getOpcode() == Opcode.UMUL;
 				InstRef dst = inst.getRefParam(0).getReference();
 				InstParam b = inst.getParam(1);
 				
@@ -672,8 +806,8 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					regAName
 				));
 			}
-			case IMOD, MOD -> {
-				boolean unsigned = inst.getOpcode() == Opcode.MOD;
+			case IMOD, UMOD -> {
+				boolean unsigned = inst.getOpcode() == Opcode.UMOD;
 				InstRef dst = inst.getRefParam(0).getReference();
 				InstParam b = inst.getParam(1);
 				
@@ -693,6 +827,85 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					remName
 				));
 			}
+			case SIZEOF -> {
+				InstRef dst = inst.getRefParam(0).getReference();
+				var type = (InstParam.Type) inst.getParam(1);
+				
+				// TODO - Structs over 4gb ?
+				sb.add("mov %s, 0x%x".formatted(
+					AsmUtils.getStackPtr(dst, proc),
+					getSize(type.getSize())
+				));
+			}
+			case MEMBER_PTR -> {
+				InstRef dst = inst.getRefParam(0).getReference();
+				InstParam src = inst.getParam(1);
+				InstRef src_ref = inst.getRefParam(1).getReference();
+				InstParam idx = inst.getParam(2);
+				int memberIndex = (int) inst.getNumParam(3).getValue();
+				
+				var structData = src.getSize().getStructData();
+				var members = structData.getMembers();
+				int sizeof = getSize(src.getSize().createArray(
+					Math.max(0, src.getSize().getDepth() - 1)));
+				
+				String offsetValue;
+				if (idx instanceof InstParam.Ref ref) {
+					sb.add("xor RAX, RAX");
+					sb.add("mov %s, %s".formatted(
+						AsmReg.AX.toString(ref.getReference()),
+						AsmUtils.getStackPtr(ref.getReference(), proc)
+					));
+					sb.add("mov RCX, 0x%x".formatted(sizeof));
+					sb.add("mul RCX");
+					offsetValue = "RAX";
+				} else if (idx instanceof InstParam.Num num) {
+					offsetValue = "" + (int) num.getValue();
+				} else {
+					throw new RuntimeException("Invalid read position '" + idx + "'");
+				}
+				
+				// String regAName = AsmReg.AX.toString(dst);
+				// sb.add("xor RDX, RDX");
+				// sb.add("mov %s, %s".formatted(
+				// 	regAName,
+				// 	AsmUtils.getParamValue(dst, proc)
+				// ));
+				// sb.add("mul %s".formatted(
+				// 	AsmUtils.getParamValue(src, proc)
+				// ));
+				
+				int offset = 0;
+				for (int i = 0; i < memberIndex; i++) {
+					var member = members.get(i);
+					int size = getSize(member.getValue());
+					offset += size;
+				}
+				
+				sb.add("mov RBX, %s".formatted(
+					AsmUtils.getStackPtr(src_ref, proc)
+				));
+				sb.add("lea RAX, [RBX + %s + 0x%x]".formatted(
+					offsetValue,
+					offset
+				));
+				sb.add("mov %s, %s".formatted(
+					AsmUtils.getStackPtr(dst, proc),
+					"RAX"
+				));
+				
+				
+				/*
+				var srcData = convertFromParam(local, src, context);
+				if (srcData instanceof Value.ArrayValue arr) {
+					Value offsetValue = arr.withOffset(offset + (sizeof * arrayIdx));
+					local.put(dst, offsetValue);
+				} else {
+					LOGGER.info("{}", srcData);
+					throw new RuntimeException("Cannot get member_ptr from non pointer type");
+				}
+				*/
+			}
 			
 			default -> {
 				LOGGER.warn("Undefined opcode '{}'", inst.getOpcode());
@@ -702,6 +915,21 @@ public class AsmCodeGenerator extends ICodeGenerator {
 		}
 		
 		return sb.stream().reduce("", (a, b) -> a + '\n' + b).indent(4).stripTrailing();
+	}
+	
+	private int getSize(ValueType type) {
+		var structData = type.getStructData();
+		if (type.getDepth() > 0 || structData == null) {
+			return type.calculateBytes();
+		}
+		
+		var members = structData.getMembers();
+		int size = 0;
+		for (var member : members) {
+			size += getSize(member.getValue());
+		}
+		
+		return size;
 	}
 	
 	@Override

@@ -13,11 +13,11 @@ public enum Opcode {
 	EQ,                 // r0 = r0 == r1     (r = r == r)
 	NEQ,                // r0 = r0 != r1     (r = r != r)
 	
-	MUL,                // r0 = r0 *  r1     (r = r *  r)
-	DIV,                // r0 = r0 /  r1     (r = r /  r)
-	MOD,                // r0 = r0 %  r1     (r = r %  r)
-	GTE,                // r0 = r0 >= r1     (r = r >= r)
-	GT,                 // r0 = r0 >  r1     (r = r >  r)
+	UMUL,               // r0 = r0 *  r1     (r = r *  r)
+	UDIV,               // r0 = r0 /  r1     (r = r /  r)
+	UMOD,               // r0 = r0 %  r1     (r = r %  r)
+	UGTE,               // r0 = r0 >= r1     (r = r >= r)
+	UGT,                // r0 = r0 >  r1     (r = r >  r)
 	
 	IMUL,               // r0 = r0 *  r1     (r = r *  r)
 	IDIV,               // r0 = r0 /  r1     (r = r /  r)
@@ -26,8 +26,8 @@ public enum Opcode {
 	IGT,                // r0 = r0 >  r1     (r = r >  r)
 	
 	// TODO: Redundant instructions
-	LTE,                // r0 = r0 <= r1     (r = r <= r) (GT r2, r1)
-	LT,                 // r0 = r0 <  r1     (r = r <  r) (GTE r2, r1)
+	ULTE,               // r0 = r0 <= r1     (r = r <= r) (UGT r2, r1)
+	ULT,                // r0 = r0 <  r1     (r = r <  r) (UGTE r2, r1)
 	ILTE,               // r0 = r0 <= r1     (r = r <= r) (IGT r2, r1)
 	ILT,                // r0 = r0 <  r1     (r = r <  r) (IGTE r2, r1)
 	
@@ -47,7 +47,7 @@ public enum Opcode {
 	// Unary instructions
 	NOT,                // r0 = !(r1)
 	NEG,                // r0 = -(r1) // TODO: Change to SUB
-	NOR,                // r0 = ~(r1)
+	BIT_NOT,                // r0 = ~(r1)
 	
 	// Size instructions
 	// F_TO_D_CAST,        // r0 = FLOAT TO INTEGER

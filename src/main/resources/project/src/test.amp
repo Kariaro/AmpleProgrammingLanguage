@@ -18,15 +18,7 @@ fn d_to_s_v(value : f64) {
 }
 
 fn main () : i32 {
-    let mem1 : u8[] = stack_alloc<u8, 128>();
-    let mem2 : u8[] = stack_alloc<u8, 128>();
-    {
-        for (let i : i32 = 0; i < 128; i = i + 1) {
-            mem1[i] = cast<u8>(0);
-            mem2[i] = cast<u8>(0);
-        }
-    }
-    
+    /*
     if (0 == 1) {
         d_to_s_v(9007199254740990.0d * float_cast<f64>(1ul << 11ul));
         d_to_s_v(9007199254740990.0d * float_cast<f64>(1ul << 12ul));
@@ -81,10 +73,30 @@ fn main () : i32 {
     
         d_to_s_v(1000000000000000000000000000000000.0d);
     }
+    std::printf("> %d : %lf\n", 1, 2.5d);
+    std::printf("! %lf\n", s_to_d_a("12431234237423482734982734982734982734287381.128342783482", 58));
     d_to_s_v(s_to_d_a("12431234237423482734982734982734982734287381.128342783482", 58));
     d_to_s_v(s_to_d_a("2.225073858507201383e-308", 58));
+    std::printf("> %d : %lf\n", 8, float_cast<f64>(12345ul));
+    std::printf("> %d : %lf\n", 8, 123.1223d);
+    */
+    std::printf("%lf <  %lf = %lf\n", 1232.0d, 1100.0d, 1232.0d <  1100.0d);
+    std::printf("%lf <= %lf = %lf\n", 1232.0d, 1100.0d, 1232.0d <= 1100.0d);
+    std::printf("%lf >= %lf = %lf\n", 1232.0d, 1100.0d, 1232.0d >= 1100.0d);
+    std::printf("%lf >  %lf = %lf\n", 1232.0d, 1100.0d, 1232.0d >  1100.0d);
+    std::printf("%lf == %lf = %lf\n", 1232.0d, 1100.0d, 1232.0d == 1100.0d);
+    std::printf("%lf != %lf = %lf\n", 1232.0d, 1100.0d, 1232.0d != 1100.0d);
     ret;
 
+    let mem1 : u8[] = stack_alloc<u8, 128>();
+    let mem2 : u8[] = stack_alloc<u8, 128>();
+    {
+        for (let i : i32 = 0; i < 128; i = i + 1) {
+            mem1[i] = cast<u8>(0);
+            mem2[i] = cast<u8>(0);
+        }
+    }
+    
     let item : A[] = cast<A[]>(mem1);
     item[0].item0 = cast<B[]>(mem2);
     item[0].item0[0].itemB = 77; // = B { itemB = 10 };
