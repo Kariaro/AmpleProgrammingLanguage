@@ -86,6 +86,14 @@ fn main () : i32 {
     std::printf("%lf >  %lf = %lf\n", 1232.0d, 1100.0d, 1232.0d >  1100.0d);
     std::printf("%lf == %lf = %lf\n", 1232.0d, 1100.0d, 1232.0d == 1100.0d);
     std::printf("%lf != %lf = %lf\n", 1232.0d, 1100.0d, 1232.0d != 1100.0d);
+    std::printf("----\n");
+    
+    std::printf("%f <  %f = %f\n", 1232.0f, 1100.0f, 1232.0f <  1100.0f);
+    std::printf("%f <= %f = %f\n", 1232.0f, 1100.0f, 1232.0f <= 1100.0f);
+    std::printf("%f >= %f = %f\n", 1232.0f, 1100.0f, 1232.0f >= 1100.0f);
+    std::printf("%f >  %f = %f\n", 1232.0f, 1100.0f, 1232.0f >  1100.0f);
+    std::printf("%f == %f = %f\n", 1232.0f, 1100.0f, 1232.0f == 1100.0f);
+    std::printf("%f != %f = %f\n", 1232.0f, 1100.0f, 1232.0f != 1100.0f);
     ret;
 
     let mem1 : u8[] = stack_alloc<u8, 128>();

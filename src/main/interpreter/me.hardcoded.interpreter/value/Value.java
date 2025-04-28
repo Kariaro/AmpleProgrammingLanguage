@@ -23,11 +23,12 @@ public interface Value {
 		return getInteger();
 	}
 	
-	double getFloating();
+	double getFloating(int size);
 	
 	class NumberValue implements Value {
 		private final long value;
 		private final boolean floating;
+		private boolean is_double;
 		
 		public NumberValue(boolean floating, long value) {
 			this.floating = floating;
@@ -40,10 +41,12 @@ public interface Value {
 		
 		public NumberValue(double value) {
 			this(true, Double.doubleToRawLongBits(value));
+			is_double = true;
 		}
 		
 		public NumberValue(float value) {
 			this(true, Float.floatToRawIntBits(value));
+			is_double = false;
 		}
 		
 		@Override
@@ -85,9 +88,13 @@ public interface Value {
 		}
 		
 		@Override
-		public double getFloating() {
+		public double getFloating(int size) {
 			if (!floating) {
 				throw new UnsupportedOperationException();
+			}
+			
+			if (size == 4) {
+				return Float.intBitsToFloat((int) value);
 			}
 			
 			return Double.longBitsToDouble(value);
@@ -96,7 +103,9 @@ public interface Value {
 		@Override
 		public String toString() {
 			return floating
+				? (is_double
 				? Double.toString(Double.longBitsToDouble(value))
+				: Float.toString(Float.intBitsToFloat((int) value)))
 				: Long.toString(value);
 		}
 	}
@@ -228,7 +237,7 @@ public interface Value {
 		}
 		
 		@Override
-		public double getFloating() {
+		public double getFloating(int size) {
 			throw new UnsupportedOperationException();
 		}
 		

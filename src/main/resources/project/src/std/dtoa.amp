@@ -426,7 +426,7 @@ fn (export) s_to_d_a(buffer : u8[], length : i32) : f64 {
         }
     }
 
-    let result : f64 = float_cast<f64>(v >> 11ul); // Exact representation
+    let result : f64 = cast<f64>(v >> 11ul); // Exact representation
     // result = result * std::pow(2.0, e + 11);
     e = e + 11;
     for (let i : i32 = 0; i < e; i = i + 1) {

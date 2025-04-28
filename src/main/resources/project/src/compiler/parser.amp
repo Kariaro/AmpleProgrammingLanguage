@@ -46,12 +46,25 @@ i32 /*(const)*/ : SHIFT_RIGHT        = cast<i32>('>') + 256 * cast<i32>('>') + 1
 i32 /*(const)*/ : STAT_PROG          = 0;
 i32 /*(const)*/ : STAT_VAR           = 1;
 
+/*
+struct stat_pool {
+    stats : [ stat , 0x100000 ];
+    index : i32;
+}
+*/
+
+// Enums should be available
+enum sty {
+    
+}
+
 struct stat {
-    // the type of stat
-    i32  : type;
-    i32  : data;
-    i32  : len;
-    u8[] : val; // stat list
+    sty : type;        // the type of stat
+    i32 : child_id;    // start id of the children node
+    i32 : next_id;     // the id of the next element
+    
+    i32 : data_type;   // the type of data in this stat
+    u64 : data;        // the data in this stat
 }
 
 struct parse_context {

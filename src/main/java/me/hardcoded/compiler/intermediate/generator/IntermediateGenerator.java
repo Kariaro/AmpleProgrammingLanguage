@@ -494,21 +494,32 @@ public class IntermediateGenerator {
 		// casting from unsigned always zero extends
 		// casting from signed to signed sign extends
 		
-		Opcode opcode;
-		switch (expr.getKind()) {
-			case D_TO_F -> opcode = Opcode.D_TO_F_CAST;
-			case BIT_CAST -> opcode = Opcode.TRUNC;
+		int toBytes = expr.getType().calculateBytes();
+		int fromBytes = value.getValueType().calculateBytes();
+		
+		ValueType dst = holder.getValueType();
+		ValueType src = value.getValueType();
+		
+		Opcode opcode = switch (expr.getKind()) {
+			case BIT_CAST -> Opcode.TRUNC;
 			case CAST -> {
-				if (expr.getType().calculateBytes() <= value.getValueType().calculateBytes()) {
-					opcode = Opcode.TRUNC;
+				if (dst.isFloating() && dst.getDepth() == 0 && src.getDepth() == 0) {
+					if (src.isFloating()) {
+						yield Opcode.F_TO_F_CAST;
+					}
+					yield Opcode.I_TO_F_CAST;
+				} else if (src.isFloating() && src.getDepth() == 0) {
+					yield Opcode.F_TO_I_CAST;
+				} else if (toBytes <= fromBytes) {
+					yield Opcode.TRUNC;
 				} else if (expr.getType().isSigned() && value.getValueType().isSigned()) {
-					opcode = Opcode.SEXT;
+					yield Opcode.SEXT;
 				} else {
-					opcode = Opcode.ZEXT;
+					yield Opcode.ZEXT;
 				}
 			}
-			default -> opcode = Opcode.TRUNC;
-		}
+			default -> throw new RuntimeException("Unknown cast type '" + expr.getKind() + "'");
+		};
 		
 		procedure.addInst(new Inst(opcode, expr.getSyntaxPosition())
 			.addParam(new InstParam.Ref(holder))
@@ -865,22 +876,22 @@ public class IntermediateGenerator {
 	public Opcode getBinaryOpcode(Operation operation, boolean unsigned, boolean floating) {
 		return switch (operation) {
 			// Binary
-			case PLUS -> get(Opcode.ADD, Opcode.ADD, Opcode.FADD, unsigned, floating);
-			case MINUS -> get(Opcode.SUB, Opcode.SUB, Opcode.FSUB, unsigned, floating);
-			case MULTIPLY -> get(Opcode.UMUL, Opcode.IMUL, Opcode.FMUL, unsigned, floating);
-			case DIVIDE -> get(Opcode.UDIV, Opcode.IDIV, Opcode.FDIV, unsigned, floating);
-			case MODULO -> get(Opcode.UMOD, Opcode.IMOD, Opcode.FMOD, unsigned, floating);
 			case AND -> Opcode.AND;
 			case XOR -> Opcode.XOR;
 			case OR -> Opcode.OR;
 			case SHIFT_RIGHT -> Opcode.SHR;
 			case SHIFT_LEFT -> Opcode.SHL;
+			case PLUS -> get(Opcode.ADD, Opcode.ADD, Opcode.FADD, unsigned, floating);
+			case MINUS -> get(Opcode.SUB, Opcode.SUB, Opcode.FSUB, unsigned, floating);
+			case MULTIPLY -> get(Opcode.UMUL, Opcode.IMUL, Opcode.FMUL, unsigned, floating);
+			case DIVIDE -> get(Opcode.UDIV, Opcode.IDIV, Opcode.FDIV, unsigned, floating);
+			case MODULO -> get(Opcode.UMOD, Opcode.IMOD, Opcode.FMOD, unsigned, floating);
 			case MORE_EQUAL -> get(Opcode.UGTE, Opcode.IGTE, Opcode.FGTE, unsigned, floating);
 			case MORE_THAN -> get(Opcode.UGT, Opcode.IGT, Opcode.FGT, unsigned, floating);
 			case LESS_EQUAL -> get(Opcode.ULTE, Opcode.ILTE, Opcode.FLTE, unsigned, floating);
 			case LESS_THAN -> get(Opcode.ULT, Opcode.ILT, Opcode.FLT, unsigned, floating);
-			case EQUAL -> Opcode.EQ;
-			case NOT_EQUAL -> Opcode.NEQ;
+			case EQUAL -> get(Opcode.EQ, Opcode.EQ, Opcode.FEQ, unsigned, floating);
+			case NOT_EQUAL -> get(Opcode.NEQ, Opcode.NEQ, Opcode.FNEQ, unsigned, floating);
 			
 			default -> throw new RuntimeException("Unknown binary operation '%s'".formatted(operation));
 		};

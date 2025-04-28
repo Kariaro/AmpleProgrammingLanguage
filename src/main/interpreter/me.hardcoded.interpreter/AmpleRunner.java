@@ -207,7 +207,7 @@ public class AmpleRunner {
 							Value value = convertFromParam(local, src, context);
 							local.get(dst).setIndex(arrayIdx, value, src.getSize());
 						}
-						case ZEXT, SEXT, TRUNC, D_TO_F_CAST -> {
+						case ZEXT, SEXT, TRUNC, I_TO_F_CAST, F_TO_I_CAST, F_TO_F_CAST -> {
 							InstRef dst = inst.getRefParam(0).getReference();
 							ValueType type = dst.getValueType();
 							InstParam src = inst.getParam(1);
@@ -227,7 +227,13 @@ public class AmpleRunner {
 								Value value = local.get(ref.getReference());
 								number = switch (value.getType()) {
 									case Integer, Array -> value.getInteger();
-									case Floating -> Double.doubleToRawLongBits(value.getFloating());
+									case Floating -> {
+										int s = ref.getReference().getValueType().calculateBytes();
+										if (s == 4) {
+											yield Float.floatToRawIntBits((float) value.getFloating(s));
+										}
+										yield Double.doubleToRawLongBits(value.getFloating(s));
+									}
 								};
 								
 								if (value instanceof Value.ArrayValue arr) {
@@ -252,11 +258,29 @@ public class AmpleRunner {
 									
 									result = context.getMemory().getAllocated(number);
 								}
-							} else if (opcode == Opcode.D_TO_F_CAST) {
+							} else if (opcode == Opcode.I_TO_F_CAST) {
 								int srcSize = src.getSize().calculateBytes();
 								long srcMask = (-1L) >>> (64 - srcSize * 8);
 								number &= srcMask;
-								result = new Value.NumberValue((double) number);
+								int dstSize = dst.getValueType().calculateBytes();
+								result = dstSize == 4
+									? new Value.NumberValue((float) number)
+									: new Value.NumberValue((double) number);
+							} else if (opcode == Opcode.F_TO_I_CAST) {
+								int srcSize = src.getSize().calculateBytes();
+								result = srcSize == 4
+									? new Value.NumberValue((int) Float.intBitsToFloat((int) number))
+									: new Value.NumberValue((long) Double.longBitsToDouble(number));
+							} else if (opcode == Opcode.F_TO_F_CAST) {
+								int srcSize = src.getSize().calculateBytes();
+								int dstSize = dst.getValueType().calculateBytes();
+								if (srcSize == dstSize) {
+									result = new Value.NumberValue(true, number);
+								} else if (srcSize == 4) {
+									result = new Value.NumberValue((double) Float.intBitsToFloat((int) number));
+								} else {
+									result = new Value.NumberValue((float) Double.longBitsToDouble(number));
+								}
 							} else {
 								if (type.isFloating()) {
 									throw new RuntimeException("Floating type not extendable");
@@ -309,7 +333,7 @@ public class AmpleRunner {
 									}
 									yield Long.compare(av, bv);
 								}
-								case Floating -> Double.compare(a.getFloating(), b.getFloating());
+								case Floating -> Double.compare(a.getFloating(s), b.getFloating(s));
 								case Array -> Long.compareUnsigned(a.getInteger(), b.getInteger());
 							};
 							
@@ -330,8 +354,9 @@ public class AmpleRunner {
 							InstRef dst = inst.getRefParam(0).getReference();
 							Value a = convertFromParam(local, inst.getParam(0), context);
 							Value b = convertFromParam(local, inst.getParam(1), context);
+							int s = inst.getParam(0).getSize().calculateBytes();
 							
-							long compare = Double.compare(a.getFloating(), b.getFloating());
+							long compare = Double.compare(a.getFloating(s), b.getFloating(s));
 							boolean result = switch (opcode) {
 								case FLTE -> compare <= 0;
 								case FLT -> compare < 0;
@@ -342,7 +367,9 @@ public class AmpleRunner {
 								default -> false; // Never reached
 							};
 							
-							local.put(dst, new Value.NumberValue(result ? 1.0 : 0.0));
+							local.put(dst, s == 4
+								? new Value.NumberValue(result ? 1.0f : 0.0f)
+								: new Value.NumberValue(result ? 1.0d : 0.0d));
 						}
 						
 						// Branch operators
@@ -357,7 +384,7 @@ public class AmpleRunner {
 							
 							boolean isZero = switch (a.getType()) {
 								case Integer, Array -> a.getInteger() == 0;
-								case Floating -> a.getFloating() == 0;
+								case Floating -> a.getFloating(inst.getParam(0).getSize().calculateBytes()) == 0;
 							};
 							
 							if ((opcode == Opcode.JZ) == isZero) {
@@ -434,16 +461,19 @@ public class AmpleRunner {
 							InstRef dst = inst.getRefParam(0).getReference();
 							Value a = convertFromParam(local, inst.getParam(0), context);
 							Value b = convertFromParam(local, inst.getParam(1), context);
+							int s = inst.getParam(0).getSize().calculateBytes();
 							
-							long result = switch (opcode) {
-								case FMUL -> Double.doubleToRawLongBits(a.getFloating() * b.getFloating());
-								case FDIV -> Double.doubleToRawLongBits(a.getFloating() / b.getFloating());
-								case FMOD -> Double.doubleToRawLongBits(a.getFloating() % b.getFloating());
-								case FADD -> Double.doubleToRawLongBits(a.getFloating() + b.getFloating());
-								case FSUB -> Double.doubleToRawLongBits(a.getFloating() - b.getFloating());
+							double result = switch (opcode) {
+								case FMUL -> a.getFloating(s) * b.getFloating(s);
+								case FDIV -> a.getFloating(s) / b.getFloating(s);
+								case FMOD -> a.getFloating(s) % b.getFloating(s);
+								case FADD -> a.getFloating(s) + b.getFloating(s);
+								case FSUB -> a.getFloating(s) - b.getFloating(s);
 								default -> throw new RuntimeException("Arithmetic opcode '" + opcode + "' not implemented");
 							};
-							local.put(dst, new Value.NumberValue(true, result));
+							local.put(dst, s == 4
+								? new Value.NumberValue((float) result)
+								: new Value.NumberValue(result));
 						}
 						case LOAD -> {
 							InstRef dst = inst.getRefParam(0).getReference();

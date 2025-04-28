@@ -50,9 +50,10 @@ public enum Opcode {
 	BIT_NOT,                // r0 = ~(r1)
 	
 	// Size instructions
-	// F_TO_D_CAST,        // r0 = FLOAT TO INTEGER
-	D_TO_F_CAST,        // r0 = INTEGER TO FLOAT
-	FBITS,              // r0 = bits from floating
+	F_TO_I_CAST,        // r0 = FLOAT TO INTEGER
+	I_TO_F_CAST,        // r0 = INTEGER TO FLOAT
+	F_TO_F_CAST,        // r0 = FLOAT TO FLOAT
+	
 	TRUNC,              // r0, SIZE -> truncate
 	SEXT,               // r0, SIZE -> sign extend
 	ZEXT,               // r0, SIZE -> zero extend
@@ -65,8 +66,6 @@ public enum Opcode {
 	STORE,              // (r0 [r1]) = r2
 	LOAD,               // r0 = (r1 [r2])
 	MEMBER_PTR,         // r0 = &(r1 [r2].r3)
-	// MEMBER_STORE,       // r0.r1 = r2
-	// MEMBER_LOAD,        // r0.r1 = r2
 	SIZEOF,             // r0 = sizeof(r1)
 	
 	// Branching instructions

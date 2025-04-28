@@ -224,6 +224,15 @@ public class ExprParser {
 				reader.advance();
 				return expr;
 			}
+			case FLOAT -> {
+				String text = reader.value();
+				text = text.replaceAll("'", "");
+				int value;
+				value = Float.floatToRawIntBits(Float.parseFloat(text));
+				NumExpr expr = new NumExpr(reader.syntaxPosition(), Primitives.F32, value);
+				reader.advance();
+				return expr;
+			}
 			case INT -> {
 				String text = reader.value();
 				text = text.replaceAll("'", "");
@@ -433,12 +442,6 @@ public class ExprParser {
 				
 				CastExpr.Kind kind = CastExpr.Kind.CAST;
 				switch (name) {
-					case "float_cast" -> {
-						kind = CastExpr.Kind.D_TO_F;
-						if (!type.isFloating()) {
-							throw parser.createParseException(type_pos, "float_cast can only convert to floating point numbers");
-						}
-					}
 					case "bit_cast" -> {
 						kind = CastExpr.Kind.BIT_CAST;
 					}

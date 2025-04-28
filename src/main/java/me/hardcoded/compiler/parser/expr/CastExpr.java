@@ -13,8 +13,6 @@ public class CastExpr extends Expr {
 	private Kind kind;
 	
 	public enum Kind {
-		D_TO_F,
-		F_TO_D,
 		BIT_CAST,
 		CAST,
 	}
@@ -59,7 +57,6 @@ public class CastExpr extends Expr {
 		return switch (kind) {
 			case BIT_CAST -> "bit_cast<" + type + ">( " + value + " )";
 			case CAST -> "cast<" + type + ">( " + value + " )";
-			case D_TO_F -> "float_cast<" + type + ">( " + value + " )";
 			default -> "unknown_cast<" + type + ">( " + value + " )";
 		};
 	}

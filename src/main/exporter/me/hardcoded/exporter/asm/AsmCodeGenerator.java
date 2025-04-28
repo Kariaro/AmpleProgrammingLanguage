@@ -244,16 +244,16 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					// If the high 32 bits are set we need to store it in a register
 					if (dst.getValueType().isFloating()) {
 						sb.add("mov RAX, 0x%s".formatted(Long.toUnsignedString(number, 16)));
-						regName = "RAX";
+						regName = AsmReg.AX.toString(dst);
 					} else if ((number >>> 32) != 0) {
 						sb.add("mov RAX, %s".formatted(value));
-						regName = "RAX";
+						regName = AsmReg.AX.toString(dst);
 					} else {
 						if (src.getSize().calculateBytes() > 4 && ((number >> 31) & 1) != 0) {
 							// The top 32 bits are zero so this is allowed
 							// If the 32nd bit is set it will be negative
 							sb.add("mov RAX, %s".formatted(value));
-							regName = "RAX";
+							regName = AsmReg.AX.toString(dst);
 						} else {
 							regName = value.toString();
 						}
@@ -372,7 +372,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					));
 				}
 			}
-			case D_TO_F_CAST -> {
+			case I_TO_F_CAST -> {
 				InstParam dst = inst.getParam(0);
 				InstParam src = inst.getParam(1);
 				
@@ -392,6 +392,23 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					AsmUtils.getParamValue(dst, proc)
 				));
 				sb.add("mov %s, RAX".formatted(
+					AsmUtils.getParamValue(dst, proc)
+				));
+			}
+			case F_TO_F_CAST -> {
+				InstParam dst = inst.getParam(0);
+				InstParam src = inst.getParam(1);
+				String srcSize = src.getSize().calculateBytes() == 4 ? "ss" : "sd";
+				String dstSize = dst.getSize().calculateBytes() == 4 ? "ss" : "sd";
+				sb.add("mov%s XMM0, %s".formatted(
+					srcSize,
+					AsmUtils.getParamValue(src, proc)
+				));
+				if (!srcSize.equals(dstSize)) {
+					sb.add("cvt%s2%s XMM0, XMM0".formatted(srcSize, dstSize));
+				}
+				sb.add("mov%s %s, XMM0".formatted(
+					dstSize,
 					AsmUtils.getParamValue(dst, proc)
 				));
 			}
@@ -694,19 +711,21 @@ public class AsmCodeGenerator extends ICodeGenerator {
 					regName
 				));
 			}
-			case FMUL -> {
+			case FMUL, FDIV, FADD, FSUB -> {
 				InstRef dst = inst.getRefParam(0).getReference();
 				InstParam b = inst.getParam(1);
-				sb.add("fld %s".formatted(AsmUtils.getParamValue(dst, proc)));
-				sb.add("fmul %s".formatted(AsmUtils.getParamValue(b, proc)));
-				sb.add("fstp %s".formatted(AsmUtils.getParamValue(dst, proc)));
-			}
-			case FDIV -> {
-				InstRef dst = inst.getRefParam(0).getReference();
-				InstParam b = inst.getParam(1);
-				sb.add("fld %s".formatted(AsmUtils.getParamValue(dst, proc)));
-				sb.add("fdiv %s".formatted(AsmUtils.getParamValue(b, proc)));
-				sb.add("fstp %s".formatted(AsmUtils.getParamValue(dst, proc)));
+				String size = dst.getValueType().getSize() == 32 ? "ss" : "sd";
+				String type = switch (inst.getOpcode()) {
+					case FMUL -> "mul";
+					case FDIV -> "div";
+					case FADD -> "add";
+					case FSUB -> "sub";
+					default -> throw new RuntimeException();
+				};
+				sb.add("mov%s XMM0, %s".formatted(size, AsmUtils.getParamValue(dst, proc)));
+				sb.add("mov%s XMM1, %s".formatted(size, AsmUtils.getParamValue(b, proc)));
+				sb.add("%s%s XMM0, XMM1".formatted(type, size));
+				sb.add("mov%s %s, XMM0".formatted(size, AsmUtils.getParamValue(dst, proc)));
 			}
 			case FMOD -> {
 				InstRef dst = inst.getRefParam(0).getReference();
@@ -715,10 +734,47 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				sb.add("fprem %s".formatted(AsmUtils.getParamValue(b, proc)));
 				sb.add("fstp %s".formatted(AsmUtils.getParamValue(dst, proc)));
 			}
-			case FLT, FLTE, FGT, FGTE -> {
+			case FLT, FLTE, FGT, FGTE, FEQ, FNEQ -> {
 				InstRef dst = inst.getRefParam(0).getReference();
 				InstParam b = inst.getParam(1);
 				// String cmpAddress = "word [RBP - 0x%x]".formatted(proc.getStackOffset(dst));
+				
+				boolean swap = false;
+				String type = switch (inst.getOpcode()) {
+					case FLT -> "cmplt";
+					case FLTE -> "cmple";
+					case FGT -> {
+						swap = true;
+						yield "cmplt";
+					}
+					case FGTE -> {
+						swap = true;
+						yield "cmple";
+					}
+					case FEQ -> "cmpeq";
+					case FNEQ -> "cmpneq";
+					default -> "???";
+				};
+				String size = dst.getValueType().getSize() == 32 ? "ss" : "sd";
+				
+				String aReg = swap ? "XMM0" : "XMM1";
+				String bReg = swap ? "XMM1" : "XMM0";
+				
+				sb.add("mov%s %s, %s".formatted(size, aReg, AsmUtils.getParamValue(dst, proc)));
+				sb.add("mov%s %s, %s".formatted(size, bReg, AsmUtils.getParamValue(b, proc)));
+				sb.add("%s%s XMM1, XMM0".formatted(type, size));
+				if (size.equals("ss")) {
+					sb.add("mov RAX, 0x%x ; (1.0000)".formatted(Float.floatToRawIntBits(1.0f)));
+				} else {
+					sb.add("mov RAX, 0x%x ; (1.0000)".formatted(Double.doubleToRawLongBits(1.0)));
+				}
+				sb.add("movq XMM0, RAX");
+				sb.add("andpd XMM0, XMM1");
+				sb.add("mov%s %s, XMM0".formatted(size, AsmUtils.getParamValue(dst, proc)));
+				
+				// (a > b) == (b<a)
+				// (a >= b) == (b <= a)
+				/*
 				sb.add("fld %s".formatted(AsmUtils.getParamValue(dst, proc)));
 				sb.add("fcom %s".formatted(AsmUtils.getParamValue(b, proc)));
 				sb.add("xor RAX, RAX");
@@ -765,6 +821,7 @@ public class AsmCodeGenerator extends ICodeGenerator {
 				// TODO - 32 bit floating point
 				sb.add("cmove RCX, RDX");
 				sb.add("mov %s, RCX".formatted(AsmUtils.getStackPtr(dst, proc)));
+				*/
 			}
 			case IDIV, UDIV -> {
 				boolean unsigned = inst.getOpcode() == Opcode.UDIV;

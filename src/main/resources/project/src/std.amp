@@ -38,6 +38,13 @@ fn (export) init_malloc(data : u8[], length : i64) {
     ret;
 }
 
+fn (export) strlen (pointer : u8[]) : i64 {
+    let len : i64 = 0l;
+    while (pointer[len] != cast<u8>(0)) {
+         len = len + 1l;
+    }
+    ret len;
+}
 
 fn (export) read_file(file_name : u8[]) : u8[] {
     let file_size : u64 = 0ul;
@@ -45,7 +52,7 @@ fn (export) read_file(file_name : u8[]) : u8[] {
 
     let file_data : u8[] = cast<u8[]>(std::malloc(file_size + 1ul));
     compiler<int>("read_file" : file_name : file_data);
-    file_size = cast<u64>(std::strlen(file_data));
+    file_size = cast<u64>(strlen(file_data));
     file_data[file_size + 1ul] = '\0';
     
     // let file_size : u64  = __builtin_filesize(file_name);
@@ -54,14 +61,6 @@ fn (export) read_file(file_name : u8[]) : u8[] {
     // file_data[file_size] = '\0';
     
     ret file_data;
-}
-
-fn (export) strlen (pointer : u8[]) : i64 {
-    let len : i64 = 0l;
-    while (pointer[len] != cast<u8>(0)) {
-         len = len + 1l;
-    }
-    ret len;
 }
 
 fn (export) memcpy (dest : u8[], src : u8[], length : i64) {
@@ -136,7 +135,7 @@ fn (export) print (string : u8[]) {
 }
 
 fn (export) printf (format : u8[], args : ...[]) {
-    let length : i64 = std::strlen(format);
+    let length : i64 = strlen(format);
     let ptr : u8[] = cast<u8[]>(args);
     let dtoa_buffer : u8[] = stack_alloc<u8, 32>();
 
@@ -198,6 +197,11 @@ fn (export) printf (format : u8[], args : ...[]) {
             } else if (char == 'b') {
                 printdec_b(cast<u64>(cast<u64[]>(ptr)[0]), 32);
                 ptr = cast<u8[]>(cast<u64>(ptr) + 8ul);
+                continue;
+            } else if (char == 'f') {
+                let len : i32 = d_to_s_a(dtoa_buffer, cast<f64>(cast<f32[]>(ptr)[0]));
+                ptr = cast<u8[]>(cast<u64>(ptr) + 4ul);
+                printstr(dtoa_buffer, cast<i64>(len));
                 continue;
             }
             
